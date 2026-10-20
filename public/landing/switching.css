@@ -1,0 +1,61 @@
+/* 12 · Switching */
+#switching{
+.sw-board{padding:20px 22px}
+.sw-board .bt{font-size:22px;letter-spacing:-.01em}
+.sw-board .bt .g{font-size:17px;font-weight:500;letter-spacing:0}
+.sw-cols{position:relative;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin-top:20px}
+.sw-cols .col{position:relative;background:var(--pale);border-radius:10px;padding:14px;height:452px;min-width:0}
+.sw-cols .ch{font-weight:800;font-size:18px}
+.sw-cols .gs{font-size:13px;color:var(--grey);margin-top:2px}
+.tc{position:absolute;left:14px;right:14px;top:calc(106px + var(--row) * 120px);background:#fff;border-radius:8px;box-shadow:var(--shadow);padding:20px 14px 12px;font-size:15.5px;font-weight:700;line-height:1.25;z-index:1}
+.tc .peg{position:absolute;top:8px;width:9px;height:9px}
+.tc .pl{left:10px}.tc .pr{right:10px}
+.co{position:absolute;left:8px;right:8px;background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:var(--shadow);padding:7px 10px;font-size:13px;line-height:1.35;z-index:1}
+.co.guests-co{position:relative;left:auto;right:auto;margin-top:8px}
+.co.cord-co{top:300px}
+.co.card-co{top:294px;left:14px;right:14px}
+.co.cord-co::before,.co.card-co::before{content:"";position:absolute;left:50%;top:-22px;height:22px;border-left:1.6px solid var(--ink)}
+.co.cord-co::after{content:"";position:absolute;left:50%;top:-26px;width:8px;height:8px;margin-left:-3.2px;border-radius:50%;background:var(--ink)}
+.co.card-co::before{top:-18px;height:18px}
+/* cords run peg to peg over the cards, and dip below the callout they pass (page-12) */
+.sw-cols .cords{z-index:2}
+.sw-row{display:grid;grid-template-columns:1.6fr 1fr 1fr;gap:14px;margin-top:32px}
+.sw-row .card{padding:15px 18px;font-size:14.5px;line-height:1.45}
+.sw-term{margin-top:14px;padding:15px 18px;display:flex;align-items:center;flex-wrap:wrap;gap:12px 24px;font-size:14.5px;width:fit-content;max-width:100%}
+.term{margin:0;background:#15181C;color:#E7ECF1;border-radius:8px;padding:10px 14px;font:500 13px/1.6 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere;flex:1 1 380px;max-width:560px}
+.term code{font:inherit}
+.term .ready{color:var(--flap);font-weight:600}
+/* five columns down to 1180 px: tighter padding, and under 1360 a narrower Client review column, so every card title
+   keeps one line as page-12 sets it */
+@media (max-width:1559px) and (min-width:1180px){
+  .sw-board{padding:18px 16px}
+  .sw-cols{gap:10px}
+  .sw-cols .col{padding:14px 10px}
+  .tc{left:10px;right:10px;padding:20px 11px 12px;font-size:15px}
+  .co.card-co{left:10px;right:10px}
+  .co{left:6px;right:6px}
+}
+@media (max-width:1359px) and (min-width:1180px){
+  .sw-cols{grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,.7fr) minmax(0,1fr) minmax(0,1fr)}
+  .tc{font-size:14px;padding-inline:10px}
+  .co{padding:7px 8px}
+}
+@media (max-width:1179px){
+  .sw-cols{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .sw-cols .cords{display:none}
+  .sw-cols .col{height:auto;display:flex;flex-direction:column;gap:10px}
+  .tcs{display:flex;flex-direction:column;gap:10px}
+  .tc,.co,.co.cord-co,.co.card-co{position:relative;inset:auto}
+  .tc{padding:12px 14px}
+  .tc .peg{display:none}
+  .co.cord-co::before,.co.card-co::before,.co.cord-co::after{display:none}
+  .sw-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .sw-row .card:first-child{grid-column:1/-1}
+}
+@media (max-width:699px){
+  .sw-board{padding:16px 14px}
+  .sw-board .bt{font-size:19px}
+  .sw-cols,.sw-row{grid-template-columns:minmax(0,1fr)}
+  .term{flex-basis:100%;font-size:12.5px}
+}
+}

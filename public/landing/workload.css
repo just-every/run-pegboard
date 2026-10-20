@@ -1,0 +1,59 @@
+/* 05 · Workload: blocks are sized in hours on a 51 h track (40 h at Friday's edge) */
+#workload{
+.wl-board{padding:22px 0 18px;position:relative;--who:280px}
+.wl-head{pointer-events:none;display:grid;grid-template-columns:var(--who) minmax(0,1fr);height:30px}
+.wl-days{position:relative;pointer-events:none}
+.wl-days span{position:absolute;top:0;padding-left:8px;font-weight:700;font-size:15px;white-space:nowrap}
+.wl-cap{position:absolute;left:var(--who);right:0;top:52px;bottom:54px;pointer-events:none}
+.wl-cap .zone{position:absolute;top:0;bottom:0;right:0;background:repeating-linear-gradient(135deg,rgb(249 68 54 / .06) 0 8px,transparent 8px 16px)}
+.wl-cap .line{position:absolute;top:-12px;bottom:0;border-left:2px solid var(--ink)}
+.wl-cap .line b{position:absolute;top:-8px;left:8px;font-weight:800;font-size:14px;white-space:nowrap}
+.wl-cap .sep{position:absolute;top:0;bottom:0;border-left:1px dashed #DFE5EB}
+.wl-rows{position:relative}
+.wl-row{display:grid;grid-template-columns:var(--who) minmax(0,1fr);align-items:center;height:68px}
+.wl-row .who{display:flex;align-items:center;gap:12px;padding-left:20px;font-size:15.5px;line-height:1.25}
+.av.lg{width:38px;height:38px;font-size:13px}
+.who .hrs{color:var(--grey)}
+.wl-track{position:relative;height:34px}
+/* every block carries its name: one line where it fits, two inside a short block, clipped to the block only as a last resort */
+.blk{position:absolute;top:0;left:calc(var(--s) / 51 * 100%);width:calc(var(--h) / 51 * 100% - 3px);height:34px;border-radius:5px;font-size:11px;line-height:1.1;color:#fff;padding:5px 4px 0 6px;font-weight:500}
+.blk .lb{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;overflow-wrap:normal}
+.blk.ba{background:var(--azure)}.blk.bb{background:var(--azure-2)}
+.blk.in{background:#fff;color:var(--ink);border:2px solid var(--tomato);font-weight:650;text-align:center;padding:3px 2px 0}
+.blk.gh{background:rgb(249 68 54 / .06);border:2px dashed var(--tomato);color:var(--tomato-ink);font-weight:650;text-align:center;padding:7px 2px 0}
+.blk.in{display:flex;align-items:center;justify-content:center}
+.blk .peg{position:absolute;left:50%;margin-left:-5px;width:10px;height:10px}
+.blk .gp{bottom:-7px}.blk .ip{top:-7px}
+.wl-moved{display:none}
+.wl-foot{padding:12px 24px 0;font-weight:750;font-size:18px}
+.wl-low{display:grid;grid-template-columns:620fr 330fr 330fr;gap:0 32px;margin-top:32px;align-items:start;position:relative}
+.wl-mv{padding:18px 22px;font-size:15.5px;line-height:1.55}
+.wl-sl,.wl-tk{padding:16px 18px;font-size:14.5px;line-height:1.4}
+.wl-sl .q{font-size:19px;font-weight:650;margin-top:8px;line-height:1.3}
+.wl-tk .done{color:var(--green-ink);font-weight:600;margin-top:8px}
+.peg-e{position:absolute;top:50%;width:1px;height:1px}.peg-e.r{right:0}.peg-e.l{left:0}
+@media (max-width:1439px) and (min-width:1180px){.wl-board{--who:236px}.wl-days span{font-size:14px}}
+@media (max-width:1179px){
+  .wl-board{padding:6px 16px 16px}
+  .wl-head,.wl-cap,.wl-board .cords{display:none}
+  .wl-row{display:block;height:auto;padding:14px 0;border-bottom:1px solid var(--line)}
+  .wl-row .who{padding:0;margin-bottom:10px}
+  .wl-track{background:linear-gradient(90deg,transparent calc(40 / 51 * 100% - 1px),var(--ink) calc(40 / 51 * 100% - 1px),var(--ink) calc(40 / 51 * 100% + 1px),transparent calc(40 / 51 * 100% + 1px))}
+  .blk .peg{display:none}
+  .wl-moved{display:block;margin-top:9px;font-size:14px;color:var(--tomato-ink);font-weight:600}
+  .wl-foot{padding:14px 0 0;font-size:17px}
+  .wl-low{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;margin-top:14px}
+  .wl-mv{grid-column:1/-1}
+  .wl-low .cords{display:none}
+}
+/* phones: each person's blocks wrap at 28 h a line on one scale, every block named; the moves read on the blocks and in
+   the move record below */
+@media (max-width:899px){
+  .wl-track{height:auto;background:none;display:flex;flex-wrap:wrap;gap:3px}
+  .blk{position:relative;left:auto;flex:0 0 auto;width:calc(var(--h) / 28 * 100% - 3px);min-width:min-content;height:30px;padding-top:3px}
+  .blk.gh{padding-top:5px}
+  .blk .lb{display:block}
+  .wl-moved{display:none}
+}
+@media (max-width:699px){.wl-low{grid-template-columns:minmax(0,1fr)}.wl-mv{padding:14px 16px;font-size:15px}}
+}

@@ -1,0 +1,15 @@
+/* 10 · Interlude */
+#interlude{
+&.il{padding-top:64px;padding-bottom:64px}
+.il-fig{position:relative;margin:0;padding-bottom:34px}
+.il-plate{border-radius:18px;overflow:hidden;aspect-ratio:1344 / 800}
+.il-plate img{object-fit:cover;object-position:center 40%}
+.il-tag{position:absolute;left:40px;bottom:0;max-width:calc(100% - 80px);padding:16px 24px;font-size:20px;font-weight:600}
+@media (max-width:899px){
+  &.il{padding-top:48px;padding-bottom:48px}
+  .il-fig{padding-bottom:0}
+  .il-plate{aspect-ratio:4 / 3;border-radius:14px}
+  .il-plate img{object-position:58% 50%}
+  .il-tag{position:relative;left:auto;bottom:auto;max-width:none;margin:-28px 12px 0;font-size:16px;padding:12px 16px}
+}
+}

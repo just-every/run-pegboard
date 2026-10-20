@@ -1,0 +1,29 @@
+/* 13 · Closing */
+#closing{
+/* the whole scene at its own aspect at every width, as page-13 shows it: the billboard under open sky, the woman on the sidewalk */
+.cl-plate{width:100%;aspect-ratio:1536 / 984;overflow:hidden}
+.cl-plate img{object-fit:cover;object-position:50% 0}
+.cl-split{padding-top:72px;padding-bottom:64px}
+.cl-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,600px);gap:36px;align-items:center}
+.cl-cta .display{margin-top:0}
+.cl-cta .free{font-size:24px;margin-top:20px}
+.cl-cta .btns{display:flex;flex-wrap:wrap;gap:16px 34px;align-items:center;margin-top:28px}
+.cl-cta .btn-run{min-height:54px;padding:0 28px;border-radius:10px}
+.cl-res{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.cl-res .r{display:flex;gap:14px;align-items:center;padding:14px 16px}
+.cl-res .glyph{flex:none;width:48px;display:grid;place-items:center}
+.cl-res .glyph img{height:44px;width:auto;max-width:48px;object-fit:contain}
+.cl-res .tt{font-weight:750;font-size:15px}
+.cl-res .d{font-size:13.5px;color:var(--grey);line-height:1.35}
+.cl-res .tt+.d{margin-top:2px}
+.cl-res .d.mv{color:var(--tomato-ink);font-weight:600}
+@media (max-width:1359px){.cl-grid{grid-template-columns:minmax(0,1fr)}.cl-res{max-width:760px}}
+@media (max-width:899px){
+  /* square on phones: the billboard whole on its catwalk; the woman is cropped out rather than cut */
+  .cl-plate{aspect-ratio:1 / 1}
+  .cl-plate img{object-position:50% 50%}
+  .cl-split{padding-top:44px;padding-bottom:40px}
+  .cl-cta .free{font-size:19px;margin-top:14px}
+}
+@media (max-width:699px){.cl-res{grid-template-columns:minmax(0,1fr)}}
+}

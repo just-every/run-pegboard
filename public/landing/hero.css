@@ -1,0 +1,105 @@
+/* 01 · Hero. From 1180 px up the hero is the approved image's own canvas: --p is one canvas pixel of the 1536 px plate
+   (the plate, its board and the card row's place), --u the same pixel capped at 1.25 for type, so copy and cards stop
+   growing past 1920 while the lobby keeps filling the width. 900–1179: copy on the wall, the scene below it cropped to the
+   board, then the cards. Phones: copy, the cards stacked whole, the board in two tile rows per team, then the walkers. */
+.hero{container-type:inline-size;background:#B6E2FE}
+.hx{--p:calc(100cqw / 1536);--u:min(var(--p),1.25px);position:relative;height:max(calc(980 * var(--p)),calc(818 * var(--p) + 158 * var(--u)));
+  background:linear-gradient(#DFDFE6 0 calc(848 * var(--p)),#ECEDF1 calc(100% - 12 * var(--p)),#fff)}
+.hx .site-header{position:absolute;z-index:3;top:calc(17 * var(--p));left:calc(94 * var(--p));right:calc(92 * var(--p))}
+.hx .site-brand{font-size:calc(31 * var(--u));gap:calc(12 * var(--u))}
+.hx .site-brand .mark{width:calc(60 * var(--u));height:calc(60 * var(--u));margin:calc(-10 * var(--u)) 0}
+.hx .site-header nav{gap:calc(34 * var(--u));font-size:max(14px,calc(17.5 * var(--u)))}
+.hx-copy{position:absolute;z-index:3;left:calc(60 * var(--p));right:calc(60 * var(--p));top:calc(88 * var(--p));text-align:center}
+.hx-h{font:800 calc(72 * var(--u))/1.1 var(--sans);letter-spacing:-.04em;padding-block:.08em;margin-block:-.08em}
+.hx-sub{font-size:calc(22.5 * var(--u));line-height:1.42;color:#222A31;max-width:calc(960 * var(--u));margin:calc(16 * var(--u)) auto 0;text-wrap:balance}
+.hx-alt{font-size:calc(20 * var(--u));line-height:1.4;margin-top:calc(12 * var(--u));color:#141414}
+.hx-actions{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:calc(14 * var(--u)) calc(40 * var(--u));margin-top:calc(13 * var(--u))}
+.hx .btn-run{min-height:calc(48 * var(--u));padding:0 calc(32 * var(--u));border-radius:calc(9 * var(--u));font-size:calc(20 * var(--u));gap:calc(8 * var(--u))}
+.hx .btn-run svg{width:calc(19 * var(--u));height:calc(19 * var(--u))}
+.hx-link{font-size:calc(19 * var(--u));text-decoration:underline;text-underline-offset:.3em;text-decoration-thickness:1.5px}
+
+.hx-scene{position:absolute;left:0;top:0;width:100%;height:calc(848 * var(--p));overflow:hidden}
+.hx-scene::after{content:"";position:absolute;left:0;right:0;bottom:0;height:calc(70 * var(--p));background:linear-gradient(rgb(223 223 230 / 0),#DFDFE6);pointer-events:none}
+.hx-plate{position:absolute;left:0;top:0;width:100%;height:calc(848 * var(--p))}
+/* the board, set over the plate's own board (12ui kept its frame and brackets; 3072 px measures / 2) */
+.hx-board{position:absolute;left:calc(272.5 * var(--p));top:calc(360 * var(--p));width:calc(992 * var(--p));height:calc(313 * var(--p));background:#17181A;border-radius:calc(7 * var(--p));
+  box-shadow:0 calc(10 * var(--p)) calc(24 * var(--p)) calc(-10 * var(--p)) rgb(20 30 60 / .45);padding:calc(18 * var(--p)) 0 0 calc(30 * var(--p));display:flex;flex-direction:column;gap:calc(8.9 * var(--p))}
+.hx-board .br{position:relative;display:grid;grid-template-columns:calc(250.5 * var(--p)) calc(397.9 * var(--p)) calc(208.5 * var(--p));column-gap:calc(42.3 * var(--p))}
+.hx-board .br.hd{margin-bottom:calc(8 * var(--p))}
+.bf{display:flex;gap:calc(2.05 * var(--p))}
+.hx-board .bf i{flex:none;width:calc(19 * var(--p));height:calc(30.5 * var(--p));font:700 calc(18.5 * var(--p))/1 var(--sans);font-style:normal;display:grid;place-items:center;border-radius:calc(2 * var(--p));
+  background:#F5F5F3;color:#141414;position:relative;box-shadow:inset 0 calc(-1 * var(--p)) 0 rgb(0 0 0 / .12)}
+.bf i::after{content:"";position:absolute;left:0;right:0;top:50%;height:1px;background:rgb(0 0 0 / .28)}
+.bf i.off{background:#27282B;box-shadow:none}.bf i.off::after{background:rgb(0 0 0 / .5)}
+.bf i.landed{background:var(--flap)}
+.bf i.moved{background:var(--flap-red)}
+.hx-board .bd{position:absolute;left:calc(263 * var(--p));top:50%;width:calc(5 * var(--p));height:calc(5 * var(--p));margin-top:calc(-2.5 * var(--p));border-radius:50%;background:#55585D}
+
+/* the five cards, lifted about 25 px from the image so their bottoms clear the 1440 x 900 fold */
+.hx-cards{position:absolute;z-index:3;left:calc(51 * var(--p));right:calc(50 * var(--p));top:calc(818 * var(--p));display:grid;grid-template-columns:252fr 327fr 265fr 262fr 278fr;gap:calc(14 * var(--p));align-items:stretch}
+.hx-card{background:#fff;border-radius:calc(8 * var(--u));box-shadow:0 1px 2px rgb(20 40 70 / .06),0 10px 26px rgb(20 40 70 / .12);padding:calc(18 * var(--u)) calc(22 * var(--u));font-size:max(12px,calc(16.5 * var(--u)));line-height:1.5;color:#3E4650;min-width:0}
+.hx-card .hc-t{font-weight:700;font-size:max(12.5px,calc(17 * var(--u)));color:var(--ink);margin-bottom:calc(3 * var(--u))}
+.hx-bs,.hx-walk{display:none}
+
+@media (min-width:2200px){.hx-cards{left:calc(50% - 718 * var(--u));right:calc(50% - 718 * var(--u))}}
+
+/* 900–1179: copy on the wall, the scene from the brackets down, the cards on the floor below */
+@media (max-width:1179px){
+  .hx{height:auto;background:linear-gradient(#AFDEFC 0,#AFDEFC 40%,#DFDFE6 40%,#EEEFF3)}
+  .hx .site-header{position:relative;inset:auto;padding:22px var(--gut) 0}
+  .hx .site-brand{font-size:28px;gap:11px}.hx .site-brand .mark{width:52px;height:52px;margin:-8px 0}
+  .hx .site-header nav{gap:28px;font-size:16px}
+  .hx-copy{position:relative;inset:auto;padding:40px var(--gut) 34px}
+  .hx-h{font-size:clamp(40px,5.6vw,60px)}
+  .hx-sub{font-size:19px;max-width:820px;margin-top:16px}
+  .hx-alt{font-size:17px;margin-top:12px}
+  .hx-actions{margin-top:20px;gap:14px 30px}
+  .hx .btn-run{min-height:50px;padding:0 28px;font-size:19px;border-radius:9px;gap:8px}.hx .btn-run svg{width:19px;height:19px}
+  .hx-link{font-size:18px}
+  .hx-scene{position:relative;height:calc(558 * var(--p))}
+  /* the copy's wall runs on into the plate's wall: no seam where the cropped scene starts */
+  .hx-scene::before{content:"";position:absolute;z-index:1;left:0;right:0;top:0;height:calc(150 * var(--p));background:linear-gradient(#AFDEFC,rgb(175 222 252 / 0));pointer-events:none}
+  .hx-plate{top:calc(-290 * var(--p))}
+  .hx-board{top:calc(70 * var(--p))}
+  .hx-cards{position:relative;inset:auto;padding:0 var(--gut) 44px;margin-top:-6px;grid-template-columns:repeat(6,minmax(0,1fr));gap:14px}
+  .hx-card{grid-column:span 2;font-size:15px;padding:16px 18px;border-radius:10px}
+  .hx-card:nth-child(n+4){grid-column:span 3}
+  .hx-card .hc-t{font-size:16px}
+}
+/* phones and small tablets: copy, cards, the board in two rows per team, the walkers */
+@media (max-width:959px){
+  .hx{background:#A9DAF9;padding-bottom:24px}
+  .hx .site-header{padding:18px var(--gut) 0}
+  .hx .site-brand{font-size:25px;gap:9px}.hx .site-brand .mark{width:46px;height:46px;margin:-7px 0}
+  .hx .site-header nav{gap:20px;font-size:15.5px}
+  .hx-copy{padding:34px var(--gut) 30px}
+  .hx-h{font-size:clamp(38px,8.6vw,54px);line-height:1.06}
+  .hx-sub{font-size:17px}
+  .hx-alt{font-size:16px}
+  .hx-scene{display:none}
+  .hx-cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding-bottom:24px;margin-top:0}
+  .hx-card,.hx-card:nth-child(n+4){grid-column:auto}
+  .hx-card:last-child{grid-column:1 / -1}
+  .hx-bs{display:block;container-type:inline-size;margin:0 var(--gut);max-width:640px}
+  .hx-board-s{display:flex;flex-direction:column;gap:4px;background:#17181A;border-radius:10px;padding:12px;box-shadow:0 10px 24px -10px rgb(20 30 60 / .45);
+    --tg:2px;--tw:calc((100cqw - 24px - 19 * var(--tg)) / 20)}
+  .hx-board-s .br{display:flex}
+  .hx-board-s .br .bf+.bf{margin-left:calc(var(--tw) + var(--tg))}
+  .hx-board-s .br.p{margin-bottom:6px}
+  .hx-board-s .br.hd.p{margin-bottom:8px}
+  .hx-board-s .bf{gap:var(--tg)}
+  .hx-board-s .bf i{flex:none;width:var(--tw);height:calc(var(--tw) * 1.45);font:700 max(13px,calc(var(--tw) * .9))/1 var(--sans);font-style:normal;display:grid;place-items:center;border-radius:2px;background:#F5F5F3;color:#141414;position:relative}
+  .hx-board-s .bf i.off{background:#27282B}
+  .hx-board-s .bf i.landed{background:var(--flap)}
+  .hx-board-s .bf i.moved{background:var(--flap-red)}
+  /* the lobby's walkers as two panels cut whole from the plate (one floor line), a gutter between them */
+  .hx-walk{display:grid;grid-template-columns:222fr 316fr;gap:10px;margin:14px var(--gut) 0;max-width:640px}
+  .hx-walk .plate{border-radius:12px;overflow:hidden}
+  .hx-walk .plate img{width:100%;height:auto}
+}
+@media (max-width:420px){.hx-board-s{--tg:1px}}
+/* phones: tighter cards, still two a row (the last across both), so the board comes sooner */
+@media (max-width:599px){
+  .hx-card{padding:13px 14px;font-size:14px;line-height:1.45}
+  .hx-card .hc-t{font-size:14.5px}
+}

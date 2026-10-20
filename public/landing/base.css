@@ -1,0 +1,104 @@
+/* Pegboard homepage: the shared frame. Crisp white and pale azure, one heavy grotesk (Inter) for headings, Inter for data,
+   tomato for actions, cords and "moved", azure for links, eyebrows and pegs, spring green only for done. */
+@font-face{font-family:Inter;font-style:normal;font-weight:100 900;font-display:swap;src:url('/fonts/inter/inter-latin-wght-normal.woff2') format('woff2')}
+:root{--tomato:#F94436;--tomato-ink:#D8301F;--tomato-l:#FDE0DB;--azure:#087BF7;--azure-ink:#0866D0;--azure-2:#4C9DF2;--azure-l:#CFE5FB;--wall:#BCE6FE;--pale:#EAF6FE;
+  --pink:#F86698;--pink-l:#FCD6E4;--green:#14CF72;--green-ink:#0C9A52;--green-l:#DCF8E8;--flap:#4AF489;--flap-red:#FB5A4C;--ink:#141414;--grey:#5A636D;--grey-2:#7C858F;
+  --line:#E3E8EE;--shadow:0 1px 2px rgb(20 40 70 / .06),0 8px 22px rgb(20 40 70 / .09);--gut:clamp(16px,6.25vw,96px);--wrap:min(1344px,100%);
+  --sans:Inter,'Helvetica Neue',Arial,system-ui,sans-serif}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-padding-top:16px}
+body{margin:0;background:#fff;color:var(--ink);font:400 17px/1.5 var(--sans);-webkit-font-smoothing:antialiased;overflow-x:clip}
+h1,h2,h3,p,ul,ol,figure{margin:0;padding:0}ul,ol{list-style:none}
+a{color:inherit}
+a:focus-visible{outline:3px solid var(--azure);outline-offset:3px;border-radius:6px}
+img{display:block;max-width:100%;height:auto}
+.plate{display:block}.plate img{width:100%;height:100%}
+.skip{position:absolute;left:12px;top:-60px;z-index:20;background:#fff;padding:10px 16px;border-radius:8px;box-shadow:var(--shadow);font-weight:600;text-decoration:none}
+.skip:focus{top:12px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+
+/* header and footer */
+.site-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px 24px}
+.site-brand{display:inline-flex;align-items:center;gap:12px;font:800 30px/1 var(--sans);letter-spacing:-.035em;text-decoration:none;color:var(--ink)}
+.site-brand .mark{width:56px;height:56px;margin:-8px 0}
+.site-brand span{padding-block:.12em}
+.site-header nav,.site-footer nav{display:flex;gap:34px;font-size:17px;font-weight:500}
+.site-header nav a,.site-footer nav a{text-decoration:none}
+.site-header nav a:hover,.site-footer nav a:hover{text-decoration:underline;text-underline-offset:4px}
+.site-footer{width:calc(var(--wrap));max-width:calc(100% - 2 * var(--gut));margin:0 auto;border-top:1px solid var(--line);padding:30px 0 40px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px 34px}
+.foot-brand{display:flex;align-items:center;flex-wrap:wrap;gap:6px 22px}
+.foot-brand .site-brand{font-size:26px}.foot-brand .mark{width:48px;height:48px}
+.foot-tag{color:var(--grey);font-size:17px}
+
+/* sections */
+.sec{padding:88px var(--gut);position:relative}
+.sec.pale{background:var(--pale)}
+.sec.dark{background:#121212;color:#fff}
+.sec>.wrap{width:var(--wrap);margin:0 auto;position:relative}
+.eyebrow{font:650 14px/1.5 var(--sans);letter-spacing:.16em;text-transform:uppercase;color:var(--azure-ink)}
+/* the eyebrow's "·" keeps a full word space each side at the tracked caps (page-02) */
+.eyebrow .dl{margin-left:-1.6em;clip-path:inset(-6px -6px -6px 1.6em);max-width:calc(100% + 1.6em)}
+.eyebrow .dl>span{padding-left:1.6em}.eyebrow .dl>span::before{width:1.6em}
+.dark .eyebrow{color:#7CC0F7}
+.display{font:850 clamp(38px,4.6vw,68px)/1 var(--sans);letter-spacing:-.045em;margin-top:16px;text-wrap:balance}
+.display>span{display:block;padding-block:.12em;margin-block:-.12em}
+.display .comma{letter-spacing:0}
+.lede{font-size:clamp(17px,1.45vw,21px);line-height:1.45;color:var(--grey);margin-top:20px;max-width:1120px;text-wrap:pretty}
+.dark .lede{color:#C9CED4}
+.sec-head.center{text-align:center}
+.sec-head.center .lede{margin-inline:auto;max-width:980px}
+.sec-head.center .eyebrow .dl{justify-content:center}
+.drawing{margin-top:52px;position:relative}
+@media (max-width:1179px){.sec-head.center{text-align:left}.sec-head.center .eyebrow .dl{justify-content:flex-start}.sec-head.center .lede{margin-inline:0}}
+
+/* cards, pills, ticks, pegs, avatars */
+.card{background:#fff;border:1px solid #EDF0F3;border-radius:10px;box-shadow:var(--shadow);position:relative}
+.ok{color:var(--green-ink);font-weight:800}
+.dark .ok{color:var(--flap)}
+.g{color:var(--grey)}
+.b{font-weight:700}
+.mv{color:var(--tomato-ink)}
+.num{font-variant-numeric:tabular-nums}
+.peg{display:inline-block;width:11px;height:11px;border-radius:50%;background:var(--ink);flex:none}
+.av{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--pink);color:#fff;font:700 11px/1 var(--sans);flex:none;letter-spacing:.02em}
+.pill{display:inline-block;background:#fff;border-radius:999px;box-shadow:var(--shadow);padding:14px 30px;font-size:19px;max-width:100%}
+.strip{background:#fff;border-radius:10px;box-shadow:var(--shadow);border:1px solid #EDF0F3;padding:15px 24px;font-size:18px;text-align:center}
+.glyph img{width:auto;height:52px}
+
+/* a line of phrases with "·" between them: the separator never starts a line (it sits in the clipped margin) */
+.dl{display:inline-flex;flex-wrap:wrap;margin-left:-.9em;clip-path:inset(-6px -6px -6px .9em);max-width:calc(100% + .9em);vertical-align:top}
+.dl>span{flex:0 0 auto;max-width:100%;position:relative;padding-left:.9em}
+.dl>span::before{content:"·";position:absolute;left:0;width:.9em;text-align:center}
+.dl>span:first-child::before{content:none}
+p>.dl,li>.dl,div>.dl{display:flex}
+
+/* split-flap tiles: one tile per letter, a hairline across the middle */
+.flap{display:inline-flex;gap:3px;padding:5px;background:var(--ink);border-radius:6px;vertical-align:middle}
+.flap i{font:700 20px/1 var(--sans);font-style:normal;width:21px;height:30px;display:grid;place-items:center;border-radius:2px;position:relative;color:var(--ink);background:var(--flap)}
+.flap i::after{content:"";position:absolute;left:0;right:0;top:50%;height:1px;background:rgb(0 0 0 / .3)}
+.flap.moved i{background:var(--flap-red)}
+.flap i.sp{background:#2A2A2A}
+
+/* the tomato pill and the text links */
+.btn-run{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:50px;padding:0 30px;border-radius:9px;background:var(--tomato);color:#fff;font:700 20px/1 var(--sans);text-decoration:none;box-shadow:0 1px 0 rgb(255 255 255 / .35) inset,0 10px 22px -12px rgb(200 40 20 / .7)}
+.btn-run svg{width:20px;height:20px}
+.btn-run:hover{background:#E9382A}
+.txt-link{font-size:19px;font-weight:600;text-decoration:underline;text-underline-offset:5px;text-decoration-thickness:1.5px}
+
+/* cords drawn after layout (cords.js); decoration only, never in the way of a pointer */
+.cords{position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible;pointer-events:none;z-index:2}
+
+@media (max-width:400px){.display{font-size:34px}}
+/* phone headings break where the words do ("Every team's / October."), not balanced onto a stranded first word */
+@media (max-width:599px){.display{text-wrap:wrap}}
+@media (max-width:899px){
+  .sec{padding:72px var(--gut)}
+  .eyebrow{font-size:12.5px;letter-spacing:.14em}
+  .display{margin-top:10px}
+  .lede{margin-top:14px}
+  .drawing{margin-top:32px}
+  .site-header nav,.site-footer nav{gap:22px;font-size:16px}
+  .site-brand{font-size:25px}.site-brand .mark{width:46px;height:46px}
+  .pill{font-size:16px;padding:12px 20px;border-radius:16px}
+  .strip{font-size:16px;padding:13px 16px}
+}

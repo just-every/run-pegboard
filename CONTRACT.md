@@ -364,3 +364,44 @@ Judged from the code and tests at commit `3372d344ee9a6eb8077717a66a62d24a5869ba
 | `PEG-069` | Preserve focus while repairing a slipping schedule | push-further | missing |  | No implementation exists for preserve focus while repairing a slipping schedule; the complete behavior and public-door acceptance journey remain required. |
 | `PEG-078` | Resolve resource conflicts across a portfolio | push-further | missing |  | No implementation exists for resolve resource conflicts across a portfolio; the complete behavior and public-door acceptance journey remain required. |
 | `PEG-070` | An agent helps prove the migration | push-further | missing |  | No implementation exists for an agent helps prove the migration; the complete behavior and public-door acceptance journey remain required. |
+
+## Homepage claims
+
+The run site's homepage (`src/site/landing.ts`, page-s1 as approved on 20 Oct 2026) shows the product this contract
+builds toward (owner, 17 Oct 2026). Every capability claim it makes is listed here with the clauses that back it and
+its state in code. Brand names (Asana, monday.com, ClickUp, Trello, Wrike, Smartsheet, Slack, Teams, Outlook, Google
+Calendar, Jira, Gauge) appear only as plain text. "Contract, not yet in code" rows are build priorities.
+
+| Section | Claim on the page | Clauses | Status | Code path |
+| --- | --- | --- | --- | --- |
+| 01 Hero | 100% free, open source alternative to Asana, monday.com and ClickUp | PEG-061, PEG-024 | code (licence); contract, not yet in code (replacement scope) | `LICENSE` (MIT), `src/site/run.json` |
+| 01 Hero | Turns briefs and requests into plans that fit everyone's week | PEG-029, PEG-007, PEG-016 | contract, not yet in code | — |
+| 01 Hero | Gets client sign-off on proofs | PEG-011, PEG-019, PEG-036 | contract, not yet in code | — |
+| 01 Hero | Writes the weekly status from real work | PEG-015, PEG-030 | contract, not yet in code | — |
+| 01 Hero | Run Pegboard on your own computer with one command | PEG-055 | partly (Base foundation runs; no product screens) | `/run` (`src/base/run-site.ts`), `src/site/run.json` |
+| 02 October | Six teams' work with owners, dates and due/done counts per week | PEG-001, PEG-003, PEG-018 | contract, not yet in code | — |
+| 02 October | Work moved to the next working day is shown as moved, not hidden | PEG-004 | contract, not yet in code | — |
+| 03 Intake | Requests from a form, email and Slack land in one triage queue | PEG-007, PEG-008, PEG-071 | contract, not yet in code | — |
+| 03 Intake | The agent fills in requests, links duplicates, drafts a first pass; a person accepts the triage | PEG-066, PEG-028 | contract, not yet in code | — |
+| 03 Intake | A rule routes holiday requests to a project and shows how often it ran | PEG-012 | contract, not yet in code | — |
+| 03 Intake | Triage due time and done time on each request | PEG-007 | contract, not yet in code | — |
+| 04 Brief | A pasted brief becomes a draft plan with phases, owners, dependencies and milestones | PEG-029, PEG-001, PEG-004 | contract, not yet in code | — |
+| 04 Brief | The plan is checked against nine people's workloads and calendars before anything is created | PEG-029, PEG-016, PEG-025 | contract, not yet in code | — |
+| 04 Brief | Nothing is created until a person approves the plan | PEG-029, PEG-062 | contract, not yet in code | — |
+| 04 Brief | A Jira issue is linked with its status synced | PEG-040 | contract, not yet in code | — |
+| 05 Workload | An hours board per person against capacity; dragging tasks to teammates evens it out | PEG-016, PEG-003 | contract, not yet in code | — |
+| 05 Workload | A Slack question becomes a task and the thread is updated when it is done | PEG-008, PEG-071 | contract, not yet in code | — |
+| 06 Proofing | Client guests join free, pin comments on a version and approve it, also from a phone | PEG-011, PEG-019, PEG-036, PEG-022 | contract, not yet in code | — |
+| 06 Proofing | Versions v1–v3 with every comment resolved on the next version | PEG-011, PEG-067 | contract, not yet in code | — |
+| 06 Proofing | Timesheets approved by a manager and sent to Gauge | PEG-017, PEG-042 | contract, not yet in code | — |
+| 07 Status | The agent drafts the weekly status from the week's updates, each line citing its tasks; a person edits and sends it | PEG-015, PEG-030 | contract, not yet in code | — |
+| 07 Status | The status reaches 14 people in Slack and email | PEG-015, PEG-071 | contract, not yet in code | — |
+| 08 Onboarding | A template sets every date from a start date in working days | PEG-006, PEG-004 | contract, not yet in code | — |
+| 08 Onboarding | The agent chases owners in Teams, reads time off from Outlook, and replies close the tasks | PEG-030, PEG-037, PEG-025, PEG-071 | contract, not yet in code | — |
+| 09 Re-plan | An email on a task, auto-shift of dependants over working days, baselines and a critical path | PEG-004, PEG-008 | contract, not yet in code | — |
+| 09 Re-plan | The agent sees the slip and proposes one change; a person approves before dates move for others | PEG-030, PEG-069, PEG-062 | contract, not yet in code | — |
+| 11 Next week | Time off from calendars, task work blocked into free hours, every week fitting capacity | PEG-025, PEG-016, PEG-073 | contract, not yet in code | — |
+| 12 Switching | 18 Asana projects moved with guests, comments, history, fields and every dependency | PEG-024, PEG-046, PEG-081 | contract, not yet in code | — |
+| 12 Switching | Moves from monday.com and ClickUp; also from Trello, Wrike, Smartsheet and CSV | PEG-047, PEG-048, PEG-049, PEG-053 | contract, not yet in code | — |
+| 12 Switching | `npx -y @runeditrun/rer dev just-every/run-pegboard` starts Pegboard | PEG-055 | partly (starts the Base foundation) | `src/site/run.json`, `/run` |
+| 13 Closing | 100% free and open source | PEG-061 | code | `LICENSE` (MIT) |

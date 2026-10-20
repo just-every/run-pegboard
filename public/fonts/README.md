@@ -14,3 +14,8 @@ at weights 400, 500 and 700. Ascent, descent and line gap match Outfit's
 1000, -260 and 0 per 1000 units, divided by each scale. Matching metrics reduces
 layout movement; different glyph designs cannot have identical widths in every
 piece of text. Recalculate the fallback and preload when changing the brand font.
+
+Inter (variable, Latin) is self-hosted under the SIL Open Font License 1.1 in
+`inter/OFL.txt` for the run site's homepage only (`public/landing/base.css`):
+one heavy weight for every heading and the wordmark, the regular weights for data.
+The homepage preloads it and makes no third-party request.

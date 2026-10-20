@@ -1,0 +1,37 @@
+/* 03 · Intake */
+#intake{
+.in-grid{display:grid;grid-template-columns:344px minmax(0,1fr) 352px;column-gap:44px;align-items:start;margin-top:64px}
+.caps{font:650 13px/1.4 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--grey-2)}
+.in-in .caps{margin-bottom:22px}.in-out .caps{margin-bottom:22px;text-align:right}.in-out .caps .dl{justify-content:flex-end}
+.stacks{display:grid;grid-template-columns:repeat(2,150px);column-gap:38px;row-gap:42px;align-items:start}
+.in-out .stacks{column-gap:40px}
+.stack{position:relative;height:calc(104px + (var(--n) - 1) * 6px);width:calc(150px + (var(--n) - 1) * 3px)}
+.slip{position:absolute;left:calc(var(--i, 0) * 3px);top:calc(var(--i, 0) * 6px);width:150px;height:104px;background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 1px 2px rgb(20 40 70 / .07),0 3px 8px rgb(20 40 70 / .05)}
+.slip.front{left:0;top:0;box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:22px 5px 0}
+.slip .peg.top{position:absolute;top:9px;left:50%;margin-left:-5.5px}
+.slip .k{font-weight:700;font-size:16.5px;line-height:1.15}
+/* the out stacks' two-word names keep one line under their peg (page-03) */
+.in-out .slip .k{font-size:15px}
+.slip .n{font-weight:900;font-size:30px;letter-spacing:-.02em;line-height:1.15;margin-top:4px}
+.in-sum{font-size:19px;margin-top:44px}
+.in-tri{padding:26px 30px 18px;margin-top:32px}
+.in-tri .corner{position:absolute;top:8px}.in-tri .corner.l{left:34px}.in-tri .corner.r{right:34px}
+.in-tri .meta{font-size:15px;color:var(--grey)}
+.in-tri .ttl{font-weight:800;font-size:21px;line-height:1.22;margin:10px 0 12px;letter-spacing:-.01em}
+.in-tri .row{font-size:15.5px;line-height:1.4;padding:9px 0;border-top:1px solid var(--line)}
+.in-rule{padding:10px 14px;font-size:14.5px;line-height:1.35;margin:22px 0 26px;width:fit-content;max-width:100%}
+.in-strip{margin-top:44px;line-height:1.5}
+@media (max-width:1439px) and (min-width:1180px){.in-out .slip .k{font-size:14.5px}.in-grid{grid-template-columns:316px minmax(0,1fr) 322px;column-gap:28px}.stacks,.in-out .stacks{grid-template-columns:repeat(2,140px);column-gap:24px}.slip{width:140px}.stack{width:calc(140px + (var(--n) - 1) * 3px)}}
+@media (max-width:1179px){
+  .in-grid{grid-template-columns:minmax(0,1fr);row-gap:28px;margin-top:40px}
+  .in-out .caps{text-align:left}.in-out .caps .dl{justify-content:flex-start}
+  .stacks,.in-out .stacks{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));column-gap:20px;row-gap:28px}
+  .stack{width:auto;padding-right:calc((var(--n) - 1) * 3px)}
+  .slip{width:calc(100% - (var(--n) - 1) * 3px)}
+  .slip.front{width:calc(100% - (var(--n) - 1) * 3px)}
+  .in-tri{margin-top:0;padding:24px 20px 14px}
+  .in-sum{margin-top:24px;font-size:17px}
+  .in-strip{text-align:left;margin-top:28px}
+  .in-grid .cords{display:none}
+}
+}

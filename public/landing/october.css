@@ -1,0 +1,59 @@
+/* 02 · Every team's October */
+#october{
+.oc-top{display:grid;grid-template-columns:minmax(0,1fr) 372px;gap:40px;align-items:start;margin-top:20px}
+.oc-top .lede{margin-top:0}
+.oc-top .lede{max-width:900px}
+.oc-sum{padding:18px 22px;font-size:18px;line-height:1.45}
+.oc-board{display:grid;grid-template-columns:118px minmax(0,1fr);margin-top:36px}
+.oc-lanes{display:grid;grid-template-columns:repeat(6,minmax(0,1fr))}
+.oc-axis{position:relative;height:870px;font-size:14px;color:var(--grey)}
+.oc-axis span{position:absolute;right:20px;text-align:right;white-space:nowrap;line-height:18px}
+.oc-axis small{display:block;font-size:11.5px;color:var(--grey-2);line-height:1.2}
+.oc-axis-line{position:absolute;right:0;top:0;overflow:visible;pointer-events:none}
+.oc-lane{position:relative;height:870px;min-width:0}
+.oc-lane.alt{background:var(--pale);border-radius:12px}
+.oc-lh{position:absolute;left:16px;top:12px;right:8px}
+/* the lane head sits tight above the axis's first weekday */
+.oc-lh .glyph img{height:42px;margin-bottom:6px}
+.oc-lh h3{font-weight:800;font-size:19px;letter-spacing:-.01em}
+.oc-lh p{font-size:13.5px;color:var(--grey);line-height:1.28;margin-top:1px}
+.oc-cord{position:absolute;left:0;top:0;overflow:visible;pointer-events:none}
+.oc-pegs li{position:absolute;left:44px;right:6px;top:var(--y);transform:translateY(-50%);font-size:14px;line-height:1.2}
+.oc-pegs .oc-l,.oc-pegs .oc-d{display:block}
+.oc-pegs .oc-d{font-size:12.5px;color:var(--grey);margin-top:2px}
+.oc-pegs li.moved{color:var(--tomato-ink);font-weight:700}
+.oc-pegs li.moved .oc-d{color:var(--tomato-ink);font-weight:500}
+.oc-end{position:absolute;left:12px;right:12px;top:716px}
+.flap.sm{gap:2px;padding:4px}
+.flap.sm i{width:19px;height:28px;font-size:17px}
+.flap.sm.moved i{width:17px}
+.oc-cnt{margin-top:24px;padding:9px 12px;font-size:15px;font-weight:650;line-height:1.35}
+.oc-cnt .oc-wk{font-size:13px;font-weight:600;color:var(--grey);margin-bottom:1px}
+/* a lane's two-day date ("Wed Oct 28 – Thu Oct 29") keeps one line in the narrower lanes */
+@media (max-width:1559px) and (min-width:1360px){.oc-pegs li{right:2px}.oc-pegs li.moved{font-size:13px;letter-spacing:-.01em}.oc-pegs .oc-d{font-size:12px;letter-spacing:-.01em}}
+@media (max-width:1439px) and (min-width:1360px){.oc-board{grid-template-columns:104px minmax(0,1fr)}.oc-lh{left:12px}.oc-end{left:8px;right:8px}.flap.sm i{width:16px;height:26px;font-size:15px}.flap.sm.moved i{width:14px}.flap.sm{padding:3px}}
+
+/* under 1180: one card per team, its dated pegs as a list on the cord */
+@media (max-width:1359px){
+  .oc-top{grid-template-columns:minmax(0,1fr);margin-top:14px;gap:20px}
+  .oc-sum{max-width:420px}
+  .oc-board{display:block;margin-top:32px}
+  .oc-axis,.oc-cord{display:none}
+  .oc-lanes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+  .oc-lane,.oc-lane.alt{height:auto;background:var(--pale);border-radius:12px;padding:16px 16px 18px}
+  .oc-lh{position:static;display:grid;grid-template-columns:auto 1fr;column-gap:14px;align-items:center}
+  .oc-lh .glyph{grid-row:1/3}
+  .oc-lh .glyph img{height:44px;margin:0}
+  .oc-pegs{position:relative;margin:16px 0 0 4px;padding-left:22px;display:flex;flex-direction:column;gap:10px}
+  .oc-pegs::before{content:"";position:absolute;left:5px;top:8px;bottom:8px;border-left:2.5px solid var(--tomato)}
+  .oc-pegs li{position:relative;inset:auto;transform:none;font-size:15px}
+  .oc-pegs li::before{content:"";position:absolute;left:-22px;top:3px;width:12px;height:12px;border-radius:50%;background:var(--ink)}
+  .oc-pegs li.moved::before{background:#fff;border:2px solid var(--tomato)}
+  .oc-pegs .oc-d{font-size:13.5px}
+  .oc-end{position:static;margin-top:14px;display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px}
+  .oc-cnt{margin:0}
+  .flap.sm i{width:18px;height:27px;font-size:16px}.flap.sm.moved i{width:16px}
+}
+@media (max-width:1359px) and (min-width:1000px){.oc-lanes{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:699px){.oc-lanes{grid-template-columns:minmax(0,1fr)}}
+}

@@ -1,0 +1,54 @@
+/* 11 · Next week: week cards hung from two bracketed rails */
+#nextweek{
+.wk-rail{position:relative;padding-top:30px;margin:0 -16px 40px}
+.wk-rail .rl{position:absolute;left:0;right:0;top:0;height:9px;background:var(--azure);border-radius:5px}
+.wk-rail .rl::before,.wk-rail .rl::after{content:"";position:absolute;top:-10px;width:12px;height:28px;background:var(--ink);border-radius:2px}
+.wk-rail .rl::before{left:-4px}.wk-rail .rl::after{right:-4px}
+.wks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:30px;padding:0 16px;align-items:stretch}
+.wk{padding:18px 16px 16px;position:relative;min-width:0}
+.wk .hook{position:absolute;top:-30px;width:13px;height:30px}
+.wk .hook.l{left:16%}.wk .hook.r{right:16%}
+.wk .hook::before{content:"";position:absolute;left:0;top:-2px;width:13px;height:13px;border-radius:50%;background:var(--ink)}
+.wk .hook::after{content:"";position:absolute;left:5px;top:8px;width:3px;height:22px;background:var(--ink)}
+.wk .hd{display:flex;align-items:center;gap:14px}
+.wk .hd .glyph img{height:46px;width:56px;object-fit:contain}
+.wk .hd h3{font-weight:800;font-size:19px;letter-spacing:-.01em}
+.wk .hd p{font-size:14px;color:var(--grey)}
+.wk .mw{font-size:14.5px;margin:10px 0}
+.tr{display:grid;grid-template-columns:30px minmax(0,1fr) 40px;align-items:center;height:27px;font-size:12.5px;color:var(--grey)}
+.lane{position:relative;height:21px;border-radius:4px;box-shadow:inset 0 0 0 1px var(--line)}
+/* every block carries its name; the card widths below keep each name inside its block (page-11) */
+.bk{position:absolute;top:0;bottom:0;background:var(--azure);color:#fff;font-size:11px;font-weight:600;line-height:21px;padding:0 3px 0 5px;white-space:nowrap;border-radius:4px;letter-spacing:-.01em;display:flex;align-items:center}
+.bk.s{background:#CFE5F9;color:#0F4F9C}
+.bk .lb{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.lane .off{position:absolute;top:0;bottom:0;right:0;border-radius:0 4px 4px 0;background:repeating-linear-gradient(135deg,#D9DEE4 0 4px,#EEF2F6 4px 8px)}
+.tr .h{text-align:right;color:var(--ink);font-weight:600}
+.wk .ft{margin-top:12px;border-top:1px solid var(--line);padding-top:11px;font-size:15px}
+.wk .nt{font-size:13px;color:var(--grey);margin-top:2px}
+.hb{display:block;position:relative;height:9px;background:#E8EEF4;border-radius:5px;margin:8px 0 2px}
+.hb i{position:absolute;left:0;top:0;bottom:0;background:var(--azure);border-radius:5px}
+.chip{display:flex;gap:10px;align-items:center;margin-top:10px;background:#EAF3FD;border:1px solid #C9E0F8;border-radius:8px;padding:7px 10px;font-size:13px;color:#0F4F9C;line-height:1.3}
+.chip svg{flex:none}
+.nw-pill{display:block;width:fit-content;margin:0 auto}
+.nw-pill .dl{justify-content:center}
+/* three cards a rail from 1380 px; below that two a row (the rails drop), then one */
+@media (max-width:1379px){
+  .drawing{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-bottom:28px}
+  .wk-rail,.wks{display:contents}
+  .wk-rail .rl,.wk .hook{display:none}
+}
+@media (max-width:899px){.drawing{grid-template-columns:minmax(0,1fr)}}
+/* once the pill can wrap, its phrases start at the left so a wrapped line never opens on "·" */
+@media (max-width:999px){.nw-pill{text-align:left}.nw-pill .dl{justify-content:flex-start}}
+@media (max-width:699px){
+  .wk{padding:16px 14px 14px}
+  .tr{font-size:13px;grid-template-columns:32px minmax(0,1fr) 44px}
+}
+/* narrow phones: a block's name may take two lines; the blocks then flow in their lane so only that day grows */
+@media (max-width:479px){
+  .tr{height:auto;min-height:27px;padding:3px 0}
+  .lane{height:auto;min-height:21px;display:flex}
+  .bk{position:static;flex:none;margin-right:2px;white-space:normal;line-height:1.1;padding-block:3px}
+  .bk .lb{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2}
+}
+}
