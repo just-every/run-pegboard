@@ -3,7 +3,6 @@ import { posix } from 'node:path'
 import { existsSync, statSync } from 'node:fs'
 import { escape } from '../../base/run-site'
 import run from '../run.json'
-import edition from '../../../edition.json'
 import type { Doc } from './sources'
 
 export type Contents = { id: string; text: string }
@@ -30,9 +29,8 @@ export function renderDoc(doc: Doc, docs: Doc[]): Body {
     // Copied module manuals also reference Base files the seed does not ship.
     // Resolve those against their recorded custody origin, rather than the seed.
     if (doc.origin) {
-      const repository = edition.components.find(component => component.id === 'runeditrun/base')!.source.origin!.repository.replace(/\.git$/, '')
       const originTarget = posix.normalize(posix.join(posix.dirname(doc.origin.path), decodeURIComponent(file)))
-      return `${repository}/blob/${doc.origin.revision}/${originTarget}${fragment}`
+      return `${doc.origin.repository}/blob/${doc.origin.revision}/${originTarget}${fragment}`
     }
     throw new Error(`${doc.file} links to missing repository file ${target}`)
   }

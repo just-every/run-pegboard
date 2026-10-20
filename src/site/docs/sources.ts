@@ -1,9 +1,10 @@
 // Read only repository Markdown, at site build time. No installation files enter the site.
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import copies from '../../../base-copies.json'
 
-export type Doc = { file: string; path: string; title: string; summary: string; group: string; markdown: string; origin?: { path: string; revision: string } }
+export type Doc = { file: string; path: string; title: string; summary: string; group: string; markdown: string; origin?: { path: string; revision: string; repository: string } }
+type Copies = { copies: { path: string; originPath: string; revision: string }[] }
+type Edition = { components: { id: string; source: { origin?: { repository: string } } }[] }
 const guides: Record<string, [string, string, string]> = {
   'README.md': ['getting-started', 'Getting started', 'Start Pegboard, sign in as the owner and understand what is available today.'],
   'RUN-LOCALLY.md': ['run-locally', 'Run locally', 'The complete local workflow, runtime requirements and command options.'],
@@ -30,6 +31,10 @@ function markdownFiles(root: string, directory: string, recursive: boolean): str
 }
 
 export function readDocs(root: string): Doc[] {
+  const copies: Copies = JSON.parse(readFileSync(join(root, 'base-copies.json'), 'utf8'))
+  const edition: Edition = JSON.parse(readFileSync(join(root, 'edition.json'), 'utf8'))
+  const repository = edition.components.find(component => component.id === 'runeditrun/base')?.source.origin?.repository.replace(/\.git$/, '')
+  if (!repository) throw new Error('Docs need the recorded Base source repository.')
   const files = [...markdownFiles(root, '', false), ...markdownFiles(root, 'src', true), ...markdownFiles(root, 'public', true)]
   const order = Object.keys(guides)
   return files.map(file => {
@@ -43,7 +48,7 @@ export function readDocs(root: string): Doc[] {
       : ['OPERATIONS.md', 'SEED-COMMAND-CONTRACT.md', 'VERIFY-WORKFLOW.md'].includes(file) ? groups[1]
         : ['CONTRACT.md', 'ACCEPTANCE.md', 'HOMEPAGE-VARIANTS.md'].includes(file) ? groups[2] : groups[3]
     return { file, path: `/docs/${slug}`, title, summary: guide?.[2] ?? excerpt(markdown), group, markdown,
-      ...(copy ? { origin: { path: copy.originPath, revision: copy.revision } } : {}) }
+      ...(copy ? { origin: { path: copy.originPath, revision: copy.revision, repository } } : {}) }
   }).sort((a, b) => groups.indexOf(a.group) - groups.indexOf(b.group)
     || (order.indexOf(a.file) < 0 ? 99 : order.indexOf(a.file)) - (order.indexOf(b.file) < 0 ? 99 : order.indexOf(b.file))
     || a.file.localeCompare(b.file))

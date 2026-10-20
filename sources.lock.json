@@ -1686,11 +1686,11 @@
       "executable": false
     },
     "src/site/docs/render.ts": {
-      "sha256": "41747d883b5c24070e7a670d7643eb25e4c5cdea57bd71a5842a1b56d0741b13",
+      "sha256": "703a208cbc233b2c8c066438a591ecd894138cb188fb29de52614ecbc87b5d30",
       "executable": false
     },
     "src/site/docs/sources.ts": {
-      "sha256": "71173d74b0cb1f39e7a3c69f41df9dde7bbeaa04426c09ea3ff1aec0c9be58c8",
+      "sha256": "48016d03482f51d8f81294f5cc42bcf8083dd221f3f1b759127b80f4632cdeb4",
       "executable": false
     },
     "src/site/frame.ts": {
