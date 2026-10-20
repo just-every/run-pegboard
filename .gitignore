@@ -14,3 +14,6 @@ dist/
 logs/
 test-results/
 playwright-report/
+
+.rer/demo/
+.rer/demo-host/
