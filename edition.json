@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "id": "just-every/pegboard",
+  "identityKind": "project",
+  "toolchain": {
+    "id": "runeditrun/edition-authoring",
+    "version": "1.1.0"
+  },
+  "parent": null,
+  "components": [
+    {
+      "id": "just-every/pegboard",
+      "role": "edition",
+      "source": {
+        "kind": "local",
+        "paths": [
+          "src/identity.ts",
+          "src/branding.json",
+          "src/site",
+          "src/server.ts",
+          "src/routes",
+          "scripts/installer"
+        ]
+      }
+    },
+    {
+      "id": "runeditrun/base",
+      "role": "foundation",
+      "source": {
+        "kind": "local",
+        "paths": [
+          "src/base",
+          "src/modules",
+          "scripts/edition-authoring"
+        ],
+        "origin": {
+          "repository": "https://github.com/runeditrun/base.git",
+          "revision": "fa38858fa0c686bcb78a7d501ab4b5a547233e98",
+          "path": ".",
+          "paths": [
+            "foundation/runtime",
+            "modules/operator-auth",
+            "modules/mail",
+            "modules/ai",
+            "modules/demo",
+            "modules/dependencies",
+            "modules/owner-claim",
+            "edition-authoring"
+          ]
+        }
+      }
+    }
+  ]
+}

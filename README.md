@@ -1,0 +1,55 @@
+# Pegboard
+
+Work and project management for business teams.
+
+100% free, open source alternative to Asana, monday.com work management, ClickUp, Wrike.
+
+This is the Base foundation for Pegboard. The product is being built toward
+[CONTRACT.md](CONTRACT.md); every target clause is missing. The starting tree
+provides the shared Lobby, owner sign-in, first-run setup, D1 and local operations.
+It contains no sample projects or product features.
+
+## Run locally
+
+```sh
+curl -fsSL https://runeditrun.com/install.sh | sh
+rer dev just-every/run-pegboard
+```
+
+The installer brings its own Node when needed and prints any PATH command to run
+before the second line. rer gets Pegboard, installs its locked dependencies,
+claims a local owner and prints a link that opens it signed in. To start it again:
+`cd run-pegboard && rer dev`. With Node 22 or later, the one-line alternative is
+`npx -y @runeditrun/rer dev just-every/run-pegboard`.
+
+The installed `/` is Base's Lobby. The signed-in owner's first-run form is at
+`/setup`. Development mail is silently suppressed. Stop a foreground launch
+with Ctrl-C before building or testing. For a real owner installation, use
+`rer install`, then `rer setup` and enter the real mailbox at the prompt.
+
+## Run site and contract
+
+The public Run site is [run-pegboard.com](https://run-pegboard.com).
+`rer build --site` writes the homepage, `/run`, `/contract` and 404 page from
+`src/site/pages.ts`. `/contract` renders the root CONTRACT.md through Base's
+parser; its status distinguishes targets from shipped work. Run site deployment
+uses the guarded `.github/workflows/run-site.yml` independently of Verify.
+
+## Development
+
+This checkout pins the published `@runeditrun/rer` package at 0.2.73, Node
+22.20.0 and pnpm 10.12.4. Run `rer check`, `pnpm run build`,
+`pnpm run typecheck`, `pnpm run test:typecheck` and `pnpm run test:runtime`.
+The foundation's verification workflow is the complete CI wall; no product tests
+or product behavior have been added. Base source and copy custody are recorded
+in edition.json, sources.lock.json and base-copies.json.
+
+Read [AGENTS.md](AGENTS.md), [RUN-LOCALLY.md](RUN-LOCALLY.md),
+[OPERATIONS.md](OPERATIONS.md) and [ACCEPTANCE.md](ACCEPTANCE.md).
+Installation archives use `rer export --output exports/installation.rer` and
+`rer import --input exports/installation.rer --yes`; restore requires an empty
+destination and is separate from a product move-in screen. No product import
+screen exists yet. Real deployment requires the owner's Cloudflare account and
+configured mail. Local checks do not establish provider delivery.
+
+[MIT license](LICENSE).
