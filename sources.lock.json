@@ -190,11 +190,11 @@
       "executable": false
     },
     "package.json": {
-      "sha256": "8eb09402b3e7842ee252fabed61c6304a7dd08ac9715c777dff558c6a6eedc4a",
+      "sha256": "f44f0c28c5b8e3501f5d2c6329a74764858894b15bf544c26faa5d5065125c0a",
       "executable": false
     },
     "pnpm-lock.yaml": {
-      "sha256": "f96efb0f4c6d9f79e313dfb6ef90f3f36960b2576e05f0d5073c47f7208ae2e4",
+      "sha256": "6e5673ac5228577e7c67fc56cba6b70a8949739a7e8f525b8c242f95fed15f32",
       "executable": false
     },
     "public/brand/apple-touch-icon.png": {
@@ -231,6 +231,14 @@
     },
     "public/brand/mark.svg": {
       "sha256": "35c1015c5b7174ef8201b002218afbcab26125cb58c0fb9e8e0d1909df348ae5",
+      "executable": false
+    },
+    "public/docs.css": {
+      "sha256": "fbc59f65c542d786401862276cb307b5c1417dc3d1348f34434362ad00e0f0e5",
+      "executable": false
+    },
+    "public/docs.js": {
+      "sha256": "aaef20d3e4ced563508f4bcca7135d3aef6c5ea2c222f762e4db7044a713173a",
       "executable": false
     },
     "public/favicon.ico": {
@@ -1673,8 +1681,20 @@
       "sha256": "7fbbc765de8888c755fb740bd9bb5ab4fd9fd43510c425694b4451d3c50c0d2e",
       "executable": false
     },
+    "src/site/docs/pages.ts": {
+      "sha256": "549ac9304b9cb49f4a01e28b3b1d62a5175d9a3df15bbc630a6b70c5fa37e0ac",
+      "executable": false
+    },
+    "src/site/docs/render.ts": {
+      "sha256": "41747d883b5c24070e7a670d7643eb25e4c5cdea57bd71a5842a1b56d0741b13",
+      "executable": false
+    },
+    "src/site/docs/sources.ts": {
+      "sha256": "71173d74b0cb1f39e7a3c69f41df9dde7bbeaa04426c09ea3ff1aec0c9be58c8",
+      "executable": false
+    },
     "src/site/frame.ts": {
-      "sha256": "fd33a91a4c09c62f3a6c9302714031299b04029b19524e7fe1d098b72d4bca2f",
+      "sha256": "753c5b8f0898df9880d33b66724eddcdb0a2488cb581a1f9598cb36b36e07149",
       "executable": false
     },
     "src/site/landing.ts": {
@@ -1742,11 +1762,11 @@
       "executable": false
     },
     "src/site/pages.ts": {
-      "sha256": "a6da7a81e32ef4da1bbf6b0e82c68d273a8de30aedc9e649d736f3758e1846ad",
+      "sha256": "6214be59603b56078b77164ed9d94eac82e1fbf82117151707aba28d3a5fe138",
       "executable": false
     },
     "src/site/run.json": {
-      "sha256": "615fc120c0a6466dde8e8d9c522ad8afcfcd1e5e51f0a04c6cda2ab46f1150e2",
+      "sha256": "cdf378462dcf988425d7f84f7fc6beb60934203f0acecb6a44588ae364ee9653",
       "executable": false
     },
     "tests/incremental-typecheck.test.mjs": {

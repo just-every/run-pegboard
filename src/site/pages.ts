@@ -5,6 +5,7 @@ import { contractPageHtml } from '../base/contract-page'
 import { runPageHtml, siteNotFoundHtml, type RunData, type SiteBuild, type SiteContext } from '../base/run-site'
 import { identity } from '../identity'
 import { landingHtml } from './landing'
+import { docsSitePages } from './docs/pages'
 import run from './run.json'
 
 export function sitePages({ contract }: Partial<SiteContext> = {}): SiteBuild {
@@ -13,9 +14,10 @@ export function sitePages({ contract }: Partial<SiteContext> = {}): SiteBuild {
     pages: [
       { path: '/', html: landingHtml() },
       { path: '/run', html: runPageHtml(identity, data, contract) },
+      ...docsSitePages(),
       ...(contract ? [{ path: '/contract', html: contractPageHtml(identity, data, contract) }] : []),
       { path: '/404', html: siteNotFoundHtml(identity, data, contract) },
     ],
-    assets: ['rer-theme.css', 'fonts', 'brand', 'landing', 'favicon.ico'],
+    assets: ['rer-theme.css', 'fonts', 'brand', 'landing', 'favicon.ico', 'docs.css', 'docs.js'],
   }
 }

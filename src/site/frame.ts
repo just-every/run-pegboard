@@ -4,8 +4,7 @@ import { escape } from '../base/run-site'
 import { iconHead } from '../base/icon-head'
 import run from './run.json'
 
-// The repository's README is the docs until the run site carries /docs (run.json "docs": false).
-export const docsHref = `${run.repository}#readme`
+export const docsHref = '/docs'
 export const demoHref = 'https://demo.run-pegboard.com/'
 const links = `<a href="${docsHref}">Docs</a><a href="/contract">Contract</a><a href="${escape(run.repository)}">Source</a>`
 const mark = (width: number) => `<img class="mark" src="/brand/mark.svg" alt="" width="${width}" height="${width}">`
