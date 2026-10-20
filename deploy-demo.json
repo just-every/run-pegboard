@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "domain": "run-pegboard.com",
+  "name": "Pegboard",
+  "ownerEmail": "owner@demo.invalid",
+  "settings": {
+    "MAIL_FROM": "Pegboard <owner@demo.invalid>"
+  }
+}

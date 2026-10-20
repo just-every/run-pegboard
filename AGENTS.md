@@ -19,7 +19,7 @@ missing; a contract is not evidence that a feature exists. Do not add mock
 application data, fake providers, placeholder product screens or fallback
 behavior. The brand round follows later; preserve Base's default theme.
 
-Use the exact published @runeditrun/rer 0.2.73 pin. Public commands use bare rer
+Use the exact published @runeditrun/rer 0.2.75 pin. Public commands use bare rer
 verbs; do not restore a vendored CLI. Base runtime copies and their origins live
 in edition.json, sources.lock.json and base-copies.json. Keep recorded copies
 verbatim and preserve migrations already applied by an owner. Refresh source
