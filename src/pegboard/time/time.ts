@@ -153,7 +153,9 @@ async function load(
     for (const e of await rows(db, id))
       if (
         !e.project_id ||
-        !(await openTask(db, actor, e.task_id).catch(() => null))
+        !(
+          await openTask(db, actor, e.task_id).catch(() => null)
+        )?.access.contexts.has(e.project_id)
       )
         throw notFound()
   }
@@ -200,7 +202,11 @@ async function taskFor(
   if (opened.task.workspace_id !== sheet.workspace_id) throw invalid('task')
   const projectId = opened.access.personal
     ? null
-    : String(input.projectId ?? [...opened.access.contexts.keys()][0])
+    : input.projectId
+      ? String(input.projectId)
+      : ([...opened.access.contexts].find(([, standing]) =>
+          standing.capabilities.has('edit'),
+        )?.[0] ?? null)
   if (
     projectId &&
     !opened.access.contexts.get(projectId)?.capabilities.has('edit')
@@ -220,13 +226,14 @@ export async function addEntry(
   editable(sheet, actor)
   const { taskId, projectId } = await taskFor(db, actor, sheet, input),
     key = text(input.key, 120, 'operation_key'),
+    at = now(),
+    timezone = (await settings(db, actor)).timezone,
     workDate = timer
-      ? localDay(now(), (await settings(db, actor)).timezone)
+      ? localDay(at, timezone)
       : text(input.date, 10, 'work_date')
   dayNumber(workDate)
   const seconds = timer ? null : duration(input.seconds),
-    notes = note(input.notes),
-    timezone = (await settings(db, actor)).timezone
+    notes = note(input.notes)
   const duplicate = await first<Entry>(
     db,
     'SELECT * FROM peg_time_entries WHERE person_id=? AND operation_key=?',
@@ -237,6 +244,8 @@ export async function addEntry(
     if (
       duplicate.task_id !== taskId ||
       duplicate.sheet_id !== sheetId ||
+      duplicate.project_id !== projectId ||
+      (!timer && duplicate.work_date !== workDate) ||
       duplicate.source !== (timer ? 'timer' : 'manual') ||
       (!timer && duplicate.seconds !== seconds) ||
       duplicate.notes !== notes
@@ -244,8 +253,7 @@ export async function addEntry(
       throw conflict('operation_key_reused')
     return { id: duplicate.id }
   }
-  const id = newId('time'),
-    at = now()
+  const id = newId('time')
   await write(
     db,
     actor,
@@ -379,7 +387,8 @@ export async function sheetView(db: D1Database, actor: Actor, id: string) {
         : e.project_id
           ? 'Project no longer available'
           : 'Personal work',
-      available: !!opened,
+      available:
+        !!opened && (!e.project_id || opened.access.contexts.has(e.project_id)),
     })
   }
   const history = await all<{
@@ -549,7 +558,7 @@ export async function adjust(
     [
       bound(
         db,
-        "INSERT INTO peg_time_entries(id,sheet_id,person_id,task_id,project_id,work_date,seconds,source,notes,adjustment_of,operation_key,created_at) VALUES(?,?,?,?,?,?,?,'adjustment',?,?,?,?)",
+        "INSERT INTO peg_time_entries(id,sheet_id,person_id,task_id,project_id,work_date,seconds,source,notes,adjustment_of,operation_key,created_at,timezone) VALUES(?,?,?,?,?,?,?,'adjustment',?,?,?,?,?)",
         [
           entryId,
           sheet.id,
@@ -562,6 +571,7 @@ export async function adjust(
           id,
           key,
           now(),
+          (await settings(db, actor)).timezone,
         ],
       ),
     ],
@@ -582,6 +592,7 @@ export async function exportSheet(db: D1Database, actor: Actor, id: string) {
     task_id: e.task_id,
     task_reference: e.ref,
     date: e.work_date,
+    timezone: e.timezone,
     seconds: e.seconds,
     notes: e.notes,
     source: e.source,

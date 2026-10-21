@@ -304,8 +304,11 @@ describe('PEG-001 one work graph', { concurrency: false }, () => {
     assert.equal((await ok(reconnected.post(`/api/v1/time/${timer.id}/stop`,{}))).seconds,stopped.seconds)
     const manual={taskId:b.id,key:'synthetic-pegboard-103',date:day,seconds:1800,notes:'Review the brief'}
     const entry=await ok(reconnected.post(`/api/v1/timesheets/${sheet.id}/entries`,manual));assert.equal((await ok(reconnected.post(`/api/v1/timesheets/${sheet.id}/entries`,manual))).id,entry.id)
+    const race=await Promise.all(['synthetic-pegboard-104','synthetic-pegboard-105'].map(key=>reconnected.post(`/api/v1/timesheets/${sheet.id}/timer`,{taskId:b.id,key})))
+    assert.deepEqual(race.map(r=>r.status).sort(),[200,409],'two tabs cannot create overlapping timers')
+    const extraStop=await ok(reconnected.post(`/api/v1/time/${race.find(r=>r.status===200).body.id}/stop`,{}))
     const view=await ok(reconnected.get(`/api/v1/timesheets/${sheet.id}`))
-    assert.equal(view.entries.length,2);assert.equal(view.totalSeconds,stopped.seconds+1800);assert.equal(view.estimateHours,3);assert.ok(view.entries.every(e=>e.person_id===timerPerson.id&&e.timezone==='America/New_York'))
+    assert.equal(view.entries.length,3);assert.equal(view.totalSeconds,stopped.seconds+1800+extraStop.seconds);assert.equal(view.estimateHours,3);assert.ok(view.entries.every(e=>e.person_id===timerPerson.id&&e.timezone==='America/New_York'))
   })
 
   it('submits, returns, corrects and locks an exact timesheet, retaining attributed later adjustments and exact CSV', async () => {
@@ -313,7 +316,9 @@ describe('PEG-001 one work graph', { concurrency: false }, () => {
     const day=new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())
     const sheet=await ok(person.post('/api/v1/timesheets',{startDate:day,endDate:day}))
     const entry=await ok(person.post(`/api/v1/timesheets/${sheet.id}/entries`,{taskId:a.id,date:day,seconds:3600,key:'synthetic-pegboard-111'}))
+    const stale=await ok(person.get(`/api/v1/timesheets/${sheet.id}`))
     await ok(person.post(`/api/v1/timesheets/${sheet.id}/entries`,{taskId:b.id,date:day,seconds:1200,key:'synthetic-pegboard-112'}))
+    assert.equal((await person.post(`/api/v1/timesheets/${sheet.id}/decision`,{action:'submit',revision:stale.token})).status,409,'changed time requires a fresh exact review')
     const decide=async(client,action,extra={})=>client.post(`/api/v1/timesheets/${sheet.id}/decision`,{action,revision:(await ok(client.get(`/api/v1/timesheets/${sheet.id}`))).token,...extra})
     await ok(decide(person,'submit'))
     assert.equal((await person.post(`/api/v1/time/${entry.id}/correct`,{seconds:100})).status,409)
@@ -345,6 +350,15 @@ describe('PEG-001 one work graph', { concurrency: false }, () => {
     assert.ok(!(await ok(owner.get('/api/v1/timesheets'))).sheets.some(s=>s.id===sheet.id))
     const p=await ok(person.post('/api/v1/projects',{name:'Reviewed time scope'})),preview=await ok(person.get(`/api/v1/tasks/${t.id}/visibility-preview?projectId=${p.id}`))
     await ok(person.post(`/api/v1/tasks/${t.id}/share-personal`,{projectId:p.id,previewRevision:preview.token}))
+    const a=await project('Time scope A'),b=await project('Time scope B'),shared=await ok(owner.post('/api/v1/tasks',{title:'Shared time scope',projectId:a.id}))
+    await ok(owner.post(`/api/v1/tasks/${shared.id}/projects`,{projectId:b.id}))
+    const grant=await ok(owner.post('/api/v1/grants',{objectType:'project',objectId:a.id,granteeId:person.id,level:'editor'}))
+    await ok(owner.post('/api/v1/grants',{objectType:'project',objectId:b.id,granteeId:person.id,level:'editor'}))
+    const scoped=await ok(person.post('/api/v1/timesheets',{startDate:day,endDate:day}))
+    await ok(person.post(`/api/v1/timesheets/${scoped.id}/entries`,{taskId:shared.id,projectId:a.id,date:day,seconds:300,key:'synthetic-pegboard-122'}))
+    await ok(owner.delete(`/api/v1/grants/${grant.id}`))
+    const revoked=await ok(person.get(`/api/v1/timesheets/${scoped.id}`));assert.equal(revoked.entries[0].available,false)
+    assert.equal((await person.post(`/api/v1/timesheets/${scoped.id}/decision`,{action:'submit',revision:revoked.token})).status,409,'another project does not bypass the recorded project scope')
     // Existing private time remains private: a share does not retroactively attach its time entry to a project.
     assert.equal((await person.post(`/api/v1/timesheets/${sheet.id}/decision`,{action:'submit',revision:view.token})).status,409)
   })

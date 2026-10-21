@@ -2,6 +2,16 @@ import type { Viewer } from '../../../ui/viewer'
 import type { listSheets, sheetView } from '../../time/time'
 import { Card, Field, Form, Pick, Shell, Submit, when } from '../shell'
 import { newId } from '../../db'
+const actions: Record<string, string> = {
+  timer_started: 'Started timer',
+  timer_stopped: 'Stopped timer',
+  entry_added: 'Added manual time',
+  entry_corrected: 'Corrected manual time',
+  submit: 'Submitted exact revision',
+  return: 'Returned for correction',
+  approve: 'Approved and locked',
+  adjustment_added: 'Recorded attributed adjustment',
+}
 type View = Awaited<ReturnType<typeof sheetView>>
 export function TimePage({
   viewer,
@@ -259,7 +269,8 @@ export function TimePage({
             <ol className="rows">
               {view.history.map((h, i) => (
                 <li key={i}>
-                  {h.actor} · {h.action} · {when(h.at)}
+                  {h.actor} · {actions[h.action] ?? 'Updated time'} ·{' '}
+                  {when(h.at)}
                 </li>
               ))}
             </ol>

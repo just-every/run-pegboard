@@ -82,7 +82,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "e7c3ed491eaf4d9c000f7e664faa8719bd30272d1c6b14b2330ec5b6507f88e8",
+      "sha256": "c325a7c3d58760fb44ac5f7d27345c0964fdd00e950a9cfa348906476aefa9b3",
       "executable": false
     },
     "AGENTS.md": {
@@ -98,7 +98,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "e57d18ec3ec093628e6465aee72b2a9ff00d54f1457b115021fe7cc74dffb3ed",
+      "sha256": "e9df75ccef80cdaba0adc3e4d5dc83ec8fd7e305803d6bd4098bd9b896df54b2",
       "executable": false
     },
     "DEMO.md": {
@@ -1850,7 +1850,7 @@
       "executable": false
     },
     "src/pegboard/time/time.ts": {
-      "sha256": "66d8f745c027b387716a815bd04ec43e527c1c46a555632cb7e036971e3b4e8e",
+      "sha256": "529264202e48f3c9d3f7e5a2041ac427f33ef84ee01baf9c16f57f2a7ee886f4",
       "executable": false
     },
     "src/pegboard/ui/error.tsx": {
@@ -1918,7 +1918,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/time.tsx": {
-      "sha256": "12f5e18aae6f46c8e61572caa312ea9114e66b46373f9807eb01fd4d5863538a",
+      "sha256": "eff491244ed50ce71c3f1289a1a68e483c251e6e7ccc50776dcb715f0309123e",
       "executable": false
     },
     "src/pegboard/ui/routes.ts": {
@@ -2126,7 +2126,7 @@
       "executable": false
     },
     "tests/work-graph.test.mjs": {
-      "sha256": "b3937e3108da51afbd50d5426e21ed1aa669c92d1bfd290bf90c5fa551c97a9d",
+      "sha256": "d5bb0cf77a81d8a7bb5982815d275c1b31e332ee8157be48c48da89fdfaf22fe",
       "executable": false
     },
     "tsconfig.json": {
