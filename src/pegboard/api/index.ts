@@ -1,3 +1,4 @@
+import {fieldRoutes} from './field-routes'
 // Pegboard's versioned JSON API: mounted at /api/v1 by the Worker's Hono app.
 import { Hono } from 'hono'
 import type { Bindings } from '../../auth.server'
@@ -9,3 +10,5 @@ export const pegboardApi = new Hono<{ Bindings: Bindings }>()
 workspaceRoutes(pegboardApi)
 taskRoutes(pegboardApi)
 accessRoutes(pegboardApi)
+
+fieldRoutes(pegboardApi)

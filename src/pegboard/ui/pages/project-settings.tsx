@@ -1,3 +1,6 @@
+import type {FieldRow} from '../../model'
+import type {changePreview} from '../../fields/values'
+import {fieldTypes} from '../../fields/definitions'
 import type { board } from '../../tasks/board'
 import type { SharePreview } from '../../workspace/projects'
 import type { Viewer } from '../../../ui/viewer'
@@ -6,12 +9,12 @@ import { Area, Card, Field, Form, Pick, Shell, Submit, levelLabel, levelOptions 
 type Board = Awaited<ReturnType<typeof board>>
 export interface Grantee { value: string; label: string }
 export interface GrantLine { id: string; grantee: string; level: string; scope: string; source: string; by: string }
-export interface Props { viewer: Viewer; id: string; data: Board; grants: GrantLine[] | null; people: Grantee[]; teams: Grantee[]; preview: SharePreview | null; proposal: Record<string, string>; sectionList: { id: string; name: string; mapsTo: string | null }[] }
+export interface Props { viewer: Viewer; id: string; data: Board; grants: GrantLine[] | null; people: Grantee[]; teams: Grantee[]; preview: SharePreview | null; proposal: Record<string, string>; library:FieldRow[];fieldPreview:Awaited<ReturnType<typeof changePreview>>|null;sectionList: { id: string; name: string; mapsTo: string | null }[] }
 
 const visibilityLabel = (value: string) => value === 'private' ? 'Private to members' : value === 'team' ? 'Team only' : 'Shared with workspace'
 const mapsLabel = (value: string | null) => value === 'todo' ? 'To do' : value === 'doing' ? 'Doing' : value === 'done' ? 'Done' : 'No status'
 
-export function ProjectSettingsPage({ viewer, id, data, grants, people, teams, preview, proposal, sectionList }: Props) {
+export function ProjectSettingsPage({ viewer, id, data, grants, people, teams, preview, proposal, sectionList,library,fieldPreview }: Props) {
   const can = (capability: string) => (data.capabilities as string[]).includes(capability)
   const back = `/app/projects/${id}/settings`
   const project = data.project
@@ -68,9 +71,14 @@ export function ProjectSettingsPage({ viewer, id, data, grants, people, teams, p
       {can('edit') && <Form action={`/api/v1/projects/${id}/sections`} next={back} label="Add a section"><div className="inline"><Field label="New section" name="name" /><Submit>Add section</Submit></div></Form>}
     </Card>
     <Card title="Fields">
-      <ul className="rows">{data.fields.map(field => <li key={field.key}><span className="grow">{field.label}</span><span className="tagline">{field.type}</span>{field.visibility && <span className="tagline">{field.visibility}</span>}</li>)}{data.fields.length === 0 && <li>No project fields.</li>}</ul>
-      {can('manage_fields') && <Form action={`/api/v1/projects/${id}/fields`} next={back} label="Add a field"><div className="inline"><Field label="Key" name="key" /><Field label="Label" name="label" />
-        <Pick label="Type" name="type" value="text" options={[{ value: 'text', label: 'Text' }, { value: 'number', label: 'Number' }]} /><Pick label="Who reads it" name="visibility" value="everyone" options={[{ value: 'everyone', label: 'Everyone with access' }, { value: 'internal', label: 'Members, not guests' }, { value: 'editors', label: 'Editors and up' }, { value: 'admins', label: 'Admins' }]} /><Submit>Add field</Submit></div></Form>}
+      <p><a href={`/app/projects/${id}/field-report`}>Open field report</a> · <a href="/app/tags">Tag catalogue and cross-project filters</a></p>
+      <ul className="rows">{data.fields.map(field=><li key={field.key}><span className="grow">{field.label} · {field.type} · {field.units}<br/><code>{field.id}</code>{can('manage_fields')&&<form method="get" action={back} className="stack" aria-label={`Preview type for ${field.label}`}><input type="hidden" name="fieldId" value={field.id}/><Pick label="Proposed type" name="type" value={field.type} options={fieldTypes.map(value=>({value,label:value}))}/><Field label="Dropdown options (comma separated)" name="options"/><Field label="Formula expression" name="expression"/><Field label="Rollup source field key" name="sourceKey"/><Submit quiet>Preview type change</Submit></form>}</span></li>)}{!data.fields.length&&<li>No project fields.</li>}</ul>
+      {fieldPreview&&<><h3>Type change preview</h3><p>{fieldPreview.affected} records across {fieldPreview.projects.length} projects. {fieldPreview.canApply?'Existing values are preserved.':'Incompatible values are preserved; this change cannot be applied.'}</p>{fieldPreview.incompatible.length>0&&<p>Incompatible task IDs: {fieldPreview.incompatible.join(', ')}</p>}{fieldPreview.canApply&&<Form action={`/api/v1/fields/${fieldPreview.fieldId}/change`} next={back} label="Apply field change"><input type="hidden" name="previewRevision" value={fieldPreview.token}/>{Object.entries(fieldPreview.next).map(([key,value])=><input key={key} type="hidden" name={key} value={typeof value==='object'?JSON.stringify(value):value}/>)}<Submit>Apply reviewed field change</Submit></Form>}</>}
+      {can('manage_fields')&&<>
+      <Form action={`/api/v1/projects/${id}/fields`} next={back} label="Add a field"><div className="inline"><Field label="Key" name="key" required/><Field label="Label" name="label" required/><Pick label="Type" name="type" value="text" options={fieldTypes.map(value=>({value,label:value}))}/><Field label="Units" name="units"/><Pick label="Who reads it" name="visibility" value="everyone" options={[{value:'everyone',label:'Everyone with access'},{value:'internal',label:'Members, not guests'},{value:'editors',label:'Editors and up'},{value:'admins',label:'Admins'}]}/></div><Field label="Dropdown options (comma separated)" name="options"/><Field label="Formula expression" name="expression"/><p className="muted">Formulas use field keys, numbers, parentheses and + − * /. Rollups sum the source field on related tasks selected on the task.</p><Field label="Rollup source field key" name="sourceKey"/><Field label="Rollup source project ID (blank for this project)" name="sourceProject"/><Submit>Add field</Submit></Form>
+      <Form action={`/api/v1/projects/${id}/fields/adopt`} next={back} label="Adopt library field"><Pick label="Shared field" name="fieldId" options={library.filter(f=>!data.fields.some(d=>d.id===f.id)).map(f=>({value:f.id,label:`${f.label} (${f.key})`}))}/><Submit>Use shared field</Submit></Form>
+      <Form action={`/api/v1/projects/${id}/statuses`} next={back} label="Define project status"><Field label="Status name" name="name" required/><Pick label="Work state" name="mapsTo" value="doing" options={[{value:'todo',label:'To do'},{value:'doing',label:'Doing'},{value:'done',label:'Done'}]}/><Submit>Add status</Submit></Form>
+      </>}
     </Card>
   </Shell>
 }

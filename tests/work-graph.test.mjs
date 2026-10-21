@@ -207,4 +207,86 @@ describe('PEG-001 one work graph', { concurrency: false }, () => {
     assert.ok((await ok(mia.get(`/api/v1/tasks/${task.id}`))).history.some(e=>e.kind==='personal.shared'))
   })
 
+  it('creates all typed fields, shared identities and consistent task/report/API calculations', async () => {
+    const ps=await Promise.all(['Field campaign','Field launch','Field review'].map(name=>project(name)))
+    const define=async(key,type,extra={})=>ok(owner.post(`/api/v1/projects/${ps[0].id}/fields`,{key,label:key,type,...extra}))
+    const library=await define('effort','number',{units:'hours'})
+    for(const p of ps.slice(1))await ok(owner.post(`/api/v1/projects/${p.id}/fields/adopt`,{fieldId:library.id}))
+    for(const [key,type,extra] of [['brief','text',{}],['budget','currency',{}],['deadline','date',{}],['reviewers','people',{}],['channel','single',{options:'Web,Email'}],['audiences','multi',{options:'Retail,Wholesale'}],['checked','checkbox',{}],['twice','formula',{expression:'effort * 2'}],['related','rollup',{sourceKey:'twice'}]])await define(key,type,extra)
+    const a=await ok(owner.post('/api/v1/tasks',{title:'Field inputs',projectId:ps[0].id})),b=await ok(owner.post('/api/v1/tasks',{title:'Relationship sum',projectId:ps[0].id}))
+    for(const p of ps.slice(1))await ok(owner.post(`/api/v1/tasks/${a.id}/projects`,{projectId:p.id}))
+    await ok(owner.post(`/api/v1/tasks/${a.id}/fields`,{projectId:ps[0].id,values:{effort:3,brief:'Launch brief',budget:12.25,deadline:'2026-11-01',reviewers:[nina.id],channel:'Web',audiences:['Retail','Wholesale'],checked:false,related:[]}}))
+    await ok(owner.post(`/api/v1/tasks/${b.id}/fields`,{projectId:ps[0].id,values:{effort:4,related:[a.id]}}))
+    let view=await ok(owner.get(`/api/v1/tasks/${a.id}`))
+    assert.deepEqual(view.projects.map(p=>p.fields.find(f=>f.key==='effort').id),[library.id,library.id,library.id])
+    const fields=Object.fromEntries(view.projects.find(p=>p.id===ps[0].id).fields.map(f=>[f.key,f]))
+    assert.equal(fields.budget.units,'USD');assert.equal(fields.budget.value,12.25);assert.equal(fields.checked.value,false);assert.deepEqual(fields.reviewers.value,[nina.id]);assert.deepEqual(fields.audiences.value,['Retail','Wholesale']);assert.equal(fields.deadline.value,'2026-11-01');assert.equal(fields.channel.value,'Web');assert.equal(fields.twice.value,6)
+    const report=await ok(owner.get(`/api/v1/projects/${ps[0].id}/field-report`))
+    assert.equal(report.rows.find(r=>r.id===b.id).fields.find(f=>f.key==='related').value,6)
+    assert.equal((await ok(owner.get(`/api/v1/projects/${ps[0].id}/rollup?field=twice`))).field.sum,14)
+    await ok(owner.post(`/api/v1/tasks/${a.id}/fields`,{projectId:ps[1].id,values:{effort:8}}))
+    view=await ok(owner.get(`/api/v1/tasks/${a.id}`));assert.ok(view.projects.every(p=>p.fields.find(f=>f.key==='effort').value===8))
+    assert.equal(view.projects.find(p=>p.id===ps[0].id).fields.find(f=>f.key==='twice').value,16)
+    assert.ok((await owner.get(`/api/v1/projects/${ps[0].id}/export`)).body.includes('16'))
+    await ok(owner.post(`/api/v1/projects/${ps[0].id}/statuses`,{name:'Awaiting review',mapsTo:'doing'}))
+    const board=await ok(owner.get(`/api/v1/projects/${ps[0].id}`)),status=board.columns.find(c=>c.section.name==='Awaiting review').section
+    await ok(owner.post(`/api/v1/tasks/${a.id}/section`,{projectId:ps[0].id,sectionId:status.id}))
+    assert.equal((await ok(owner.get(`/api/v1/tasks/${a.id}`))).status,'doing')
+    assert.equal((await owner.post(`/api/v1/tasks/${a.id}/fields`,{projectId:ps[0].id,values:{budget:1.001}})).status,400)
+    assert.equal((await owner.post(`/api/v1/tasks/${a.id}/fields`,{projectId:ps[0].id,values:{channel:'Other'}})).status,400)
+  })
+
+  it('explains cycles, missing and hidden inputs and refuses lossy or stale type changes', async () => {
+    const p=await project('Safe field changes'),define=async(key,type,extra={})=>ok(owner.post(`/api/v1/projects/${p.id}/fields`,{key,label:key,type,...extra}))
+    const text=await define('notes','text'),amount=await define('amount','number')
+    await define('secret','number',{visibility:'internal'});await define('derived','formula',{expression:'secret * 2'});await define('a','formula',{expression:'b + 1'});await define('b','formula',{expression:'a + 1'});await define('divide','formula',{expression:'amount / 0'});await define('missing','formula',{expression:'unknown + 1'})
+    const t=await ok(owner.post('/api/v1/tasks',{title:'Safe calculation',projectId:p.id}))
+    await ok(owner.post(`/api/v1/tasks/${t.id}/fields`,{projectId:p.id,values:{notes:'Retain these words',amount:3,secret:71}}))
+    const fields=(await ok(owner.get(`/api/v1/tasks/${t.id}`))).projects[0].fields
+    assert.equal(fields.find(f=>f.key==='a').error,'CYCLE');assert.equal(fields.find(f=>f.key==='divide').error,'DIVISION_BY_ZERO');assert.equal(fields.find(f=>f.key==='missing').error,'INPUT_UNAVAILABLE')
+    const preview=await ok(owner.get(`/api/v1/fields/${text.id}/change-preview?type=number`));assert.equal(preview.canApply,false);assert.equal(preview.affected,1)
+    assert.equal((await owner.post(`/api/v1/fields/${text.id}/change`,{type:'number',previewRevision:preview.token})).status,409)
+    let compatible=await ok(owner.get(`/api/v1/fields/${amount.id}/change-preview?type=currency`))
+    await ok(owner.post(`/api/v1/tasks/${t.id}/fields`,{projectId:p.id,values:{amount:4}}))
+    assert.equal((await owner.post(`/api/v1/fields/${amount.id}/change`,{type:'currency',previewRevision:compatible.token})).status,409)
+    compatible=await ok(owner.get(`/api/v1/fields/${amount.id}/change-preview?type=currency`));await ok(owner.post(`/api/v1/fields/${amount.id}/change`,{type:'currency',previewRevision:compatible.token}))
+    const kept=(await ok(owner.get(`/api/v1/tasks/${t.id}`))).projects[0].fields
+    assert.equal(kept.find(f=>f.key==='notes').value,'Retain these words');assert.equal(kept.find(f=>f.key==='amount').value,4)
+    await ok(owner.post('/api/v1/grants',{objectType:'project',objectId:p.id,granteeId:gus.id,level:'viewer'}))
+    const guest=await ok(gus.get(`/api/v1/tasks/${t.id}`));assert.equal(guest.projects[0].fields.find(f=>f.key==='derived').error,'INPUT_UNAVAILABLE');assert.ok(!guest.projects[0].fields.some(f=>f.key==='secret'));assert.equal(guest.projects[0].fields.find(f=>f.key==='derived').value,null);assert.ok(!JSON.stringify(guest.history).includes('secret'));assert.ok(!JSON.stringify((await ok(gus.get(`/api/v1/projects/${p.id}/fields`)))).includes('secret'))
+    const hiddenReport=await ok(gus.get(`/api/v1/projects/${p.id}/field-report`));assert.ok(!hiddenReport.rows.flatMap(r=>r.fields).some(f=>f.key==='secret'||f.value===71||f.value===142))
+  })
+
+  it('keeps free-form campaign tags distinct, renames once and filters three projects without hidden counts', async () => {
+    const ps=await Promise.all(['Tagged one','Tagged two','Tagged three'].map(name=>project(name))),tag=await ok(owner.post('/api/v1/tags',{projectId:ps[0].id,name:'Campaign',color:'#287bc1'}))
+    for(const p of ps.slice(1))await ok(owner.post(`/api/v1/tags/${tag.id}`,{projectId:p.id}))
+    const tasks=[]
+    for(const p of ps){const t=await ok(owner.post('/api/v1/tasks',{title:`Tagged ${p.id}`,projectId:p.id}));tasks.push(t);await ok(owner.post(`/api/v1/tasks/${t.id}/tags`,{tagId:tag.id}))}
+    await ok(owner.post(`/api/v1/tags/${tag.id}`,{name:'Autumn campaign',color:'#ff4433'}))
+    const filter=await ok(owner.get(`/api/v1/tags/${tag.id}/tasks`));assert.equal(filter.tag.name,'Autumn campaign');assert.equal(filter.tasks.length,3)
+    for(const t of tasks)assert.equal((await ok(owner.get(`/api/v1/tasks/${t.id}`))).tags[0].name,'Autumn campaign')
+    await ok(owner.post('/api/v1/grants',{objectType:'project',objectId:ps[0].id,granteeId:nina.id,level:'viewer'}))
+    assert.equal((await ok(nina.get(`/api/v1/tags/${tag.id}/tasks`))).tasks.length,1)
+    assert.equal((await ok(nina.get('/api/v1/tags'))).tags.find(t=>t.id===tag.id).count,1)
+    await ok(owner.post('/api/v1/tags',{name:'Owner personal tag'}))
+    await ok(owner.post('/api/v1/grants',{objectType:'project',objectId:ps[0].id,granteeId:gus.id,level:'viewer'}))
+    const guestTags=JSON.stringify(await ok(gus.get('/api/v1/tags')));assert.ok(!guestTags.includes('Autumn campaign')&&!guestTags.includes('Owner personal tag'))
+    assert.equal((await nina.post(`/api/v1/tasks/${tasks[0].id}/tags`,{tagId:tag.id,remove:true})).status,403)
+    await ok(owner.post(`/api/v1/tags/${tag.id}`,{archived:true}));assert.equal((await owner.post(`/api/v1/tasks/${tasks[0].id}/tags`,{tagId:tag.id})).status,400)
+    assert.equal((await ok(owner.get(`/api/v1/tasks/${tasks[0].id}`))).tags[0].archived,true)
+  })
+
+  it('enforces Viewer values and tagging denial and Editor definition denial on every field/status door', async () => {
+    const p=await project('Field roles'),f=await ok(owner.post(`/api/v1/projects/${p.id}/fields`,{key:'count',label:'Count',type:'number'})),t=await ok(owner.post('/api/v1/tasks',{projectId:p.id,title:'Role checks'}))
+    await ok(owner.post('/api/v1/grants',{objectType:'project',objectId:p.id,granteeId:nina.id,level:'viewer'}));await ok(owner.post('/api/v1/grants',{objectType:'project',objectId:p.id,granteeId:mia.id,level:'editor'}))
+    assert.equal((await nina.post(`/api/v1/tasks/${t.id}/fields`,{projectId:p.id,values:{count:5}})).status,403)
+    for(const client of [mia,nina]){
+      assert.equal((await client.post(`/api/v1/projects/${p.id}/fields`,{key:'blocked',label:'Blocked',type:'text'})).status,403)
+      assert.equal((await client.post(`/api/v1/projects/${p.id}/statuses`,{name:'Blocked',mapsTo:'done'})).status,403)
+      assert.equal((await client.get(`/api/v1/fields/${f.id}/change-preview?type=text`)).status,403)
+      assert.equal((await client.post(`/api/v1/fields/${f.id}/change`,{type:'text'})).status,403)
+    }
+    await ok(mia.post(`/api/v1/tasks/${t.id}/fields`,{projectId:p.id,values:{count:5}}));assert.equal((await ok(nina.get(`/api/v1/tasks/${t.id}`))).projects[0].fields[0].value,5)
+  })
+
 })

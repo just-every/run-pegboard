@@ -1,3 +1,4 @@
+import {readableDefinitions} from '../fields/definitions'
 // /api/v1: workspaces, people, teams, projects and their settings.
 import type { Hono } from 'hono'
 import type { Bindings } from '../../auth.server'
@@ -77,8 +78,8 @@ export function workspaceRoutes(app: App) {
   app.post('/projects/:id/sections', door(({ actor, db, params, input }) => addSection(db, actor, params.id, input as never), { next: (_, { params }) => `/app/projects/${params.id}` }))
   app.patch('/sections/:id', door(({ actor, db, params, input }) => mapSection(db, actor, params.id, input.mapsTo ?? null)))
   app.post('/sections/:id/map', door(({ actor, db, params, input }) => mapSection(db, actor, params.id, input.mapsTo || null), { next: (result) => `/app/projects/${result.project_id}` }))
-  app.get('/projects/:id/fields', door(async ({ actor, db, params }) => { await board(db, actor, params.id); return { fields: await fieldLibrary(db, params.id) } }))
-  app.post('/projects/:id/fields', door(({ actor, db, params, input }) => addField(db, actor, params.id, input as never), { next: (_, { params }) => `/app/projects/${params.id}` }))
+  app.get('/projects/:id/fields', door(async ({ actor, db, params }) => { return { fields: await readableDefinitions(db, actor, params.id) } }))
+  app.post('/projects/:id/fields', door(({ actor, db, params, input }) => addField(db, actor, params.id, input as never), { next: (_, { params }) => `/app/projects/${params.id}/settings` }))
   app.post('/projects/:id/prefix', door(async ({ actor, db, params, input }) => ({ prefix: await changePrefix(db, actor, params.id, input.prefix) }), { next: (_, { params }) => `/app/projects/${params.id}` }))
   app.get('/projects/:id/rollup', door(({ actor, db, params, query }) => rollup(db, actor, [params.id], query.get('field') ?? undefined)))
   app.get('/rollup', door(({ actor, db, query }) => rollup(db, actor, list(query.get('projects')) ?? [], undefined)))

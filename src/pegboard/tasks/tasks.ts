@@ -1,3 +1,4 @@
+import {setValues} from '../fields/values'
 // Tasks: one record each, hung in any number of projects, with one history and one reference.
 import { all, batch, bound, conflict, first, forbidden, invalid, newId, notFound, now, type Param } from '../db'
 import type { FieldRow, ProjectRow, SectionRow, TaskProjectRow, TaskRow } from '../model'
@@ -172,24 +173,7 @@ export async function setSection(db: D1Database, actor: Actor, idOrRef: string, 
 }
 
 /** A project's own values on a task. Each field names who may read and who may write it. */
-export async function setProjectFields(db: D1Database, actor: Actor, idOrRef: string, projectId: string, values: Record<string, string | number | null>) {
-  const { task, access } = await openTask(db, actor, idOrRef)
-  const context = access.contexts.get(projectId)
-  if (!context) throw notFound()
-  need(context, 'edit')
-  if (task.parent_id) throw conflict('subtask_follows_parent')
-  const library = new Map((await all<FieldRow>(db, 'SELECT * FROM peg_project_fields WHERE project_id=?', projectId)).map(field => [field.key, field]))
-  const row = (await first<TaskProjectRow>(db, 'SELECT * FROM peg_task_projects WHERE task_id=? AND project_id=?', task.id, projectId))!
-  const stored = JSON.parse(row.fields) as Record<string, string | number>
-  for (const [key, value] of Object.entries(values)) {
-    const field = library.get(key)
-    if (!field || !fieldReadable(field, context)) throw notFound()
-    if (field.visibility === 'editors' && !context.capabilities.has('edit')) throw forbidden('edit')
-    if (value === null || value === '') { delete stored[key]; continue }
-    if (field.type === 'number') { const n = Number(value); if (!Number.isFinite(n)) throw invalid('field_value'); stored[key] = n } else stored[key] = String(value).slice(0, 2000)
-  }
-  await batch(db, [bound(db, 'UPDATE peg_task_projects SET fields=? WHERE task_id=? AND project_id=?', [JSON.stringify(stored), task.id, projectId]), historyStatement(db, task.id, projectId, actor.id, 'fields.changed', { keys: Object.keys(values) })])
-}
+export const setProjectFields=setValues
 
 export async function changePrefix(db: D1Database, actor: Actor, projectId: string, value: unknown) {
   const { project, effective } = await openProject(db, actor, projectId)

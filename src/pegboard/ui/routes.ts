@@ -1,3 +1,9 @@
+import {catalogue} from '../fields/definitions'
+import {changePreview} from '../fields/values'
+import {fieldReport} from '../fields/report'
+import {tagCatalogue,tagFilter} from '../tags/tags'
+import {FieldReportPage} from './pages/field-report'
+import {TagsPage} from './pages/tags'
 import { personalMeta, localDay, settings, visibilityPreview } from '../tasks/personal'
 // Pegboard's screens: GET documents rendered on the server from the same services the JSON API uses. Every write is
 // a form that posts to the API. A link that does not open answers one refusal, whether or not the thing exists.
@@ -72,6 +78,8 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
     if (section === 'projects' && id && !tail) {
       try { return await page('Project', h(ProjectPage, { viewer, data: await board(db, actor, id), id })) } catch (error) { if (error instanceof PegError && error.status === 404) return refuse(db, actor, viewer, id); throw error }
     }
+    if(section==='projects'&&id&&tail==='field-report'&&segments.length===4)return page('Field report',h(FieldReportPage,{viewer,data:await fieldReport(db,actor,id,url.searchParams.get('tag')??undefined)}))
+    if(section==='tags'&&!id)return page('Tags',h(TagsPage,{viewer,tags:await tagCatalogue(db,actor,workspace),filtered:url.searchParams.get('tag')?await tagFilter(db,actor,url.searchParams.get('tag')!):null,projects:(await listProjects(db,actor,workspace)).filter(p=>p.level&&['editor','admin'].includes(p.level)).map(p=>({value:p.id,label:p.name}))}))
     if (section === 'projects' && id && tail === 'settings') {
       let data
       try { data = await board(db, actor, id) } catch (error) { if (error instanceof PegError && error.status === 404) return refuse(db, actor, viewer, id); throw error }
@@ -82,7 +90,7 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
       const teams = await teamOptions(db, actor, workspace)
       const teamNames = new Map(teams.map(team => [team.value, team.label]))
       return page('Project settings', h(ProjectSettingsPage, {
-        viewer, id, data, people: await peopleOptions(db, actor, workspace), teams, proposal, sectionList: (await listSections(db, id)).map(section => ({ id: section.id, name: section.name, mapsTo: section.maps_to })),
+        viewer, id, data, library:can('manage_fields')?await catalogue(db,actor,workspace):[], fieldPreview:can('manage_fields')&&url.searchParams.get('fieldId')?await changePreview(db,actor,url.searchParams.get('fieldId')!,Object.fromEntries(url.searchParams)):null, people: await peopleOptions(db, actor, workspace), teams, proposal, sectionList: (await listSections(db, id)).map(section => ({ id: section.id, name: section.name, mapsTo: section.maps_to })),
         preview: can('manage_shares') && Object.keys(proposal).length ? await previewShare(db, actor, id, proposal).catch(() => null) : null,
         grants: grants && grants.map(grant => ({ id: grant.id, grantee: grant.grantee_type === 'team' ? `Team ${teamNames.get(grant.grantee_id) ?? ''}` : names.get(grant.grantee_id) ?? 'Former member', level: grant.level, scope: grant.scope, source: grant.source, by: names.get(grant.created_by) ?? 'Former member' })),
       }))
@@ -92,7 +100,7 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
       try { task = await viewTask(db, actor, decodeURIComponent(id)) } catch (error) { if (error instanceof PegError && error.status === 404) return refuse(db, actor, viewer, decodeURIComponent(id)); throw error }
       const open = (await listProjects(db, actor, workspace)).filter(project => project.level && ['editor', 'admin'].includes(project.level) && !task.projects.some(own => own.id === project.id))
       const sections = Object.fromEntries(await Promise.all(task.projects.map(async project => [project.id, (await listSections(db, project.id)).map(entry => ({ value: entry.id, label: entry.name }))])))
-      return page('Task', h(TaskPage, { viewer, task, addable: open.map(project => ({ value: project.id, label: project.name })), sections, preview: task.personal && url.searchParams.get('projectId') ? await visibilityPreview(db,actor,task.id,url.searchParams.get('projectId')!) : null }))
+      return page('Task', h(TaskPage, { viewer, task, addable: open.map(project => ({ value: project.id, label: project.name })), sections, tagOptions:(await tagCatalogue(db,actor,workspace)).filter(t=>!t.archived).map(t=>({value:t.id,label:t.name})), preview: task.personal && url.searchParams.get('projectId') ? await visibilityPreview(db,actor,task.id,url.searchParams.get('projectId')!) : null }))
     }
     if (section === 'my-tasks') { const prefs=await settings(db,actor), on=url.searchParams.get('on')??undefined; const tasks=await myTasks(db,actor,on); return page('My tasks',h(MyTasksPage,{viewer,tasks,workspace,meta:await personalMeta(db,actor),day:on??localDay(Date.now(),prefs.timezone),on})) }
     if (section === 'teams' && !id) return page('Teams', h(TeamsPage, { viewer, teams: (await listTeams(db, actor, workspace, url.searchParams.get('q') ?? '')).teams, query: url.searchParams.get('q') ?? '', workspace, canCreate: ['owner', 'admin', 'manager'].includes((await workspaceRole(db, actor.id, workspace)) as string) }))

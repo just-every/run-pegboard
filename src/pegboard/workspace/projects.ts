@@ -1,3 +1,4 @@
+import {define,definitions} from '../fields/definitions'
 // Projects: settings, sections, the field library, sharing with a preview, and the discovery of what a person can open.
 import { all, batch, bound, conflict, first, forbidden, invalid, newId, notFound, now } from '../db'
 import type { FieldRow, ProjectRow, SectionRow } from '../model'
@@ -135,19 +136,8 @@ export async function mapSection(db: D1Database, actor: Actor, sectionId: string
 }
 const run3 = (db: D1Database, statement: D1PreparedStatement) => batch(db, [statement])
 
-export async function fieldLibrary(db: D1Database, projectId: string) { return all<FieldRow>(db, 'SELECT * FROM peg_project_fields WHERE project_id=? ORDER BY key', projectId) }
-export async function addField(db: D1Database, actor: Actor, projectId: string, input: { key: string; label: string; type?: string; visibility?: string }): Promise<FieldRow> {
-  const { project, effective } = await openProject(db, actor, projectId)
-  need(effective, 'manage_fields')
-  const key = text(input.key, 40, 'key')
-  if (!/^[a-z][a-z0-9_]*$/.test(key)) throw invalid('key')
-  const type = input.type ?? 'text', visibility = input.visibility ?? 'everyone'
-  if (!['text', 'number'].includes(type) || !['everyone', 'internal', 'editors', 'admins'].includes(visibility)) throw invalid('field')
-  if (await first(db, 'SELECT 1 FROM peg_project_fields WHERE project_id=? AND key=?', projectId, key)) throw conflict('field_exists')
-  await batch(db, [bound(db, 'INSERT INTO peg_project_fields(project_id,key,label,type,visibility) VALUES (?,?,?,?,?)', [projectId, key, text(input.label, 80, 'label'), type, visibility]),
-    auditStatement(db, { workspaceId: project.workspace_id, actorId: actor.id, action: 'project.field_defined', targetType: 'project', targetId: projectId, detail: { key, type, visibility } })])
-  return (await first<FieldRow>(db, 'SELECT * FROM peg_project_fields WHERE project_id=? AND key=?', projectId, key))!
-}
+export async function fieldLibrary(db:D1Database,projectId:string){return definitions(db,projectId)}
+export async function addField(db:D1Database,actor:Actor,projectId:string,input:Record<string,any>){return define(db,actor,projectId,input)}
 /** Whether a person at this standing may read a field: the field names its own audience. */
 export function fieldReadable(field: Pick<FieldRow, 'visibility'>, effective: Effective): boolean {
   if (field.visibility === 'everyone') return true

@@ -1,3 +1,4 @@
+import {evaluate,taskFields} from '../fields/values'
 import { settings, localDay, dayNumber, taskGroup, dueOrder, applyRules } from './personal'
 // A project as its people see it: sections hung in order, each with the tasks they may read; plus the rollup and the export.
 import { all, first, forbidden, invalid, notFound } from '../db'
@@ -34,7 +35,7 @@ export async function board(db: D1Database, actor: Actor, projectId: string) {
   return {
     project: { id: project.id, name: project.name, description: project.description, owner: { id: project.owner_id, name: names.get(project.owner_id) ?? 'Former member' }, visibility: project.visibility, teamId: project.team_id, teamLevel: project.team_level, workspaceLevel: project.workspace_level, prefix: project.prefix, status: project.status, startDate: project.start_date, dueDate: project.due_date },
     level: effective.level, capabilities: [...effective.capabilities], paths: effective.paths.map(path => ({ via: path.via, level: path.level, scope: path.scope ?? 'full' })),
-    fields: library.map(field => ({ key: field.key, label: field.label, type: field.type, visibility: effective.capabilities.has('manage_fields') ? field.visibility : undefined })),
+    fields: library.map(field => ({ id:field.id,units:field.units,config:effective.capabilities.has('manage_fields')?field.config:'{}',version:field.version, key: field.key, label: field.label, type: field.type, visibility: effective.capabilities.has('manage_fields') ? field.visibility : undefined })),
     columns: await Promise.all([...sections, ...(tasks.some(task => !task.section_id) ? [null] : [])].map(column)),
     counts: { tasks: tasks.length, done: tasks.filter(task => task.status === 'done').length },
   }
@@ -53,7 +54,7 @@ export async function rollup(db: D1Database, actor: Actor, projectIds: string[],
     if (fieldKey) {
       if (projectIds.length !== 1) throw invalid('field_needs_one_project')
       const field = (await fieldLibrary(db, id)).find(entry => entry.key === fieldKey)
-      if (!field || !fieldReadable(field, effective) || field.type !== 'number') throw notFound()
+      if (!field || !fieldReadable(field, effective) || !['number','currency','formula','rollup'].includes(field.type)) throw notFound()
       library = [field]
     }
   }
@@ -61,7 +62,8 @@ export async function rollup(db: D1Database, actor: Actor, projectIds: string[],
   const byStatus = { todo: 0, doing: 0, done: 0 }
   for (const task of tasks) byStatus[task.status]++
   const result: Record<string, unknown> = { projects, tasks: tasks.length, byStatus, estimateHours: tasks.reduce((sum, task) => sum + task.estimate_hours, 0) }
-  if (fieldKey) result.field = { key: fieldKey, sum: tasks.reduce((sum, task) => sum + (Number((JSON.parse(task.fields) as Record<string, number>)[library[0].key]) || 0), 0) }
+  if(fieldKey){let sum=0;const errors: {id:string;error:string}[]=[];for(const task of tasks){const r=await evaluate(db,actor,task.id,projectIds[0],fieldKey);if(r.error||typeof r.value!=='number')errors.push({id:task.id,error:r.error??'NON_NUMERIC_INPUT'});else sum+=r.value}result.field={id:library[0].id,key:fieldKey,sum:errors.length?null:sum,errors}}
+
   return result
 }
 
@@ -90,8 +92,8 @@ export async function exportRows(db: D1Database, actor: Actor, workspaceId: stri
       seen.add(task.id)
       const owner = names.get(task.owner_id) ?? (await displayNames(db, [task.owner_id])).get(task.owner_id) ?? 'Former member'
       names.set(task.owner_id, owner)
-      const stored = JSON.parse(task.fields) as Record<string, string | number>
-      rows.push({ ref: await currentRef(db, task.id), id: task.id, project: project.name, title: task.title, status: task.status, priority: task.priority, start: task.start_date, due: task.due_date, owner, estimate_hours: task.estimate_hours, ...(effective.role !== 'guest' ? { internal_notes: task.internal_notes } : {}), ...Object.fromEntries(library.map(field => [field.label, stored[field.key] ?? ''])) })
+      const computed=await taskFields(db,actor,task.id,id)
+      rows.push({ ref: await currentRef(db, task.id), id: task.id, project: project.name, title: task.title, status: task.status, priority: task.priority, start: task.start_date, due: task.due_date, owner, estimate_hours: task.estimate_hours, ...(effective.role !== 'guest' ? { internal_notes: task.internal_notes } : {}), ...Object.fromEntries(computed.map(field => [field.label, field.error??(Array.isArray(field.value)?field.value.join('; '):field.value??'')])) })
     }
   }
   if (!projectId) {

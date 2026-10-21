@@ -1,3 +1,5 @@
+import {taskFields} from '../fields/values'
+import {taskTags} from '../tags/tags'
 // What a person sees of a task: its own shared record, and of each project it hangs in only the ones they may read,
 // with the values, files and history those projects keep. Nothing of an unreadable project leaves this module.
 import { all, batch, bound, first, invalid, newId, notFound, now } from '../db'
@@ -20,11 +22,8 @@ export async function viewTask(db: D1Database, actor: Actor, idOrRef: string) {
   for (const home of homes) {
     const context = access.contexts.get(home.project_id)
     if (!context) continue
-    const library = await all<FieldRow>(db, 'SELECT * FROM peg_project_fields WHERE project_id=? ORDER BY key', home.project_id)
-    const stored = JSON.parse(home.fields) as Record<string, string | number>
     const section = home.section_id ? await first<SectionRow>(db, 'SELECT * FROM peg_sections WHERE id=?', home.section_id) : null
-    projects.push({ id: home.project_id, name: home.name, section: section ? { id: section.id, name: section.name } : null, level: context.level,
-      fields: library.filter(field => fieldReadable(field, context)).map(field => ({ key: field.key, label: field.label, type: field.type, value: stored[field.key] ?? null, canEdit: context.capabilities.has('edit') && (field.visibility !== 'editors' || context.capabilities.has('edit')) })) })
+    projects.push({id:home.project_id,name:home.name,section:section?{id:section.id,name:section.name}:null,level:context.level,fields:await taskFields(db,actor,task.id,home.project_id)})
   }
   const history = await historyOf(db, task.id, readable)
   const comments = await all<{ id: string; author_id: string; body: string; created_at: number }>(db, 'SELECT id,author_id,body,created_at FROM peg_comments WHERE task_id=? ORDER BY created_at', task.id)
@@ -42,8 +41,8 @@ export async function viewTask(db: D1Database, actor: Actor, idOrRef: string) {
     status: task.status, priority: task.priority, startDate: task.start_date, dueDate: task.due_date, estimateHours: task.estimate_hours,
     owner: { id: task.owner_id, name: name(task.owner_id) }, collaborators: collaborators.map(id => ({ id, name: name(id) })), personal: access.personal,
     ...(internal ? { internalOnly: !!task.internal_only, internalNotes: task.internal_notes } : {}),
-    capabilities: [...access.capabilities], level: access.level, projects, subtasks,
-    history: history.filter(entry => internal || entry.kind !== 'internal.changed').map(entry => ({ id: entry.id, at: entry.at, actor: name(entry.actor_id), kind: entry.kind, projectId: entry.project_id, detail: shareHistory(entry.detail, readable) })),
+    tags:await taskTags(db,actor,task.id), capabilities: [...access.capabilities], level: access.level, projects, subtasks,
+    history: history.filter(entry => internal || entry.kind !== 'internal.changed').map(entry => ({ id: entry.id, at: entry.at, actor: name(entry.actor_id), kind: entry.kind, projectId: entry.project_id, detail: entry.kind==='fields.changed'?{}:shareHistory(entry.detail, readable) })),
     comments: comments.map(comment => ({ id: comment.id, author: name(comment.author_id), body: comment.body, at: comment.created_at })),
     attachments: files.filter(file => file.project_id === null ? task.owner_id === actor.id : readable.has(file.project_id)).map(file => ({ id: file.id, projectId: file.project_id, name: file.name, contentType: file.content_type, size: file.size, by: name(file.created_by), at: file.created_at })),
     createdAt: task.created_at, updatedAt: task.updated_at, completedAt: task.completed_at,
