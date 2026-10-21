@@ -28,8 +28,10 @@ try {
     }
     await flat(page)
     await page.getByRole('link', { name: `Launch ${size}`, exact: true }).click()
+    await page.waitForURL(/\/app\/projects\/prj_/)
     const launchUrl = page.url()
-    await page.goBack(); await page.getByRole('link', { name: `Campaign ${size}`, exact: true }).click()
+    await page.goto(`${w.origin}/app/projects`); await page.getByRole('link', { name: `Campaign ${size}`, exact: true }).click()
+    await page.waitForURL(/\/app\/projects\/prj_/)
     const campaignUrl = page.url(), campaignId = campaignUrl.split('/').pop()
     await page.locator('form[aria-label="Add a task"] input[name=title]').fill(`Hero shot ${size}`)
     await page.getByRole('button', { name: 'Add task' }).click()
