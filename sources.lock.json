@@ -1770,7 +1770,7 @@
       "executable": false
     },
     "src/pegboard/api/task-routes.ts": {
-      "sha256": "4357ef2d17f57b1cc3ab6ecac4f9c0330b1b87fbfec8cb7f6cd186f27c657a36",
+      "sha256": "07f0a8e8c1b71d5211510920719842cd612ff3d84807e60df0963ef91bdf1dfb",
       "executable": false
     },
     "src/pegboard/api/time-routes.ts": {
@@ -1886,7 +1886,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/project.tsx": {
-      "sha256": "c60e555483aa283f15afab8f10c17cc84d74b8b7f6ed99e28ee73b70c5aa452c",
+      "sha256": "f844f2acfddb9abe5a6bc3a1068456fdc1db95dafd3c183a9b0226de81ec70bb",
       "executable": false
     },
     "src/pegboard/ui/pages/projects.tsx": {
@@ -1902,7 +1902,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/task.tsx": {
-      "sha256": "5dad25fb1fbdb2dada36c13428537670b171fab521bab51797c7f3cc6cf4606a",
+      "sha256": "c8645533192ff3271043efb37c6feed95fd470acf075232ba3e64c60ba1cb8f5",
       "executable": false
     },
     "src/pegboard/ui/pages/team-gate.tsx": {
@@ -1926,7 +1926,7 @@
       "executable": false
     },
     "src/pegboard/ui/shell.tsx": {
-      "sha256": "128e421e1426db08af9458a3ead3fe017c4376ba7cfb019c30f58ef7ebd5e72b",
+      "sha256": "f9065fcd49b3113d55f605aa92033e80c5d01f70271bc0308bd3b187d2fcb1cb",
       "executable": false
     },
     "src/pegboard/workspace/people.ts": {
@@ -2110,7 +2110,7 @@
       "executable": false
     },
     "tests/journeys/work-graph.journey.mjs": {
-      "sha256": "cfaf1d7ccba83cf9e7f5af167dfe5245f85f3d5376a1bd8d70e5c4a94563dcd3",
+      "sha256": "f8336f07a13f953cb8f3753bfc431d0cf89a854e1658fd07a4abe05ca723ce76",
       "executable": false
     },
     "tests/runtime.mjs": {

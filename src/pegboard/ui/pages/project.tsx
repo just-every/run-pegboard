@@ -10,7 +10,7 @@ import { Card, Field, Form, Pick, Submit, levelLabel } from '../shell'
 
 type Board = Awaited<ReturnType<typeof board>>
 const chunk = <T,>(list: T[], size: number) => Array.from({ length: Math.ceil(list.length / size) }, (_, i) => list.slice(i * size, (i + 1) * size))
-const when = (date: string | null) => date ? new Date(`${date}T12:00:00Z`).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) : undefined
+const when = (date: string | null) => !date ? undefined : date.includes('T') ? new Date(date).toLocaleString('en-US',{dateStyle:'medium',timeStyle:'short',timeZone:'UTC'})+' UTC' : new Date(`${date}T12:00:00Z`).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
 
 /** A project's wall: each section hangs as a card on the cord, its tasks as tassels beneath it. */
 export function ProjectPage({ viewer, data, id }: { viewer: Viewer; data: Board; id: string }) {
