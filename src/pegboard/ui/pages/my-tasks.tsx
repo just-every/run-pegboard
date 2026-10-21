@@ -45,7 +45,7 @@ export function MyTasksPage({
           : 'Default date and priority order',
       ]}
     >
-      <Card title="Your day">
+      <Card title="Your day"><p><a href="/app/time">Timesheets and task time</a></p>
         <Form
           action="/api/v1/my-tasks/settings"
           next={here}

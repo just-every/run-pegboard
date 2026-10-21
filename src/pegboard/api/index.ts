@@ -1,3 +1,4 @@
+import {timeRoutes} from './time-routes'
 import {fieldRoutes} from './field-routes'
 // Pegboard's versioned JSON API: mounted at /api/v1 by the Worker's Hono app.
 import { Hono } from 'hono'
@@ -12,3 +13,5 @@ taskRoutes(pegboardApi)
 accessRoutes(pegboardApi)
 
 fieldRoutes(pegboardApi)
+
+timeRoutes(pegboardApi)

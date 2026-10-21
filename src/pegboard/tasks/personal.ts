@@ -29,13 +29,16 @@ export const localDay = (at: number, timezone: string) =>
     day: '2-digit',
   }).format(new Date(at))
 export function dayNumber(day: string) {
+  const at = Date.parse(day + 'T00:00:00Z')
   if (
     !/^\d{4}-\d{2}-\d{2}$/.test(day) ||
-    new Date(day + 'T00:00:00Z').toISOString().slice(0, 10) !== day
+    !Number.isFinite(at) ||
+    new Date(at).toISOString().slice(0, 10) !== day
   )
     throw invalid('day')
-  return Date.parse(day + 'T00:00:00Z') / 86400000
+  return at / 86400000
 }
+
 export function taskGroup(
   due: string | null,
   today: boolean,
