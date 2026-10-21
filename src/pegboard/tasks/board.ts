@@ -98,7 +98,12 @@ export async function exportRows(db: D1Database, actor: Actor, workspaceId: stri
   }
   if (!projectId) {
     const personal = await all<TaskRow>(db, 'SELECT * FROM peg_tasks t WHERE workspace_id=? AND owner_id=? AND NOT EXISTS (SELECT 1 FROM peg_task_projects WHERE task_id=t.id)', workspaceId, actor.id)
-    for (const task of personal) rows.push({ ref: null, id: task.id, project: '', title: task.title, status: task.status, priority: task.priority, start: task.start_date, due: task.due_date, owner: actor.displayName, estimate_hours: task.estimate_hours })
+    for (const task of personal) {
+      const access=await taskAccess(db,actor,task)
+      // A shared subtask has no placement of its own; that never makes it personal work.
+      if(!access.personal||!access.capabilities.has('read'))continue
+      rows.push({ ref: null, id: task.id, project: '', title: task.title, status: task.status, priority: task.priority, start: task.start_date, due: task.due_date, owner: actor.displayName, estimate_hours: task.estimate_hours })
+    }
   }
   return rows
 }

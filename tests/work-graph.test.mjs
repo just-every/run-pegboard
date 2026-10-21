@@ -138,6 +138,15 @@ describe('PEG-001 one work graph', { concurrency: false }, () => {
     await ok(mia.patch(`/api/v1/tasks/${mine.id}`,{title:'My private next step'}))
     assert.equal((await ok(mia.get(`/api/v1/refs/${mine.id}`))).title,'My private next step')
     assert.equal((await mia.patch(`/api/v1/tasks/${mine.id}`,{collaborators:[nina.id]})).status,409)
+    const project=await ok(owner.post('/api/v1/projects',{name:'Subtask export privacy'}))
+    const grant=await ok(owner.post('/api/v1/grants',{objectType:'project',objectId:project.id,granteeId:mia.id,level:'editor'}))
+    const root=await ok(owner.post('/api/v1/tasks',{projectId:project.id,title:'Shared root'}))
+    const child=await ok(mia.post('/api/v1/tasks',{parentId:root.id,title:'Editor-owned child'}))
+    assert.equal((await ok(mia.get('/api/v1/export?format=json'))).tasks.filter(t=>t.id===child.id).length,1,'a project subtask is never duplicated as personal work')
+    await ok(owner.delete(`/api/v1/grants/${grant.id}`))
+    await ok(owner.patch(`/api/v1/tasks/${child.id}`,{title:'Hidden after project revocation'}))
+    assert.equal((await mia.get(`/api/v1/tasks/${child.id}`)).status,404)
+    assert.ok(!(await mia.get('/api/v1/export')).body.includes('Hidden after project revocation'),'entry ownership does not bypass current project access')
   })
 
   it('orders the local day by group, due instant, priority, creation time and immutable ID', async () => {
