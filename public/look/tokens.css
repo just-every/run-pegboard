@@ -14,8 +14,48 @@
   --shadow:0 1px 2px rgb(20 40 70 / .06),0 8px 22px rgb(20 40 70 / .09);
   /* the app: the peg wall, its cards and the bar over it */
   --wall-ground:radial-gradient(ellipse at 76% 44%,rgb(214 242 254 / .5),transparent 56%),linear-gradient(110deg,#C3EAFD,#B5E3FD 64%,#BDE7FE);
-  --wall-dots:radial-gradient(circle,rgb(25 56 73 / .62) .9px,transparent 1.2px) 0 0 / 20px 20px;
+  --wall-dots:radial-gradient(circle,rgb(25 56 73 / .85) .8px,transparent 1px) 0 0 / 20px 20px;
   --wall-ink:#2B4A63;
   --card-shadow:0 1px 2px rgb(20 40 70 / .07),0 6px 17px rgb(53 124 157 / .16);
-  --bar-h:66px;--bar-line:#D9E7F2;
+  --bar-h:70px;--bar-line:#D9E7F2;
+}
+
+/* the shell's, pegs', tiles' and controls' own inks (12ui improve aligned them to the pick) */
+:root{
+  --breadcrumb-ink:#43566E;
+  --breadcrumb-separator:#8AA2BA;
+  --tab-separator:#87A6C3;
+  --person-muted:#4D6380;
+  --heading-rule:rgb(158 217 242 / .55);
+  --facts-ink:#465B71;
+  --peg-highlight:#64717A;
+  --peg-mid:#0D1216;
+  --peg-dark:#020304;
+  --peg-shadow:rgb(0 0 0 / .32);
+  --task-person:#4D607B;
+  --task-detail:#506580;
+  --baseline-border:#9FB3C6;
+  --baseline-ink:#526982;
+  --phase-ink:#8E1F4B;
+  --ghost-paper:#F3F9FE;
+  --ghost-border:#9CB2C2;
+  --ghost-ink:#3F5368;
+  --white:#fff;
+  --tassel-paper:#F2F6F9;
+  --tassel-cord:#364A54;
+  --reference-border:#8DA3BA;
+  --reference-ink:#4F6680;
+  --tag-border:#A6D6EB;
+  --button-highlight:rgb(255 255 255 / .35);
+  --button-shadow:rgb(200 40 20 / .75);
+  --tomato-hover:#E9382A;
+  --field-hover:#6E7882;
+  --avatar-light:#D9F0FF;
+  --avatar-dark:#A9D8FB;
+  --avatar-ink:#16365A;
+  --avatar-ring:rgb(255 255 255 / .9);
+  --tile-top:#323C47;
+  --tile-seam:#1B252E;
+  --tile-bottom:#2E3843;
+  --tile-ink:#F6F6F6;
 }

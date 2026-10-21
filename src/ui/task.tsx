@@ -1,5 +1,5 @@
 import { Tick } from './icons'
-import { Dots } from './dots'
+import { Dots, glue, tidy } from './dots'
 import { initials } from './viewer'
 
 // A task on the Path wall: a white card hung on its station's peg. The cord enters and leaves at the title line (the
@@ -21,7 +21,7 @@ export interface TaskCardProps {
   /** The task's phase, the one place pink appears. */
   phase?: string
   state?: 'critical' | 'ghost'
-  /** The path's end: the launch and whether it holds. */
+  /** The path's end: the launch (its date beside the title) and whether it holds. */
   holds?: string
 }
 
@@ -30,12 +30,12 @@ export function TaskCard({ id, title, done, milestone, owner, when, more, warn, 
   return <article className={className}>
     <span className="end l" data-peg={`${id}-l`} data-at="l" data-bare="" aria-hidden="true" />
     <span className="end r" data-peg={`${id}-r`} data-at="r" data-bare="" aria-hidden="true" />
-    <h3>{done && <span className="done-mark" role="img" aria-label="Done"><Tick /></span>}{milestone && <span className="diamond" role="img" aria-label="Milestone" />}{title}</h3>
-    {(owner || when) && <p className="who">{owner && <span className="avatar" aria-hidden="true">{initials(owner)}</span>}<Dots phrases={[owner, when].filter(Boolean)} /></p>}
-    {more && <p className="more">{more}</p>}
-    {warn && <p className="warn"><Dots phrases={warn.split(' · ')} /></p>}
-    {was && <p className="was">was {was}</p>}
-    {phase && <p className="phase">{phase}</p>}
+    <span className="end b" data-peg={`${id}-b`} data-at="b" data-bare="" aria-hidden="true" />
+    <h3>{done && <span className="done-mark" role="img" aria-label="Done"><Tick /></span>}{milestone && <span className="diamond" role="img" aria-label="Milestone" />}{holds !== undefined && when ? <Dots phrases={[title, when]} /> : tidy(title)}</h3>
+    {holds === undefined && (owner || when) && <p className="who">{owner && <span className="avatar" aria-hidden="true">{initials(owner)}</span>}<Dots phrases={[owner, when].filter((phrase): phrase is string => Boolean(phrase))} /></p>}
+    {more && <p className="more">{glue(more)}</p>}
+    {warn && <p className="warn">{glue(warn)}</p>}
+    {(was || phase) && <p className="marks">{was && <span className="was">was {tidy(was)}</span>}{phase && <span className="phase">{phase}</span>}</p>}
     {holds !== undefined && <p className="holds"><span className="done-mark" aria-hidden="true"><Tick /></span> {holds}</p>}
   </article>
 }
@@ -44,13 +44,13 @@ export function TaskCard({ id, title, done, milestone, owner, when, more, warn, 
 export function Tassel({ title, owner, when, chip }: { title: string; owner?: string; when?: string; chip?: string }) {
   return <div className="tassel">
     <span className="peg" aria-hidden="true" />
-    <h4>{title}</h4>
-    {(owner || when) && <p className="who">{owner && <span className="avatar" aria-hidden="true">{initials(owner)}</span>}<Dots phrases={[owner, when].filter(Boolean)} /></p>}
+    <h4>{glue(title)}</h4>
+    {(owner || when) && <p className="who">{owner && <span className="avatar" aria-hidden="true">{initials(owner)}</span>}<Dots phrases={[owner, when].filter((phrase): phrase is string => Boolean(phrase))} /></p>}
     {chip && <p className="chip">{chip}</p>}
   </div>
 }
 
 // The exception, clipped in place on the task it hits: the message that moved it.
 export function Note({ children }: { children: string }) {
-  return <div className="tassel note"><span className="peg" aria-hidden="true" /><p><Dots phrases={children.split(' · ')} /></p></div>
+  return <div className="tassel note"><span className="peg" aria-hidden="true" /><p>{glue(children)}</p></div>
 }

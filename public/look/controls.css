@@ -4,8 +4,8 @@
    White on tomato is 3.6:1, so every tomato label is large bold text (19 px, 700). */
 .button,html.rer-themed main button,html.rer-themed main .action,html[data-state] .btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:44px;padding:0 18px;border:1px solid transparent;border-radius:8px;font:700 19px/1.15 var(--sans);letter-spacing:-.01em;text-align:center;text-decoration:none;cursor:pointer}
 .button svg,html[data-state] .btn svg{width:18px;height:18px;flex:none}
-.button.primary,html.rer-themed main button:not(.secondary),html.rer-themed main .action,html[data-state] .btn{background:var(--tomato);color:#fff;box-shadow:0 1px 0 rgb(255 255 255 / .35) inset,0 8px 18px -10px rgb(200 40 20 / .75)}
-.button.primary:hover,html.rer-themed main button:not(.secondary):hover,html.rer-themed main .action:hover,html[data-state] .btn:hover{background:#E9382A}
+.button.primary,html.rer-themed main button:not(.secondary),html.rer-themed main .action,html[data-state] .btn{background:var(--tomato);color:var(--white);box-shadow:0 1px 0 var(--button-highlight) inset,0 8px 18px -10px var(--button-shadow)}
+.button.primary:hover,html.rer-themed main button:not(.secondary):hover,html.rer-themed main .action:hover,html[data-state] .btn:hover{background:var(--tomato-hover)}
 .button.quiet,html.rer-themed main button.secondary,html.rer-themed main .stack>.action~.action{background:var(--paper);color:var(--ink);border-color:var(--edge);box-shadow:none;font-weight:600;font-size:17px}
 .button.quiet:hover,html.rer-themed main button.secondary:hover,html.rer-themed main .stack>.action~.action:hover{background:var(--paper);border-color:var(--ink)}
 .button:focus-visible,html.rer-themed main button:focus-visible,html.rer-themed main .action:focus-visible,html[data-state] .btn:focus-visible{outline:3px solid var(--azure);outline-offset:3px}
@@ -13,7 +13,7 @@
 /* fields: a 1 px edge at 3:1, an azure edge and ring on focus; never a thick black frame */
 .field,html.rer-themed main label{display:grid;gap:7px;font-weight:600;font-size:15px;color:var(--ink)}
 .input,.select,html.rer-themed main input:not([type=checkbox]):not([type=hidden]){box-sizing:border-box;width:100%;min-height:46px;margin:0;padding:10px 14px;border:1px solid var(--edge);border-radius:8px;background:var(--paper);color:var(--ink);font:400 16px/1.4 var(--sans)}
-.input:hover,.select:hover,html.rer-themed main input:not([type=checkbox]):not([type=hidden]):hover{border-color:#6E7882}
+.input:hover,.select:hover,html.rer-themed main input:not([type=checkbox]):not([type=hidden]):hover{border-color:var(--field-hover)}
 .input:focus-visible,.select:focus-visible,html.rer-themed main input:not([type=checkbox]):not([type=hidden]):focus-visible{outline:2px solid var(--azure);outline-offset:1px;border-color:var(--azure)}
 /* Base's dropdown rule (select-style.ts, in every app document) draws the chevron: two strokes 14 px in from the edge,
    40 px of end padding, in --rer-select-ink */
@@ -23,11 +23,11 @@
 .checkbox input:focus-visible,html.rer-themed main input[type=checkbox]:focus-visible{outline:2px solid var(--azure);outline-offset:2px}
 
 /* initials on a pale azure disc: colour never codes a person (pink is for phases, green for done) */
-.avatar{display:inline-grid;place-items:center;flex:none;width:28px;height:28px;border-radius:50%;background:linear-gradient(140deg,#D9F0FF,#A9D8FB);color:#16365A;font:600 12px/1 var(--sans);letter-spacing:.02em;box-shadow:0 0 0 1.5px rgb(255 255 255 / .9)}
+.avatar{display:inline-grid;place-items:center;flex:none;width:28px;height:28px;border-radius:50%;background:linear-gradient(140deg,var(--avatar-light),var(--avatar-dark));color:var(--avatar-ink);font:600 13px/1 var(--sans);letter-spacing:.02em;box-shadow:0 0 0 1.5px var(--avatar-ring)}
 
 /* the one split-flap chip (parts.css draws the tiles) at the app's small size; "quiet" tiles are the board's own, white
    letters on ink, as the pick's chip */
 .flap.chip{gap:2px;padding:4px;border-radius:5px}
-.flap.chip i{width:17px;height:25px;font-size:15px}
-.flap.quiet i{background:linear-gradient(#323C47 49%,#1B252E 50%,#2E3843);color:#F6F6F6}
+.flap.chip i{width:17px;height:26px;font-size:15px}
+.flap.quiet i{background:linear-gradient(var(--tile-top) 49%,var(--tile-seam) 50%,var(--tile-bottom));color:var(--tile-ink)}
 .flap.chip i.sp{width:8px}

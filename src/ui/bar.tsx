@@ -8,7 +8,7 @@ export interface Tab { label: string; href: string; current?: boolean }
 export function AppBar({ viewer, crumbs = [], tabs = [], home = '/app' }: { viewer?: Viewer; crumbs?: Tab[]; tabs?: Tab[]; home?: string }) {
   return <header className="bar">
     <a className="lockup" href={home}><img src="/brand/mark.svg" alt="" width={44} height={44} /><span data-rer-name>{branding.name}</span></a>
-    {crumbs.length > 0 && <nav aria-label="Breadcrumb"><ol className="crumbs">{crumbs.map(crumb => <li key={crumb.href}><a href={crumb.href} aria-current={crumb.current ? 'page' : undefined}>{crumb.label}</a></li>)}</ol></nav>}
+    {crumbs.length > 0 && <nav className="crumbs" aria-label="Breadcrumb"><ol>{crumbs.map(crumb => <li key={crumb.href}><a href={crumb.href} aria-current={crumb.current ? 'page' : undefined}>{crumb.label}</a></li>)}</ol></nav>}
     {tabs.length > 0 && <nav className="tabs" aria-label="Views">{tabs.map(tab => <a key={tab.href} href={tab.href} aria-current={tab.current ? 'page' : undefined}>{tab.label}</a>)}</nav>}
     {viewer && <p className="person"><span className="avatar" aria-hidden="true">{initials(viewer.displayName)}</span><span className="person-text"><b>{viewer.displayName}</b><small>{roleLabel(viewer.role)}</small></span></p>}
   </header>

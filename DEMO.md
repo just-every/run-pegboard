@@ -1,8 +1,9 @@
 # Pegboard demo
 
 `rer demo` opens a fresh, signed-in Pegboard Demo at `/app`, past first-run setup.
-Pegboard is currently a Base foundation. The demo shows its real signed-in Lobby;
-there are no projects, tasks, workspace tables or product sample records yet.
+Pegboard is currently a Base foundation. The demo shows its real signed-in home,
+the Path view's empty state; there are no projects, tasks, workspace tables or
+product sample records yet.
 `src/demo.ts` idempotently completes the existing owner's first-run record.
 
 Base's demo wrapper supplies the title and brand suffix, with no top bar or outbox.

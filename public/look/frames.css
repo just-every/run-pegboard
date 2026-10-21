@@ -10,7 +10,7 @@ html.rer-themed main{position:static;box-sizing:border-box;width:100%;max-width:
 /* the card's peg: the card is the first thing on the wall, so its top is the body's top padding */
 html.rer-themed main::after{content:"";position:absolute;left:50%;top:calc(var(--bar-h) + 51px);width:14px;height:14px;margin-left:-7px;border-radius:50%;background:radial-gradient(circle at 36% 30%,#64717A 0 14%,#0D1216 46%,#020304 72%);box-shadow:0 2px 3px rgb(0 0 0 / .32)}
 /* the brand line moves up into the bar as the lockup */
-html.rer-themed main>:is(.rer-brand,.brand){position:absolute;left:24px;top:0;display:flex;align-items:center;gap:10px;height:var(--bar-h);margin:0;color:var(--ink);font:800 27px/1 var(--sans);letter-spacing:-.035em}
+html.rer-themed main>:is(.rer-brand,.brand){position:absolute;left:24px;top:0;display:flex;align-items:center;gap:10px;height:var(--bar-h);margin:0;background:var(--paper);color:var(--ink);font:800 27px/1 var(--sans);letter-spacing:-.035em}
 html.rer-themed main>:is(.rer-brand,.brand)::before{width:44px;height:44px;margin:-6px -2px}
 html.rer-themed main>.brand>img{width:44px;height:44px;margin:-6px -2px}
 html.rer-themed main>.brand>.mark{display:none}

@@ -211,72 +211,6 @@
       }
     },
     {
-      "path": "public/brand/band.svg",
-      "originPath": "foundation/template/public/brand/band.svg",
-      "revision": "dd9f5d61309789bec663c889a1e9b413a76cb048",
-      "files": {
-        "public/brand/band.svg": "595e6226645ca8873d4e06c4417a7f42c2e6940094ab06baa4be6fc74e8fa1e3"
-      },
-      "modes": {
-        "public/brand/band.svg": "100644"
-      }
-    },
-    {
-      "path": "public/fonts/fonts.css",
-      "originPath": "default-seed/public/fonts/fonts.css",
-      "revision": "dd9f5d61309789bec663c889a1e9b413a76cb048",
-      "files": {
-        "public/fonts/fonts.css": "54e7fe8d3bf3b18338a9613769090602af4c38f596a5dc8408a204d4900447f1"
-      },
-      "modes": {
-        "public/fonts/fonts.css": "100644"
-      }
-    },
-    {
-      "path": "public/fonts/outfit/LICENSE.txt",
-      "originPath": "default-seed/public/fonts/outfit/LICENSE.txt",
-      "revision": "dd9f5d61309789bec663c889a1e9b413a76cb048",
-      "files": {
-        "public/fonts/outfit/LICENSE.txt": "0e5fcef5d93bfcae273c11c00f0bb453d3b5491860e1ac8b658767b7577c938f"
-      },
-      "modes": {
-        "public/fonts/outfit/LICENSE.txt": "100644"
-      }
-    },
-    {
-      "path": "public/fonts/outfit/outfit-latin-ext-wght-normal.woff2",
-      "originPath": "default-seed/public/fonts/outfit/outfit-latin-ext-wght-normal.woff2",
-      "revision": "dd9f5d61309789bec663c889a1e9b413a76cb048",
-      "files": {
-        "public/fonts/outfit/outfit-latin-ext-wght-normal.woff2": "0f53d1c03b3918d744a843b5039001ee31695ca1e255e3914188df81beb461e9"
-      },
-      "modes": {
-        "public/fonts/outfit/outfit-latin-ext-wght-normal.woff2": "100644"
-      }
-    },
-    {
-      "path": "public/fonts/outfit/outfit-latin-wght-normal.woff2",
-      "originPath": "default-seed/public/fonts/outfit/outfit-latin-wght-normal.woff2",
-      "revision": "dd9f5d61309789bec663c889a1e9b413a76cb048",
-      "files": {
-        "public/fonts/outfit/outfit-latin-wght-normal.woff2": "6c18d579fd87c3776be068b762cbc83fde3acb543d49eabd3ade842eb987e887"
-      },
-      "modes": {
-        "public/fonts/outfit/outfit-latin-wght-normal.woff2": "100644"
-      }
-    },
-    {
-      "path": "public/rer-theme.css",
-      "originPath": "foundation/template/public/rer-theme.css",
-      "revision": "dd9f5d61309789bec663c889a1e9b413a76cb048",
-      "files": {
-        "public/rer-theme.css": "a959e0a17df8abb03a123c04eb773b5e9183d426ed7f43424f8622d02433ddb1"
-      },
-      "modes": {
-        "public/rer-theme.css": "100644"
-      }
-    },
-    {
       "path": "scripts/edition-authoring/base-copies.mjs",
       "originPath": "edition-authoring/base-copies.mjs",
       "revision": "dd9f5d61309789bec663c889a1e9b413a76cb048",
@@ -516,17 +450,6 @@
       },
       "modes": {
         "src/base/dispatch.ts": "100644"
-      }
-    },
-    {
-      "path": "src/base/font-head.ts",
-      "originPath": "foundation/runtime/font-head.ts",
-      "revision": "dd9f5d61309789bec663c889a1e9b413a76cb048",
-      "files": {
-        "src/base/font-head.ts": "937fe339a397abee96e4279f2e310fa336eb30b2ec3aeb98f2c09ed0ba7d5dac"
-      },
-      "modes": {
-        "src/base/font-head.ts": "100644"
       }
     },
     {
@@ -3112,17 +3035,6 @@
       },
       "modes": {
         "src/router.tsx": "100644"
-      }
-    },
-    {
-      "path": "src/server.dev.ts",
-      "originPath": "foundation/template/src/server.dev.ts",
-      "revision": "dd9f5d61309789bec663c889a1e9b413a76cb048",
-      "files": {
-        "src/server.dev.ts": "4892545be3afaf55d1a45b99933f017baa43512d7152f56b21422010aa70b8a5"
-      },
-      "modes": {
-        "src/server.dev.ts": "100644"
       }
     },
     {

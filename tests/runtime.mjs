@@ -2,6 +2,7 @@ import {queuedEntrypoint} from '@runeditrun/rer/queued-entry';
 const queued=await queuedEntrypoint(import.meta.url,'verify:runtime');if(queued!==null)process.exit(queued);
 import assert from 'node:assert/strict'
 import { execFileSync, spawn } from 'node:child_process'
+import { randomBytes } from 'node:crypto'
 import { createServer } from 'node:net'
 import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -15,11 +16,14 @@ await new Promise(resolve => socket.close(resolve))
 // on its own migrated store, never the checkout's local data.
 const persist = await mkdtemp(join(tmpdir(), 'foundation-runtime-'))
 execFileSync(process.execPath, ['node_modules/wrangler/bin/wrangler.js', 'd1', 'migrations', 'apply', 'foundation', '--local', '--persist-to', persist, '--config', 'dist/server/wrangler.json'], { stdio: 'pipe', env: { ...process.env, CI: '1', WRANGLER_SEND_METRICS: 'false' } })
-const worker = spawn(process.execPath, ['node_modules/wrangler/bin/wrangler.js', 'dev', '--inspector-port', '0', '--local', '--persist-to', persist, '--ip', '127.0.0.1', '--config', 'dist/server/wrangler.json', '--port', String(port)], { stdio: ['ignore', 'pipe', 'pipe'] })
+// A loopback installation with its owner's settings, so the owner's first run can be walked through the public doors.
+const origin = `http://127.0.0.1:${port}`
+const setupToken = randomBytes(32).toString('hex')
+const settings = { AUTH_LOCAL: 'true', AUTH_ORIGIN: origin, OWNER_EMAIL: 'owner@example.com', SESSION_SECRET: randomBytes(32).toString('hex'), SETUP_TOKEN: setupToken }
+const worker = spawn(process.execPath, ['node_modules/wrangler/bin/wrangler.js', 'dev', '--inspector-port', '0', '--local', '--persist-to', persist, '--ip', '127.0.0.1', '--config', 'dist/server/wrangler.json', '--port', String(port), ...Object.entries(settings).flatMap(([name, value]) => ['--var', `${name}:${value}`])], { stdio: ['ignore', 'pipe', 'pipe'] })
 let output = ''
 worker.stdout.on('data', chunk => { output += chunk })
 worker.stderr.on('data', chunk => { output += chunk })
-const origin = `http://127.0.0.1:${port}`
 try {
   let ready = false
   for (let attempt = 0; attempt < 120; attempt++) {
@@ -41,6 +45,24 @@ try {
     assert.equal((await fetch(`${origin}${path}`)).status, 404, path)
   }
   console.log('HTTP-001 passed against emitted local Worker: health, the installed homepage, HTTP and document 404s')
+
+  // The owner's first run into the app home: claim with the setup token, finish setup, open /app, and every
+  // stylesheet and script the home links answers (the look is the home's own files).
+  const manual = (path, init = {}) => fetch(`${origin}${path}`, { redirect: 'manual', ...init })
+  assert.equal((await manual('/app')).headers.get('location'), '/signin')
+  const claim = await manual('/auth/bootstrap', { method: 'POST', headers: { origin, 'content-type': 'application/json' }, body: JSON.stringify({ token: setupToken, displayName: 'Wes Holloway' }) })
+  assert.equal(claim.status, 303, await claim.text())
+  const cookie = claim.headers.get('set-cookie').split(';')[0]
+  assert.equal((await manual('/app', { headers: { cookie } })).headers.get('location'), '/setup')
+  const finished = await manual('/setup', { method: 'POST', headers: { cookie, origin, 'content-type': 'application/x-www-form-urlencoded' }, body: 'displayName=Wes+Holloway&confirm=yes' })
+  assert.equal(finished.headers.get('location'), '/app')
+  const home = await manual('/app', { headers: { cookie } })
+  assert.equal(home.status, 200)
+  assert.match(home.headers.get('content-type'), /^text\/html/)
+  const linked = [...(await home.text()).matchAll(/<(?:link rel="stylesheet" href|script src)="(\/[^"]+)"/g)].map(match => match[1])
+  assert.ok(linked.length > 0)
+  for (const path of linked) assert.equal((await fetch(`${origin}${path}`)).status, 200, path)
+  console.log('APP-HOME passed against emitted local Worker: the owner claims, finishes setup and opens the app home with its look')
 } finally {
   worker.kill('SIGTERM')
   await new Promise(resolve => worker.exitCode !== null ? resolve() : worker.once('exit', resolve))

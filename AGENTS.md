@@ -17,7 +17,9 @@ Read CONTRACT.md, ACCEPTANCE.md, OPERATIONS.md and RUN-LOCALLY.md before changin
 behavior. Pegboard starts as a technical foundation. Every product target is
 missing; a contract is not evidence that a feature exists. Do not add mock
 application data, fake providers, placeholder product screens or fallback
-behavior. The brand round follows later; preserve Base's default theme.
+behavior. The app wears the owner-approved look (app pick A, the Path view): build
+every screen from the tokens and parts named in docs/LOOK.md, and keep
+public/rer-theme.css within Base's theme grammar (the installer reads it).
 
 Use the exact published @runeditrun/rer 0.2.75 pin. Public commands use bare rer
 verbs; do not restore a vendored CLI. Base runtime copies and their origins live

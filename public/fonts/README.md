@@ -1,21 +1,14 @@
 # Fonts
 
-Outfit is self-hosted under the SIL Open Font License 1.1 in
-`outfit/LICENSE.txt`. The Latin and Latin Extended WOFF2 subsets come from
-Fontsource's Outfit distribution; upstream: https://github.com/Outfitio/Outfit-Fonts.
-
-The root document links `/fonts/fonts.css` once, outside the temporary dev SSR
-stylesheet, and preloads only the primary Latin file. Do not import this CSS
-from a component. Every body-font stack uses `--font-body`, including the local
-`Outfit Fallback` before generic fallback fonts; controls inherit it.
-
-Fallback scales use Outfit/Arial advance-width ratios over A-Z, a-z and 0-9
-at weights 400, 500 and 700. Ascent, descent and line gap match Outfit's
-1000, -260 and 0 per 1000 units, divided by each scale. Matching metrics reduces
-layout movement; different glyph designs cannot have identical widths in every
-piece of text. Recalculate the fallback and preload when changing the brand font.
-
 Inter (variable, Latin) is self-hosted under the SIL Open Font License 1.1 in
-`inter/OFL.txt` for the run site's homepage only (`public/landing/base.css`):
-one heavy weight for every heading and the wordmark, the regular weights for data.
-The homepage preloads it and makes no third-party request.
+`inter/OFL.txt`. It is Pegboard's one face: the heavy weights for every heading,
+the wordmark and card titles, the regular weights for data, in the app, Base's
+sign-in and setup documents, the installer, the homepage and the docs. Nothing
+makes a third-party request.
+
+`/rer-theme.css` declares the face (`@font-face`, weights 100 to 900), as Base's
+theme grammar asks, so the installer and Base's documents load it with the
+theme. The app's documents and Base's frames preload the file through
+`src/base/font-head.ts`; the homepage and the docs preload it in their heads.
+The Latin file has no ✓ or → glyphs: the app draws its tick and arrow as inline
+SVG (`src/ui/icons.tsx`).

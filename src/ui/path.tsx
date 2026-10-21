@@ -14,15 +14,21 @@ export interface Station {
   wide?: boolean
   /** Left out of the single phone-width cord when the wall is empty. */
   minor?: boolean
+  /** Hung on the wall but not on the solid cord: an agent's proposal, reached by its own dashed cord. */
+  off?: boolean
 }
-type Cord = [string, string, string, number, string, string]
+/** One cord for public/look/cords.js: [from, to, kind, amount, colour, marks]. */
+export type Cord = [string, string, string, number, string, string]
 
 const tomato = '#F94436'
-// A station's anchors: its peg on an empty wall, otherwise its card's left and right ends at the title line.
+// A station's anchors: its peg on an empty wall, otherwise its card's left and right ends at the title line (and
+// `${id}-peg`, the card's peg, for a proposal's dashed cord).
 const end = (station: Station, side: 'l' | 'r') => station.card ? `${station.id}-${side}` : station.id
 
-export function cordsFor(rows: Station[][]): Cord[] {
+/** The solid cord through the stations, in order; a station that is `off` the cord is skipped. */
+export function cordsFor(all: Station[][]): Cord[] {
   const cords: Cord[] = []
+  const rows = all.map(row => row.filter(station => !station.off))
   rows.forEach((row, r) => {
     const forward = r % 2 === 0, out = forward ? 'r' : 'l', into = forward ? 'l' : 'r'
     row.slice(1).forEach((station, i) => {
@@ -35,13 +41,14 @@ export function cordsFor(rows: Station[][]): Cord[] {
   return cords
 }
 
+/** `extra` adds cords beyond the solid path, such as a proposal's dashed re-hooked cord ([from, to, kind, amount, colour, "dash arrow"]). */
 export function PathWall({ label, rows, extra = [], children }: { label: string; rows: Station[][]; extra?: Cord[]; children?: ReactNode }) {
   const empty = rows.every(row => row.every(station => !station.card))
   return <section className="wall" aria-label={label} data-cords={JSON.stringify([...cordsFor(rows), ...extra])}>
     <div className={empty ? 'path empty' : 'path'}>
       {rows.map((row, r) => <ol key={r} className={r % 2 ? 'row back' : 'row'}>
-        {row.map(station => <li key={station.id} className={['station', station.wide && 'wide', station.minor && 'minor'].filter(Boolean).join(' ')}>
-          <span className="peg" data-peg={station.card ? undefined : station.id} aria-hidden="true" />
+        {row.map(station => <li key={station.id} className={['station', station.wide && 'wide', station.minor && 'minor', station.off && 'off'].filter(Boolean).join(' ')}>
+          <span className="peg" data-peg={station.card ? `${station.id}-peg` : station.id} aria-hidden="true" />
           {station.card}{station.tassels}
         </li>)}
       </ol>)}
