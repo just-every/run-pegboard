@@ -42,10 +42,7 @@ export function FieldReportPage({
                       <dd>
                         {f.error
                           ? `Error: ${f.error}`
-                          : Array.isArray(f.value)
-                            ? f.value.join(', ')
-                            : String(f.value ?? 'No value')}
-                      </dd>
+                          : f.display}</dd>
                     </div>
                   ))}
                 </dl>

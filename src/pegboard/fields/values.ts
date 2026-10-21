@@ -9,7 +9,7 @@ import {
   newId,
 } from '../db'
 import type { Actor } from '../workspace/people'
-import { workspaceRole } from '../workspace/people'
+import { workspaceRole, displayNames } from '../workspace/people'
 import { openTask } from '../tasks/access'
 import { openProject, need, fieldReadable } from '../workspace/projects'
 import type { FieldRow } from '../model'
@@ -67,7 +67,7 @@ export function normalize(field: FieldRow, value: unknown): FieldValue {
   }
   if (['multi', 'people', 'rollup'].includes(field.type)) {
     const values = Array.isArray(value)
-      ? value
+      ? value.filter((v) => v !== '')
       : typeof value === 'string'
         ? value
             .split(',')
@@ -217,7 +217,7 @@ export async function taskFields(
   taskId: string,
   projectId: string,
 ) {
-  const { access } = await openTask(db, actor, taskId),
+  const { task, access } = await openTask(db, actor, taskId),
     context = access.contexts.get(projectId)
   if (!context) throw notFound()
   const out = []
@@ -230,7 +230,54 @@ export async function taskFields(
       taskId,
       field.id,
     )
+    const choices: { value: string; label: string }[] = []
+    if (field.type === 'people') {
+      const ids =
+        context.role === 'guest'
+          ? raw
+            ? (JSON.parse(raw.value) as string[])
+            : []
+          : (
+              await all<{ id: string }>(
+                db,
+                "SELECT o.id FROM oa_operators o LEFT JOIN peg_workspace_members m ON m.operator_id=o.id AND m.workspace_id=? WHERE o.status='active' AND (o.role IN ('owner','admin') OR m.operator_id IS NOT NULL)",
+                task.workspace_id,
+              )
+            ).map((p) => p.id)
+      const names = await displayNames(db, ids)
+      choices.push(
+        ...ids.map((id) => ({
+          value: id,
+          label: names.get(id) ?? 'Former member',
+        })),
+      )
+    }
+    if (field.type === 'rollup') {
+      const source = configOf(field).sourceProject ?? projectId
+      for (const row of await all<{ task_id: string }>(
+        db,
+        'SELECT task_id FROM peg_task_projects WHERE project_id=? ORDER BY task_id',
+        source,
+      )) {
+        const related = await openTask(db, actor, row.task_id).catch(() => null)
+        if (related && related.access.contexts.has(source))
+          choices.push({ value: related.task.id, label: related.task.title })
+      }
+    }
+    const display =
+      field.type === 'people' && Array.isArray(result.value)
+        ? result.value
+            .map(
+              (id) =>
+                choices.find((c) => c.value === id)?.label ?? 'Former member',
+            )
+            .join(', ')
+        : Array.isArray(result.value)
+          ? result.value.join(', ')
+          : String(result.value ?? 'No value')
     out.push({
+      choices,
+      display,
       id: field.id,
       key: field.key,
       label: field.label,

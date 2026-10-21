@@ -231,7 +231,14 @@ export async function readableDefinitions(
   return (await definitions(db, projectId))
     .filter((f) => fieldReadable(f, effective))
     .map((f) => ({
-      ...f,
+      id: f.id,
+      project_id: projectId,
+      key: f.key,
+      label: f.label,
+      type: f.type,
+      units: f.units,
+      visibility: f.visibility,
+      version: f.version,
       config: effective.capabilities.has('manage_fields')
         ? f.config
         : JSON.stringify(

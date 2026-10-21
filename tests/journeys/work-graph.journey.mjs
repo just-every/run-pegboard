@@ -226,7 +226,10 @@ try {
     ok(await personal.post(`/api/v1/tasks/${sourceTask.id}/fields`,{projectId:fieldProject,values:{effort:2}}))
     await ownPage.goto(`${w.origin}/app/tasks/${fieldTask.id}`)
     const values=ownPage.locator(`form[aria-label="Fields in Field campaign ${size}"]`)
-    for(const [key,value]of Object.entries({effort:'3',brief:'Launch brief',budget:'12.25',deadline:'2026-11-01',reviewers:personal.id,audiences:'Retail,Wholesale',related:sourceTask.id}))await values.locator(`input[name="field:${key}"]`).fill(value)
+    for(const [key,value]of Object.entries({effort:'3',brief:'Launch brief',budget:'12.25',deadline:'2026-11-01'}))await values.locator(`input[name="field:${key}"]`).fill(value)
+    await values.locator('select[name="field:reviewers[]"]').selectOption(personal.id)
+    await values.locator('select[name="field:audiences[]"]').selectOption(['Retail','Wholesale'])
+    await values.locator('select[name="field:related[]"]').selectOption(sourceTask.id)
     await values.locator('select[name="field:channel"]').selectOption('Web')
     await values.locator('select[name="field:checked"]').selectOption('false')
     await values.getByRole('button',{name:'Save fields'}).click()
@@ -237,6 +240,7 @@ try {
     assert.ok((await ownPage.locator(`li:has(a[href="/app/tasks/${fieldTask.id}"])`).innerText()).includes('6'))
     await flat(ownPage);await proof('field-report')
     await ownPage.goto(settingsUrl)
+    await ownPage.getByText('Change type for brief',{exact:true}).click()
     const change=ownPage.locator('form[aria-label="Preview type for brief"]')
     await change.locator('select[name=type]').selectOption('number')
     await change.getByRole('button',{name:'Preview type change'}).click()
@@ -252,7 +256,7 @@ try {
     const tagged=[fieldTask]
     for(const p of fieldProjects.slice(1)){
       ok(await personal.post(`/api/v1/tags/${tag.id}`,{projectId:p.id}))
-      tagged.push(ok(await personal.post('/api/v1/tasks',{title:`Campaign work ${p.id}`,projectId:p.id})))
+      tagged.push(ok(await personal.post('/api/v1/tasks',{title:`Campaign work ${fieldProjects.indexOf(p)+1}`,projectId:p.id})))
     }
     for(const task of tagged)ok(await personal.post(`/api/v1/tasks/${task.id}/tags`,{tagId:tag.id}))
     await ownPage.reload()

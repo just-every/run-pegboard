@@ -1794,7 +1794,7 @@
       "executable": false
     },
     "src/pegboard/fields/definitions.ts": {
-      "sha256": "1a327d34ba89915db052fa64e78c81147eb8c3d16950eb870a67748c72b24578",
+      "sha256": "1cea2a1e8410af33f3ee65a18d657f3ea0f8dc5b4b59525412f1b15cfe4215ee",
       "executable": false
     },
     "src/pegboard/fields/report.ts": {
@@ -1802,7 +1802,7 @@
       "executable": false
     },
     "src/pegboard/fields/values.ts": {
-      "sha256": "a66eadf01aaf722a7ad273745ce5c939fe27114eeba7d23459d489a09b348cab",
+      "sha256": "7387b1e8392043218ffd8989936b1f65966a73141a2f07c42d07171970ba30ab",
       "executable": false
     },
     "src/pegboard/model.ts": {
@@ -1858,7 +1858,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/field-report.tsx": {
-      "sha256": "af6666ac3b26d926251a571ed8cdcfe2b9857ad356e1473d6cfdeaff60a673d3",
+      "sha256": "0ba0a2dc6b11fd1fd05f713145d4526ab21616d79352530082df90c51f799a93",
       "executable": false
     },
     "src/pegboard/ui/pages/inbox.tsx": {
@@ -1870,7 +1870,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/project-settings.tsx": {
-      "sha256": "d81ffc07e0a8bdcd43afab8893388fd821576f68259b0edf8d9fe00ee06652a5",
+      "sha256": "b5fa116e5dd73030c74a221f1c48d866264892f8d8fed23cc8365dd21cd4d67d",
       "executable": false
     },
     "src/pegboard/ui/pages/project.tsx": {
@@ -1890,7 +1890,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/task.tsx": {
-      "sha256": "0f89e065083b0372d5da90883af049c4535f563ecb6460488142c3dc455a01cb",
+      "sha256": "5dad25fb1fbdb2dada36c13428537670b171fab521bab51797c7f3cc6cf4606a",
       "executable": false
     },
     "src/pegboard/ui/pages/team-gate.tsx": {
@@ -1906,7 +1906,7 @@
       "executable": false
     },
     "src/pegboard/ui/routes.ts": {
-      "sha256": "09071108d9412255d5c9037da9c8e896b735d5b72f5bd134d4297386822c4aac",
+      "sha256": "135d6ebef7beff22c36fcdb7db70bbb8f41c0d8da1eff554419f5b73cf40a193",
       "executable": false
     },
     "src/pegboard/ui/shell.tsx": {
@@ -2094,7 +2094,7 @@
       "executable": false
     },
     "tests/journeys/work-graph.journey.mjs": {
-      "sha256": "214553f232123c4aef66980984a5b8b746c0d0c0e7e3245e5f0eea07b211bc3c",
+      "sha256": "5d36209a51bd49b5865e5ee3cddfac8a463ec1079642289a3ec9089ea4c351d5",
       "executable": false
     },
     "tests/runtime.mjs": {
