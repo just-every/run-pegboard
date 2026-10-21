@@ -4,7 +4,8 @@ import { fontHead } from '../base/font-head'
 import { iconHead } from '../base/icon-head'
 import { pageStyle } from '../base/page-style'
 import branding from '../branding.json'
-import { AppHome } from './home'
+import { AppBar } from './bar'
+import { AppHome, homeTabs, settingsPath } from './home'
 import type { Viewer } from './viewer'
 
 const escape = (value: string) => value.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!))
@@ -26,3 +27,12 @@ export async function appDocument(title: string, body: ReactElement): Promise<Re
 
 /** /app: the signed-in person's home. */
 export const homeDocument = (viewer: Viewer) => appDocument(`Home · ${branding.name}`, <AppHome viewer={viewer} />)
+
+/** Base's sign-in settings document (its markup, styles and headers kept) under the app's own bar: the views with
+ *  Settings current, and the person (frames.css places the card under it). */
+export async function settingsDocument(response: Response, viewer: Viewer): Promise<Response> {
+  const bar = renderToStaticMarkup(<AppBar viewer={viewer} tabs={homeTabs(viewer, settingsPath)} />)
+  const headers = new Headers(response.headers)
+  headers.delete('content-length')
+  return new Response((await response.text()).replace('<body>', `<body class="barred">${bar}`), { status: response.status, statusText: response.statusText, headers })
+}

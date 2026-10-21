@@ -1,5 +1,6 @@
-/* The app's shell (owner pick A): one white bar (the lockup, the breadcrumb, the views as azure tabs with "·" between
-   them, the person), then the board: the heading band with its one split-flap chip and its facts, over the peg wall.
+/* The app's shell (owner pick A): one white bar (the lockup, the breadcrumb, the views as azure tabs with a dot between
+   them, outside the links, and the person), then the board: the heading band with its one split-flap chip and its
+   facts, over the peg wall.
    No rail, no count tiles, no right panel. */
 .app{margin:0;padding:0;min-height:100vh;background:var(--wall-ground);color:var(--ink);font:400 16px/1.45 var(--sans);-webkit-font-smoothing:antialiased;overflow-x:clip}
 :where(.app) *,:where(.app) ::before,:where(.app) ::after{box-sizing:border-box}
@@ -8,11 +9,12 @@ body:has(>.app){padding:0;background:var(--wall-ground)}
 :where(.app) :is(h1,h2,h3,h4,p,ol,ul){margin:0;padding:0}
 :where(.app) :is(ol,ul){list-style:none}
 :where(.app) a{color:inherit}
-.app :focus-visible{outline:3px solid var(--azure);outline-offset:3px;border-radius:4px}
+.app :focus-visible,.bar :focus-visible{outline:3px solid var(--azure);outline-offset:3px;border-radius:4px}
 
-/* the bar's surface, shared with Base's documents (frames.css draws their bar as the body's ::before) */
+/* the bar's surface, shared with Base's documents (frames.css draws their lockup-only bar as the body's ::before; sign-in
+   settings carry this bar itself, so it sets its own type) */
 .bar,html.rer-themed body::before{background:var(--paper);box-shadow:0 1px 0 var(--bar-line)}
-.bar{position:relative;z-index:3;display:flex;align-items:center;gap:12px 30px;min-height:var(--bar-h);padding:0 28px}
+.bar{position:relative;z-index:3;display:flex;align-items:center;gap:12px 30px;min-height:var(--bar-h);padding:0 28px;color:var(--ink);font:400 16px/1.45 var(--sans)}
 .lockup{display:inline-flex;align-items:center;gap:10px;flex:none;color:var(--ink);text-decoration:none;font:800 27px/1 var(--sans);letter-spacing:-.035em}
 .lockup img{display:block;width:44px;height:44px;margin:-6px -2px}
 .lockup span{padding-block:.1em}
@@ -24,8 +26,10 @@ body:has(>.app){padding:0;background:var(--wall-ground)}
 .tabs a{display:inline-flex;align-items:center;min-height:44px;padding:0 2px;border-bottom:2px solid transparent;color:var(--azure-ink);text-decoration:none}
 .tabs a:hover{border-bottom-color:var(--azure-l)}
 .tabs a[aria-current=page]{font-weight:700;border-bottom-color:var(--azure)}
-.tabs a+a::before{content:"·";display:inline-block;width:26px;margin-left:-2px;color:var(--tab-separator);font-weight:400;text-align:center}
-.person{display:flex;align-items:center;gap:12px;flex:none}
+/* the dot between two views: drawn, outside both links, so neither's name or focus ring carries it */
+.tabs .sep{display:grid;place-items:center;flex:none;width:24px;align-self:stretch}
+.tabs .sep::before{content:"";width:4px;height:4px;border-radius:50%;background:var(--tab-separator)}
+.bar .person{display:flex;align-items:center;gap:12px;flex:none;margin:0;font:inherit;color:inherit}
 .person .avatar{width:42px;height:42px;font-size:16px}
 .person b{display:block;font-size:17px;font-weight:600;line-height:1.2}
 .person small{display:block;margin-top:3px;font-size:14px;color:var(--person-muted)}

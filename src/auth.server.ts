@@ -6,7 +6,8 @@ import { fontDocumentResponse } from './base/font-response'
 import { createOperatorAuth, createAuthHandler, createSignInHandler, type AuthConfig } from './modules/operator-auth/index.mjs'
 import { operatorMail } from './mail.server.mjs'
 import branding from './branding.json'
-import { homeDocument } from './ui/document.server'
+import { homeDocument, settingsDocument } from './ui/document.server'
+import { settingsPath } from './ui/home'
 
 // The edition's declared theme (public/rer-theme.css), as Base frames link it.
 const theme = { href: '/rer-theme.css', productName: branding.name, accentColor: branding.primaryColor }
@@ -69,7 +70,15 @@ async function handleAuthResponse(request: Request, original: Bindings): Promise
   })(request)
   if (page) return fontDocumentResponse(page)
  }
- if (url.pathname.startsWith('/auth/')) return fontDocumentResponse(await createAuthHandler(operatorAuth(env))(request))
+ if (url.pathname.startsWith('/auth/')) {
+  const response = await fontDocumentResponse(await createAuthHandler(operatorAuth(env))(request))
+  // Sign-in settings (the owner's page) wear the app's bar: its views with Settings current, and the person.
+  if (url.pathname === settingsPath && request.method === 'GET' && response?.status === 200 && response.headers.get('content-type')?.startsWith('text/html')) {
+   const session = await operatorAuth(env).getSession(request)
+   if (session) return settingsDocument(response, session.operator)
+  }
+  return response
+ }
  if (url.pathname === '/setup' || url.pathname === '/app' || url.pathname.startsWith('/app/')) {
   const setup = await firstRunResponse(request, env, operatorAuth(env), { theme })
   if (setup) return setup

@@ -1,7 +1,7 @@
 /* The peg wall (owner pick A, the Path view): pale azure with a fine peg-dot grid, the critical path as one tomato cord
-   in switchback rows (cords.js draws it between the stations' pegs), a white card hung on a black peg at every station,
-   off-path tasks as short tassels below, and the agent's tag clipped at the top right. At phone width the snake is one
-   vertical cord with the cards in a column beside it. */
+   in switchback rows (cords.js draws it between the cards' ends), a white card hung on a black peg at every station (a
+   blank ghost on an empty wall), off-path tasks as short tassels below, and the agent's tag. The rows hold from 1024 px
+   up; below that the stations stack in one column beside one vertical cord. */
 .wall{position:relative;--cord:3.5;padding:48px 24px 64px;background:var(--wall-dots);background-position:10px 14px}
 .wall>svg.cords{position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible;pointer-events:none;z-index:1}
 /* the rows leave room at their ends for the cord's turns, as the pick does: right after the first, left before the last */
@@ -15,9 +15,6 @@
 /* a black peg (controls.css draws it) */
 .wall .peg,.tag>.peg{position:relative;z-index:3}
 .station>.peg{margin-bottom:-7px}
-/* an empty wall: the cord between bare pegs */
-.path.empty{gap:200px;padding-block:96px 20px}
-.path.empty .station>.peg{margin:0}
 
 /* a task: a white card hung on its peg (controls.css draws the card); the cord enters and leaves at the title line
    (the .end anchors) */
@@ -34,6 +31,10 @@
 .task.critical{border-left:6px solid var(--tomato);padding-left:15px}
 .task.ghost{background:var(--ghost-paper);border:2px dashed var(--ghost-border);box-shadow:none}
 .task.ghost h3{color:var(--ghost-ink)}
+/* a blank ghost: where a task will hang on an empty wall, at the pick's card size (a title and its owner line), with
+   at most one quiet line */
+.task.blank{min-height:86px}
+.task.blank .more{margin:0}
 .task.end-card{padding:22px 26px 16px}
 .task.end-card h3{font-size:22px}
 .task .holds{margin-top:6px;font-size:19px;font-weight:700;color:var(--done-ink)}
@@ -52,13 +53,22 @@
 .tassel.note{background:var(--white)}
 .tassel.note p{margin-left:6px;font-size:15px;line-height:1.3}
 
-/* the agent's tag, clipped at the top right of the board by its own peg, in the heading band: it never covers the cord
-   or a card (the pick's tag hung over the review card; APP.md moves it off) */
-.tag{position:absolute;z-index:4;top:12px;right:20px;width:min(560px,40%);padding:14px 16px 14px 30px;background:var(--paper);border:1px solid var(--tag-border);border-radius:10px;box-shadow:var(--card-shadow)}
+/* the agent's tag, hung by its own peg. APP.md: on a populated Path it clips to the cord at the review card, beside the
+   card its proposal moves and never over it; only a wall with no proposal puts it in the board's corner (below) */
+.tag{position:relative;z-index:4;margin:18px 16px 0;padding:14px 16px 14px 30px;background:var(--paper);border:1px solid var(--tag-border);border-radius:10px;box-shadow:var(--card-shadow)}
 .tag>.peg{position:absolute;left:10px;top:16px;width:12px;height:12px}
 .tag .say{font-size:15.5px;line-height:1.36;color:var(--ink)}
 .tag .acts{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin-top:12px}
 .tag .tells{font-size:15px;color:var(--task-detail)}
+/* in the board's corner (the board's own child): from 1024 px it shares the heading band's row, the band grows to hold
+   it so it never reaches the wall, and the heading keeps clear of it; below 1024 px it leads the wall */
+@media (min-width:1024px){
+  .board:has(>.tag){display:grid;grid-template-columns:minmax(0,1fr) calc(min(560px,40%) + 20px);grid-template-rows:auto 1fr}
+  .board:has(>.tag)>*{grid-column:1/-1}
+  .board:has(>.tag)>.head{grid-row:1;padding-right:calc(min(560px,40%) + 48px)}
+  .board:has(>.tag)>.wall{grid-row:2}
+  .board>.tag{grid-area:1/2;align-self:start;max-width:560px;margin:12px 20px 12px 0}
+}
 
 /* the not-found card, hung alone on the wall */
 .lost .wall{min-height:calc(100vh - var(--bar-h));padding-top:84px}
@@ -67,32 +77,32 @@
 .lost-card h1{font:850 40px/1.08 var(--sans);letter-spacing:-.042em}
 .lost-card p{margin:12px 0 24px;font-size:17px;color:var(--grey)}
 
-@media (max-width:1439px) and (min-width:1280px){
+/* an empty wall's rows have no tassels to space them: they spread down the wall, as the pick's do */
+@media (min-width:1024px){
+  .path:has(.task.blank){gap:72px}
+}
+/* narrower cards below 1440 px take the smaller type step; below 1280 px the chip keeps to the title's line */
+@media (max-width:1439px) and (min-width:1024px){
   .task h3{font-size:16.5px}
   .task .who{font-size:13.5px}
   .task.end-card h3{font-size:19px}
 }
-@media (max-width:1279px){
-  /* the tag leaves the corner and leads the wall */
-  .tag{position:relative;top:auto;right:auto;width:auto;margin:18px 24px 0}
+@media (max-width:1279px) and (min-width:1024px){
+  .head-title{column-gap:40px}
+}
+@media (max-width:1023px){
+  .wall{padding:26px 16px 56px}
   .wall>svg.cords{display:none}
   /* one vertical cord: the stations in cord order, each card beside it */
-  .path,.path.empty{display:flex;flex-direction:column;gap:14px;max-width:680px;padding:0 0 0 30px}
+  .path{display:flex;flex-direction:column;gap:14px;max-width:680px;padding:0 0 0 30px}
   .path::before{content:"";position:absolute;left:12px;top:14px;bottom:14px;border-left:3.5px solid var(--tomato);border-radius:2px}
   .row{display:contents}
   .station,.station.wide{width:100%;align-items:stretch;gap:0}
   .station>.peg{position:absolute;left:-25px;top:16px;margin:0}
-  .path.empty .station{height:44px}
-  .path.empty .station>.peg{top:15px}
-  .path.empty .station.minor{display:none}
   /* tassels hang indented under their card */
   .tassel{align-self:stretch;width:auto;margin:10px 0 0 22px}
   .tassel::before{left:-12px;top:-10px;height:calc(50% + 10px);border-left-width:2px}
   .tassel>.peg{display:none}
-}
-@media (max-width:1023px){
-  .tag{margin:18px 16px 0}
-  .wall{padding:26px 16px 56px}
 }
 @media (max-width:599px){
   .tag .acts .button{flex:1 1 100%;min-height:48px}

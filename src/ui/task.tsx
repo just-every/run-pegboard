@@ -4,15 +4,17 @@ import { initials } from './viewer'
 
 // A task on the Path wall: a white card hung on its station's peg. The cord enters and leaves at the title line (the
 // two end anchors). "critical" draws the tomato edge of a task the slip moved; "ghost" is dashed: an agent's proposal,
-// or where a moved task was. A done task carries the green tick; a milestone the black diamond.
+// where a moved task was, or, with no title, where a task will hang on an empty wall (blank, or one quiet `more` line).
+// A done task carries the green tick; a milestone the black diamond.
 export interface TaskCardProps {
   id: string
-  title: string
+  /** Left out only on a ghost: a blank card at the pick's card size where a task will hang. */
+  title?: string
   done?: boolean
   milestone?: boolean
   owner?: string
   when?: string
-  /** A quiet line under the owner ("from the dieline and renders"). */
+  /** A quiet line under the owner ("from the dieline and renders"); a blank ghost's one line. */
   more?: string
   /** The one tomato line: what a slip costs ("auto-shift misses it · next slot Thu Nov 12"). */
   warn?: string
@@ -26,12 +28,12 @@ export interface TaskCardProps {
 }
 
 export function TaskCard({ id, title, done, milestone, owner, when, more, warn, was, phase, state, holds }: TaskCardProps) {
-  const className = ['task', state, holds !== undefined && 'end-card'].filter(Boolean).join(' ')
+  const className = ['task', state, title === undefined && 'blank', holds !== undefined && 'end-card'].filter(Boolean).join(' ')
   return <article className={className}>
     <span className="end l" data-peg={`${id}-l`} data-at="l" data-bare="" aria-hidden="true" />
     <span className="end r" data-peg={`${id}-r`} data-at="r" data-bare="" aria-hidden="true" />
     <span className="end b" data-peg={`${id}-b`} data-at="b" data-bare="" aria-hidden="true" />
-    <h3>{done && <span className="done-mark" role="img" aria-label="Done"><Tick /></span>}{milestone && <span className="diamond" role="img" aria-label="Milestone" />}{holds !== undefined && when ? <Dots phrases={[title, when]} /> : tidy(title)}</h3>
+    {title !== undefined && <h3>{done && <span className="done-mark" role="img" aria-label="Done"><Tick /></span>}{milestone && <span className="diamond" role="img" aria-label="Milestone" />}{holds !== undefined && when ? <Dots phrases={[title, when]} /> : tidy(title)}</h3>}
     {holds === undefined && (owner || when) && <p className="who">{owner && <span className="avatar" aria-hidden="true">{initials(owner)}</span>}<Dots phrases={[owner, when].filter((phrase): phrase is string => Boolean(phrase))} /></p>}
     {more && <p className="more">{glue(more)}</p>}
     {warn && <p className="warn">{glue(warn)}</p>}

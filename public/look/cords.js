@@ -64,7 +64,9 @@
   const all = () => figs.forEach(draw)
   let frame = 0
   const soon = () => { cancelAnimationFrame(frame); frame = requestAnimationFrame(all) }
-  if ('ResizeObserver' in window) { const ro = new ResizeObserver(soon); figs.forEach(f => ro.observe(f)) }
+  // A resize redraws in the observer's callback, which runs after layout and before paint, so no frame shows a cord off
+  // its pegs; anything else waits for the next frame.
+  if ('ResizeObserver' in window) { const ro = new ResizeObserver(() => { cancelAnimationFrame(frame); all() }); figs.forEach(f => ro.observe(f)) }
   addEventListener('resize', soon)
   document.fonts?.ready.then(soon)
   soon()

@@ -4,7 +4,9 @@
 Pegboard is currently a Base foundation. The demo shows its real signed-in home,
 the Path view's empty state; there are no projects, tasks, workspace tables or
 product sample records yet.
-`src/demo.ts` idempotently completes the existing owner's first-run record.
+`src/demo.ts` idempotently completes the existing owner's first-run record and,
+since the demo skips setup, names the owner Wes Holloway (the app pick's person)
+in place of Base's default "Owner".
 
 Base's demo wrapper supplies the title and brand suffix, with no top bar or outbox.
 Invitations succeed with mail silently suppressed. Public reads run normally;
