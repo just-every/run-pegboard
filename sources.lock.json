@@ -98,7 +98,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "940e8888a92777f40d9f6ea38667111f401b3c84450a824b3d3cedc86a1e574a",
+      "sha256": "2eb1fe6a54bc6994c52a82064f0ce3c9a49ade46e22e9b2adce7d9fade1c68f7",
       "executable": false
     },
     "DEMO.md": {
@@ -1810,7 +1810,7 @@
       "executable": false
     },
     "src/pegboard/fields/values.ts": {
-      "sha256": "8b625057b9238c24c4337804ee82735ab8b841a1473a1e936714ba88b5b99234",
+      "sha256": "87be6841c00ae9d1e9163569731b176faf4ec541092319a2d415bcc30ae611d6",
       "executable": false
     },
     "src/pegboard/model.ts": {
@@ -2130,7 +2130,7 @@
       "executable": false
     },
     "tests/work-graph.test.mjs": {
-      "sha256": "ba300fea680904c537bd00441f634a4022f9ead4f954e7c32cb20fe604bc769a",
+      "sha256": "41200daa4178aa00820105f56c9a624f7cc1cdf187dd278d87944921e7e4ac6b",
       "executable": false
     },
     "tsconfig.json": {

@@ -253,11 +253,16 @@ describe('PEG-001 one work graph', { concurrency: false }, () => {
   it('explains cycles, missing and hidden inputs and refuses lossy or stale type changes', async () => {
     const p=await project('Safe field changes'),define=async(key,type,extra={})=>ok(owner.post(`/api/v1/projects/${p.id}/fields`,{key,label:key,type,...extra}))
     const text=await define('notes','text'),amount=await define('amount','number')
+    const calculated=await define('calculated','formula',{expression:'amount * 2'})
     await define('secret','number',{visibility:'internal'});await define('derived','formula',{expression:'secret * 2'});await define('a','formula',{expression:'b + 1'});await define('b','formula',{expression:'a + 1'});await define('divide','formula',{expression:'amount / 0'});await define('missing','formula',{expression:'unknown + 1'})
     const t=await ok(owner.post('/api/v1/tasks',{title:'Safe calculation',projectId:p.id}))
     await ok(owner.post(`/api/v1/tasks/${t.id}/fields`,{projectId:p.id,values:{notes:'Retain these words',amount:3,secret:71}}))
     const fields=(await ok(owner.get(`/api/v1/tasks/${t.id}`))).projects[0].fields
     assert.equal(fields.find(f=>f.key==='a').error,'CYCLE');assert.equal(fields.find(f=>f.key==='divide').error,'DIVISION_BY_ZERO');assert.equal(fields.find(f=>f.key==='missing').error,'INPUT_UNAVAILABLE')
+    const calculatedPreview=await ok(owner.get(`/api/v1/fields/${calculated.id}/change-preview?type=text`))
+    assert.equal(calculatedPreview.affected,1);assert.equal(calculatedPreview.canApply,false)
+    assert.equal((await owner.post(`/api/v1/fields/${calculated.id}/change`,{type:'text',previewRevision:calculatedPreview.token})).status,409,'calculated values cannot disappear in a type change')
+    assert.equal((await ok(owner.get(`/api/v1/tasks/${t.id}`))).projects[0].fields.find(f=>f.key==='calculated').value,6)
     const preview=await ok(owner.get(`/api/v1/fields/${text.id}/change-preview?type=number`));assert.equal(preview.canApply,false);assert.equal(preview.affected,1)
     assert.equal((await owner.post(`/api/v1/fields/${text.id}/change`,{type:'number',previewRevision:preview.token})).status,409)
     let compatible=await ok(owner.get(`/api/v1/fields/${amount.id}/change-preview?type=currency`))

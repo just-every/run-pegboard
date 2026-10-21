@@ -381,8 +381,14 @@ export async function changePreview(
     'SELECT task_id,value FROM peg_field_values WHERE field_id=? ORDER BY task_id',
     fieldId,
   )
-  for (const row of values) await openTask(db, actor, row.task_id)
-  const incompatible = []
+  const affectedIds = new Set(values.map((row) => row.task_id))
+  for (const project of attached)
+    for (const row of await projectTaskIds(db, project.project_id))
+      affectedIds.add(row.task_id)
+  for (const id of affectedIds) await openTask(db, actor, id)
+  // Formula outputs are values too: do not silently discard them just because they are calculated on read.
+  const incompatible: string[] =
+    field.type === 'formula' && next.type !== 'formula' ? [...affectedIds] : []
   for (const row of values) {
     try {
       const old = JSON.parse(row.value),
@@ -400,11 +406,18 @@ export async function changePreview(
     revision,
     fieldId,
     version: field.version,
-    affected: values.length,
+    affected: affectedIds.size,
     projects: attached.map((x) => x.project_id),
-    incompatible,
+    incompatible: [...new Set(incompatible)],
     canApply: !incompatible.length,
-    token: await digest([revision, field, next, values, attached]),
+    token: await digest([
+      revision,
+      field,
+      next,
+      values,
+      attached,
+      [...affectedIds].sort(),
+    ]),
     next,
   }
 }
