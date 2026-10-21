@@ -7,6 +7,19 @@ import { startWorker } from './support/worker.mjs'
 let w, owner, mia, gus, nina
 const ok = async (promise, status = 200) => { const r = await promise; assert.equal(r.status, status, JSON.stringify(r.body)); return r.body }
 const project = (name, extra = {}) => ok(owner.post('/api/v1/projects', { name, ...extra }))
+// Independent CSV reader: quoted numeric cells and escaped text are both valid CSV.
+function csvRecords(text) {
+  const rows=[[]];let cell='',quoted=false
+  for(let i=0;i<text.length;i++){
+    const c=text[i]
+    if(c==='"'){if(quoted&&text[i+1]==='"'){cell+='"';i++}else quoted=!quoted}
+    else if(c===','&&!quoted){rows.at(-1).push(cell);cell=''}
+    else if(c==='\n'&&!quoted){rows.at(-1).push(cell.replace(/\r$/,''));rows.push([]);cell=''}
+    else cell+=c
+  }
+  if(cell||rows.at(-1).length)rows.at(-1).push(cell)
+  return rows.filter(row=>row.some(value=>value.length))
+}
 let campaign, launch, shared, mkt
 
 describe('PEG-001 one work graph', { concurrency: false }, () => {
@@ -356,7 +369,9 @@ describe('PEG-001 one work graph', { concurrency: false }, () => {
     const correction=await ok(person.get(`/api/v1/timesheets/${correctionSheet.id}`));assert.equal(correction.entries[0].adjustment_of,entry.id);assert.equal(correction.entries[0].seconds,-300);assert.equal(correction.entries[0].timezone,'America/Los_Angeles');assert.equal(correction.entries[0].id,adjustment.id)
     await ok(person.post(`/api/v1/timesheets/${correctionSheet.id}/decision`,{action:'submit',revision:correction.token}))
     const preview=await ok(owner.get(`/api/v1/timesheets/${correctionSheet.id}`));await ok(owner.post(`/api/v1/timesheets/${correctionSheet.id}/decision`,{action:'approve',revision:preview.token}))
-    assert.ok((await person.get(`/api/v1/timesheets/${correctionSheet.id}/export.csv`)).body.includes('-300'))
+    const adjustedCsv=csvRecords((await person.get(`/api/v1/timesheets/${correctionSheet.id}/export.csv`)).body)
+    assert.equal(Number(adjustedCsv[1][adjustedCsv[0].indexOf('seconds')]),-300,'an imported adjustment is numeric, not escaped spreadsheet text')
+    assert.equal(adjustedCsv[1][adjustedCsv[0].indexOf('external_id')],adjustment.id)
     assert.equal(view.totalSeconds+(await ok(person.get(`/api/v1/timesheets/${correctionSheet.id}`))).totalSeconds,4800)
   })
 

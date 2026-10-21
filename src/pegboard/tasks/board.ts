@@ -69,7 +69,7 @@ export async function rollup(db: D1Database, actor: Actor, projectIds: string[],
 
 const csvCell = (value: unknown) => {
   let text = value === null || value === undefined ? '' : String(value)
-  if (/^[=+\-@\t\r]/.test(text)) text = `'${text}`
+  if (typeof value === 'string' && /^[=+\-@\t\r]/.test(text)) text = `'${text}`
   return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text
 }
 /** The tasks a person may read as rows: the same filters as every other door, at or above the workspace's export level. */
