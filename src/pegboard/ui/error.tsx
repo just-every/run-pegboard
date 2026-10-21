@@ -1,0 +1,18 @@
+import { appDocument } from '../../ui/document.server'
+import { AppBar } from '../../ui/bar'
+
+const sayings: Record<string, string> = {
+  not_found: 'That is not available to you, or it does not exist.', forbidden: 'You do not have the access this needs.', cross_origin: 'That request did not come from this app.',
+  last_owner: 'That would leave nobody responsible, so it did not happen.', share_preview_required: 'Review the share preview before widening who can see this.',
+  stale_preview: 'The request changed after you opened it. Open it again.', stale: 'The settings changed since this was asked, so it grants nothing. They can ask again.',
+  already_decided: 'That request was already decided.', expired: 'That request expired.', changed_try_again: 'Access changed while you were deciding. Open the request again.',
+  prefix_taken: 'That prefix is already used in this installation.', invalid_json: 'That request was not understood.', internal_error: 'Something went wrong on our side.',
+}
+/** A plain refusal page for a form post: the saying, and the way back. */
+export function errorDocument(status: number, code: string) {
+  const response = appDocument('Not done', <>
+    <AppBar />
+    <main className="board" id="main"><section className="page"><article className="card note-card"><h1>Not done</h1><p>{sayings[code] ?? `That was refused (${code}).`}</p><p><a className="button quiet" href="/app">Back to Pegboard</a></p></article></section></main>
+  </>)
+  return response.then(page => new Response(page.body, { status, headers: page.headers }))
+}

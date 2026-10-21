@@ -11,9 +11,11 @@ import { setupStateResponse } from './base/setup-state'
 import { authResponse, runtimeBindings, type Bindings } from './auth.server'
 import { identity } from './identity'
 import { alternative, job } from './site/copy'
+import { pegboardApi } from './pegboard/api'
 
 const api = new Hono<{ Bindings: Bindings }>()
 api.get('/health', (context) => context.json({ status: 'ok', ...deploymentHealth(context.env) }))
+api.route('/api/v1', pegboardApi)
 
 // Start documents keep their own cache policy and add no-transform, so no proxy
 // rewrites the HTML React hydrates (Cloudflare's email address obfuscation
