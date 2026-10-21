@@ -269,13 +269,7 @@ export function MyTasksPage({
           </ul>
         </Card>
       )}
-      {!on && (
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(()=>{const zone=${JSON.stringify(meta.settings.timezone)}, initial=${JSON.stringify(day)};setInterval(()=>{if(new Intl.DateTimeFormat('en-CA',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())!==initial)location.reload()},30000)})()`,
-          }}
-        />
-      )}
+      {!on && <div data-personal-day={day} data-timezone={meta.settings.timezone}><script src="/personal-day.js" defer /></div>}
     </Shell>
   )
 }

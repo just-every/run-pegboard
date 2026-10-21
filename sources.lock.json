@@ -201,6 +201,10 @@
       "sha256": "7a9d313f6cdc9279011b3d948211b40c8abefdbdbd22929ce8e8d409300918b8",
       "executable": false
     },
+    "migrations/core/0018_personal_work.sql": {
+      "sha256": "ed4463686b9fa750fcef2885f1db357f846b3cfbf64734c373b630d301707a31",
+      "executable": false
+    },
     "ONBOARDING.md": {
       "sha256": "24b685d6eddeae5480ce4dfbf44c0590e54bcfe83641373de5bba985765380bd",
       "executable": false
@@ -623,6 +627,10 @@
     },
     "public/look/wall.css": {
       "sha256": "86490e8d8202a4c8e5ca6442bd7cdc6c71e09f908c66a6d75c6991dbe73c995e",
+      "executable": false
+    },
+    "public/personal-day.js": {
+      "sha256": "3977dc7683348be320badfdacb00dca13bd14257d97c4c12fb3c0722957d9b20",
       "executable": false
     },
     "public/rer-theme.css": {
@@ -1797,6 +1805,10 @@
       "sha256": "9b87b4560c73e634172a5168c5055a7ee1b0d02026c0c4a6a578c1b664c27ca9",
       "executable": false
     },
+    "src/pegboard/tasks/personal.ts": {
+      "sha256": "8e9d09f9d03d0892f51a1581c93fd17eb5cb7ac6713bbbe12b77d3efbb5479e4",
+      "executable": false
+    },
     "src/pegboard/tasks/tasks.ts": {
       "sha256": "44a2cdca8265a414fe15c6b0cda8494c6c65cc296beca3cf8dd53d7f549dc3ca",
       "executable": false
@@ -1826,7 +1838,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/my-tasks.tsx": {
-      "sha256": "366219dc63e2270132ad6a75f9620e89770ca23c92e14e667ca85ed513908aca",
+      "sha256": "8934162bf89d35a932ef5e6f7404b3d2a6a776907156dca544fafd15ae7f60b4",
       "executable": false
     },
     "src/pegboard/ui/pages/project-settings.tsx": {
