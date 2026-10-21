@@ -171,12 +171,13 @@ try {
       await ownPage.goto(`${w.origin}/app/my-tasks?on=${on}`)
       assert.equal(await ownPage.locator(`.card:has(h2:text-is("${group}")) [data-task-id="${dstTask.id}"]`).count(),1)
     }
-    await ownPage.goto(`${w.origin}/app/my-tasks`)
     await ownPage.clock.install({time:new Date('2030-01-01T05:00:01Z')})
+    await ownPage.goto(`${w.origin}/app/my-tasks`)
     const midnightReload=ownPage.waitForEvent('request',r=>r.isNavigationRequest()&&r.url().endsWith('/app/my-tasks'))
     await ownPage.clock.runFor(30001)
     await midnightReload
     await ownPage.waitForLoadState('domcontentloaded')
+    await ownPage.clock.setSystemTime(new Date())
     await ownPage.clock.resume()
 
     const ownProject=ok(await personal.post('/api/v1/projects',{name:`Personal sharing ${size}`}))
