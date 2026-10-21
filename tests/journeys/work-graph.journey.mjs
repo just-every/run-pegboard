@@ -1,6 +1,8 @@
 // The PEG-001 and PEG-020 screens, driven in a browser at 1440 and 390 px: build and share work through Projects, what a
 // guest is never shown, a refused link turned into a request that an admin approves, and a stale tab refused.
 import assert from 'node:assert/strict'
+import {mkdir} from 'node:fs/promises'
+import {join} from 'node:path'
 import { chromium } from '@playwright/test'
 import { startWorker } from '../support/worker.mjs'
 
@@ -141,6 +143,42 @@ try {
     assert.ok((await editor.page.locator('main').innerText()).includes('Not done'))
     assert.ok(ok(await owner.get('/api/v1/admin/access-review')).audit.some(row => row.action === 'grant.revoked' && row.subject === `Eli ${size}`), 'the revocation is in the audit')
     await flat(editor.page); await editor.context.close(); await context.close()
+    // Personal-work public UI, in the existing approved cards and controls.
+    const personal=await w.person(`personal${size}@example.com`,`Personal ${size}`)
+    const own=await open(personal), ownPage=own.page
+    await ownPage.goto(`${w.origin}/app/my-tasks`)
+    await ownPage.locator('form[aria-label="Add a personal task"] input[name=title]').fill(`Personal plan ${size}`)
+    await ownPage.getByRole('button',{name:'Add task',exact:true}).click()
+    await ownPage.locator('form[aria-label="Add a personal section"] input[name=name]').fill('Focus')
+    await ownPage.getByRole('button',{name:'Add section',exact:true}).click()
+    const arrange=ownPage.locator(`form[aria-label="Arrange Personal plan ${size}"]`)
+    await arrange.locator('select[name=sectionId]').selectOption({label:'Focus'})
+    await arrange.locator('input[name=position]').fill('2')
+    await arrange.locator('select[name=today]').selectOption('true')
+    await arrange.getByRole('button',{name:'Arrange',exact:true}).click()
+    assert.ok((await ownPage.locator('.card:has(h2:text-is("Today"))').innerText()).includes(`Personal plan ${size}`))
+    await ownPage.locator('form[aria-label="Day settings"] select[name=sort]').selectOption('manual')
+    await ownPage.getByRole('button',{name:'Save day settings'}).click()
+    assert.ok((await ownPage.locator('.card:has(h2:text-is("Focus"))').innerText()).includes(`Personal plan ${size}`))
+    await ownPage.reload()
+    assert.equal(await ownPage.locator(`form[aria-label="Arrange Personal plan ${size}"] input[name=position]`).inputValue(),'2')
+    await flat(ownPage)
+    const proof=async(name)=>{if(process.env.PEGBOARD_EVIDENCE_DIR){await mkdir(process.env.PEGBOARD_EVIDENCE_DIR,{recursive:true});await ownPage.screenshot({path:join(process.env.PEGBOARD_EVIDENCE_DIR,`${name}-${size}.png`),fullPage:true})}}
+    await proof('my-tasks')
+    const ownProject=ok(await personal.post('/api/v1/projects',{name:`Personal sharing ${size}`}))
+    ok(await personal.post('/api/v1/grants',{objectType:'project',objectId:ownProject.id,granteeId:nina.id,level:'viewer'}))
+    await ownPage.getByRole('link',{name:`Personal plan ${size}`,exact:true}).click()
+    const personalUrl=ownPage.url()
+    assert.equal((await page.goto(personalUrl)).status(),404,'ordinary admin cannot read personal work')
+    await ownPage.locator('form[aria-label="Preview personal sharing"] select[name=projectId]').selectOption(ownProject.id)
+    await ownPage.getByRole('button',{name:'Preview visibility'}).click()
+    assert.ok((await ownPage.locator('main').innerText()).includes(`Nina ${size} · Viewer`))
+    await flat(ownPage);await proof('personal-visibility-preview')
+    await ownPage.getByRole('button',{name:'Share with reviewed audience'}).click()
+    assert.equal((await nina.get(`/api/v1/tasks/${personalUrl.split('/').pop()}`)).status,200)
+    assert.equal(await ownPage.locator('form[aria-label="Approve personal sharing"]').count(),0)
+    await flat(ownPage);await proof('shared-personal-task')
+    await own.context.close()
     console.log(`journey at ${size}px passed`)
   }
 } finally {

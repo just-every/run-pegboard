@@ -1,3 +1,4 @@
+import { settings, localDay, dayNumber, taskGroup, dueOrder, applyRules } from './personal'
 // A project as its people see it: sections hung in order, each with the tasks they may read; plus the rollup and the export.
 import { all, first, forbidden, invalid, notFound } from '../db'
 import type { FieldRow, SectionRow, TaskRow } from '../model'
@@ -105,14 +106,22 @@ export function toCsv(rows: Record<string, unknown>[]) {
 }
 
 /** A person's own list: their personal tasks, and the shared tasks assigned to them that they may still read. */
-export async function myTasks(db: D1Database, actor: Actor) {
+export async function myTasks(db: D1Database, actor: Actor, on?: string) {
+  const prefs=await settings(db,actor), day=on??localDay(Date.now(),prefs.timezone); dayNumber(day)
   const rows = await all<TaskRow>(db, `SELECT t.* FROM peg_tasks t WHERE (t.owner_id=? OR EXISTS (SELECT 1 FROM peg_task_collaborators c WHERE c.task_id=t.id AND c.operator_id=?)) AND t.status<>'done' ORDER BY COALESCE(t.due_date,'9999'), t.created_at`, actor.id, actor.id)
   const out = []
   for (const task of rows) {
     const access = await taskAccess(db, actor, task)
     if (!access.capabilities.has('read')) continue
     const projects = await all<{ id: string; name: string }>(db, 'SELECT p.id,p.name FROM peg_task_projects tp JOIN peg_projects p ON p.id=tp.project_id WHERE tp.task_id=?', task.id)
-    out.push({ id: task.id, ref: await currentRef(db, task.id), title: task.title, status: task.status, priority: task.priority, dueDate: task.due_date, personal: access.personal, projects: projects.filter(project => access.contexts.has(project.id)) })
+    let layout=await first<{section_id:string|null;position:number;today:number}>(db,'SELECT * FROM peg_personal_layout WHERE operator_id=? AND task_id=?',actor.id,task.id)
+    const group=taskGroup(task.due_date,!!layout?.today,day,prefs.timezone)
+    // A calendar preview never moves work. Only the live local day runs the person's saved rules.
+    if(!on && access.personal) { await applyRules(db,actor,task,group,day);layout=await first(db,'SELECT * FROM peg_personal_layout WHERE operator_id=? AND task_id=?',actor.id,task.id) }
+    out.push({ group, sectionId:layout?.section_id??null, position:layout?.position??0, today:!!layout?.today, createdAt:task.created_at, id: task.id, ref: await currentRef(db, task.id), title: task.title, status: task.status, priority: task.priority, dueDate: task.due_date, personal: access.personal, projects: projects.filter(project => access.contexts.has(project.id)) })
   }
-  return out
+  const groupOrder=['Overdue','Today','Upcoming','Later'], priority=['urgent','high','normal','low']
+  const sectionRows=await all<{id:string;position:number}>(db,'SELECT id,position FROM peg_personal_sections WHERE operator_id=?',actor.id)
+  const ranks=new Map(sectionRows.map(x=>[x.id,x.position]))
+  return out.sort((a,b)=> (prefs.sort==='manual' ? (ranks.get(a.sectionId??'')??1e9)-(ranks.get(b.sectionId??'')??1e9)||a.position-b.position : groupOrder.indexOf(a.group)-groupOrder.indexOf(b.group)|| (dueOrder(a.dueDate,prefs.timezone)-dueOrder(b.dueDate,prefs.timezone)||0)||priority.indexOf(a.priority)-priority.indexOf(b.priority)) || a.createdAt-b.createdAt || a.id.localeCompare(b.id))
 }

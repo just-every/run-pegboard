@@ -13,7 +13,7 @@ import { historyStatement } from './history'
 
 const statuses = ['todo', 'doing', 'done'], priorities = ['low', 'normal', 'high', 'urgent'], kinds = ['task', 'subtask', 'milestone']
 const title = (value: unknown) => { if (typeof value !== 'string' || !value.trim() || value.length > 300) throw invalid('title'); return value.trim() }
-const date = (value: unknown, code: string) => { if (value === null || value === undefined || value === '') return null; if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value) || Number.isNaN(Date.parse(value))) throw invalid(code); return value }
+const date = (value: unknown, code: string) => { if (value === null || value === undefined || value === '') return null; if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z)?$/.test(value) || Number.isNaN(Date.parse(value)) || value.length === 10 && new Date(value+'T00:00:00Z').toISOString().slice(0,10)!==value) throw invalid(code); return value }
 const hours = (value: unknown) => { const n = Number(value ?? 0); if (!Number.isFinite(n) || n < 0 || n > 100000) throw invalid('estimate_hours'); return n }
 
 export interface TaskInput { title: string; description?: string; workspaceId?: string; projectId?: string; sectionId?: string; parentId?: string; kind?: string; ownerId?: string; status?: string; priority?: string; startDate?: string | null; dueDate?: string | null; estimateHours?: number; internalOnly?: boolean; internalNotes?: string }
@@ -89,6 +89,7 @@ export async function updateTask(db: D1Database, actor: Actor, idOrRef: string, 
     if (patch.internalOnly !== undefined) set('internal_only', patch.internalOnly ? 1 : 0)
     if (patch.internalNotes !== undefined) set('internal_notes', String(patch.internalNotes).slice(0, 20000))
   }
+  if (patch.collaborators?.length && access.personal) throw conflict('visibility_preview_required')
   if (patch.collaborators) for (const id of patch.collaborators) if (!(await workspaceRole(db, id, task.workspace_id))) throw invalid('collaborator')
   const at = now(), statements: D1PreparedStatement[] = []
   if (next.status !== task.status) next.completed_at = next.status === 'done' ? at : null

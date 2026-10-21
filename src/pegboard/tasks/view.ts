@@ -45,7 +45,7 @@ export async function viewTask(db: D1Database, actor: Actor, idOrRef: string) {
     capabilities: [...access.capabilities], level: access.level, projects, subtasks,
     history: history.filter(entry => internal || entry.kind !== 'internal.changed').map(entry => ({ id: entry.id, at: entry.at, actor: name(entry.actor_id), kind: entry.kind, projectId: entry.project_id, detail: shareHistory(entry.detail, readable) })),
     comments: comments.map(comment => ({ id: comment.id, author: name(comment.author_id), body: comment.body, at: comment.created_at })),
-    attachments: files.filter(file => file.project_id === null ? access.personal : readable.has(file.project_id)).map(file => ({ id: file.id, projectId: file.project_id, name: file.name, contentType: file.content_type, size: file.size, by: name(file.created_by), at: file.created_at })),
+    attachments: files.filter(file => file.project_id === null ? task.owner_id === actor.id : readable.has(file.project_id)).map(file => ({ id: file.id, projectId: file.project_id, name: file.name, contentType: file.content_type, size: file.size, by: name(file.created_by), at: file.created_at })),
     createdAt: task.created_at, updatedAt: task.updated_at, completedAt: task.completed_at,
   }
 }
@@ -89,7 +89,7 @@ export async function addAttachment(db: D1Database, actor: Actor, idOrRef: strin
 export async function readAttachment(db: D1Database, actor: Actor, id: string) {
   const file = await first<{ id: string; task_id: string; project_id: string | null; name: string; content_type: string; data: ArrayBuffer | number[] }>(db, 'SELECT * FROM peg_attachments WHERE id=?', id)
   if (!file) throw notFound()
-  const { access } = await openTask(db, actor, file.task_id)
-  if (file.project_id === null ? !access.personal : !access.contexts.has(file.project_id)) throw notFound()
+  const { task, access } = await openTask(db, actor, file.task_id)
+  if (file.project_id === null ? task.owner_id !== actor.id : !access.contexts.has(file.project_id)) throw notFound()
   return { name: file.name, contentType: file.content_type, bytes: file.data instanceof ArrayBuffer ? file.data : new Uint8Array(file.data).buffer }
 }

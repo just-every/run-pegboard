@@ -1750,7 +1750,7 @@
       "executable": false
     },
     "src/pegboard/api/task-routes.ts": {
-      "sha256": "0c813a530a8892eed5bbc6f36b84b82131d7e2f7819f9ee52fe45c18024e53e4",
+      "sha256": "4357ef2d17f57b1cc3ab6ecac4f9c0330b1b87fbfec8cb7f6cd186f27c657a36",
       "executable": false
     },
     "src/pegboard/api/workspace-routes.ts": {
@@ -1790,7 +1790,7 @@
       "executable": false
     },
     "src/pegboard/tasks/board.ts": {
-      "sha256": "f80edb2c79034bfe97f5a4e0f3b5a9dd4c18bbf6cc65ea525ad90c2ef9f9d00e",
+      "sha256": "9f60f1e6c0d8e97082035fff136b1f3fc0cf6c06c2194f0231fa2c8c2ef5be2b",
       "executable": false
     },
     "src/pegboard/tasks/history.ts": {
@@ -1798,11 +1798,11 @@
       "executable": false
     },
     "src/pegboard/tasks/tasks.ts": {
-      "sha256": "264269f8b10e072111366e61518f9e99b19d40878f192e3aae0314765970cf5b",
+      "sha256": "44a2cdca8265a414fe15c6b0cda8494c6c65cc296beca3cf8dd53d7f549dc3ca",
       "executable": false
     },
     "src/pegboard/tasks/view.ts": {
-      "sha256": "d5807346807881237d900eea397d4bc17ee82880a861ea0eb3a0cd47a8e8cd55",
+      "sha256": "a6805db8f2b32258317a3d053527392a64f3aea9eca1a91ae67b55819b4b455d",
       "executable": false
     },
     "src/pegboard/ui/error.tsx": {
@@ -1826,7 +1826,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/my-tasks.tsx": {
-      "sha256": "14bb9ecbb8e38d2a072ac112e7d40f07b291c3c31feb3cf323889708d985fd29",
+      "sha256": "366219dc63e2270132ad6a75f9620e89770ca23c92e14e667ca85ed513908aca",
       "executable": false
     },
     "src/pegboard/ui/pages/project-settings.tsx": {
@@ -1846,7 +1846,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/task.tsx": {
-      "sha256": "ea63c6ac99cd99b2a37e76272aa9815ce818b9a50451b820a3f005d93de1a5cc",
+      "sha256": "3594e573325068f596a5bd5f52815fdec44cb660f8e17b944be432305bbd93c1",
       "executable": false
     },
     "src/pegboard/ui/pages/team-gate.tsx": {
@@ -1862,7 +1862,7 @@
       "executable": false
     },
     "src/pegboard/ui/routes.ts": {
-      "sha256": "5f992cc8dc995441a32b37fe52cf6b58e0be88660a05b5dc7af233f7651264ae",
+      "sha256": "86116dff6c3b5affafb08f41915bff899beaa948694d60a661c0a25a587155a2",
       "executable": false
     },
     "src/pegboard/ui/shell.tsx": {
@@ -2050,7 +2050,7 @@
       "executable": false
     },
     "tests/journeys/work-graph.journey.mjs": {
-      "sha256": "1d6bd7945108b95927a04c0cc594f848d3c9bfefc83bee4df758736d26903185",
+      "sha256": "233362fccd6f3d8080a59015655f64394ea700613c74da6159f1c0d954a9bce2",
       "executable": false
     },
     "tests/runtime.mjs": {
@@ -2066,7 +2066,7 @@
       "executable": false
     },
     "tests/work-graph.test.mjs": {
-      "sha256": "8d20b2979f4d1d18b55a76fdb7baf8cb0c37aa876fc8417a02fbd429dacd4059",
+      "sha256": "6dea95098fd86b83c73c57054c218087bc37ecf53c1baa78d5d2ba3a1ca60fdd",
       "executable": false
     },
     "tsconfig.json": {

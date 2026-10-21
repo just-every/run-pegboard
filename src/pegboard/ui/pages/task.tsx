@@ -1,3 +1,4 @@
+import type { visibilityPreview } from '../../tasks/personal'
 import type { viewTask } from '../../tasks/view'
 import type { Viewer } from '../../../ui/viewer'
 import { Area, Card, Field, Form, Pick, Shell, Submit, levelLabel, when } from '../shell'
@@ -6,7 +7,7 @@ type View = Awaited<ReturnType<typeof viewTask>>
 const kindLabel: Record<string, string> = { created: 'created the task', 'status.changed': 'changed the status', updated: 'edited the task', 'project.added': 'hung it in a project', 'project.removed': 'took it out of a project', 'section.changed': 'moved it to a section', 'fields.changed': 'changed project fields', 'comment.added': 'commented', 'attachment.added': 'attached a file', 'collaborators.changed': 'changed collaborators', 'internal.changed': 'changed internal notes' }
 const statusLabel: Record<string, string> = { todo: 'To do', doing: 'Doing', done: 'Done' }
 
-export function TaskPage({ viewer, task, addable, sections }: { viewer: Viewer; task: View; addable: { value: string; label: string }[]; sections: Record<string, { value: string; label: string }[]> }) {
+export function TaskPage({ viewer, task, addable, sections, preview }: { viewer: Viewer; task: View; addable: { value: string; label: string }[]; sections: Record<string, { value: string; label: string }[]>; preview: Awaited<ReturnType<typeof visibilityPreview>> | null }) {
   const can = (capability: string) => (task.capabilities as string[]).includes(capability)
   const here = `/app/tasks/${task.id}`
   const first = task.projects[0]
@@ -39,6 +40,7 @@ export function TaskPage({ viewer, task, addable, sections }: { viewer: Viewer; 
         {task.projects.length === 1 && <Form action={`/api/v1/tasks/${task.id}/move`} next={here} label="Move to a project"><input type="hidden" name="from" value={task.projects[0].id} /><div className="inline"><Pick label="Move it to" name="to" options={addable} /><Submit quiet>Move to project</Submit></div></Form>}
       </>}
     </Card>}
+    {task.personal&&task.parentId===null&&<Card title="Share personal work"><p>Only you can see this task. Review the exact project audience before sharing.</p><form method="get" action={here} className="stack" aria-label="Preview personal sharing"><Pick label="Project" name="projectId" options={addable}/><Submit quiet>Preview visibility</Submit></form>{preview&&<><h3>Visibility preview: {preview.project}</h3><p>{preview.notice}</p><ul className="rows">{preview.audience.map(a=><li key={a.id}>{a.name} · {levelLabel(a.level)}</li>)}</ul><p>Work included: {preview.content.map(t=>t.title).join(', ')}</p><Form action={`/api/v1/tasks/${task.id}/share-personal`} next={here} label="Approve personal sharing"><input type="hidden" name="projectId" value={preview.projectId}/><input type="hidden" name="previewRevision" value={preview.token}/><Submit>Share with reviewed audience</Submit></Form></>}</Card>}
     <Card title="Conversation">
       <ul className="rows">{task.comments.map(comment => <li key={comment.id}><span className="grow"><strong>{comment.author}</strong> <small>{when(comment.at)}</small><br />{comment.body}</span></li>)}{task.comments.length === 0 && <li>No comments yet.</li>}</ul>
       {can('comment') && <Form action={`/api/v1/tasks/${task.id}/comments`} next={here} label="Comment"><Area label="Comment" name="body" /><Submit>Comment</Submit></Form>}

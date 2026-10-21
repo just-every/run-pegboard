@@ -1,3 +1,4 @@
+import { visibilityPreview, sharePersonal, saveSettings, section, place, addRule, undoMove, personalMeta } from '../tasks/personal'
 // /api/v1: tasks, their projects, fields, comments and files, and the lists a person starts from.
 import type { Hono } from 'hono'
 import type { Bindings } from '../../auth.server'
@@ -53,5 +54,12 @@ export function taskRoutes(app: App) {
     const file = await readAttachment(db, actor, params.id)
     return new Response(file.bytes, { headers: { 'content-type': file.contentType, 'content-disposition': `attachment; filename="${file.name}"`, 'cache-control': 'private, no-store', 'x-content-type-options': 'nosniff', 'content-security-policy': "default-src 'none'; sandbox" } })
   }))
-  app.get('/my-tasks', door(async ({ actor, db }) => ({ tasks: await myTasks(db, actor) })))
+  app.get('/my-tasks', door(async ({ actor, db, query }) => ({ tasks: await myTasks(db, actor, query.get('on')??undefined), ...await personalMeta(db,actor) })))
+  app.post('/my-tasks/settings',door(({actor,db,input})=>saveSettings(db,actor,input)))
+  app.post('/my-tasks/sections',door(({actor,db,input})=>section(db,actor,input as never)))
+  app.post('/my-tasks/:id/layout',door(({actor,db,params,input,form})=>place(db,actor,params.id,{...input,...('today' in input?{today:form?flag(input.today):input.today}:{})})))
+  app.post('/my-tasks/rules',door(({actor,db,input})=>addRule(db,actor,input as never)))
+  app.post('/my-tasks/moves/:id/undo',door(({actor,db,params})=>undoMove(db,actor,params.id)))
+  app.get('/tasks/:id/visibility-preview',door(({actor,db,params,query})=>visibilityPreview(db,actor,params.id,query.get('projectId')??'')))
+  app.post('/tasks/:id/share-personal',door(({actor,db,params,input})=>sharePersonal(db,actor,params.id,input as never),{next:(_, {params})=>task(params.id)}))
 }
