@@ -1,0 +1,18 @@
+/* The parts the homepage and the app share (docs/LOOK.md): the white card, the black peg, a line of phrases joined by
+   "·" and the split-flap tiles. */
+.card{background:#fff;border:1px solid #EDF0F3;border-radius:10px;box-shadow:var(--shadow);position:relative}
+.peg{display:inline-block;width:11px;height:11px;border-radius:50%;background:var(--ink);flex:none}
+
+/* a line of phrases with "·" between them: the separator never starts a line (it sits in the clipped margin) */
+.dl{display:inline-flex;flex-wrap:wrap;margin-left:-.9em;clip-path:inset(-6px -6px -6px .9em);max-width:calc(100% + .9em);vertical-align:top}
+.dl>span{flex:0 0 auto;max-width:100%;position:relative;padding-left:.9em}
+.dl>span::before{content:"·";position:absolute;left:0;width:.9em;text-align:center}
+.dl>span:first-child::before{content:none}
+p>.dl,li>.dl,div>.dl{display:flex}
+
+/* split-flap tiles: one tile per letter, a hairline across the middle */
+.flap{display:inline-flex;gap:3px;padding:5px;background:var(--ink);border-radius:6px;vertical-align:middle}
+.flap i{font:700 20px/1 var(--sans);font-style:normal;width:21px;height:30px;display:grid;place-items:center;border-radius:2px;position:relative;color:var(--ink);background:var(--flap)}
+.flap i::after{content:"";position:absolute;left:0;right:0;top:50%;height:1px;background:rgb(0 0 0 / .3)}
+.flap.moved i{background:var(--flap-red)}
+.flap i.sp{background:#2A2A2A}

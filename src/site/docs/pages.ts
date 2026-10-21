@@ -1,10 +1,10 @@
 import { escape } from '../../base/run-site'
-import { siteDocument, siteHeader } from '../frame'
+import { sharedLook, siteDocument, siteHeader } from '../frame'
 import run from '../run.json'
 import { groups, readDocs, type Doc } from './sources'
 import { docsText, renderDoc, validateDocLinks, type Body } from './render'
 
-const head = '<link rel="preload" href="/fonts/inter/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="/landing/base.css"><link rel="stylesheet" href="/docs.css">'
+const head = '<link rel="preload" href="/fonts/inter/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>' + sharedLook + '<link rel="stylesheet" href="/landing/base.css"><link rel="stylesheet" href="/docs.css">'
 const script = '<script src="/docs.js" defer></script>'
 const label = docsText
 const source = (doc: Doc) => `${run.repository}/blob/main/${doc.file}`

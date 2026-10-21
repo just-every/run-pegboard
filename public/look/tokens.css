@@ -1,0 +1,21 @@
+/* Pegboard's tokens, one set for the app, Base's documents, the homepage and the docs (docs/LOOK.md names each).
+   Crisp white and pale azure, ink type, tomato for the cord, "moved", the exception and the one primary action, azure
+   for links, tabs and focus, flamingo pink only for phase tags, spring green only for done. Values Base's theme
+   grammar needs as literals are written once in /rer-theme.css; these names alias them. */
+:root{
+  --sans:var(--rer-font-body);
+  --ink:var(--rer-text);--grey:var(--rer-muted);--grey-2:#7C858F;--line:#E3E8EE;--edge:var(--rer-border);
+  --paper:var(--rer-surface);--pale:var(--rer-page);--wall:#BCE6FE;
+  --tomato:#F94436;--tomato-ink:#D8301F;--tomato-l:#FDE0DB;
+  --azure:var(--rer-focus);--azure-ink:var(--rer-link);--azure-2:#4C9DF2;--azure-l:#CFE5FB;
+  --pink:#F86698;--pink-l:#FCD6E4;
+  --green:#14CF72;--green-ink:#0C9A52;--green-l:#DCF8E8;--done-ink:var(--rer-done-ink);
+  --flap:#4AF489;--flap-red:#FB5A4C;
+  --shadow:0 1px 2px rgb(20 40 70 / .06),0 8px 22px rgb(20 40 70 / .09);
+  /* the app: the peg wall, its cards and the bar over it */
+  --wall-ground:radial-gradient(ellipse at 76% 44%,rgb(214 242 254 / .5),transparent 56%),linear-gradient(110deg,#C3EAFD,#B5E3FD 64%,#BDE7FE);
+  --wall-dots:radial-gradient(circle,rgb(25 56 73 / .62) .9px,transparent 1.2px) 0 0 / 20px 20px;
+  --wall-ink:#2B4A63;
+  --card-shadow:0 1px 2px rgb(20 40 70 / .07),0 6px 17px rgb(53 124 157 / .16);
+  --bar-h:66px;--bar-line:#D9E7F2;
+}

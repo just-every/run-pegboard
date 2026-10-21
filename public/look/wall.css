@@ -1,0 +1,89 @@
+/* The peg wall (owner pick A, the Path view): pale azure with a fine peg-dot grid, the critical path as one tomato cord
+   in switchback rows (cords.js draws it between the stations' pegs), a white card hung on a black peg at every station,
+   off-path tasks as short tassels below, and the agent's tag clipped at the top right. At phone width the snake is one
+   vertical cord with the cards in a column beside it. */
+.wall{position:relative;--cord:3.5;padding:30px 24px 72px;background:var(--wall-dots);background-position:10px 14px}
+.wall>svg.cords{position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible;pointer-events:none;z-index:1}
+.path{position:relative;display:grid;gap:46px}
+.row{position:relative;display:flex;justify-content:space-between;align-items:flex-start;padding-inline:3.2%}
+.row.back{flex-direction:row-reverse}
+.station{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;width:15.4%;min-width:0}
+.station.wide{width:21%}
+
+/* a black peg with a little light on it */
+.wall .peg{width:14px;height:14px;background:radial-gradient(circle at 36% 30%,#64717A 0 14%,#0D1216 46%,#020304 72%);box-shadow:0 2px 3px rgb(0 0 0 / .32);position:relative;z-index:3}
+.station>.peg{margin-bottom:-7px}
+/* an empty wall: the cord between bare pegs */
+.path.empty{gap:180px;padding-block:64px 24px}
+.path.empty .station>.peg{margin:0}
+
+/* a task: a white card hung on its peg; the cord enters and leaves at the title line (the .end anchors) */
+.task{position:relative;width:100%;padding:16px 18px 14px;background:var(--paper);border-radius:10px;box-shadow:var(--card-shadow)}
+.task .end{position:absolute;top:28px;width:1px;height:1px}
+.task .end.l{left:0}.task .end.r{right:0}
+.task h3{display:flex;align-items:center;gap:8px;font:800 19px/1.2 var(--sans);letter-spacing:-.02em}
+.task .who{display:flex;align-items:center;gap:8px;margin-top:9px;font-size:15px;line-height:1.3;color:#4D607B}
+.task .more{margin:5px 0 0 36px;font-size:15px;line-height:1.3;color:#506580}
+.task .warn{margin:5px 0 0 36px;font-size:14px;line-height:1.3;color:var(--tomato-ink);font-weight:500}
+.task .was{display:inline-flex;margin:7px 0 0 36px;padding:3px 8px;border:1px dashed #9FB3C6;border-radius:5px;font-size:14px;color:#526982}
+.task .phase{display:inline-block;margin:8px 0 0 36px;padding:2px 8px;border-radius:999px;background:var(--pink-l);color:#8E1F4B;font-size:12.5px;font-weight:600}
+.task.critical{border-left:6px solid var(--tomato);padding-left:15px}
+.task.ghost{background:rgb(255 255 255 / .62);border:2px dashed #9CB2C2;box-shadow:none}
+.task.ghost h3{color:#3F5368}
+.task.end-card{padding:22px 26px 16px}
+.task.end-card h3{font-size:22px}
+.task .holds{margin-top:6px;font-size:19px;font-weight:700;color:var(--done-ink)}
+.done-mark{display:inline-grid;place-items:center;flex:none;width:22px;height:22px;border-radius:50%;background:var(--green-ink);color:#fff}
+.done-mark svg{width:13px;height:13px}
+.diamond{display:inline-block;flex:none;width:13px;height:13px;margin:0 3px;background:var(--ink);transform:rotate(45deg)}
+
+/* a tassel: an off-path task on a short string below its card */
+.tassel{position:relative;align-self:center;width:88%;margin-top:30px;padding:10px 12px;background:#F2F6F9;border-radius:9px;box-shadow:var(--card-shadow)}
+.tassel::before{content:"";position:absolute;left:24px;top:-30px;height:30px;border-left:2px solid #364A54}
+.tassel>.peg{position:absolute;left:18px;top:-6px}
+.tassel h4{margin:0 0 4px 34px;font:700 15px/1.25 var(--sans)}
+.tassel .who{display:flex;align-items:center;gap:8px;font-size:14.5px;color:#4D607B}
+.tassel .chip{display:inline-block;margin:6px 0 0 36px;padding:1px 7px;border:1px solid #8DA3BA;border-radius:4px;font-size:13px;color:#4F6680}
+/* the exception, clipped in place: the forwarder's email on the samples card */
+.tassel.note{background:#fff}
+.tassel.note p{margin-left:6px;font-size:15px;line-height:1.3}
+
+/* the agent's tag, clipped at the top right of the board by its own peg */
+.tag{position:absolute;z-index:4;top:16px;right:24px;width:404px;padding:15px 16px 14px 30px;background:var(--paper);border:1px solid #A6D6EB;border-radius:10px;box-shadow:var(--card-shadow)}
+.tag>.peg{position:absolute;left:10px;top:16px;width:12px;height:12px}
+.tag .say{font-size:16px;line-height:1.38;color:var(--ink)}
+.tag .acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:13px}
+.tag .tells{margin-top:10px;font-size:15px;color:#506580}
+
+/* the not-found card, hung alone on the wall */
+.lost .wall{min-height:calc(100vh - var(--bar-h));padding-top:84px}
+.lost-card{max-width:520px;margin:0 auto;padding:36px 36px 32px}
+.lost-card>.peg{position:absolute;left:50%;top:-7px;margin-left:-7px}
+.lost-card h1{font:850 40px/1.08 var(--sans);letter-spacing:-.042em}
+.lost-card p{margin:12px 0 24px;font-size:17px;color:var(--grey)}
+
+@media (max-width:1279px){
+  .station{width:17%}
+  .task h3{font-size:17px}
+  .tag{width:380px}
+}
+@media (max-width:1023px){
+  /* the tag leaves the corner and leads the wall */
+  .tag{position:relative;top:auto;right:auto;width:auto;margin:20px 16px 0}
+  .wall{padding:26px 16px 56px}
+  .wall>svg.cords{display:none}
+  /* one vertical cord: the stations in cord order, each card beside it */
+  .path,.path.empty{display:flex;flex-direction:column;gap:14px;padding:0 0 0 30px}
+  .path::before{content:"";position:absolute;left:12px;top:14px;bottom:14px;border-left:3.5px solid var(--tomato);border-radius:2px}
+  .row{display:contents}
+  .station,.station.wide{width:100%;flex-direction:row;align-items:flex-start;gap:0}
+  .station>.peg{position:absolute;left:-25px;top:16px;margin:0}
+  .path.empty .station{height:44px}
+  .path.empty .station>.peg{top:15px}
+  .path.empty .station.minor{display:none}
+  .tassel{width:auto;margin:0 0 0 20px;flex:1}
+  .tassel::before,.tassel>.peg{display:none}
+}
+@media (max-width:599px){
+  .tag .acts .button{flex:1 1 100%;min-height:48px}
+}

@@ -1,10 +1,8 @@
 /* Pegboard homepage: the shared frame. Crisp white and pale azure, one heavy grotesk (Inter) for headings, Inter for data,
-   tomato for actions, cords and "moved", azure for links, eyebrows and pegs, spring green only for done. */
-@font-face{font-family:Inter;font-style:normal;font-weight:100 900;font-display:swap;src:url('/fonts/inter/inter-latin-wght-normal.woff2') format('woff2')}
-:root{--tomato:#F94436;--tomato-ink:#D8301F;--tomato-l:#FDE0DB;--azure:#087BF7;--azure-ink:#0866D0;--azure-2:#4C9DF2;--azure-l:#CFE5FB;--wall:#BCE6FE;--pale:#EAF6FE;
-  --pink:#F86698;--pink-l:#FCD6E4;--green:#14CF72;--green-ink:#0C9A52;--green-l:#DCF8E8;--flap:#4AF489;--flap-red:#FB5A4C;--ink:#141414;--grey:#5A636D;--grey-2:#7C858F;
-  --line:#E3E8EE;--shadow:0 1px 2px rgb(20 40 70 / .06),0 8px 22px rgb(20 40 70 / .09);--gut:clamp(16px,6.25vw,96px);--wrap:min(1344px,100%);
-  --sans:Inter,'Helvetica Neue',Arial,system-ui,sans-serif}
+   tomato for actions, cords and "moved", azure for links, eyebrows and pegs, spring green only for done. The face is in
+   /rer-theme.css, the tokens in /look/tokens.css and the parts the app shares (cards, pegs, "·" lines, split-flap tiles)
+   in /look/parts.css. */
+:root{--gut:clamp(16px,6.25vw,96px);--wrap:min(1344px,100%)}
 *,*::before,*::after{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%;scroll-padding-top:16px}
 body{margin:0;background:#fff;color:var(--ink);font:400 17px/1.5 var(--sans);-webkit-font-smoothing:antialiased;overflow-x:clip}
@@ -51,33 +49,17 @@ img{display:block;max-width:100%;height:auto}
 .drawing{margin-top:52px;position:relative}
 @media (max-width:1179px){.sec-head.center{text-align:left}.sec-head.center .eyebrow .dl{justify-content:flex-start}.sec-head.center .lede{margin-inline:0}}
 
-/* cards, pills, ticks, pegs, avatars */
-.card{background:#fff;border:1px solid #EDF0F3;border-radius:10px;box-shadow:var(--shadow);position:relative}
+/* pills, ticks, avatars */
 .ok{color:var(--green-ink);font-weight:800}
 .dark .ok{color:var(--flap)}
 .g{color:var(--grey)}
 .b{font-weight:700}
 .mv{color:var(--tomato-ink)}
 .num{font-variant-numeric:tabular-nums}
-.peg{display:inline-block;width:11px;height:11px;border-radius:50%;background:var(--ink);flex:none}
 .av{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--pink);color:#fff;font:700 11px/1 var(--sans);flex:none;letter-spacing:.02em}
 .pill{display:inline-block;background:#fff;border-radius:999px;box-shadow:var(--shadow);padding:14px 30px;font-size:19px;max-width:100%}
 .strip{background:#fff;border-radius:10px;box-shadow:var(--shadow);border:1px solid #EDF0F3;padding:15px 24px;font-size:18px;text-align:center}
 .glyph img{width:auto;height:52px}
-
-/* a line of phrases with "·" between them: the separator never starts a line (it sits in the clipped margin) */
-.dl{display:inline-flex;flex-wrap:wrap;margin-left:-.9em;clip-path:inset(-6px -6px -6px .9em);max-width:calc(100% + .9em);vertical-align:top}
-.dl>span{flex:0 0 auto;max-width:100%;position:relative;padding-left:.9em}
-.dl>span::before{content:"·";position:absolute;left:0;width:.9em;text-align:center}
-.dl>span:first-child::before{content:none}
-p>.dl,li>.dl,div>.dl{display:flex}
-
-/* split-flap tiles: one tile per letter, a hairline across the middle */
-.flap{display:inline-flex;gap:3px;padding:5px;background:var(--ink);border-radius:6px;vertical-align:middle}
-.flap i{font:700 20px/1 var(--sans);font-style:normal;width:21px;height:30px;display:grid;place-items:center;border-radius:2px;position:relative;color:var(--ink);background:var(--flap)}
-.flap i::after{content:"";position:absolute;left:0;right:0;top:50%;height:1px;background:rgb(0 0 0 / .3)}
-.flap.moved i{background:var(--flap-red)}
-.flap i.sp{background:#2A2A2A}
 
 /* the tomato pill and the text links */
 .btn-run{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:50px;padding:0 30px;border-radius:9px;background:var(--tomato);color:#fff;font:700 20px/1 var(--sans);text-decoration:none;box-shadow:0 1px 0 rgb(255 255 255 / .35) inset,0 10px 22px -12px rgb(200 40 20 / .7)}

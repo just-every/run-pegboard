@@ -1,5 +1,5 @@
 // The homepage (evidence/desk-pegboard/page-s1): six US businesses through October 2026, one stage of work per section.
-import { siteDocument } from './frame'
+import { sharedLook, siteDocument } from './frame'
 import { heroSection } from './landing/sections/hero'
 import { octoberSection } from './landing/sections/october'
 import { intakeSection } from './landing/sections/intake'
@@ -20,6 +20,6 @@ const description = 'Pegboard turns briefs and requests into plans that fit ever
 
 export function landingHtml(): string {
   const content = `<main id="main" class="landing">${sections.map(s => s()).join('\n')}</main>`
-  const head = '<link rel="preload" href="/fonts/inter/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>' + styles.map(s => `<link rel="stylesheet" href="/landing/${s}.css">`).join('')
-  return siteDocument('Pegboard — every project, from brief to done', description, head, content, '<script src="/landing/cords.js" defer></script>')
+  const head = '<link rel="preload" href="/fonts/inter/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>' + sharedLook + styles.map(s => `<link rel="stylesheet" href="/landing/${s}.css">`).join('')
+  return siteDocument('Pegboard — every project, from brief to done', description, head, content, '<script src="/look/cords.js" defer></script>')
 }

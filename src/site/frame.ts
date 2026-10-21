@@ -4,6 +4,8 @@ import { escape } from '../base/run-site'
 import { iconHead } from '../base/icon-head'
 import run from './run.json'
 
+// The face (/rer-theme.css), the tokens and the parts the homepage and the docs share with the app (docs/LOOK.md).
+export const sharedLook = ['/rer-theme.css', '/look/tokens.css', '/look/parts.css'].map(href => `<link rel="stylesheet" href="${href}">`).join('')
 export const docsHref = '/docs'
 export const demoHref = 'https://demo.run-pegboard.com/'
 const links = `<a href="${docsHref}">Docs</a><a href="/contract">Contract</a><a href="${escape(run.repository)}">Source</a>`
