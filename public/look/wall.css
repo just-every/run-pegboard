@@ -67,18 +67,17 @@
 .lost-card h1{font:850 40px/1.08 var(--sans);letter-spacing:-.042em}
 .lost-card p{margin:12px 0 24px;font-size:17px;color:var(--grey)}
 
+@media (max-width:1439px) and (min-width:1280px){
+  .task h3{font-size:16.5px}
+  .task .who{font-size:13.5px}
+  .task.end-card h3{font-size:19px}
+}
 @media (max-width:1279px){
   /* the tag leaves the corner and leads the wall */
   .tag{position:relative;top:auto;right:auto;width:auto;margin:18px 24px 0}
-  .station{width:17.5%}
-  .task h3{font-size:17px}
-}
-@media (max-width:1023px){
-  .tag{margin:18px 16px 0}
-  .wall{padding:26px 16px 56px}
   .wall>svg.cords{display:none}
   /* one vertical cord: the stations in cord order, each card beside it */
-  .path,.path.empty{display:flex;flex-direction:column;gap:14px;padding:0 0 0 30px}
+  .path,.path.empty{display:flex;flex-direction:column;gap:14px;max-width:680px;padding:0 0 0 30px}
   .path::before{content:"";position:absolute;left:12px;top:14px;bottom:14px;border-left:3.5px solid var(--tomato);border-radius:2px}
   .row{display:contents}
   .station,.station.wide{width:100%;align-items:stretch;gap:0}
@@ -90,6 +89,10 @@
   .tassel{align-self:stretch;width:auto;margin:10px 0 0 22px}
   .tassel::before{left:-12px;top:-10px;height:calc(50% + 10px);border-left-width:2px}
   .tassel>.peg{display:none}
+}
+@media (max-width:1023px){
+  .tag{margin:18px 16px 0}
+  .wall{padding:26px 16px 56px}
 }
 @media (max-width:599px){
   .tag .acts .button{flex:1 1 100%;min-height:48px}
