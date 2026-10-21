@@ -26,7 +26,7 @@ export function taskRoutes(app: App) {
     if (patch.estimateHours !== undefined) patch.estimateHours = Number(patch.estimateHours)
     if ('internalOnly_present' in input) patch.internalOnly = flag(input.internalOnly)
     if (input.dueDate === '' ) patch.dueDate = null
-    else if(input.dueDateKind==='instant'&&typeof patch.dueDate==='string'){if(!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?$/.test(patch.dueDate)||Number.isNaN(Date.parse(patch.dueDate+'Z')))throw invalid('due_date');patch.dueDate=new Date(patch.dueDate+'Z').toISOString()}
+    else if(input.dueDateKind==='instant'&&typeof patch.dueDate==='string'){if(!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?$/.test(patch.dueDate)||Number.isNaN(Date.parse(patch.dueDate+'Z'))||new Date(patch.dueDate+'Z').toISOString().slice(0,10)!==patch.dueDate.slice(0,10))throw invalid('due_date');patch.dueDate=new Date(patch.dueDate+'Z').toISOString()}
     if (typeof patch.collaborators === 'string') patch.collaborators = patch.collaborators.split(',').map((part: string) => part.trim()).filter(Boolean)
     const updated = await updateTask(db, actor, params.id, patch); return { id: updated.id }
   }, { next: (_, { params }) => task(params.id) }))

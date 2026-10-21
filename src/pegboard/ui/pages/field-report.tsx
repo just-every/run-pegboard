@@ -1,3 +1,4 @@
+import {fieldError} from '../field-errors'
 import type { fieldReport } from '../../fields/report'
 import type { Viewer } from '../../../ui/viewer'
 import { Card, Shell } from '../shell'
@@ -41,7 +42,7 @@ export function FieldReportPage({
                       </dt>
                       <dd>
                         {f.error
-                          ? `Error: ${f.error}`
+                          ? fieldError(f.error)
                           : f.display}</dd>
                     </div>
                   ))}

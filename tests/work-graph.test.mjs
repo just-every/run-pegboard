@@ -171,6 +171,7 @@ describe('PEG-001 one work graph', { concurrency: false }, () => {
       assert.equal((await ok(paz.get(`/api/v1/tasks/${task.id}`))).dueDate,due)
     }
     assert.equal((await paz.post('/api/v1/my-tasks/settings',{timezone:'invalid'})).status,400)
+    assert.equal((await paz.post('/api/v1/tasks',{title:'Invalid deadline',dueDate:'2026-02-31T18:30:00Z'})).status,400)
   })
 
   it('persists manual section/task ranks on reconnect and logs reversible deduplicated section rules', async () => {

@@ -2,6 +2,12 @@ import { appDocument } from '../../ui/document.server'
 import { AppBar } from '../../ui/bar'
 
 const sayings: Record<string, string> = {
+  due_date:'Enter a valid calendar date or UTC date and time.', visibility_preview_required:'The work or its audience changed. Review the visibility preview again before sharing.',
+  field_preview_required:'The field or its values changed. Open a fresh type-change preview.', incompatible_values_preserved:'That change would alter existing values. The values were preserved; choose a compatible type.',
+  time_changed_or_timer_running:'Time changed while you were working, or you already have a running timer. Refresh the timesheet before continuing.', timesheet_preview_changed:'The time or its access changed. Review the current timesheet before deciding.',
+  timesheet_locked:'This timesheet is submitted or approved. Returned entries can be corrected; approved entries need an attributed adjustment.', different_owner_or_admin:'A different owner or administrator with current project access must review this timesheet.',
+  review_project_visibility_before_submission:'This includes personal time or project work you can no longer access. Keep personal time private and record submitted time against currently shared project work.',
+
   not_found: 'That is not available to you, or it does not exist.', forbidden: 'You do not have the access this needs.', cross_origin: 'That request did not come from this app.',
   last_owner: 'That would leave nobody responsible, so it did not happen.', share_preview_required: 'Review the share preview before widening who can see this.',
   stale_preview: 'The request changed after you opened it. Open it again.', stale: 'The settings changed since this was asked, so it grants nothing. They can ask again.',
