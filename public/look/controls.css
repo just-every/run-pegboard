@@ -25,8 +25,8 @@
 /* initials on a pale azure disc: colour never codes a person (pink is for phases, green for done) */
 .avatar{display:inline-grid;place-items:center;flex:none;width:28px;height:28px;border-radius:50%;background:linear-gradient(140deg,var(--avatar-light),var(--avatar-dark));color:var(--avatar-ink);font:600 13px/1 var(--sans);letter-spacing:.02em;box-shadow:0 0 0 1.5px var(--avatar-ring)}
 
-/* the one split-flap chip (parts.css draws the tiles) at the app's small size; "quiet" tiles are the board's own, white
-   letters on ink, as the pick's chip */
+/* the one split-flap chip (parts.css draws the tiles) at the app's small size; "quiet" tiles are the arrivals board's
+   header tiles, ink letters on white (no black field) */
 .flap.chip{gap:2px;padding:4px;border-radius:5px}
 .flap.chip i{width:17px;height:26px;font-size:15px}
 .flap.quiet i{background:linear-gradient(var(--tile-top) 49%,var(--tile-seam) 50%,var(--tile-bottom));color:var(--tile-ink)}

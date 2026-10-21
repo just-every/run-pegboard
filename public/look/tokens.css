@@ -54,8 +54,8 @@
   --avatar-dark:#A9D8FB;
   --avatar-ink:#16365A;
   --avatar-ring:rgb(255 255 255 / .9);
-  --tile-top:#323C47;
-  --tile-seam:#1B252E;
-  --tile-bottom:#2E3843;
-  --tile-ink:#F6F6F6;
+  --tile-top:#FFFFFF;
+  --tile-seam:#EEF1F4;
+  --tile-bottom:#F7F9FB;
+  --tile-ink:#141414;
 }
