@@ -8,6 +8,7 @@ import { operatorMail } from './mail.server.mjs'
 import branding from './branding.json'
 import { homeDocument, settingsDocument } from './ui/document.server'
 import { settingsPath } from './ui/home'
+import { pegboardPage } from './pegboard/ui/routes'
 
 // The edition's declared theme (public/rer-theme.css), as Base frames link it.
 const theme = { href: '/rer-theme.css', productName: branding.name, accentColor: branding.primaryColor }
@@ -88,6 +89,7 @@ async function handleAuthResponse(request: Request, original: Bindings): Promise
   if (!session) return new Response(null, { status: 303, headers: { ...privateHeaders, location: '/signin' } })
   return homeDocument(session.operator)
  }
+ if (url.pathname.startsWith('/app/')) return pegboardPage(request, original)
  return null
 }
 

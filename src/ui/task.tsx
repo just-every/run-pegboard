@@ -43,10 +43,10 @@ export function TaskCard({ id, title, done, milestone, owner, when, more, warn, 
 }
 
 // An off-path task hanging below its card on a short string; `chip` names a linked record (Jira FW-212).
-export function Tassel({ title, owner, when, chip }: { title: string; owner?: string; when?: string; chip?: string }) {
+export function Tassel({ title, owner, when, chip, href }: { title: string; owner?: string; when?: string; chip?: string; href?: string }) {
   return <div className="tassel">
     <span className="peg" aria-hidden="true" />
-    <h4>{glue(title)}</h4>
+    <h4>{href ? <a href={href}>{glue(title)}</a> : glue(title)}</h4>
     {(owner || when) && <p className="who">{owner && <span className="avatar" aria-hidden="true">{initials(owner)}</span>}<Dots phrases={[owner, when].filter((phrase): phrase is string => Boolean(phrase))} /></p>}
     {chip && <p className="chip">{chip}</p>}
   </div>

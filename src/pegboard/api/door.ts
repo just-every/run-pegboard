@@ -68,7 +68,7 @@ export const door = (handler: (door: Door) => Promise<unknown>, options: Options
     }
     const result = await handler(context)
     if (result instanceof Response) return result
-    if (read.form && writing) return new Response(null, { status: 303, headers: { ...headers, location: landing(read.input, options.next?.(result, context) ?? '/app') } })
+    if (form && writing) return new Response(null, { status: 303, headers: { ...headers, location: landing(read.input, options.next?.(result, context) ?? '/app') } })
     return json(result ?? { ok: true })
   } catch (error) {
     const failure = describe(error)

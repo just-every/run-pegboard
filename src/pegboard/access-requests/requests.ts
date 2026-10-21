@@ -7,6 +7,7 @@ import { projectEffective, taskAccess, teamEffective } from '../authorization/ef
 import { isLevel, rank, type Level } from '../authorization/levels'
 import { workspaceRole, workspaceSettings, workspacesOf, operatorRow, type Actor } from '../workspace/people'
 import { loadTarget, policyRevOf, recipients, targetTypeOf, workspaceOf } from './authority'
+import { refPattern, resolveTaskId } from '../references/refs'
 import { deliver, type Delivery } from './notify'
 
 /** Answered identically for a target that does not exist, one that cannot be asked for and one just asked for. */
@@ -29,9 +30,12 @@ export async function submitRequest(db: D1Database, delivery: Delivery, actor: A
   const level = input.level === undefined || input.level === '' ? 'viewer' : input.level
   if (!isLevel(level)) throw invalid('level')
   const message = typeof input.message === 'string' ? input.message.trim().slice(0, 1000) : ''
-  const type = typeof input.targetId === 'string' ? targetTypeOf(input.targetId.trim()) : null
+  // A link may carry an id or a task reference (MKT-142); either names the same target.
+  const named = typeof input.targetId === 'string' ? input.targetId.trim() : ''
+  const targetId = refPattern.test(named.toUpperCase()) ? await resolveTaskId(db, named) ?? '' : named
+  const type = targetTypeOf(targetId)
   if (!type) return acknowledgment
-  const target = await loadTarget(db, type, (input.targetId as string).trim())
+  const target = await loadTarget(db, type, targetId)
   if (!target) return acknowledgment
   const workspaceId = workspaceOf(target), role = await workspaceRole(db, actor.id, workspaceId)
   if (!role || role === 'guest' || role === 'agent') return acknowledgment

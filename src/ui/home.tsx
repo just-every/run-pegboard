@@ -23,6 +23,11 @@ const rows: Station[][] = [
 export const settingsPath = '/auth/settings/identity'
 export const homeTabs = (viewer: Viewer, current = '/app'): Tab[] => [
   { label: 'Home', href: '/app' },
+  { label: 'Projects', href: '/app/projects' },
+  { label: 'My tasks', href: '/app/my-tasks' },
+  { label: 'Teams', href: '/app/teams' },
+  { label: 'Inbox', href: '/app/inbox' },
+  ...(viewer.role === 'member' ? [] : [{ label: 'Access', href: '/app/access-review' }, { label: 'Admin', href: '/app/admin' }]),
   ...(viewer.role === 'owner' ? [{ label: 'Settings', href: settingsPath }] : []),
 ].map(tab => ({ ...tab, current: tab.href === current }))
 

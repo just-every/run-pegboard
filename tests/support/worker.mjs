@@ -50,8 +50,18 @@ export async function startWorker({ settings = {} } = {}) {
   const cookieOf = response => response.headers.getSetCookie().map(line => line.split(';')[0]).filter(pair => !pair.endsWith('=')).join('; ')
   const claim = await fetch(`${origin}/auth/bootstrap`, { method: 'POST', redirect: 'manual', headers: { origin, 'x-rer-dev-key': devKey, 'content-type': 'application/json' }, body: JSON.stringify({ token: setupToken, displayName: 'Wes Holloway' }) })
   if (claim.status !== 303) throw new Error(`owner claim ${claim.status} ${await claim.text()}`)
-  const owner = new Client(origin, cookieOf(claim), 'Wes Holloway')
-  await fetch(`${origin}/setup`, { method: 'POST', redirect: 'manual', headers: { cookie: owner.cookie, origin, 'content-type': 'application/x-www-form-urlencoded' }, body: 'displayName=Wes+Holloway&confirm=yes' })
+  const claimed = new Client(origin, cookieOf(claim), 'Wes Holloway')
+  await fetch(`${origin}/setup`, { method: 'POST', redirect: 'manual', headers: { cookie: claimed.cookie, origin, 'content-type': 'application/x-www-form-urlencoded' }, body: 'displayName=Wes+Holloway&confirm=yes' })
+  const enter = async (as, displayName, id) => {
+    const entered = await fetch(`${origin}/auth/dev/enter?as=${encodeURIComponent(as)}&returnTo=/app`, { redirect: 'manual', headers: { origin, 'x-rer-dev-key': devKey } })
+    if (entered.status !== 303) throw new Error(`sign-in ${as}: ${entered.status}`)
+    const client = new Client(origin, cookieOf(entered), displayName)
+    client.id = id; client.email = as
+    return client
+  }
+  // The owner signs in through the local dev door, so Base's step-up for sensitive account changes holds as it does in `rer dev`.
+  const owner = await enter('owner', 'Wes Holloway')
+  owner.id = (await owner.get('/api/v1/me')).body.id
   const server = {
     origin, owner, persist, devKey, output: () => output,
     /** Invite a person into the default workspace in a role (as the owner, through the admin door) and sign them in. */
@@ -60,14 +70,7 @@ export async function startWorker({ settings = {} } = {}) {
       if (added.status !== 200) throw new Error(`invite ${email}: ${added.status} ${JSON.stringify(added.body)}`)
       return server.signIn(email, displayName, added.body.id)
     },
-    async signIn(email, displayName, id) {
-      const entered = await fetch(`${origin}/auth/dev/enter?as=${encodeURIComponent(email)}&returnTo=/app`, { redirect: 'manual', headers: { origin, 'x-rer-dev-key': devKey } })
-      if (entered.status !== 303) throw new Error(`sign-in ${email}: ${entered.status}`)
-      const client = new Client(origin, cookieOf(entered), displayName)
-      client.id = id
-      client.email = email
-      return client
-    },
+    signIn: enter,
     /** The store, for the one thing no door offers: moving time. */
     sql(statement) { return execFileSync(process.execPath, [...wrangler, 'd1', 'execute', 'foundation', '--local', '--persist-to', persist, '--config', 'wrangler.jsonc', '--json', '--command', statement], { stdio: 'pipe', env: quiet }).toString() },
     async stop() {
