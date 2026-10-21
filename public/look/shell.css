@@ -10,7 +10,9 @@ body:has(>.app){padding:0;background:var(--wall-ground)}
 :where(.app) a{color:inherit}
 .app :focus-visible{outline:3px solid var(--azure);outline-offset:3px;border-radius:4px}
 
-.bar{position:relative;z-index:3;display:flex;align-items:center;gap:12px 30px;min-height:var(--bar-h);padding:0 28px;background:var(--paper);box-shadow:0 1px 0 var(--bar-line)}
+/* the bar's surface, shared with Base's documents (frames.css draws their bar as the body's ::before) */
+.bar,html.rer-themed body::before{background:var(--paper);box-shadow:0 1px 0 var(--bar-line)}
+.bar{position:relative;z-index:3;display:flex;align-items:center;gap:12px 30px;min-height:var(--bar-h);padding:0 28px}
 .lockup{display:inline-flex;align-items:center;gap:10px;flex:none;color:var(--ink);text-decoration:none;font:800 27px/1 var(--sans);letter-spacing:-.035em}
 .lockup img{display:block;width:44px;height:44px;margin:-6px -2px}
 .lockup span{padding-block:.1em}

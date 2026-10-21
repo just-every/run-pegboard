@@ -1,5 +1,5 @@
-/* The app's controls, each drawn once for the app's own markup and Base's documents together (each rule names the
-   app's class and Base's element; frames.css only places them): the tomato primary and the outlined secondary, thin
+/* The app's controls and surfaces, each drawn once for the app's own markup and Base's documents together (each rule
+   names the app's class and Base's element; frames.css only places them): the tomato primary and the outlined secondary, thin
    quiet fields with a clear azure focus, 24 px checkboxes, initials avatars and the small split-flap chip.
    White on tomato is 3.6:1, so every tomato label is large bold text (19 px, 700). */
 .button,html.rer-themed main button,html.rer-themed main .action,html[data-state] .btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:44px;padding:0 18px;border:1px solid transparent;border-radius:8px;font:700 19px/1.15 var(--sans);letter-spacing:-.01em;text-align:center;text-decoration:none;cursor:pointer}
@@ -21,6 +21,12 @@
 .checkbox,html.rer-themed main label:has(input[type=checkbox]){display:flex;align-items:flex-start;gap:12px;font-size:16px;font-weight:400;line-height:1.45;color:var(--ink)}
 .checkbox input,html.rer-themed main input[type=checkbox]{flex:none;width:24px;height:24px;margin:0;accent-color:var(--tomato)}
 .checkbox input:focus-visible,html.rer-themed main input[type=checkbox]:focus-visible{outline:2px solid var(--azure);outline-offset:2px}
+
+/* the white card and the black peg it hangs on: the wall's task cards and pegs, and Base's documents (the Lobby's
+   door and every frame are a card hung on a peg; frames.css places them) */
+.task,html.rer-themed main,html[data-state] .door-card{background:var(--paper);border-radius:10px;box-shadow:var(--card-shadow)}
+html[data-state] .door-card{border-radius:14px}
+.wall .peg,.tag>.peg,html.rer-themed main::after,html[data-state] .door-card::before{width:14px;height:14px;border-radius:50%;background:radial-gradient(circle at 36% 25%,var(--peg-highlight) 0 8%,var(--peg-mid) 30%,var(--peg-dark) 72%);box-shadow:0 2px 3px var(--peg-shadow)}
 
 /* initials on a pale azure disc: colour never codes a person (pink is for phases, green for done) */
 .avatar{display:inline-grid;place-items:center;flex:none;width:28px;height:28px;border-radius:50%;background:linear-gradient(140deg,var(--avatar-light),var(--avatar-dark));color:var(--avatar-ink);font:600 13px/1 var(--sans);letter-spacing:.02em;box-shadow:0 0 0 1.5px var(--avatar-ring)}

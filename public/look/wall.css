@@ -12,15 +12,16 @@
 .station{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;width:16.6%;min-width:0}
 .station.wide{width:21%}
 
-/* a black peg with a little light on it */
-.wall .peg,.tag>.peg{width:14px;height:14px;background:radial-gradient(circle at 36% 25%,var(--peg-highlight) 0 8%,var(--peg-mid) 30%,var(--peg-dark) 72%);box-shadow:0 2px 3px var(--peg-shadow);position:relative;z-index:3}
+/* a black peg (controls.css draws it) */
+.wall .peg,.tag>.peg{position:relative;z-index:3}
 .station>.peg{margin-bottom:-7px}
 /* an empty wall: the cord between bare pegs */
 .path.empty{gap:200px;padding-block:96px 20px}
 .path.empty .station>.peg{margin:0}
 
-/* a task: a white card hung on its peg; the cord enters and leaves at the title line (the .end anchors) */
-.task{position:relative;width:100%;padding:15px 16px 13px;background:var(--paper);border-radius:10px;box-shadow:var(--card-shadow)}
+/* a task: a white card hung on its peg (controls.css draws the card); the cord enters and leaves at the title line
+   (the .end anchors) */
+.task{position:relative;width:100%;padding:15px 16px 13px}
 .task .end{position:absolute;top:28px;width:1px;height:1px}
 .task .end.l{left:0}.task .end.r{right:0}.task .end.b{top:auto;bottom:0;left:50%}
 .task h3{display:flex;align-items:center;gap:8px;font:800 17.5px/1.2 var(--sans);letter-spacing:-.025em}
