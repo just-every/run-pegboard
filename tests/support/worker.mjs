@@ -3,7 +3,7 @@
 import { execFileSync, spawn } from 'node:child_process'
 import { randomBytes } from 'node:crypto'
 import { createServer } from 'node:net'
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -35,6 +35,9 @@ export async function startWorker({ settings = {} } = {}) {
   await new Promise(resolve => probe.close(resolve))
   const persist = await mkdtemp(join(tmpdir(), 'pegboard-graph-'))
   execFileSync(process.execPath, [...wrangler, 'd1', 'migrations', 'apply', 'foundation', '--local', '--persist-to', persist, '--config', 'wrangler.jsonc'], { stdio: 'pipe', env: quiet })
+  // Store edits run from a scratch folder: wrangler writes its temp files beside its config, and the dev server restarts when they appear in the checkout.
+  const scratch = await mkdtemp(join(tmpdir(), 'pegboard-sql-'))
+  await writeFile(join(scratch, 'wrangler.json'), JSON.stringify({ name: 'sql', d1_databases: [{ binding: 'DB', database_name: 'foundation', database_id: 'local-foundation-only' }] }))
   const origin = `http://127.0.0.1:${port}`, setupToken = randomBytes(32).toString('hex'), devKey = randomBytes(40).toString('base64url')
   // The local dev Worker (src/server.dev.ts): its key-gated one-click door signs an invited person in, as `rer dev` does.
   const env = { ...process.env, CI: '1', CLOUDFLARE_INCLUDE_PROCESS_ENV: 'true', RER_STATE_DIR: persist, RER_DEV_KEY: devKey, AUTH_LOCAL: 'true', AUTH_ORIGIN: origin, OWNER_EMAIL: 'owner@example.com', MAIL_FROM: 'pegboard@example.com', SESSION_SECRET: randomBytes(32).toString('hex'), SETUP_TOKEN: setupToken, ...settings }
@@ -72,11 +75,21 @@ export async function startWorker({ settings = {} } = {}) {
     },
     signIn: enter,
     /** The store, for the one thing no door offers: moving time. */
-    sql(statement) { return execFileSync(process.execPath, [...wrangler, 'd1', 'execute', 'foundation', '--local', '--persist-to', persist, '--config', 'wrangler.jsonc', '--json', '--command', statement], { stdio: 'pipe', env: quiet }).toString() },
+    async sql(statement) {
+      const out = execFileSync(process.execPath, [join(process.cwd(), wrangler[0]), 'd1', 'execute', 'foundation', '--local', '--persist-to', persist, '--config', join(scratch, 'wrangler.json'), '--json', '--command', statement], { cwd: scratch, stdio: 'pipe', env: quiet }).toString()
+      // A second writer on the store makes the dev Worker restart once; wait until it answers steadily again.
+      await new Promise(resolve => setTimeout(resolve, 2000))
+      for (let steady = 0, tries = 0; steady < 4 && tries < 100; tries++) {
+        try { steady = (await fetch(`${origin}/health`)).ok ? steady + 1 : 0 } catch { steady = 0 }
+        await new Promise(resolve => setTimeout(resolve, 250))
+      }
+      return out
+    },
     async stop() {
       child.kill('SIGTERM')
       await new Promise(resolve => child.exitCode !== null ? resolve() : child.once('exit', resolve))
       await rm(persist, { recursive: true, force: true })
+      await rm(scratch, { recursive: true, force: true })
     },
   }
   return server

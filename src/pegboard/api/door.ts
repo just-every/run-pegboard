@@ -20,7 +20,7 @@ export const json = (body: unknown, status = 200, extra: Record<string, string> 
 
 const sameOrigin = (request: Request, env: Bindings) => {
   const origin = request.headers.get('origin')
-  return !!origin && (origin === new URL(request.url).origin || origin === new URL(env.AUTH_ORIGIN).origin)
+  return !!origin && request.headers.get('sec-fetch-site') !== 'cross-site' && (origin === new URL(request.url).origin || origin === new URL(env.AUTH_ORIGIN).origin)
 }
 async function readInput(request: Request): Promise<{ input: Record<string, any>; form: boolean }> {
   const type = request.headers.get('content-type') ?? ''

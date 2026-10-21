@@ -20,7 +20,7 @@ export async function appDocument(title: string, body: ReactElement): Promise<Re
     + `<title>${escape(title)}</title>${iconHead}<link rel="stylesheet" href="/rer-theme.css">${fontHead}<style>${pageStyle}</style></head>`
     + `<body class="app">${renderToStaticMarkup(body)}<script src="/look/cords.js" defer></script></body></html>`
   return new Response(html, { headers: {
-    'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'referrer-policy': 'no-referrer', 'x-content-type-options': 'nosniff', 'x-robots-tag': 'noindex, nofollow',
+    'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'referrer-policy': 'same-origin', 'x-content-type-options': 'nosniff', 'x-robots-tag': 'noindex, nofollow',
     'content-security-policy': `default-src 'none'; script-src 'self'; style-src 'self' 'sha256-${await style}'; font-src 'self'; img-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'`,
   } })
 }

@@ -14,8 +14,9 @@ https://runeditrun.com/install.sh.
 ## Foundation and target
 
 Read CONTRACT.md, ACCEPTANCE.md, OPERATIONS.md and RUN-LOCALLY.md before changing
-behavior. Pegboard starts as a technical foundation. Every product target is
-missing; a contract is not evidence that a feature exists. Do not add mock
+behavior. Pegboard started as a technical foundation; CONTRACT.md's Status table
+says which product clauses have code and tests, and a contract line is not
+evidence that a feature exists. Do not add mock
 application data, fake providers, placeholder product screens or fallback
 behavior. The app wears the owner-approved look (app pick A, the Path view): build
 every screen from the tokens and parts named in docs/LOOK.md, and keep

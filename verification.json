@@ -26,6 +26,22 @@
         "pnpm run build",
         "pnpm run test:runtime"
       ]
+    },
+    {
+      "name": "work-graph",
+      "browser": false,
+      "hosted": false,
+      "commands": [
+        "pnpm run test:graph"
+      ]
+    },
+    {
+      "name": "journeys",
+      "browser": true,
+      "hosted": false,
+      "commands": [
+        "pnpm run test:journeys"
+      ]
     }
   ],
   "nightly": []

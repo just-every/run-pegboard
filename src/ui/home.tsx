@@ -32,14 +32,13 @@ export const homeTabs = (viewer: Viewer, current = '/app'): Tab[] => [
 ].map(tab => ({ ...tab, current: tab.href === current }))
 
 export function AppHome({ viewer }: { viewer: Viewer }) {
-  // The tag speaks to its reader: only the owner has settings.
-  const works = viewer.role === 'owner' ? 'sign-in and settings work today' : 'sign-in works today'
   return <>
     <AppBar viewer={viewer} tabs={homeTabs(viewer)} />
     <main className="board" id="main">
       <Heading title="No projects yet." chip={<Flap text="EMPTY" tone="quiet" />} facts={['No tasks', 'no owners', 'no critical path']} />
-      <Tag label="Pegboard" say={`Nothing to re-plan · projects, tasks and agent teammates are still being built · ${works}`} actions={<>
-        <a className="button primary" href={`${identity.runSite}/contract`}>See what’s built<Arrow /></a>
+      <Tag label="Pegboard" say="Nothing to re-plan · start a project and its sections and tasks hang here · agent teammates are still being built" actions={<>
+        <a className="button primary" href="/app/projects">Start a project<Arrow /></a>
+        <a className="button quiet" href={`${identity.runSite}/contract`}>See what’s built</a>
         <a className="button quiet" href={`${identity.runSite}/docs`}>Read the docs</a>
       </>} />
       <PathWall label="Critical path, empty" rows={rows} />

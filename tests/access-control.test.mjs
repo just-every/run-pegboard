@@ -156,7 +156,7 @@ describe('PEG-020 roles, grants and the decision lifecycle', { concurrency: fals
 
     // Expiry: a request past its time grants nothing.
     const [late] = (await waiting(owner)).filter(r => r.targetId === busy)
-    w.sql(`UPDATE peg_access_requests SET expires_at=1 WHERE id='${late.id}'`)
+    await w.sql(`UPDATE peg_access_requests SET expires_at=1 WHERE id='${late.id}'`)
     assert.equal((await ok(decide(owner, late, { decision: 'approve' }), 409)).error, 'expired')
     assert.equal((await who.member.get(`/api/v1/projects/${busy}`)).status, 404)
     assert.ok((await audit()).some(r => r.action === 'request.expired' && r.detail.requestId === late.id))
@@ -275,9 +275,18 @@ describe('PEG-020 roles, grants and the decision lifecycle', { concurrency: fals
     assert.equal((await who.commenter.post(`/api/v1/tasks/${mine.id}/comments`, { body: 'no' })).status, 403)
     // Retention: decided requests leave the review after the retention window; the audit rows stay.
     await policy({ requestRetentionDays: 30 })
-    w.sql("UPDATE peg_access_requests SET decided_at=1 WHERE status<>'pending'")
+    await w.sql("UPDATE peg_access_requests SET decided_at=1 WHERE status<>'pending'")
     const review = await ok(owner.get('/api/v1/admin/access-review'))
     assert.equal(review.requests.filter(r => r.status !== 'pending').length, 0)
     assert.ok(review.audit.some(r => r.action === 'request.approved'))
+  })
+
+  it('keeps one workspace invisible to another’s people', async () => {
+    const other = await ok(owner.post('/api/v1/workspaces', { name: 'Skunkworks' }))
+    const hidden = await ok(owner.post('/api/v1/projects', { name: 'Skunk project', workspaceId: other.id }))
+    assert.ok(!(await ok(who.member.get('/api/v1/workspaces'))).workspaces.some(entry => entry.id === other.id))
+    for (const door of [c => c.get(`/api/v1/projects?workspace=${other.id}`), c => c.get(`/api/v1/teams?workspace=${other.id}`), c => c.get(`/api/v1/projects/${hidden.id}`), c => c.post('/api/v1/projects', { name: 'Intruder', workspaceId: other.id })])
+      assert.equal((await door(who.member)).status, 404)
+    assert.ok(!(await ok(who.member.get('/api/v1/projects'))).projects.some(project => project.name === 'Skunk project'))
   })
 })

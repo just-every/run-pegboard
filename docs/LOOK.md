@@ -6,7 +6,7 @@ switchback rows, a white card hung on a black peg at every task, off-path tasks 
 clipped to the cord at the review card. It deliberately breaks from the rail + table + side panel skeleton: never add a
 left rail, count tiles, a central table, a right exception panel or an activity log to it.
 
-Pegboard has no product code yet (CONTRACT.md: every clause missing), so `/app` draws this composition in its **empty
+Pegboard's work graph (PEG-001) and access model (PEG-020) now exist: a project's page hangs its sections as cards on the cord with their tasks as tassels, and the other screens are cards on the same wall. A person with projects lands on their list; a person with none still gets `/app` in its **empty
 state**: a blank ghost card (`TaskCard state="ghost"` with no title) hangs at each of the pick's thirteen stations, five,
 four and four a row at the pick's card size, the cord runs card to card and ends on the ghost launch card, and the
 agent's tag sits in the heading band's corner. Nothing is drawn as if it existed: no titles, owners or dates, only one
@@ -23,6 +23,7 @@ and parts below; do not write a second copy of any of them.
 | `public/look/controls.css` | Buttons, fields, checkboxes, avatars, the small flap chip. Each rule names the app's class and Base's element together. |
 | `public/look/shell.css` | The bar, breadcrumb, tabs, person, the board and its heading band. |
 | `public/look/wall.css` | The peg wall, the switchback path, task cards and blank ghosts, tassels, the exception note, the agent's tag (and its corner place on a wall with no proposal), the not-found card, and the column plan below 1024 px. |
+| `public/look/pages.css` | The screens beyond the Path wall (projects, tasks, teams, inbox, access review, admin): a page of cards on the same wall, rows inside a card instead of a table, inline forms. |
 | `public/look/frames.css` | Base's documents (sign-in, confirmation, `/setup`, settings, hand-off, the Lobby) placed in the bar + wall + hung card; sign-in settings under the app's own bar. |
 | `public/look/pegboard.css` | The entry every app document and Base frame links (`src/base/font-head.ts`). |
 | `public/look/lobby.css` | The entry the edition identity's stylesheet reaches (the Lobby, and the run site's Base pages, which need only the theme). |

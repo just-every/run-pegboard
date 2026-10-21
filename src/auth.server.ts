@@ -9,6 +9,8 @@ import branding from './branding.json'
 import { homeDocument, settingsDocument } from './ui/document.server'
 import { settingsPath } from './ui/home'
 import { pegboardPage } from './pegboard/ui/routes'
+import { actorOf, ensureDefaultWorkspace, workspacesOf } from './pegboard/workspace/people'
+import { listProjects } from './pegboard/workspace/projects'
 
 // The edition's declared theme (public/rer-theme.css), as Base frames link it.
 const theme = { href: '/rer-theme.css', productName: branding.name, accentColor: branding.primaryColor }
@@ -50,6 +52,12 @@ export function operatorAuth(env: Bindings) {
  return createOperatorAuth({ db: env.DB, config: authConfig(env), mailSender: operatorMail(env), clientIp: request => request.headers.get('CF-Connecting-IP') ?? '' })
 }
 
+async function hasProjects(db: D1Database, actor: ReturnType<typeof actorOf>): Promise<boolean> {
+ await ensureDefaultWorkspace(db)
+ for (const workspace of await workspacesOf(db, actor)) if ((await listProjects(db, actor, workspace)).length) return true
+ return false
+}
+
 const privateHeaders = { 'cache-control': 'no-store', 'referrer-policy': 'no-referrer', 'x-content-type-options': 'nosniff', 'x-robots-tag': 'noindex, nofollow' }
 
 async function handleAuthResponse(request: Request, original: Bindings): Promise<Response | null> {
@@ -87,6 +95,8 @@ async function handleAuthResponse(request: Request, original: Bindings): Promise
  if (url.pathname === '/app') {
   const session = await operatorAuth(env).getSession(request)
   if (!session) return new Response(null, { status: 303, headers: { ...privateHeaders, location: '/signin' } })
+  // A person with projects lands on them; the empty wall is for a person with none.
+  if (await hasProjects(env.DB, actorOf(session))) return new Response(null, { status: 303, headers: { ...privateHeaders, location: '/app/projects' } })
   return homeDocument(session.operator)
  }
  if (url.pathname.startsWith('/app/')) return pegboardPage(request, original)

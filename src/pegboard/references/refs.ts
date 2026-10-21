@@ -28,7 +28,17 @@ export async function setPrefix(db: D1Database, project: ProjectRow, value: unkn
   const prefix = normalizePrefix(value)
   if (prefix === project.prefix) throw conflict('prefix_unchanged')
   if (await first(db, 'SELECT 1 FROM peg_ref_prefixes WHERE prefix=?', prefix)) throw conflict('prefix_taken')
-  if (!project.prefix) return { prefix, statements: [bound(db, 'INSERT INTO peg_ref_prefixes(prefix,project_id,next_number) VALUES (?,?,1)', [prefix, project.id]), bound(db, 'UPDATE peg_projects SET prefix=? WHERE id=?', [prefix, project.id])] }
+  if (!project.prefix) {
+    // The first prefix numbers the project's tasks (and their subtasks) that have no reference yet, oldest first.
+    const bare = await all<{ id: string }>(db, `WITH RECURSIVE tree(id) AS (SELECT task_id FROM peg_task_projects WHERE project_id=? UNION SELECT t.id FROM peg_tasks t JOIN tree ON t.parent_id=tree.id)
+      SELECT t.id FROM tree JOIN peg_tasks t ON t.id=tree.id WHERE NOT EXISTS (SELECT 1 FROM peg_task_refs r WHERE r.task_id=t.id) ORDER BY t.created_at, t.id`, project.id)
+    const at = now()
+    return { prefix, statements: [
+      bound(db, 'INSERT INTO peg_ref_prefixes(prefix,project_id,next_number) VALUES (?,?,?)', [prefix, project.id, bare.length + 1]),
+      bound(db, 'UPDATE peg_projects SET prefix=? WHERE id=?', [prefix, project.id]),
+      ...bare.map((task, index) => bound(db, 'INSERT INTO peg_task_refs(ref,task_id,current,created_at) VALUES (?,?,1,?)', [`${prefix}-${index + 1}`, task.id, at])),
+    ] }
+  }
   const old = (await first<{ next_number: number }>(db, 'SELECT next_number FROM peg_ref_prefixes WHERE prefix=?', project.prefix))!
   const refs = await all<{ ref: string; task_id: string }>(db, 'SELECT ref,task_id FROM peg_task_refs WHERE current=1 AND ref LIKE ?', `${project.prefix}-%`)
   const at = now()
