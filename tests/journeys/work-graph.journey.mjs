@@ -289,6 +289,8 @@ try {
     await editTag.locator('input[name=name]').fill(`Autumn ${size}`)
     await editTag.getByRole('button',{name:'Save tag'}).click()
     await ownPage.getByRole('link',{name:`Autumn ${size}`,exact:true}).click()
+    await ownPage.waitForURL(url=>url.searchParams.get('tag')===tag.id)
+    await ownPage.getByRole('heading',{name:`Tagged: Autumn ${size}`,exact:true}).waitFor()
     assert.equal(await ownPage.locator(`.card:has(h2:text-is("Tagged: Autumn ${size}")) li`).count(),3)
     await flat(ownPage);await proof('tag-catalogue-filter')
     // Durable task time, reviewed correction, approval/locking and exact approved CSV.
