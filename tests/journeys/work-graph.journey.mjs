@@ -165,11 +165,27 @@ try {
     await flat(ownPage)
     const proof=async(name)=>{if(process.env.PEGBOARD_EVIDENCE_DIR){await mkdir(process.env.PEGBOARD_EVIDENCE_DIR,{recursive:true});await ownPage.screenshot({path:join(process.env.PEGBOARD_EVIDENCE_DIR,`${name}-${size}.png`),fullPage:true})}}
     await proof('my-tasks')
+    const dstTask=ok(await personal.post('/api/v1/tasks',{title:`DST tomorrow ${size}`,dueDate:'2026-11-01'}))
+    ok(await personal.post('/api/v1/my-tasks/settings',{sort:'default',timezone:'America/New_York'}))
+    for(const [on,group] of [['2026-10-31','Upcoming'],['2026-11-01','Today']]) {
+      await ownPage.goto(`${w.origin}/app/my-tasks?on=${on}`)
+      assert.equal(await ownPage.locator(`.card:has(h2:text-is("${group}")) [data-task-id="${dstTask.id}"]`).count(),1)
+    }
+    await ownPage.goto(`${w.origin}/app/my-tasks`)
+    await ownPage.clock.install({time:new Date('2030-01-01T05:00:01Z')})
+    const midnightReload=ownPage.waitForEvent('request',r=>r.isNavigationRequest()&&r.url().endsWith('/app/my-tasks'))
+    await ownPage.clock.runFor(30001)
+    await midnightReload
+    await ownPage.waitForLoadState('domcontentloaded')
+    await ownPage.clock.resume()
+
     const ownProject=ok(await personal.post('/api/v1/projects',{name:`Personal sharing ${size}`}))
     ok(await personal.post('/api/v1/grants',{objectType:'project',objectId:ownProject.id,granteeId:nina.id,level:'viewer'}))
     await ownPage.getByRole('link',{name:`Personal plan ${size}`,exact:true}).click()
     const personalUrl=ownPage.url()
-    assert.equal((await page.goto(personalUrl)).status(),404,'ordinary admin cannot read personal work')
+    const adminPersonal=await open(owner)
+    assert.equal((await adminPersonal.page.goto(personalUrl)).status(),404,'ordinary admin cannot read personal work')
+    await adminPersonal.context.close()
     await ownPage.locator('form[aria-label="Preview personal sharing"] select[name=projectId]').selectOption(ownProject.id)
     await ownPage.getByRole('button',{name:'Preview visibility'}).click()
     assert.ok((await ownPage.locator('main').innerText()).includes(`Nina ${size} · Viewer`))
