@@ -248,3 +248,15 @@ export async function readableDefinitions(
           ),
     }))
 }
+
+/** Project membership follows the root, while each subtask keeps its own values. */
+export async function projectTaskIds(db: D1Database, projectId: string) {
+  return all<{ task_id: string }>(
+    db,
+    `WITH RECURSIVE tree(task_id) AS (
+ SELECT task_id FROM peg_task_projects WHERE project_id=?
+ UNION ALL SELECT t.id FROM peg_tasks t JOIN tree ON t.parent_id=tree.task_id)
+ SELECT task_id FROM tree ORDER BY task_id`,
+    projectId,
+  )
+}

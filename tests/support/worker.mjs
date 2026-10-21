@@ -41,15 +41,21 @@ export async function startWorker({ settings = {} } = {}) {
   const origin = `http://127.0.0.1:${port}`, setupToken = randomBytes(32).toString('hex'), devKey = randomBytes(40).toString('base64url')
   // The local dev Worker (src/server.dev.ts): its key-gated one-click door signs an invited person in, as `rer dev` does.
   const env = { ...process.env, CI: '1', CLOUDFLARE_INCLUDE_PROCESS_ENV: 'true', RER_STATE_DIR: persist, RER_DEV_KEY: devKey, AUTH_LOCAL: 'true', AUTH_ORIGIN: origin, OWNER_EMAIL: 'owner@example.com', MAIL_FROM: 'pegboard@example.com', SESSION_SECRET: randomBytes(32).toString('hex'), SETUP_TOKEN: setupToken, ...settings }
-  const child = spawn('node_modules/.bin/vite', ['--port', String(port), '--host', '127.0.0.1', '--strictPort'], { stdio: ['ignore', 'pipe', 'pipe'], env })
-  let output = ''
-  child.stdout.on('data', chunk => { output += chunk })
-  child.stderr.on('data', chunk => { output += chunk })
-  for (let attempt = 0; ; attempt++) {
-    if (child.exitCode !== null || attempt > 480) throw new Error(`Worker did not start\n${output}`)
-    try { if ((await fetch(`${origin}/health`)).ok) break } catch {}
-    await new Promise(resolve => setTimeout(resolve, 250))
+  let child, output = ''
+  const launch = () => {
+    child = spawn('node_modules/.bin/vite', ['--port', String(port), '--host', '127.0.0.1', '--strictPort'], { stdio: ['ignore', 'pipe', 'pipe'], env })
+    child.stdout.on('data', chunk => { output += chunk })
+    child.stderr.on('data', chunk => { output += chunk })
   }
+  const ready = async () => {
+    for (let attempt = 0; ; attempt++) {
+      if (child.exitCode !== null || attempt > 480) throw new Error(`Worker did not start\n${output}`)
+      try { if ((await fetch(`${origin}/health`)).ok) break } catch {}
+      await new Promise(resolve => setTimeout(resolve, 250))
+    }
+  }
+  launch()
+  await ready()
   const cookieOf = response => response.headers.getSetCookie().map(line => line.split(';')[0]).filter(pair => !pair.endsWith('=')).join('; ')
   const claim = await fetch(`${origin}/auth/bootstrap`, { method: 'POST', redirect: 'manual', headers: { origin, 'x-rer-dev-key': devKey, 'content-type': 'application/json' }, body: JSON.stringify({ token: setupToken, displayName: 'Wes Holloway' }) })
   if (claim.status !== 303) throw new Error(`owner claim ${claim.status} ${await claim.text()}`)
@@ -84,6 +90,14 @@ export async function startWorker({ settings = {} } = {}) {
         await new Promise(resolve => setTimeout(resolve, 250))
       }
       return out
+    },
+    /** Restart the owned process against the same durable installation, without recreating its owner or sessions. */
+    async restart() {
+      const previous = child
+      previous.kill('SIGTERM')
+      await new Promise(resolve => previous.exitCode !== null ? resolve() : previous.once('exit', resolve))
+      launch()
+      await ready()
     },
     async stop() {
       child.kill('SIGTERM')

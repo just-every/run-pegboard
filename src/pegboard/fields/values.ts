@@ -13,7 +13,12 @@ import { workspaceRole, displayNames } from '../workspace/people'
 import { openTask } from '../tasks/access'
 import { openProject, need, fieldReadable } from '../workspace/projects'
 import type { FieldRow } from '../model'
-import { configOf, definitions, fieldInput } from './definitions'
+import {
+  configOf,
+  definitions,
+  fieldInput,
+  projectTaskIds,
+} from './definitions'
 import { historyStatement } from '../tasks/history'
 import { auditStatement } from '../authorization/audit'
 
@@ -254,11 +259,7 @@ export async function taskFields(
     }
     if (field.type === 'rollup') {
       const source = configOf(field).sourceProject ?? projectId
-      for (const row of await all<{ task_id: string }>(
-        db,
-        'SELECT task_id FROM peg_task_projects WHERE project_id=? ORDER BY task_id',
-        source,
-      )) {
+      for (const row of await projectTaskIds(db, source)) {
         const related = await openTask(db, actor, row.task_id).catch(() => null)
         if (related && related.access.contexts.has(source))
           choices.push({ value: related.task.id, label: related.task.title })
@@ -307,7 +308,6 @@ export async function setValues(
     context = access.contexts.get(projectId)
   if (!context) throw notFound()
   need(context, 'edit')
-  if (task.parent_id) throw conflict('subtask_follows_parent')
   const fields = await definitions(db, projectId),
     statements: D1PreparedStatement[] = []
   for (const [key, value] of Object.entries(values)) {

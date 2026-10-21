@@ -2,7 +2,7 @@ import { all, notFound } from '../db'
 import { openProject, fieldReadable } from '../workspace/projects'
 import { openTask } from '../tasks/access'
 import type { Actor } from '../workspace/people'
-import { definitions } from './definitions'
+import { definitions, projectTaskIds } from './definitions'
 import { taskFields } from './values'
 import { tagFilter } from '../tags/tags'
 export async function fieldReport(
@@ -16,11 +16,7 @@ export async function fieldReport(
     ? new Set((await tagFilter(db, actor, tagId)).tasks.map((t) => t.id))
     : null
   const rows = []
-  for (const row of await all<{ task_id: string }>(
-    db,
-    'SELECT task_id FROM peg_task_projects WHERE project_id=? ORDER BY task_id',
-    projectId,
-  )) {
+  for (const row of await projectTaskIds(db, projectId)) {
     if (filter && !filter.has(row.task_id)) continue
     const opened = await openTask(db, actor, row.task_id).catch(() => null)
     if (!opened) continue

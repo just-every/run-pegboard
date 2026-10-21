@@ -1802,15 +1802,15 @@
       "executable": false
     },
     "src/pegboard/fields/definitions.ts": {
-      "sha256": "1cea2a1e8410af33f3ee65a18d657f3ea0f8dc5b4b59525412f1b15cfe4215ee",
+      "sha256": "f0da2548c9b9d06010be04bec73d9965fc3db293f7d4b4ffe5dc233d92294747",
       "executable": false
     },
     "src/pegboard/fields/report.ts": {
-      "sha256": "d7210151157aa02c0eba144526ad1c6b071ab9e46593157dd992f033328a5a93",
+      "sha256": "cfe7b9585388888ad5f78b0d84b0a47f98870d7e2bef144dd4b276187074e7d0",
       "executable": false
     },
     "src/pegboard/fields/values.ts": {
-      "sha256": "7387b1e8392043218ffd8989936b1f65966a73141a2f07c42d07171970ba30ab",
+      "sha256": "8b625057b9238c24c4337804ee82735ab8b841a1473a1e936714ba88b5b99234",
       "executable": false
     },
     "src/pegboard/model.ts": {
@@ -2118,7 +2118,7 @@
       "executable": false
     },
     "tests/support/worker.mjs": {
-      "sha256": "174c30fd1d5049c415f645003906bcc529cf0c50a5dee1a6d7841322a90f2da4",
+      "sha256": "4c57fcba68c9276b57c0e649c77a5e6ce6ed9507c01004b04a8fb7517b9c8f9a",
       "executable": false
     },
     "tests/typecheck-checks.mjs": {
@@ -2126,7 +2126,7 @@
       "executable": false
     },
     "tests/work-graph.test.mjs": {
-      "sha256": "d5bb0cf77a81d8a7bb5982815d275c1b31e332ee8157be48c48da89fdfaf22fe",
+      "sha256": "0060b0bf7ffa3839da6638ef209c9ae173403adc8dd24e1c86abf72d03a145b1",
       "executable": false
     },
     "tsconfig.json": {
