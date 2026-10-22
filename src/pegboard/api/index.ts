@@ -1,3 +1,5 @@
+import {goalRoutes} from './goal-routes'
+import {recurrenceRoutes} from './recurrence-routes'
 import {timeRoutes} from './time-routes'
 import {fieldRoutes} from './field-routes'
 // Pegboard's versioned JSON API: mounted at /api/v1 by the Worker's Hono app.
@@ -15,3 +17,7 @@ accessRoutes(pegboardApi)
 fieldRoutes(pegboardApi)
 
 timeRoutes(pegboardApi)
+
+recurrenceRoutes(pegboardApi)
+
+goalRoutes(pegboardApi)

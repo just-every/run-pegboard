@@ -37,7 +37,7 @@ export async function viewTask(db: D1Database, actor: Actor, idOrRef: string) {
   const name = (id: string) => names.get(id) ?? 'Former member'
   const internal = access.role !== 'guest'
   return {
-    id: task.id, ref: await currentRef(db, task.id), aliases: await aliases(db, task.id), title: task.title, description: task.description, kind: task.kind, parentId: task.parent_id,
+    id: task.id, ref: await currentRef(db, task.id), aliases: await aliases(db, task.id), title: task.title, description: task.description, kind: await first(db,'SELECT 1 FROM peg_approval_tasks WHERE task_id=?',task.id) ? 'approval' : task.kind, parentId: task.parent_id,
     status: task.status, priority: task.priority, startDate: task.start_date, dueDate: task.due_date, estimateHours: task.estimate_hours,
     owner: { id: task.owner_id, name: name(task.owner_id) }, collaborators: collaborators.map(id => ({ id, name: name(id) })), personal: access.personal,
     ...(internal ? { internalOnly: !!task.internal_only, internalNotes: task.internal_notes } : {}),

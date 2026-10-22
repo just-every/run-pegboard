@@ -12,7 +12,7 @@ import { displayNames, workspaceRole, type Actor } from '../workspace/people'
 import { openTask, require } from './access'
 import { historyStatement } from './history'
 
-const statuses = ['todo', 'doing', 'done'], priorities = ['low', 'normal', 'high', 'urgent'], kinds = ['task', 'subtask', 'milestone']
+const statuses = ['todo', 'doing', 'done'], priorities = ['low', 'normal', 'high', 'urgent'], kinds = ['task', 'subtask', 'milestone', 'approval']
 const title = (value: unknown) => { if (typeof value !== 'string' || !value.trim() || value.length > 300) throw invalid('title'); return value.trim() }
 const date = (value: unknown, code: string) => { if (value === null || value === undefined || value === '') return null; if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z)?$/.test(value) || Number.isNaN(Date.parse(value)) || new Date(value.length===10?value+'T00:00:00Z':value).toISOString().slice(0,10)!==value.slice(0,10)) throw invalid(code); return value }
 const hours = (value: unknown) => { const n = Number(value ?? 0); if (!Number.isFinite(n) || n < 0 || n > 100000) throw invalid('estimate_hours'); return n }
@@ -61,8 +61,12 @@ export async function createTask(db: D1Database, actor: Actor, input: TaskInput)
     if (!role || role === 'agent') throw notFound()
     if (input.ownerId && input.ownerId !== actor.id) throw conflict('personal_task_owner')
   }
+  if (kind === 'approval') {
+    if (status === 'done') throw invalid('approval_decision_required')
+    statements.push(bound(db,'INSERT INTO peg_approval_tasks VALUES(?,?,?)',[id,actor.id,at]))
+  }
   statements.unshift(bound(db, `INSERT INTO peg_tasks(id,workspace_id,title,description,kind,parent_id,status,priority,start_date,due_date,owner_id,creator_id,estimate_hours,internal_only,internal_notes,created_at,updated_at,completed_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-    [id, workspaceId, title(input.title), (input.description ?? '').slice(0, 20000), kind, parent?.id ?? null, status, input.priority ?? 'normal', date(input.startDate, 'start_date'), date(input.dueDate, 'due_date'), owner, actor.id, hours(input.estimateHours), input.internalOnly ? 1 : 0, (input.internalNotes ?? '').slice(0, 20000), at, at, status === 'done' ? at : null]))
+    [id, workspaceId, title(input.title), (input.description ?? '').slice(0, 20000), kind === 'approval' ? 'task' : kind, parent?.id ?? null, status, input.priority ?? 'normal', date(input.startDate, 'start_date'), date(input.dueDate, 'due_date'), owner, actor.id, hours(input.estimateHours), input.internalOnly ? 1 : 0, (input.internalNotes ?? '').slice(0, 20000), at, at, status === 'done' ? at : null]))
   statements.push(historyStatement(db, id, null, actor.id, 'created', { kind, parentId: parent?.id ?? null }))
   await batch(db, statements)
   return (await first<TaskRow>(db, 'SELECT * FROM peg_tasks WHERE id=?', id))!
@@ -72,6 +76,8 @@ export interface TaskPatch { title?: string; description?: string; status?: stri
 export async function updateTask(db: D1Database, actor: Actor, idOrRef: string, patch: TaskPatch): Promise<TaskRow> {
   const { task, access } = await openTask(db, actor, idOrRef)
   require(access, 'edit')
+  const approval = await first(db,'SELECT 1 FROM peg_approval_tasks WHERE task_id=?',task.id)
+  if(approval && patch.status === 'done') throw conflict('approval_decision_required')
   const next = { ...task }, changes: Record<string, { from: unknown; to: unknown }> = {}
   const set = <K extends keyof TaskRow>(key: K, value: TaskRow[K]) => { if (next[key] !== value) { changes[key] = { from: next[key], to: value }; next[key] = value } }
   if (patch.title !== undefined) set('title', title(patch.title))
@@ -92,6 +98,7 @@ export async function updateTask(db: D1Database, actor: Actor, idOrRef: string, 
   }
   if (patch.collaborators?.length && access.personal) throw conflict('visibility_preview_required')
   if (patch.collaborators) for (const id of patch.collaborators) if (!(await workspaceRole(db, id, task.workspace_id))) throw invalid('collaborator')
+  if (approval && Object.keys(changes).length && task.status === 'done') set('status','todo')
   const at = now(), statements: D1PreparedStatement[] = []
   if (next.status !== task.status) next.completed_at = next.status === 'done' ? at : null
   if (Object.keys(changes).length) {

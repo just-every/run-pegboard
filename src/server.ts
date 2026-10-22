@@ -1,3 +1,4 @@
+import {processRecurrences} from './pegboard/recurrence/recurrence'
 import { withDemo } from './modules/demo/index.mjs'
 import { seedDemo } from './demo'
 import { rejectedResponse } from './base/rejected-response'
@@ -27,6 +28,7 @@ function noTransform(response: Response): Response {
 }
 
 export default withDemo<Bindings, ExportedHandler<Bindings>>({
+  async scheduled(_event, env, execution) { execution.waitUntil(processRecurrences(runtimeBindings(env).DB)) },
   async fetch(request, env, execution) {
     const asset = await staticAssetResponse(request, env)
     if (asset) return asset
