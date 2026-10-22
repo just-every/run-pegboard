@@ -776,6 +776,7 @@ describe('PEG-001 one work graph', { concurrency: false }, () => {
     let preview=await ok(owner.post(`/api/v1/goals/${goal.id}/audience-preview`,plan))
     await ok(owner.post(`/api/v1/goals/${goal.id}/audience`,{...plan,revision:preview.token}))
     for(const role of ['guest','agent','analyst'])assert.equal((await owner.patch(`/api/v1/workspaces/ws_main/people/${named.id}`,{role})).status,409)
+    assert.equal((await owner.post('/api/v1/workspaces/ws_main/people',{email:named.email,role:'guest'})).status,409)
     assert.equal((await owner.delete(`/api/v1/workspaces/ws_main/people/${named.id}`)).status,409)
     assert.equal((await owner.post(`/api/v1/workspaces/ws_main/people/${named.id}/account`,{status:'inactive'})).status,409)
     assert.equal((await ok(named.get(`/api/v1/goals/${goal.id}`))).canCheckIn,true)

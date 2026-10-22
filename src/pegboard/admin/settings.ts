@@ -52,6 +52,7 @@ export async function addPerson(db: D1Database, actor: Actor, workspaceId: strin
     try { await invite({ email, displayName, role: 'member' }) } catch (error) { throw translate(error) }
   }
   const person = (await first<{ id: string }>(db, 'SELECT id FROM oa_operators WHERE email=?', email))!
+  await keepGoalOwner(db,person.id,{workspace:workspaceId,role:kind})
   await batch(db, [bound(db, 'INSERT INTO peg_workspace_members(workspace_id,operator_id,role,created_by,created_at) VALUES (?,?,?,?,?) ON CONFLICT(workspace_id,operator_id) DO UPDATE SET role=excluded.role', [workspaceId, person.id, kind, actor.id, now()]),
     auditStatement(db, { workspaceId, actorId: actor.id, action: 'person.added', targetType: 'workspace', targetId: workspaceId, subjectId: person.id, detail: { role: kind, invited: !existing } }), bumpEpoch(db)])
   return { id: person.id, email, role: kind, invited: !existing }
