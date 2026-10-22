@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict'
 import {mkdir} from 'node:fs/promises'
 import {join} from 'node:path'
-import { chromium } from '@playwright/test'
+import { chromium, expect } from '@playwright/test'
 import { startWorker } from '../support/worker.mjs'
 
 const w = await startWorker()
@@ -42,7 +42,7 @@ try {
     await page.getByRole('button', { name: 'Add subtask' }).click()
     await page.locator('form[aria-label="Add to a project"] select[name=projectId]').selectOption({ label: `Launch ${size}` })
     await page.getByRole('button', { name: 'Add to project' }).click()
-    assert.deepEqual(await page.locator('#main section .card:has(h2:text-is("Projects")) .rows > li a:first-child').allTextContents(), [`Campaign ${size}`, `Launch ${size}`])
+    await expect(page.locator('#main section .card:has(h2:text-is("Projects")) .rows > li a:first-child')).toHaveText([`Campaign ${size}`, `Launch ${size}`])
     await page.getByRole('link', { name: 'Scout locations' }).click()
     await page.getByRole('button', { name: 'Mark complete' }).click()
     await page.goto(taskUrl)
