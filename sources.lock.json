@@ -82,7 +82,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "3aa8b0e93574befe860774cf7a423675a33d00f60adec7271a828e85e1dac995",
+      "sha256": "ba7795c1f604c90fef52d9f1e5422c6cffdd12617048b0fe1fa2a58144c65c7d",
       "executable": false
     },
     "AGENTS.md": {
@@ -98,7 +98,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "769addb391abf24d4f5ceb7a157852778407585135d66e9a848fdacbbcec346e",
+      "sha256": "b1143676fd43738f8373681bfdbb431cf7e4a4d9ed9f7439e66db250dd1241d7",
       "executable": false
     },
     "DEMO.md": {
@@ -122,7 +122,7 @@
       "executable": false
     },
     "docs/WORK-PLANNING-API.md": {
-      "sha256": "dbd0dba78cdcc5279d177a35069e227e6f7680388232ac4c8e538441b1a6f8c2",
+      "sha256": "5587c54ab93872805fd8ba93af463a9b1636bbd9fe87caa1d5e44373c1eb251a",
       "executable": false
     },
     "edition.json": {

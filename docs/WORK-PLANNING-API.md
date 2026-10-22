@@ -90,3 +90,12 @@ links, observations, check-ins and a revision `token`. POST `/checkins` with tha
 attributed override, and `clearOverride: true` removes an override. Overrides do
 not turn missing, stale or restricted inputs into success. A changed preview
 refuses the check-in. GET `/api/v1/goals` lists only goals the caller may read.
+
+
+## Reviewed recurring audiences
+
+`POST /api/v1/recurrences/preview` accepts `grantIds` from the source project's current internal grants. The response names the standing team/workspace default levels, chosen internal grants, and assignees who cannot open their work. Repeat those inputs and the returned `revision` token at `POST /api/v1/recurrences`. Activation records this standing share for later occurrences. Guest, approve-only and external shares always require a fresh reviewed share on each occurrence. Assignment never grants access.
+
+Each run rechecks current source and pinned-target authority, delegation levels, grantee standing and the recorded audience revision before its single occurrence transaction. A changed audience or lost authority holds the schedule with `last_error` and its accountable activator; held schedules leave automatic retries until re-reviewed. Existing project schedules without a recorded audience also require review. `/app/recurrences` provides the preview, activation, occurrences and oversight screens. Workspace administrators and project Admins may see and stop schedules on their targets even when they did not activate them. A former activator can see the held cause without receiving newly restricted source content.
+
+Re-review through `POST /api/v1/recurrences/:id/audience-preview`, then repeat the chosen `grantIds` and returned token at `POST /api/v1/recurrences/:id/audience`. Stop through `POST /api/v1/recurrences/:id/stop`. Only the activator runs or re-reviews; administrators may stop. Automatic scheduling rotates waiting work behind unattempted work.
