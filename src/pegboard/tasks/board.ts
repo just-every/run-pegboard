@@ -32,7 +32,10 @@ export async function board(db: D1Database, actor: Actor, projectId: string) {
   const card = async (task: Placed) => ({ id: task.id, ref: await currentRef(db, task.id), title: task.title, status: task.status, kind: task.kind, parentId: task.parent_id, priority: task.priority, dueDate: task.due_date, owner: names.get(task.owner_id) ?? 'Former member', subtasks: subtasks.get(task.id) ?? null })
   const column = async (section: SectionRow | null) => ({ section: section ? { id: section.id, name: section.name, mapsTo: section.maps_to } : null, tasks: await Promise.all(tasks.filter(task => (task.section_id ?? null) === (section?.id ?? null) && !task.parent_id).map(card)) })
   const library = (await fieldLibrary(db, projectId)).filter(field => fieldReadable(field, effective))
+  const occurrence=await first<{unreachable:string}>(db,'SELECT r.unreachable FROM peg_occurrence_reviews r JOIN peg_occurrences o ON o.schedule_id=r.schedule_id AND o.local_date=r.local_date WHERE o.object_id=?',projectId)
+  const unreachableAssignees=occurrence?(JSON.parse(occurrence.unreachable) as {taskId:string;name:string;title:string}[]).filter(w=>tasks.some(t=>t.id===w.taskId)):[]
   return {
+    unreachableAssignees,
     project: { id: project.id, name: project.name, description: project.description, owner: { id: project.owner_id, name: names.get(project.owner_id) ?? 'Former member' }, visibility: project.visibility, teamId: project.team_id, teamLevel: project.team_level, workspaceLevel: project.workspace_level, prefix: project.prefix, status: project.status, startDate: project.start_date, dueDate: project.due_date },
     level: effective.level, capabilities: [...effective.capabilities], paths: effective.paths.map(path => ({ via: path.via, level: path.level, scope: path.scope ?? 'full' })),
     fields: library.map(field => ({ id:field.id,units:field.units,config:effective.capabilities.has('manage_fields')?field.config:'{}',version:field.version, key: field.key, label: field.label, type: field.type, visibility: effective.capabilities.has('manage_fields') ? field.visibility : undefined })),

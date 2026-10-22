@@ -1882,7 +1882,7 @@
       "executable": false
     },
     "src/pegboard/tasks/board.ts": {
-      "sha256": "d3a021d4d1badd7a6fe0f9d148b2bc4765a2510a6cd15a7d12e3cd85ab581097",
+      "sha256": "c21128d9fb17abb22dfcfea8b43eacaed5fa9a7f054455aa15f39642ee7a113b",
       "executable": false
     },
     "src/pegboard/tasks/history.ts": {
@@ -1942,7 +1942,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/project.tsx": {
-      "sha256": "d4f2ac63748e97a94802c2b7082b24f0749ca98f6f82d982c397a7778f54ce95",
+      "sha256": "b9c55803da21d25590108afb224511a98eb79a6593c75dbfa06a1cff6431f377",
       "executable": false
     },
     "src/pegboard/ui/pages/projects.tsx": {
@@ -2170,7 +2170,7 @@
       "executable": false
     },
     "tests/journeys/work-graph.journey.mjs": {
-      "sha256": "37a18ed51309fcf4331413a090d211dee832e9145966af5e919788a48fde7ee1",
+      "sha256": "b1a8987a1ae9d5c16d69fde08c6009a3001635440820371cf2860a20f42a4d47",
       "executable": false
     },
     "tests/runtime.mjs": {

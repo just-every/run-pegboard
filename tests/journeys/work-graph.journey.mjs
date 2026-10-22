@@ -13,7 +13,7 @@ const sizes = [['1440', { width: 1440, height: 900 }], ['390', { width: 390, hei
 try {
   const owner = w.owner, ok = (r, status = 200) => { assert.equal(r.status, status, JSON.stringify(r.body)); return r.body }
   ok(await owner.post('/api/v1/teams', { name: 'Brand crew', privacy: 'public' }))
-  for (const [size, viewport] of sizes) {
+  for (const [size, viewport] of (process.env.PEGBOARD_JOURNEY ? [] : sizes)) {
     const open = async client => { const context = await browser.newContext({ viewport }); await context.addCookies(cookies(client)); return { context, page: await context.newPage() } }
     const flat = async page => assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), `no sideways scroll at ${size}: ${page.url()}`)
     const gus = await w.person(`gus${size}@example.com`, `Gus ${size}`, 'guest'), nina = await w.person(`nina${size}@example.com`, `Nina ${size}`), eli = await w.person(`eli${size}@example.com`, `Eli ${size}`)
@@ -410,6 +410,51 @@ try {
     await reviewer.context.close()
     await own.context.close()
     console.log(`journey at ${size}px passed`)
+  }
+  // Accountable recurring work: the standing audience, occurrence and held schedule, at both widths.
+  if(!process.env.PEGBOARD_JOURNEY||process.env.PEGBOARD_JOURNEY==='recurrence')for(const [size,viewport] of sizes){
+    const open=async client=>{const context=await browser.newContext({viewport});await context.addCookies(cookies(client));return {context,page:await context.newPage()}}
+    const flat=async page=>assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`recurrence no sideways scroll ${size}`)
+    const proof=async(name,page)=>{if(process.env.PEGBOARD_PROOF_DIR){await mkdir(process.env.PEGBOARD_PROOF_DIR,{recursive:true});await page.screenshot({path:join(process.env.PEGBOARD_PROOF_DIR,`${name}-${size}.png`),fullPage:true})}}
+    const lead=await w.person(`repeat-lead-${size}@example.com`,`Recurring lead ${size}`),admin=await w.person(`repeat-admin-${size}@example.com`,`Recurring admin ${size}`),member=await w.person(`repeat-member-${size}@example.com`,`Recurring teammate ${size}`),editor=await w.person(`repeat-editor-${size}@example.com`,`Recurring editor ${size}`),outside=await w.person(`repeat-outside-${size}@example.com`,`Unreachable assignee ${size}`),guest=await w.person(`repeat-guest-${size}@example.com`,`Recurring guest ${size}`,'guest')
+    const team=ok(await owner.post('/api/v1/teams',{name:`Onboarding team ${size}`,privacy:'private'}))
+    for(const person of [member,guest])ok(await owner.post('/api/v1/grants',{objectType:'team',objectId:team.id,granteeId:person.id,level:'viewer'}))
+    const project=ok(await owner.post('/api/v1/projects',{name:`Monthly onboarding ${size}`,teamId:team.id,visibility:'team',teamLevel:'commenter'}))
+    ok(await owner.post('/api/v1/tasks',{title:`Unreachable work ${size}`,projectId:project.id,ownerId:outside.id}))
+    const grant=async(person,level)=>ok(await owner.post('/api/v1/grants',{objectType:'project',objectId:project.id,granteeId:person.id,level}))
+    const leadGrant=await grant(lead,'admin');await grant(admin,'admin');const direct=await grant(editor,'editor');await grant(guest,'viewer')
+    const own=await open(lead),page=own.page
+    await page.goto(`${w.origin}/app/projects/${project.id}`);await flat(page);await proof('recurrence-source-project',page)
+    await page.getByRole('link',{name:'Make recurring'}).click()
+    await page.getByRole('form',{name:'Preview recurring work'}).getByLabel('First date').fill('2026-01-01')
+    await page.getByRole('form',{name:'Preview recurring work'}).getByLabel('Occurrences',{exact:true}).fill('2')
+    await page.getByRole('form',{name:'Preview recurring work'}).locator(`input[value="${direct.id}"]`).check()
+    await page.getByRole('button',{name:'Preview occurrences'}).click()
+    const audience=page.locator('article').filter({has:page.getByRole('heading',{name:'Standing occurrence audience'})})
+    await expect(audience).toContainText(`Recurring editor ${size}`);await expect(audience).toContainText('Source team · Commenter');await expect(audience).toContainText(`Unreachable assignee ${size}`)
+    assert.ok(!(await audience.innerText()).includes(`Recurring guest ${size}`))
+    await flat(page);await proof('recurrence-preview',page)
+    await page.getByRole('button',{name:'Activate reviewed schedule'}).click();await page.waitForURL(/\/app\/recurrences\/recurrence_/)
+    const url=page.url(),id=url.split('/').pop()
+    await page.getByRole('button',{name:'Run due occurrence'}).click()
+    await expect(page.locator('article').filter({has:page.getByRole('heading',{name:'Occurrences',exact:true})})).toContainText(`Unreachable assignee ${size}`)
+    await flat(page);await proof('recurrence-occurrence',page)
+    await w.restart();await page.goto(url)
+    const v=ok(await lead.get(`/api/v1/recurrences/${id}`));assert.equal(v.occurrences.length,1)
+    const generated=v.occurrences[0].object_id
+    for(const [person,allowed] of [[member,true],[editor,true],[guest,false],[outside,false]]){
+      const session=await open(person),response=await session.page.goto(`${w.origin}/app/projects/${generated}`)
+      assert.equal(response.status(),allowed?200:404)
+      if(allowed)await expect(session.page.locator('main')).toContainText(`Unreachable assignee ${size}`)
+      await flat(session.page);await proof(`recurrence-project-${allowed?person===member?'team':'editor':'refused'}`,session.page);await session.context.close()
+    }
+    ok(await owner.delete(`/api/v1/grants/${leadGrant.id}`))
+    await page.getByRole('button',{name:'Run due occurrence'}).click();await expect(page.getByRole('status')).toContainText('Held for re-review: source_or_target_authority_lost');await expect(page.locator('main')).toContainText(`Accountable owner: Recurring lead ${size}`)
+    assert.equal(ok(await owner.get(`/api/v1/recurrences/${id}`)).occurrences.length,1)
+    await flat(page);await proof('recurrence-held',page)
+    const oversight=await open(admin);await oversight.page.goto(`${w.origin}/app/recurrences`);await oversight.page.getByRole('link',{name:`Monthly onboarding ${size}`,exact:true}).click();await flat(oversight.page);await proof('recurrence-admin',oversight.page)
+    await oversight.page.getByRole('button',{name:'Stop schedule'}).click();assert.equal(ok(await owner.get(`/api/v1/recurrences/${id}`)).schedule.active,0)
+    await oversight.context.close();await own.context.close();console.log(`Accountable recurring work at ${size}px passed`)
   }
 } finally {
   await browser.close()
