@@ -29,13 +29,13 @@ limits generated occurrences, not attempts.
 
 Snapshots retain native task attributes, task/subtask structure, sections and
 field definitions/values. Task recurrence preserves its reviewed project
-memberships; new project occurrences are private to the activating owner.
-Comments, files, recorded time, grants and historical decisions are not copied.
+memberships; project occurrences receive only their PEG-089 reviewed standing internal audience.
+Comments, files, recorded time and historical decisions are not copied. Grants outside that reviewed audience are excluded.
 Fresh approval tasks have no decision. Source references and the immutable
 version-one template identity remain in the occurrence ledger and task history.
 Current source access, template/field authority and active task owners are
-rechecked at generation. A changed field definition on a task's existing project
-refuses generation until a fresh template is reviewed. The preview accepts at
+rechecked at generation. A changed pinned field definition on a task or project
+holds generation until a fresh template is reviewed. The preview accepts at
 most 500 tasks. This foundation does not complete PEG-006's template gallery or
 selective template upgrades.
 
