@@ -13,6 +13,8 @@ import {
 import type { Actor } from '../workspace/people'
 import { workspaceRole, displayNames } from '../workspace/people'
 import { isAdministrator } from '../authorization/levels'
+import { teamEffective } from '../authorization/effective'
+import type { ProjectRow, TeamRow } from '../model'
 import { openTask, require } from '../tasks/access'
 import { currentRef } from '../references/refs'
 import { settings, localDay, dayNumber } from '../tasks/personal'
@@ -47,6 +49,7 @@ export interface Entry {
   adjustment_of: string | null
   operation_key: string
   created_at: number
+  withdrawn_at: number | null
 }
 const revision = async (db: D1Database) =>
   (await first<{ value: number }>(
@@ -84,7 +87,7 @@ const note = (value: unknown) => String(value ?? '').slice(0, 5000)
 const rows = (db: D1Database, id: string) =>
   all<Entry>(
     db,
-    'SELECT * FROM peg_time_entries WHERE sheet_id=? ORDER BY work_date,created_at,id',
+    'SELECT * FROM peg_time_entries WHERE sheet_id=? AND withdrawn_at IS NULL ORDER BY work_date,created_at,id',
     id,
   )
 async function write(
@@ -95,13 +98,12 @@ async function write(
   action: string,
   statements: D1PreparedStatement[],
   detail: Record<string, unknown> = {},
+  notAfter: number | null = null,
 ) {
   try {
     await batch(db, [
-      bound(db, 'INSERT INTO peg_personal_guards VALUES(?,?)', [
-        newId('guard'),
-        rev,
-      ]),
+      bound(db, 'INSERT INTO peg_personal_guards VALUES(?,?)', [newId('guard'), rev]),
+      bound(db, 'INSERT INTO peg_time_authority_guards(id,not_after) VALUES(?,?)', [newId('guard'), notAfter]),
       ...statements,
       bound(
         db,
@@ -122,13 +124,41 @@ async function write(
     ])
   } catch (error) {
     if (
-      /stale_personal_preview|timesheet_locked|peg_time_running|UNIQUE constraint/.test(
+      /expired_time_authority|stale_personal_preview|timesheet_locked|peg_time_running|UNIQUE constraint/.test(
         String(error),
       )
     )
       throw conflict('time_changed_or_timer_running')
     throw error
   }
+}
+// Review covers the whole sheet. A role never grants access to hidden work.
+async function reviewer(db: D1Database, actor: Actor, sheet: Sheet) {
+  const role = await workspaceRole(db, actor.id, sheet.workspace_id)
+  if (!role || role === 'agent' || sheet.operator_id === actor.id) return false
+  const entries = await rows(db, sheet.id)
+  if (!entries.length) return false
+  for (const e of entries) {
+    if (!e.project_id) return false
+    const opened = await openTask(db, actor, e.task_id).catch(() => null)
+    const access = opened?.access.contexts.get(e.project_id)
+    if (!access) return false
+    if (isAdministrator(role) || role === 'manager' || access.capabilities.has('delegate_admin')) continue
+    const project = await first<ProjectRow>(db, 'SELECT * FROM peg_projects WHERE id=?', e.project_id)
+    const team = project?.team_id ? await first<TeamRow>(db, 'SELECT * FROM peg_teams WHERE id=?', project.team_id) : null
+    if (!team || !(await teamEffective(db, actor, team)).capabilities.has('delegate_admin')) return false
+  }
+  return true
+}
+async function loggerAccess(db: D1Database, sheet: Sheet) {
+  const role = await workspaceRole(db, sheet.operator_id, sheet.workspace_id)
+  if (!role || role === 'agent') return false
+  const person: Actor = { id: sheet.operator_id, email: '', displayName: '', baseRole: 'member' }
+  for (const e of await rows(db, sheet.id)) {
+    const opened = await openTask(db, person, e.task_id).catch(() => null)
+    if (!e.project_id || !opened?.access.contexts.get(e.project_id)?.capabilities.has('edit')) return false
+  }
+  return true
 }
 async function load(
   db: D1Database,
@@ -144,20 +174,7 @@ async function load(
   if (!sheet || !(await workspaceRole(db, actor.id, sheet.workspace_id)))
     throw notFound()
   if (sheet.operator_id !== actor.id) {
-    if (
-      own ||
-      !['submitted', 'approved'].includes(sheet.status) ||
-      !isAdministrator(await workspaceRole(db, actor.id, sheet.workspace_id))
-    )
-      throw notFound()
-    for (const e of await rows(db, id))
-      if (
-        !e.project_id ||
-        !(
-          await openTask(db, actor, e.task_id).catch(() => null)
-        )?.access.contexts.has(e.project_id)
-      )
-        throw notFound()
+    if (own || !['submitted', 'approved'].includes(sheet.status) || !(await reviewer(db, actor, sheet))) throw notFound()
   }
   return sheet
 }
@@ -333,6 +350,7 @@ export async function editEntry(
   if (!entry) throw notFound()
   const sheet = await load(db, actor, entry.sheet_id, true)
   editable(sheet, actor)
+  if (entry.withdrawn_at) throw conflict('entry_withdrawn')
   if (entry.source !== 'manual') throw conflict('use_attributed_adjustment')
   await openTask(db, actor, entry.task_id)
   const seconds = duration(input.seconds),
@@ -358,8 +376,25 @@ export async function editEntry(
   )
   return { id }
 }
+export async function withdrawEntry(db: D1Database, actor: Actor, id: string, input: Record<string, any>) {
+  const entry = await first<Entry>(db, 'SELECT * FROM peg_time_entries WHERE id=? AND person_id=?', id, actor.id)
+  if (!entry) throw notFound()
+  const view = await sheetView(db, actor, entry.sheet_id)
+  if (input.revision !== view.token) throw conflict('timesheet_preview_changed')
+  editable(view.sheet, actor)
+  if (view.sheet.status !== 'returned') throw conflict('returned_timesheet_required')
+  if (entry.withdrawn_at) return { id }
+  const shown = view.entries.find(e => e.id === id)
+  if (shown?.available) throw conflict('withdraw_unreachable_entry_only')
+  if (entry.source === 'timer' && entry.end_ms === null) throw conflict('stop_timer_first')
+  await write(db, actor, view.sheet, view.revision, 'entry_withdrawn', [
+    bound(db, 'UPDATE peg_time_entries SET withdrawn_at=?,withdrawn_by=? WHERE id=? AND withdrawn_at IS NULL', [now(), actor.id, id]),
+  ], { entryId: id }, view.authorityUntil)
+  return { id }
+}
 export async function sheetView(db: D1Database, actor: Actor, id: string) {
   const rev = await revision(db),
+    authorityUntil = (await first<{ deadline: number | null }>(db, 'SELECT MIN(expires_at) deadline FROM peg_grants WHERE revoked_at IS NULL AND expires_at>?', now()))?.deadline ?? null,
     sheet = await load(db, actor, id),
     entries = await rows(db, id),
     names = await displayNames(db, [
@@ -377,18 +412,21 @@ export async function sheetView(db: D1Database, actor: Actor, id: string) {
             e.project_id,
           )
         : null
+    const available = !!opened && (!e.project_id || opened.access.contexts.has(e.project_id))
     shown.push({
       ...e,
-      estimateHours: opened?.task.estimate_hours ?? null,
-      task: opened?.task.title ?? 'Work no longer available',
-      ref: opened ? await currentRef(db, e.task_id) : null,
+      task_id: available ? e.task_id : null,
+      project_id: available ? e.project_id : null,
+      notes: available ? e.notes : '',
+      estimateHours: available ? opened?.task.estimate_hours ?? null : null,
+      task: available ? opened!.task.title : 'Work no longer available',
+      ref: available ? await currentRef(db, e.task_id) : null,
       project: project
         ? project.name
         : e.project_id
           ? 'Project no longer available'
           : 'Personal work',
-      available:
-        !!opened && (!e.project_id || opened.access.contexts.has(e.project_id)),
+      available,
     })
   }
   const history = await all<{
@@ -410,6 +448,7 @@ export async function sheetView(db: D1Database, actor: Actor, id: string) {
       .filter((e) => e.estimateHours !== null)
       .map((e) => [e.task_id, e.estimateHours!]),
   )
+  const visibleEntries = new Set(shown.filter(e => e.available).map(e => e.id))
   return {
     estimateHours: [...estimates.values()].reduce((a, b) => a + b, 0),
     actorId: actor.id,
@@ -419,15 +458,19 @@ export async function sheetView(db: D1Database, actor: Actor, id: string) {
     entries: shown,
     totalSeconds: entries.reduce((n, e) => n + (e.seconds ?? 0), 0),
     running: entries.some((e) => e.source === 'timer' && e.end_ms === null),
-    canReview:
-      sheet.operator_id !== actor.id &&
-      isAdministrator(await workspaceRole(db, actor.id, sheet.workspace_id)),
-    token: await stamp([sheet, entries, rev]),
+    canReview: await reviewer(db, actor, sheet),
+    loggerCanSubmit: await loggerAccess(db, sheet),
+    authorityUntil,
+    token: await stamp([sheet, entries, rev, authorityUntil]),
     revision: rev,
     history: history.map((h) => ({
       ...h,
       actor: historyNames.get(h.actor_id) ?? 'Former member',
-      detail: JSON.parse(h.detail),
+      detail: (() => {
+        const detail = JSON.parse(h.detail)
+        return sheet.operator_id !== actor.id ? {} : detail.entryId && !visibleEntries.has(detail.entryId)
+          ? { entryId: detail.entryId } : detail
+      })(),
     })),
   }
 }
@@ -462,16 +505,19 @@ export async function decide(
     editable(sheet, actor)
     if (!view.entries.length || view.running)
       throw conflict('stop_timers_and_add_entries')
-    if (view.entries.some((e) => !e.project_id || !e.available))
+    if (!view.loggerCanSubmit || view.entries.some((e) => !e.project_id || !e.available))
       throw conflict('review_project_visibility_before_submission')
     status = 'submitted'
   } else {
-    if (!view.canReview) throw forbidden('different_owner_or_admin')
+    if (!view.canReview) throw forbidden('different_authorized_reviewer')
     if (sheet.status !== 'submitted') throw conflict('timesheet_not_submitted')
     if (action === 'return') {
       if (!reason.trim()) throw invalid('return_reason')
       status = 'returned'
-    } else if (action === 'approve') status = 'approved'
+    } else if (action === 'approve') {
+      if (!view.loggerCanSubmit) throw conflict('logger_authority_changed')
+      status = 'approved'
+    }
     else throw invalid('decision')
   }
   await write(
@@ -494,6 +540,7 @@ export async function decide(
       ),
     ],
     { status, reason, version: sheet.version },
+    view.authorityUntil,
   )
   return { id, status }
 }

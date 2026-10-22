@@ -8,6 +8,7 @@ import {
   addEntry,
   stopTimer,
   editEntry,
+  withdrawEntry,
   decide,
   adjust,
   exportSheet,
@@ -56,6 +57,7 @@ export function timeRoutes(app: Hono<{ Bindings: Bindings }>) {
       editEntry(db, actor, params.id, input),
     ),
   )
+  app.post('/time/:id/withdraw', door(({ actor, db, params, input }) => withdrawEntry(db, actor, params.id, input)))
   app.post(
     '/time/:id/adjust',
     door(({ actor, db, params, input }) => adjust(db, actor, params.id, input)),

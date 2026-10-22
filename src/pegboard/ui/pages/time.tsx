@@ -7,6 +7,7 @@ const actions: Record<string, string> = {
   timer_stopped: 'Stopped timer',
   entry_added: 'Added manual time',
   entry_corrected: 'Corrected manual time',
+  entry_withdrawn: 'Withdrew unavailable entry',
   submit: 'Submitted exact revision',
   return: 'Returned for correction',
   approve: 'Approved and locked',
@@ -89,10 +90,11 @@ export function TimePage({
         <>
           <Card title="Recorded time">
             <p>
-              A different owner or administrator with access to all linked
-              project work reviews submitted time. Personal time remains
+              A different owner, administrator, manager or project/team Admin
+              with current authority over every linked project reviews submitted time. Personal time remains
               private; sharing a task does not share its recorded personal time.
             </p>
+            {view.sheet.status === 'submitted' && <p role="status">Submitted, awaiting another reviewer with authority over every project. Approval sends nothing outward.</p>}
             {view.sheet.reason && <p>Review reason: {view.sheet.reason}</p>}
             <ul className="rows">
               {view.entries.map((e) => (
@@ -116,7 +118,7 @@ export function TimePage({
                         <Submit>Stop timer</Submit>
                       </Form>
                     )}
-                    {editable && e.source === 'manual' && (
+                    {editable && e.available && e.source === 'manual' && (
                       <Form
                         action={`/api/v1/time/${e.id}/correct`}
                         next={here}
@@ -130,6 +132,13 @@ export function TimePage({
                         />
                         <Field label="Notes" name="notes" value={e.notes} />
                         <Submit quiet>Save correction</Submit>
+                      </Form>
+                    )}
+                    {editable && view.sheet.status === 'returned' && !e.available && (
+                      <Form action={`/api/v1/time/${e.id}/withdraw`} next={here} label="Withdraw unavailable entry">
+                        <input type="hidden" name="revision" value={view.token} />
+                        <p>This unapproved entry can be withdrawn. Its withdrawal remains attributed in history.</p>
+                        <Submit quiet>Withdraw unavailable entry</Submit>
                       </Form>
                     )}
                     {view.sheet.status === 'approved' &&
