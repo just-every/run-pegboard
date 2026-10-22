@@ -195,16 +195,18 @@ async function generate(db:D1Database,actor:Actor,id:string) {
     statements.push(bound(db,'INSERT INTO peg_tasks(id,workspace_id,title,description,kind,parent_id,status,priority,start_date,due_date,owner_id,creator_id,estimate_hours,internal_only,internal_notes,created_at,updated_at) VALUES(?,?,?,?,?,?,\'todo\',?,?,?,?,?,?,?,?,?,?)',[taskId,task.workspace_id,task.title,task.description,task.kind,task.parent_id?taskIds.get(task.parent_id)??null:null,task.priority,shifted(task.start_date,c.start,due),shifted(task.due_date,c.start,due),task.owner_id,actor.id,task.estimate_hours,task.internal_only,task.internal_notes,at,at]),historyStatement(db,taskId,null,actor.id,'created',{templateId:template.id,sourceId:task.id,occurrence:due}),bound(db,'INSERT INTO peg_template_origins VALUES(?,?,?,?)',['task',taskId,template.id,task.id]))
     if(task.approval)statements.push(bound(db,'INSERT INTO peg_approval_tasks VALUES(?,?,?)',[taskId,actor.id,at]))
   }
-  const fieldIds=new Map(source.fields.map(f=>[f.id,source.type==='project'?newId('field'):f.id]))
+  // Adopt the same library definitions. Forking them would split reports and later reviewed changes.
+  // The immutable template may only be interpreted against the exact definitions it pinned.
   for(const field of source.fields){
-    if(source.type==='project')statements.push(bound(db,'INSERT INTO peg_field_definitions(id,workspace_id,authority_project,key,label,type,visibility,units,config,version) VALUES(?,?,?,?,?,?,?,?,?,?)',[fieldIds.get(field.id)!,template.workspace_id,target,field.key,field.label,field.type,field.visibility,field.units,field.config,field.version]),bound(db,'INSERT INTO peg_project_fields VALUES(?,?,?)',[target,field.key,fieldIds.get(field.id)!]))
-    else {const live=await first<FieldRow>(db,'SELECT * FROM peg_field_definitions WHERE id=?',field.id);if(!live||live.version!==field.version)throw conflict('template_definition_changed')}
+    const live=await first<FieldRow>(db,'SELECT * FROM peg_field_definitions WHERE id=?',field.id)
+    if(!live||live.version!==field.version)throw conflict('template_definition_changed')
+    if(source.type==='project')statements.push(bound(db,'INSERT INTO peg_project_fields VALUES(?,?,?)',[target,field.key,field.id]))
   }
   for(const value of source.values){
     const field=source.fields.find(f=>f.id===value.field_id)!
     let input=JSON.parse(value.value)
     if(field.type==='rollup'&&Array.isArray(input))input=input.map(id=>taskIds.get(String(id))??id)
-    statements.push(bound(db,'INSERT INTO peg_field_values VALUES(?,?,?)',[taskIds.get(value.task_id)!,fieldIds.get(value.field_id)!,JSON.stringify(input)]))
+    statements.push(bound(db,'INSERT INTO peg_field_values VALUES(?,?,?)',[taskIds.get(value.task_id)!,value.field_id,JSON.stringify(input)]))
   }
   for(const home of source.homes)statements.push(bound(db,'INSERT INTO peg_task_projects(task_id,project_id,section_id,position,added_by,added_at) VALUES(?,?,?,?,?,?)',[taskIds.get(home.task_id)!,source.type==='project'?target:home.project_id,source.type==='project'?sectionIds.get(home.section_id??'')??null:home.section_id,home.position,actor.id,at]))
   if(source.type==='project')statements.push(bound(db,'INSERT INTO peg_template_origins VALUES(?,?,?,?)',['project',target,template.id,source.sourceId]))

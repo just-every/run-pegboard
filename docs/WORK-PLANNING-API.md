@@ -139,3 +139,5 @@ The existing invalidation set is unchanged: task edits, comments, files, field v
 The signed-in read-only packet and comparison doors are documented in
 [TIME-SERVICE-PACKETS.md](TIME-SERVICE-PACKETS.md). They send nothing and never
 claim authenticated provider receipts. PEG-017/042 remain partial.
+
+Recurring projects adopt the original shared field definitions, while each new task receives its own copied values. Reviewed definition changes apply to every adopting project and report. If a definition changes after activation, generation is held with `template_definition_changed`; stop that schedule and preview a new template. Audience re-review cannot authorize a different pinned field definition. Existing historical field forks are retained; this change does not rewrite an installation’s prior definitions or values.
