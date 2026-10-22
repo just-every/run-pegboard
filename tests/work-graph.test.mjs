@@ -726,6 +726,9 @@ describe('PEG-001 one work graph', { concurrency: false }, () => {
       assert.ok(!(await ok(who.get('/api/v1/goals'))).goals.some(g=>g.goal.id===goal.id))
     }
     for(const who of [agent,guest])assert.equal((await create(who,{scope:'personal'})).status,403)
+    assert.equal((await owner.patch(`/api/v1/workspaces/ws_main/people/${named.id}`,{role:'analyst'})).status,409,'transfer a company goal before removing its accountable owner')
+    const transfer=await ok(owner.post(`/api/v1/goals/${goal.id}/audience-preview`,{visibility:'restricted',ownerId:owner.id}))
+    await ok(owner.post(`/api/v1/goals/${goal.id}/audience`,{...transfer.plan,revision:transfer.token}))
     await ok(owner.patch(`/api/v1/workspaces/ws_main/people/${named.id}`,{role:'analyst'}))
     assert.equal((await named.get(`/api/v1/goals/${goal.id}`)).status,404,'a demoted owner no longer reads the goal')
     assert.equal((await create(owner,{ownerId:named.id})).status,400,'an analyst cannot be named owner')
@@ -772,6 +775,10 @@ describe('PEG-001 one work graph', { concurrency: false }, () => {
     const plan={ownerId:named.id,visibility:'restricted',editors:[editor.id]}
     let preview=await ok(owner.post(`/api/v1/goals/${goal.id}/audience-preview`,plan))
     await ok(owner.post(`/api/v1/goals/${goal.id}/audience`,{...plan,revision:preview.token}))
+    for(const role of ['guest','agent','analyst'])assert.equal((await owner.patch(`/api/v1/workspaces/ws_main/people/${named.id}`,{role})).status,409)
+    assert.equal((await owner.delete(`/api/v1/workspaces/ws_main/people/${named.id}`)).status,409)
+    assert.equal((await owner.post(`/api/v1/workspaces/ws_main/people/${named.id}/account`,{status:'inactive'})).status,409)
+    assert.equal((await ok(named.get(`/api/v1/goals/${goal.id}`))).canCheckIn,true)
     const event={key:'synthetic-pegboard-601',value:10,observedAt:Date.now()}
     for(const person of [named,editor]){
       await ok(person.post(`/api/v1/goals/${goal.id}/numeric-events`,{...event,key:event.key+person.id}))

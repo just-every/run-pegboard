@@ -57,11 +57,26 @@ export async function addPerson(db: D1Database, actor: Actor, workspaceId: strin
   return { id: person.id, email, role: kind, invited: !existing }
 }
 
+/** Ordinary account changes never silently abandon owned goals or disclose their titles/counts. */
+async function keepGoalOwner(db:D1Database,id:string,change:{workspace?:string;role?:string;status?:string;baseRole?:string;remove?:boolean}) {
+  const goals=await all<{scope:string;workspace_id:string}>(db,'SELECT scope,workspace_id FROM peg_goals WHERE owner_id=?',id)
+  if(!goals.length)return
+  const operator=await operatorRow(db,id)
+  for(const goal of goals){
+    if(change.status&&change.status!=='active')throw conflict('goal_owner_transfer_required')
+    const baseRole=change.baseRole??operator?.role
+    if(baseRole==='owner'||baseRole==='admin')continue
+    let role=(await first<{role:string}>(db,'SELECT role FROM peg_workspace_members WHERE workspace_id=? AND operator_id=?',goal.workspace_id,id))?.role
+    if(change.workspace===goal.workspace_id)role=change.remove?undefined:change.role??role
+    if(!role||!['manager','member',...(goal.scope==='personal'?['analyst']:[])].includes(role))throw conflict('goal_owner_transfer_required')
+  }
+}
 export async function setPersonRole(db: D1Database, actor: Actor, workspaceId: string, operatorId: string, kind: unknown) {
   await requireAdministrator(db, actor, workspaceId)
   if (!(memberRoles as readonly string[]).includes(kind as string)) throw invalid('role')
   const operator = await operatorRow(db, operatorId)
   if (!operator || operator.role !== 'member') throw conflict('base_role')
+  await keepGoalOwner(db,operatorId,{workspace:workspaceId,role:kind as string})
   const before = await first<{ role: string }>(db, 'SELECT role FROM peg_workspace_members WHERE workspace_id=? AND operator_id=?', workspaceId, operatorId)
   if (!before) throw notFound()
   await batch(db, [bound(db, 'UPDATE peg_workspace_members SET role=? WHERE workspace_id=? AND operator_id=?', [kind as string, workspaceId, operatorId]),
@@ -74,6 +89,7 @@ export async function removePerson(db: D1Database, actor: Actor, workspaceId: st
   if (!(await first(db, 'SELECT 1 FROM peg_workspace_members WHERE workspace_id=? AND operator_id=?', workspaceId, operatorId))) throw notFound()
   const owns = await first(db, 'SELECT 1 FROM peg_projects WHERE workspace_id=? AND owner_id=?', workspaceId, operatorId)
   if (owns) throw conflict('last_owner')
+  await keepGoalOwner(db,operatorId,{workspace:workspaceId,remove:true})
   await revokeAllFor(db, actor, workspaceId, operatorId)
   await batch(db, [bound(db, 'DELETE FROM peg_workspace_members WHERE workspace_id=? AND operator_id=?', [workspaceId, operatorId]),
     auditStatement(db, { workspaceId, actorId: actor.id, action: 'person.removed', targetType: 'workspace', targetId: workspaceId, subjectId: operatorId }), bumpEpoch(db)])
@@ -82,6 +98,7 @@ export async function removePerson(db: D1Database, actor: Actor, workspaceId: st
 /** Base's account changes (role, active or not) run through Base's own policy and its last-owner guard; Pegboard adds the audit row and the new epoch. */
 export async function changeBaseAccount(db: D1Database, actor: Actor, workspaceId: string, operatorId: string, change: { role?: string; status?: string }, apply: () => Promise<unknown>) {
   await requireAdministrator(db, actor, workspaceId)
+  await keepGoalOwner(db,operatorId,{status:change.status,baseRole:change.role})
   try { await apply() } catch (error) { throw translate(error) }
   await batch(db, [auditStatement(db, { workspaceId, actorId: actor.id, action: change.status ? 'person.status_changed' : 'person.base_role_changed', targetType: 'workspace', targetId: workspaceId, subjectId: operatorId, detail: change }), bumpEpoch(db)])
 }
@@ -89,6 +106,7 @@ export async function changeBaseAccount(db: D1Database, actor: Actor, workspaceI
 export function translate(error: unknown): unknown {
   // Base's own account refusals (its policy and last-owner guard) keep their status and code.
   if (error instanceof Error && error.name === 'AuthError') { const { code, status } = error as Error & { code: string; status: number }; return new PegError(status, code) }
+  if (error instanceof Error && /goal_owner_transfer_required/.test(error.message)) return new PegError(409, 'goal_owner_transfer_required')
   if (error instanceof Error && /last_owner/.test(error.message)) return new PegError(409, 'last_owner')
   return error
 }

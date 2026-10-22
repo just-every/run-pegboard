@@ -2,6 +2,9 @@ import { appDocument } from '../../ui/document.server'
 import { AppBar } from '../../ui/bar'
 
 const sayings: Record<string, string> = {
+  goal_owner_transfer_required:'An account change would leave owned work without an active human owner. Transfer company or team goals through a reviewed ownership change first.',
+  goal_audience_preview_changed:'The goal, audience or access changed. Review the audience preview again.',
+  goal_preview_changed:'The goal or its linked access changed. Review the current goal before checking in.',
   due_date:'Enter a valid calendar date or UTC date and time.', visibility_preview_required:'The work or its audience changed. Review the visibility preview again before sharing.',
   field_preview_required:'The field or its values changed. Open a fresh type-change preview.', incompatible_values_preserved:'That change would alter existing values. The values were preserved; choose a compatible type.',
   time_changed_or_timer_running:'Time changed while you were working, or you already have a running timer. Refresh the timesheet before continuing.', timesheet_preview_changed:'The time or its access changed. Review the current timesheet before deciding.',

@@ -238,7 +238,7 @@
       "executable": false
     },
     "migrations/core/0026_goal_visibility.sql": {
-      "sha256": "a4e88aeb511a420bc243e5612d49d0928bc841be47625d1a60cc30fb15189d65",
+      "sha256": "90e94834523c3ab9d2cf63f70913c3e0fba96e3ff1d86b7a56578ad63704290d",
       "executable": false
     },
     "ONBOARDING.md": {
@@ -1774,7 +1774,7 @@
       "executable": false
     },
     "src/pegboard/admin/settings.ts": {
-      "sha256": "acd32afc5c618f63bf13b83b470afb89d12f8e0d5b247fd66c030bfd00944e3e",
+      "sha256": "bf8948fab77cee62c71b603a5727d22f0f591e58583464d69537f67ba5630cc1",
       "executable": false
     },
     "src/pegboard/admin/webhooks.ts": {
@@ -1910,7 +1910,7 @@
       "executable": false
     },
     "src/pegboard/ui/error.tsx": {
-      "sha256": "e6f509bdc03b625e53b98880a0b0f24c0e170f3d5c6bd2573940c411f7292fce",
+      "sha256": "27d173b6ef572246e72aa4c44ef2fb4e0f643c36adad1427cbfc8567da9bc69b",
       "executable": false
     },
     "src/pegboard/ui/field-errors.ts": {
@@ -2194,7 +2194,7 @@
       "executable": false
     },
     "tests/work-graph.test.mjs": {
-      "sha256": "cd45be6d2c7e4716d7b8f960fb66469f20c11d2268bc688ad58562a333b3398b",
+      "sha256": "8dd35ddb24b09e6c8679c6372f44a9516e8f7221fb0447ea543913491bd91ef8",
       "executable": false
     },
     "tsconfig.json": {
