@@ -1,5 +1,6 @@
 import type { Viewer } from '../../../ui/viewer'
 import type { listSheets, sheetView } from '../../time/time'
+import type { timeDeliveries } from '../../connectors/time/delivery'
 import { Area, Card, Field, Form, Pick, Shell, Submit, when } from '../shell'
 import { newId } from '../../db'
 const actions: Record<string, string> = {
@@ -12,18 +13,27 @@ const actions: Record<string, string> = {
   return: 'Returned for correction',
   approve: 'Approved and locked',
   adjustment_added: 'Recorded attributed adjustment',
+  provider_delivery: 'Sent reviewed time to a time service',
 }
 type View = Awaited<ReturnType<typeof sheetView>>
+type Deliveries = Awaited<ReturnType<typeof timeDeliveries>>
+const services: Record<string, string> = { harvest: 'Harvest', 'quickbooks-time': 'QuickBooks Time' }
+const outcome = (r: Deliveries['rows'][number]) => r.state === 'acknowledged'
+  ? `Acknowledged as ${r.providerId}${r.kind === 'correction' ? `, total now ${r.providerSeconds} seconds` : ''}${r.reason ? '. The service filed it differently; reconcile it there, it is never resent.' : ''}`
+  : r.state === 'rejected' ? `Rejected${r.statusCode ? ` (${r.statusCode})` : ''}: ${r.reason}. Repair the mapping, then send again.`
+    : r.state === 'uncertain' ? `Outcome unknown (${r.reason}). The next send reads it back before writing.` : 'Sending'
 export function TimePage({
   viewer,
   sheets,
   view,
+  deliveries,
   tasks,
   day,
 }: {
   viewer: Viewer
   sheets: Awaited<ReturnType<typeof listSheets>>
   view: View | null
+  deliveries: Deliveries | null
   tasks: { value: string; label: string }[]
   day: string
 }) {
@@ -276,6 +286,34 @@ export function TimePage({
                 <Submit>Download time service packet</Submit>
               </Form>
               <p><a href="https://github.com/just-every/run-pegboard/blob/main/docs/TIME-SERVICE-PACKETS.md">Mapping and reconciliation guide</a>. Gauge transfer remains unavailable.</p>
+            </Card>
+          )}
+          {deliveries && (deliveries.canSend || deliveries.rows.length > 0) && (
+            <Card title="Time service delivery">
+              {deliveries.canSend && (
+                <>
+                  <p>Send this approved sheet's reviewed packet. The access token is used for this send only and is never stored. Acknowledged entries are never sent twice, rejected entries wait for a repaired mapping, and approved adjustments correct the acknowledged entry. No invoice, rate or payroll action is taken.</p>
+                  <Form action={`/api/v1/timesheets/${view.sheet.id}/provider-delivery`} next={here} label="Send reviewed time">
+                    <input type="hidden" name="revision" value={deliveries.revision} />
+                    <Pick label="Delivery service" name="service" options={[{ value: 'harvest', label: 'Harvest' }, { value: 'quickbooks-time', label: 'QuickBooks Time' }]} />
+                    <Field label="Harvest account ID" name="account" />
+                    <Area label="Delivery ID mapping (JSON)" name="mapping" value={'{"people":{},"projects":{},"tasks":{},"jobcodes":{}}'} />
+                    <label className="field">Service access token<input className="input" aria-label="Service access token" name="credential" type="password" autoComplete="off" required /></label>
+                    <label className="checkbox"><input type="checkbox" name="confirm" value="reviewed-exact-packet" required />I reviewed this exact packet and mapping.</label>
+                    <Submit>Send reviewed time</Submit>
+                  </Form>
+                </>
+              )}
+              <ul className="rows" aria-label="Delivery ledger">
+                {deliveries.rows.map((r) => {
+                  const entry = view.entries.find((e) => e.id === r.externalId)
+                  return (
+                    <li key={`${r.service}:${r.account}:${r.externalId}`}>
+                      {services[r.service]} {r.account} · {r.kind === 'correction' ? `Correction of ${r.correctionOf} by ${r.seconds} seconds` : `${entry?.task ?? r.externalId}, ${r.seconds} seconds`} · {outcome(r)}
+                    </li>
+                  )
+                })}
+              </ul>
             </Card>
           )}
           <Card title="Time history">

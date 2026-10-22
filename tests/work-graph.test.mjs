@@ -3,6 +3,7 @@
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
 import { startWorker } from './support/worker.mjs'
+import { startTimeServices } from './support/time-services.mjs'
 
 let w, owner, mia, gus, nina
 const ok = async (promise, status = 200) => { const r = await promise; assert.equal(r.status, status, JSON.stringify(r.body)); return r.body }
@@ -325,13 +326,15 @@ describe('PEG-001 one work graph', { concurrency: false }, () => {
 
 // Independent domains use independent installations; native invitation limits remain unchanged.
 describe('Work planning time, recurrence and decisions', { concurrency: false }, () => {
+  let services
   before(async () => {
-    w = await startWorker(); owner = w.owner
+    services = await startTimeServices()
+    w = await startWorker({ settings: { PEGBOARD_LOCAL_TIME_SERVICE_ORIGINS: services.origins } }); owner = w.owner
     mia = await w.person('mia@example.com', 'Mia Member')
     gus = await w.person('gus@example.com', 'Gus Guest', 'guest')
     nina = await w.person('nina@example.com', 'Nina Newcomer')
   }, { timeout: 120000 })
-  after(() => w?.stop())
+  after(async () => { await w?.stop(); await services?.stop() })
 
   it('keeps one durable timer per person and reconnects without duplicate intent or entries', async () => {
     const timerPerson=await w.person('timer@example.com','Timer Person'),p=await ok(timerPerson.post('/api/v1/projects',{name:'Timed work'})),a=await ok(timerPerson.post('/api/v1/tasks',{title:'First timed task',projectId:p.id,estimateHours:2})),b=await ok(timerPerson.post('/api/v1/tasks',{title:'Second timed task',projectId:p.id,estimateHours:1}))
@@ -451,6 +454,69 @@ describe('Work planning time, recurrence and decisions', { concurrency: false },
     const moved=await ok(person.post('/api/v1/projects',{name:'Later work home'}));await ok(person.post(`/api/v1/tasks/${a.id}/projects`,{projectId:moved.id}))
     await ok(person.delete(`/api/v1/tasks/${a.id}/projects/${p.id}`))
     assert.equal((await packet('harvest')).status,403)
+  })
+
+  it('sends reviewed approved time once to each official-schema time service, repairs a rejected job code, reads back a lost response and corrects exactly', async () => {
+    const person=await w.person('time-delivery@example.com','Time delivery owner'),p=await ok(person.post('/api/v1/projects',{name:'Retainer delivery'})),a=await ok(person.post('/api/v1/tasks',{title:'Retainer planning',projectId:p.id})),b=await ok(person.post('/api/v1/tasks',{title:'Retainer review',projectId:p.id}))
+    const day='2026-10-21',approve=async sheet=>{let v=await ok(person.get(`/api/v1/timesheets/${sheet}`));await ok(person.post(`/api/v1/timesheets/${sheet}/decision`,{action:'submit',revision:v.token}));v=await ok(owner.get(`/api/v1/timesheets/${sheet}`));await ok(owner.post(`/api/v1/timesheets/${sheet}/decision`,{action:'approve',revision:v.token}));return (await ok(owner.get(`/api/v1/timesheets/${sheet}`))).token}
+    const sheet=await ok(person.post('/api/v1/timesheets',{startDate:day,endDate:day}))
+    const e1=await ok(person.post(`/api/v1/timesheets/${sheet.id}/entries`,{taskId:a.id,date:day,seconds:5400,key:'synthetic-pegboard-951'})),e2=await ok(person.post(`/api/v1/timesheets/${sheet.id}/entries`,{taskId:b.id,date:day,seconds:1800,key:'synthetic-pegboard-952'}))
+    const {harvest,qbt}=services,mapping={people:{[person.id]:harvest.user},projects:{[p.id]:harvest.project},tasks:{[a.id]:harvest.tasks[0],[b.id]:harvest.tasks[1]},jobcodes:{[`${p.id}/${a.id}`]:qbt.jobcodes[0],[`${p.id}/${b.id}`]:999999}}
+    const send=(client,id,revision,service,extra={})=>client.post(`/api/v1/timesheets/${id}/provider-delivery`,{service,mapping,revision,confirm:'reviewed-exact-packet',credential:services.token(service),account:harvest.account,...extra})
+    assert.equal((await send(person,sheet.id,'synthetic-pegboard-954','harvest')).status,409,'unapproved time is never sent');assert.equal((await send(owner,sheet.id,'synthetic-pegboard-954','harvest')).status,404,'a draft stays its owner\'s')
+    const revision=await approve(sheet.id)
+    // Only a workspace owner/admin with every entry in reach sends the exact reviewed packet with a credential that answers.
+    assert.equal((await send(person,sheet.id,revision,'harvest')).status,403)
+    assert.equal((await send(nina,sheet.id,revision,'harvest')).status,404)
+    assert.equal((await send(owner,sheet.id,'synthetic-pegboard-955','harvest')).status,409)
+    assert.equal((await send(owner,sheet.id,revision,'harvest',{confirm:undefined})).status,400)
+    for(const service of ['harvest','quickbooks-time'])assert.equal((await send(owner,sheet.id,revision,service,{credential:'synthetic-pegboard-956'})).status,400,'a refused credential writes nothing')
+    assert.deepEqual(services.requests.filter(r=>r.method!=='GET'),[])
+    // Harvest: one acknowledged provider entry per approved entry, with exact hours; a replay creates nothing.
+    const sent=await ok(send(owner,sheet.id,revision,'harvest'))
+    assert.deepEqual(sent.rows.map(r=>[r.externalId,r.state,r.seconds,r.providerSeconds,r.reason]),[[e1.id,'acknowledged',5400,5400,null],[e2.id,'acknowledged',1800,1800,null]])
+    assert.equal(sent.complete,true);assert.equal(sent.acknowledgedSeconds,7200);assert.equal(sent.receiptAuthority,'provider_response')
+    const creates=()=>services.requests.filter(r=>r.method==='POST').length,before=creates()
+    assert.deepEqual((await ok(send(owner,sheet.id,revision,'harvest'))).rows.map(r=>r.providerId),sent.rows.map(r=>r.providerId),'replay acknowledges the same entries')
+    assert.equal(creates(),before);for(const e of [e1,e2])assert.equal(services.entries('harvest',e.id).length,1)
+    // QuickBooks Time: the unknown job code is refused visibly, repaired and resent alone; its lost response is read back.
+    let qb=await ok(send(owner,sheet.id,revision,'quickbooks-time'))
+    const refused=qb.rows.find(r=>r.externalId===e2.id)
+    assert.equal(qb.rows.find(r=>r.externalId===e1.id).state,'acknowledged');assert.equal(refused.state,'rejected');assert.equal(refused.statusCode,417);assert.match(refused.reason,/jobcode/);assert.equal(qb.complete,false)
+    mapping.jobcodes[`${p.id}/${b.id}`]=qbt.jobcodes[1];services.loseNext()
+    qb=await ok(send(owner,sheet.id,revision,'quickbooks-time'));assert.equal(qb.rows.find(r=>r.externalId===e2.id).state,'uncertain')
+    qb=await ok(send(owner,sheet.id,revision,'quickbooks-time'))
+    assert.deepEqual(qb.rows.map(r=>[r.state,r.providerSeconds]),[['acknowledged',5400],['acknowledged',1800]]);assert.equal(qb.complete,true)
+    for(const e of [e1,e2])assert.equal(services.entries('quickbooks-time',e.id).length,1,'one provider entry per approved entry')
+    // A later approved adjustment corrects the acknowledged entry once, from its exact prior total, and stays traceable.
+    const later=await ok(person.post('/api/v1/timesheets',{startDate:day,endDate:day}))
+    const adjustment=await ok(person.post(`/api/v1/time/${e1.id}/adjust`,{sheetId:later.id,date:day,seconds:-1800,reason:'Client call ended early',key:'synthetic-pegboard-957'}))
+    const laterRevision=await approve(later.id)
+    for(const service of ['harvest','quickbooks-time']){
+      const fixed=await ok(send(owner,later.id,laterRevision,service)),row=fixed.rows[0]
+      assert.deepEqual([row.externalId,row.kind,row.correctionOf,row.state,row.seconds,row.providerSeconds],[adjustment.id,'correction',e1.id,'acknowledged',-1800,3600]);assert.equal(fixed.complete,true)
+      assert.deepEqual((await ok(send(owner,later.id,laterRevision,service))).rows,fixed.rows,'a replayed correction changes nothing')
+      assert.deepEqual(services.entries(service,e1.id).map(e=>e.seconds),[3600])
+    }
+    // A provider-side edit after acknowledgment is never overwritten by a correction.
+    const third=await ok(person.post('/api/v1/timesheets',{startDate:day,endDate:day}))
+    await ok(person.post(`/api/v1/time/${e2.id}/adjust`,{sheetId:third.id,date:day,seconds:360,reason:'Review ran over',key:'synthetic-pegboard-958'}))
+    const thirdRevision=await approve(third.id),[edited]=services.entries('harvest',e2.id);services.edit('harvest',edited.id,2700)
+    const changed=await ok(send(owner,third.id,thirdRevision,'harvest'))
+    assert.equal(changed.rows[0].state,'rejected');assert.equal(changed.rows[0].reason,'provider_value_changed');assert.deepEqual(services.entries('harvest',e2.id).map(e=>e.seconds),[2700])
+    // An entry the provider files under other references is acknowledged once, never resent, and stays unreconciled.
+    const fourth=await ok(person.post('/api/v1/timesheets',{startDate:day,endDate:day})),e4=await ok(person.post(`/api/v1/timesheets/${fourth.id}/entries`,{taskId:a.id,date:day,seconds:720,key:'synthetic-pegboard-959'}))
+    const fourthRevision=await approve(fourth.id);services.misfileNext()
+    const misfiled=await ok(send(owner,fourth.id,fourthRevision,'harvest'))
+    assert.deepEqual([misfiled.rows[0].state,misfiled.rows[0].reason,misfiled.complete],['acknowledged','provider_fields_differ',false])
+    assert.equal((await ok(send(owner,fourth.id,fourthRevision,'harvest'))).rows[0].providerId,misfiled.rows[0].providerId);assert.equal(services.entries('harvest',e4.id).length,1)
+    // The ledger and history name every outcome without the credential; no invoice, rate or payroll door is ever called.
+    const ledger=await ok(owner.get(`/api/v1/timesheets/${sheet.id}/provider-deliveries`))
+    assert.deepEqual(ledger.rows.map(r=>[r.service,r.account,r.state]).sort(),[['harvest',harvest.account,'acknowledged'],['harvest',harvest.account,'acknowledged'],['quickbooks-time',qbt.client,'acknowledged'],['quickbooks-time',qbt.client,'acknowledged']])
+    assert.equal(ledger.canSend,true);assert.equal((await ok(person.get(`/api/v1/timesheets/${sheet.id}/provider-deliveries`))).canSend,false)
+    const history=(await ok(person.get(`/api/v1/timesheets/${sheet.id}`))).history.filter(h=>h.action==='provider_delivery')
+    assert.equal(history.length,5);assert.ok(history.every(h=>h.actor_id===owner.id&&['harvest','quickbooks-time'].includes(h.detail.service)));for(const secret of [harvest.token,qbt.token])assert.ok(!JSON.stringify([ledger,history]).includes(secret))
+    assert.deepEqual([...new Set(services.requests.map(r=>`${r.method} ${r.path.replace(/\d+$/,':id')}`))].sort(),['GET /api/v1/current_user','GET /api/v1/timesheets','GET /v2/time_entries/:id','GET /v2/users/me','PATCH /v2/time_entries/:id','POST /api/v1/timesheets','POST /v2/time_entries','PUT /api/v1/timesheets'])
   })
 
   it('fences stale time review and keeps private no-project work out of ordinary administrator review', async () => {

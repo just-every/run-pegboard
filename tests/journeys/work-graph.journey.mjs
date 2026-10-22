@@ -5,8 +5,11 @@ import {mkdir} from 'node:fs/promises'
 import {join} from 'node:path'
 import { chromium, expect } from '@playwright/test'
 import { startWorker } from '../support/worker.mjs'
+import { startTimeServices } from '../support/time-services.mjs'
 
-let w = await startWorker()
+// Harvest and QuickBooks Time schema fakes at the network edge; every Worker below reaches them through local origins.
+const services = await startTimeServices(), settings = { PEGBOARD_LOCAL_TIME_SERVICE_ORIGINS: services.origins }
+let w = await startWorker({ settings })
 const browser = await chromium.launch({ headless: true, args: ['--use-mock-keychain', '--password-store=basic'] })
 const cookies = client => client.cookie.split('; ').map(pair => ({ name: pair.slice(0, pair.indexOf('=')), value: pair.slice(pair.indexOf('=') + 1), url: w.origin }))
 const sizes = [['1440', { width: 1440, height: 900 }], ['390', { width: 390, height: 844 }]]
@@ -412,7 +415,7 @@ try {
     await own.context.close()
     console.log(`journey at ${size}px passed`)
   }
-  if(!process.env.PEGBOARD_JOURNEY){await w.stop();w=await startWorker();owner=w.owner}
+  if(!process.env.PEGBOARD_JOURNEY){await w.stop();w=await startWorker({settings});owner=w.owner}
   // Accountable recurring work: the standing audience, occurrence and held schedule, at both widths.
   if(!process.env.PEGBOARD_JOURNEY||process.env.PEGBOARD_JOURNEY==='recurrence')for(const [size,viewport] of sizes){
     const open=async client=>{const context=await browser.newContext({viewport});await context.addCookies(cookies(client));return {context,page:await context.newPage()}}
@@ -518,7 +521,7 @@ try {
     await flat(page);await proof('recurrence-pinned-home-held',page)
     await oversight.context.close();await own.context.close();console.log(`Accountable recurring work at ${size}px passed`)
   }
-  if(!process.env.PEGBOARD_JOURNEY){await w.stop();w=await startWorker();owner=w.owner}
+  if(!process.env.PEGBOARD_JOURNEY){await w.stop();w=await startWorker({settings});owner=w.owner}
   // Recurrence and revision-bound human approval: explicit states and attributed reopens.
   if(!process.env.PEGBOARD_JOURNEY||process.env.PEGBOARD_JOURNEY==='approvals')for(const [size,viewport] of sizes){
     const open=async client=>{const context=await browser.newContext({viewport});await context.addCookies(cookies(client));return {context,page:await context.newPage()}}
@@ -557,12 +560,12 @@ try {
     const sole=ok(await owner.post('/api/v1/tasks',{title:`Only reviewer owns this work ${size}`,projectId:project.id,kind:'approval'}));await reviewer.page.goto(`${w.origin}/app/tasks/${sole.id}`);await expect(reviewer.page.locator('main')).toContainText('Another eligible owner or administrator must decide it.');assert.equal(await reviewer.page.getByRole('button',{name:'Record reviewed decision'}).count(),0);await flat(reviewer.page);await proof('approval-sole-reviewer-waits',reviewer.page)
     await writer.context.close();await reviewer.context.close();console.log(`Recurring work and human decisions at ${size}px passed`)
   }
-  if(!process.env.PEGBOARD_JOURNEY){await w.stop();w=await startWorker();owner=w.owner}
+  if(!process.env.PEGBOARD_JOURNEY){await w.stop();w=await startWorker({settings});owner=w.owner}
   // Read-only time service packets: approved downloads and explicit pending work at both widths.
   if(!process.env.PEGBOARD_JOURNEY||process.env.PEGBOARD_JOURNEY==='time-packets')for(const [size,viewport] of sizes){
     const person=await w.person(`packet-${size}@example.com`,`Campaign coordinator ${size}`),project=ok(await person.post('/api/v1/projects',{name:`Autumn campaign ${size}`})),task=ok(await person.post('/api/v1/tasks',{title:'Prepare launch brief',projectId:project.id}))
     const sheet=ok(await person.post('/api/v1/timesheets',{startDate:'2026-10-22',endDate:'2026-10-22'}))
-    ok(await person.post(`/api/v1/timesheets/${sheet.id}/entries`,{taskId:task.id,date:'2026-10-22',seconds:72,notes:'Review the launch brief',key:'synthetic-pegboard-951'}))
+    const entry=ok(await person.post(`/api/v1/timesheets/${sheet.id}/entries`,{taskId:task.id,date:'2026-10-22',seconds:72,notes:'Review the launch brief',key:'synthetic-pegboard-951'}))
     let view=ok(await person.get(`/api/v1/timesheets/${sheet.id}`));ok(await person.post(`/api/v1/timesheets/${sheet.id}/decision`,{action:'submit',revision:view.token}));view=ok(await owner.get(`/api/v1/timesheets/${sheet.id}`));ok(await owner.post(`/api/v1/timesheets/${sheet.id}/decision`,{action:'approve',revision:view.token}))
     const context=await browser.newContext({viewport});await context.addCookies(cookies(person));const page=await context.newPage()
     await page.goto(`${w.origin}/app/time/${sheet.id}`)
@@ -581,7 +584,30 @@ try {
     await form.getByLabel('Provider ID mapping (JSON)').fill('{}')
     const downloaded=page.waitForEvent('download');await form.getByRole('button',{name:'Download time service packet'}).click();const download=await downloaded,stream=await download.createReadStream(),chunks=[];for await(const chunk of stream)chunks.push(chunk)
     const packet=JSON.parse(Buffer.concat(chunks).toString());assert.equal(packet.rows.length,0);assert.equal(packet.pending[0].reason,'map_person')
+    assert.equal(await page.getByRole('form',{name:'Send reviewed time'}).count(),0,'the person who logged the time sends nothing')
     await context.close();console.log(`Read-only time service packets at ${size}px passed`)
+    // A workspace owner sends the reviewed packet: a refused job code is visible, repaired and resent; nothing is sent twice.
+    const admin=await browser.newContext({viewport});await admin.addCookies(cookies(owner));const desk=await admin.newPage()
+    await desk.goto(`${w.origin}/app/time/${sheet.id}`)
+    const deliver=desk.getByRole('form',{name:'Send reviewed time'}),ledger=desk.getByRole('list',{name:'Delivery ledger'})
+    const sendReviewed=async(service,jobcode)=>{
+      await deliver.getByLabel('Delivery service',{exact:true}).selectOption(service)
+      await deliver.getByLabel('Harvest account ID').fill(service==='harvest'?services.harvest.account:'')
+      await deliver.getByLabel('Delivery ID mapping (JSON)').fill(JSON.stringify({people:{[person.id]:101},projects:{[project.id]:201},tasks:{[task.id]:301},jobcodes:{[`${project.id}/${task.id}`]:jobcode}}))
+      await deliver.getByLabel('Service access token').fill(services.token(service))
+      await deliver.getByLabel('I reviewed this exact packet and mapping.').check()
+      await deliver.getByRole('button',{name:'Send reviewed time'}).click()
+    }
+    await sendReviewed('quickbooks-time',999999)
+    await expect(ledger.locator('li',{hasText:'QuickBooks Time'})).toContainText('Rejected (417): Expectation Failed: Invalid jobcode_id')
+    await sendReviewed('quickbooks-time',401)
+    await expect(ledger.locator('li',{hasText:'QuickBooks Time'})).toContainText('Acknowledged as')
+    await sendReviewed('harvest',401)
+    await expect(ledger.locator('li',{hasText:'Harvest'})).toContainText('Acknowledged as')
+    for(const service of ['harvest','quickbooks-time'])assert.deepEqual(services.entries(service,entry.id).map(e=>e.seconds),[72])
+    assert.ok(await desk.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`time delivery reflow ${size}`)
+    if(process.env.PEGBOARD_PROOF_DIR)await desk.screenshot({path:join(process.env.PEGBOARD_PROOF_DIR,`time-service-delivery-${size}.png`),fullPage:true})
+    await admin.close();console.log(`Reviewed time service delivery at ${size}px passed`)
   }
   // Goal visibility and accountable owners: complete native Goals workflows at both widths.
   if(!process.env.PEGBOARD_JOURNEY||process.env.PEGBOARD_JOURNEY==='goals')for(const [size,viewport] of sizes){
@@ -693,4 +719,5 @@ try {
 } finally {
   await browser.close()
   await w.stop()
+  await services.stop()
 }

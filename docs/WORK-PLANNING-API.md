@@ -136,8 +136,11 @@ The existing invalidation set is unchanged: task edits, comments, files, field v
 
 ## Approved time service packets
 
-The signed-in read-only packet and comparison doors are documented in
-[TIME-SERVICE-PACKETS.md](TIME-SERVICE-PACKETS.md). They send nothing and never
-claim authenticated provider receipts. PEG-017/042 remain partial.
+The signed-in read-only packet and comparison doors and the reviewed send door
+are documented in [TIME-SERVICE-PACKETS.md](TIME-SERVICE-PACKETS.md). Packets
+send nothing. A send is a workspace owner's or administrator's reviewed request
+with a one-use token, recorded in a durable per-entry ledger. PEG-017/042 remain
+partial: Gauge has no approved-time door, and live provider accounts are not
+qualified.
 
 Recurring projects adopt the original shared field definitions, while each new task receives its own copied values. Reviewed definition changes apply to every adopting project and report. If a definition changes after activation, generation is held with `template_definition_changed`; stop that schedule and preview a new template. Audience re-review cannot authorize a different pinned field definition. Existing historical field forks are retained; this change does not rewrite an installation’s prior definitions or values.

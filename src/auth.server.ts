@@ -26,6 +26,8 @@ export interface Bindings {
  AUTH_ORIGIN: string
  AUTH_LOCAL?: string
  RER_DEV_ORIGIN?: string
+ /** Local runtimes only (AUTH_LOCAL): Harvest/QuickBooks Time schema-fake origins as JSON. Deployed installations use the official APIs. */
+ PEGBOARD_LOCAL_TIME_SERVICE_ORIGINS?: string
  /** Local runtimes only: the checkout's key gate and dev identity switch. Deploy refuses both. */
  RER_MODELS_SERVICE?: string
  RER_MODELS_KEY?: string
