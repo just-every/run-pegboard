@@ -1970,7 +1970,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/recurrences.tsx": {
-      "sha256": "fcc8af198629dd0c6ad20aefddaa20e1678475fc5c96b442af4c6e1ac6b0b293",
+      "sha256": "3b3c31f691734b66dbf0368742993db7c618067353056aec9713618aee0e0d2a",
       "executable": false
     },
     "src/pegboard/ui/pages/refusal.tsx": {
@@ -2190,7 +2190,7 @@
       "executable": false
     },
     "tests/journeys/work-graph.journey.mjs": {
-      "sha256": "243e367181142298b841af5167e4784be5f727e4ab190c2d176072790fde501a",
+      "sha256": "853c527d489419f63e7538c8beb3b9ea188388cc1d1f6765b7261fcfecd8abec",
       "executable": false
     },
     "tests/runtime.mjs": {
