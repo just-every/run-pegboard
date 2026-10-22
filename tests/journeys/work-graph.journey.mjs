@@ -531,7 +531,8 @@ try {
     for(const service of ['harvest','quickbooks-time']){
       await form.getByLabel('Time service',{exact:true}).selectOption(service)
       await form.getByLabel('Provider ID mapping (JSON)').fill(JSON.stringify({people:{[person.id]:101},projects:{[project.id]:201},tasks:{[task.id]:301},jobcodes:{[`${project.id}/${task.id}`]:401}}))
-      const downloaded=page.waitForEvent('download');await form.getByRole('button',{name:'Download time service packet'}).click();const download=await downloaded
+      await form.getByLabel('Provider ID mapping (JSON)').press('Tab');await expect(form.getByRole('button',{name:'Download time service packet'})).toBeFocused()
+      const downloaded=page.waitForEvent('download');await page.keyboard.press('Enter');const download=await downloaded
       const stream=await download.createReadStream(),chunks=[];for await(const chunk of stream)chunks.push(chunk)
       const packet=JSON.parse(Buffer.concat(chunks).toString());assert.equal(packet.service,service);assert.equal(packet.totalSeconds,72);assert.equal(packet.delivery,'not_sent');assert.equal(packet.pending.length,0);assert.equal(packet.rows[0].taskId,task.id)
     }
