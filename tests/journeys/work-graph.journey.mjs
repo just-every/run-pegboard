@@ -468,6 +468,76 @@ try {
     await flat(page);await proof('recurrence-pinned-home-held',page)
     await oversight.context.close();await own.context.close();console.log(`Accountable recurring work at ${size}px passed`)
   }
+  // Goal visibility and accountable owners: complete native Goals workflows at both widths.
+  if(!process.env.PEGBOARD_JOURNEY||process.env.PEGBOARD_JOURNEY==='goals')for(const [size,viewport] of sizes){
+    const open=async client=>{const context=await browser.newContext({viewport});await context.addCookies(cookies(client));return {context,page:await context.newPage()}}
+    const flat=async page=>assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`goals no sideways scroll ${size}`)
+    const proof=async(name,page)=>{if(process.env.PEGBOARD_PROOF_DIR){await mkdir(process.env.PEGBOARD_PROOF_DIR,{recursive:true});await page.screenshot({path:join(process.env.PEGBOARD_PROOF_DIR,`${name}-${size}.png`),fullPage:true})}}
+    const member=await w.person(`goal-member-${size}@example.com`,`Goal member ${size}`),other=await w.person(`goal-other-${size}@example.com`,`Goal other ${size}`),manager=await w.person(`goal-manager-${size}@example.com`,`Goal manager ${size}`,'manager'),guest=await w.person(`goal-guest-${size}@example.com`,`Goal guest ${size}`,'guest'),agent=await w.person(`goal-agent-${size}@example.com`,`Goal agent ${size}`,'agent'),analyst=await w.person(`goal-analyst-${size}@example.com`,`Goal analyst ${size}`,'analyst')
+    const project=ok(await owner.post('/api/v1/projects',{name:`Goal permitted project ${size}`,visibility:'workspace'})),task=ok(await owner.post('/api/v1/tasks',{title:`Permitted goal work ${size}`,projectId:project.id}))
+    const own=await open(owner),page=own.page
+    await page.goto(`${w.origin}/app/goals`)
+    const create=page.getByRole('form',{name:'Create a goal'})
+    await create.getByLabel('Goal title',{exact:true}).fill(`Company outcome ${size}`);await create.getByLabel('Scope',{exact:true}).selectOption('company');await create.getByLabel('Kind',{exact:true}).selectOption('key_result');await create.getByLabel('Progress',{exact:true}).selectOption('numeric');await create.getByLabel('Period ends').fill('2026-12-31');await create.getByRole('button',{name:'Create goal',exact:true}).click();await page.waitForURL(/\/app\/goals\/goal_/)
+    const companyUrl=page.url(),companyId=companyUrl.split('/').pop()
+    await page.getByRole('form',{name:'Link goal work'}).getByLabel('Linked work ID').fill(task.id);await page.getByRole('button',{name:'Link work',exact:true}).click()
+    const readers=[]
+    for(const client of [member,other,analyst]){
+      const session=await open(client);readers.push(session);await session.page.goto(`${w.origin}/app/goals`);await session.page.getByRole('link',{name:`Company outcome ${size}`,exact:true}).click();await expect(session.page.locator('main')).toContainText(`Permitted goal work ${size}`);await flat(session.page)
+    }
+    await proof('goals-company-member',readers[0].page)
+    const edit=page.getByRole('form',{name:'Preview goal audience'})
+    await edit.getByLabel('Accountable owner',{exact:true}).selectOption(member.id);await edit.getByRole('button',{name:'Preview audience and ownership'}).click()
+    await page.getByRole('button',{name:'Confirm reviewed goal audience'}).click()
+    const named=readers[0];await named.page.goto(companyUrl)
+    const observation=named.page.getByRole('form',{name:'Numeric observation'})
+    await observation.getByLabel('Observed value (percent)').fill('50');await observation.getByRole('button',{name:'Record observation'}).click()
+    await expect(named.page.getByRole('status')).toContainText('50%')
+    await named.page.getByRole('form',{name:'Goal check-in'}).getByLabel('Check-in note').fill(`Accountable owner note ${size}`);await named.page.getByRole('button',{name:'Record check-in'}).click()
+    await expect(named.page.locator('main')).toContainText(`Accountable owner note ${size}`);await flat(named.page);await proof('goals-named-owner',named.page)
+    await readers[1].page.goto(companyUrl);assert.equal(await readers[1].page.getByRole('button',{name:'Record observation'}).count(),0);assert.equal(await readers[1].page.getByRole('button',{name:'Record check-in'}).count(),0)
+    const companyView=ok(await other.get(`/api/v1/goals/${companyId}`))
+    assert.equal((await other.post(`/api/v1/goals/${companyId}/checkins`,{revision:companyView.token,note:'No editor authority'})).status,403)
+    for(const invalid of [agent,guest,analyst])assert.equal((await owner.post(`/api/v1/goals/${companyId}/audience-preview`,{ownerId:invalid.id})).status,400)
+    await page.goto(companyUrl);await page.getByRole('form',{name:'Preview goal audience'}).getByLabel('Visibility',{exact:true}).selectOption('restricted');await page.getByRole('button',{name:'Preview audience and ownership'}).click();await page.getByRole('button',{name:'Confirm reviewed goal audience'}).click()
+    for(const client of [other,guest,agent]){
+      const session=await open(client);assert.equal((await session.page.goto(companyUrl)).status(),404);assert.ok(!(await session.page.locator('main').innerText()).includes(`Company outcome ${size}`));await flat(session.page);await proof(`goals-restricted-${client===other?'member':client===guest?'guest':'agent'}`,session.page);await session.context.close()
+    }
+    // Current team membership is checked at every read.
+    const team=ok(await owner.post('/api/v1/teams',{name:`Goals team ${size}`,privacy:'private'}))
+    ok(await owner.post('/api/v1/grants',{objectType:'team',objectId:team.id,granteeId:member.id,level:'viewer'}))
+    const teamGoal=ok(await owner.post('/api/v1/goals',{title:`Team outcome ${size}`,scope:'team',teamId:team.id,periodStart:'2026-01-01',periodEnd:'2026-12-31'}))
+    await named.page.goto(`${w.origin}/app/goals/${teamGoal.id}`);await expect(named.page.getByRole('heading',{name:`Team outcome ${size}`,exact:true})).toBeVisible();await flat(named.page);await proof('goals-team-member',named.page)
+    assert.equal((await readers[1].page.goto(`${w.origin}/app/goals/${teamGoal.id}`)).status(),404)
+    // An owner previews notes and permitted linked titles before a personal share, then revokes it.
+    const privateProject=ok(await owner.post('/api/v1/projects',{name:`Private input project ${size}`})),privateTask=ok(await owner.post('/api/v1/tasks',{title:`Hidden source title ${size}`,projectId:privateProject.id,ownerId:other.id}))
+    const access=ok(await owner.post('/api/v1/grants',{objectType:'project',objectId:privateProject.id,granteeId:member.id,level:'viewer'}));ok(await owner.post('/api/v1/grants',{objectType:'project',objectId:privateProject.id,granteeId:manager.id,level:'viewer'}))
+    const personal=ok(await member.post('/api/v1/goals',{title:`Personal outcome ${size}`,scope:'personal',mode:'work',periodStart:'2026-01-01',periodEnd:'2026-12-31'}));ok(await member.post(`/api/v1/goals/${personal.id}/links`,{sourceType:'task',sourceId:privateTask.id}))
+    const personalUrl=`${w.origin}/app/goals/${personal.id}`
+    await named.page.goto(personalUrl);await named.page.getByRole('form',{name:'Goal check-in'}).getByLabel('Check-in note').fill(`Personal disclosure note ${size}`);await named.page.getByRole('button',{name:'Record check-in'}).click()
+    const managed=await open(manager)
+    assert.equal((await managed.page.goto(personalUrl)).status(),404);assert.equal((await page.goto(personalUrl)).status(),404)
+    const audienceForm=named.page.getByRole('form',{name:'Preview goal audience'})
+    await audienceForm.locator(`input[name="people[]"][value="${manager.id}"]`).check();await audienceForm.getByRole('button',{name:'Preview audience and ownership'}).click()
+    const disclosure=named.page.locator('article').filter({has:named.page.getByRole('heading',{name:'Review newly revealed notes and titles'})})
+    await expect(disclosure).toContainText(`Goal manager ${size}`);await expect(disclosure).toContainText(`Personal disclosure note ${size}`);await expect(disclosure).toContainText(`Hidden source title ${size}`)
+    await flat(named.page);await proof('goals-personal-preview',named.page)
+    await named.page.getByRole('button',{name:'Confirm reviewed goal audience'}).click();await managed.page.goto(personalUrl);await expect(managed.page.locator('main')).toContainText(`Personal disclosure note ${size}`);await flat(managed.page);await proof('goals-personal-shared',managed.page)
+    assert.equal((await page.goto(personalUrl)).status(),404)
+    await named.page.getByRole('form',{name:'Preview goal audience'}).locator(`input[name="people[]"][value="${manager.id}"]`).uncheck();await named.page.getByRole('button',{name:'Preview audience and ownership'}).click();await named.page.getByRole('button',{name:'Confirm reviewed goal audience'}).click()
+    assert.equal((await managed.page.goto(personalUrl)).status(),404)
+    await named.page.goto(personalUrl)
+    ok(await owner.delete(`/api/v1/grants/${access.id}`))
+    await named.page.getByRole('form',{name:'Goal check-in'}).getByLabel('Check-in note').fill('Refuse a stale check-in');await named.page.getByRole('button',{name:'Record check-in'}).click()
+    assert.equal(ok(await member.get(`/api/v1/goals/${personal.id}`)).checkins.length,1)
+    await named.page.goto(personalUrl);await expect(named.page.getByRole('status')).toContainText('restricted input')
+    const progress=named.page.locator('article').filter({has:named.page.getByRole('heading',{name:'Progress and permitted links'})})
+    assert.ok(!(await progress.innerText()).includes(`Hidden source title ${size}`));assert.ok(!(await progress.innerText()).includes('permitted inputs'))
+    const restricted=ok(await member.get(`/api/v1/goals/${personal.id}`));assert.equal(restricted.sourceCount,null);assert.equal(restricted.progress,null);assert.ok(!JSON.stringify(restricted).includes(privateTask.id))
+    await flat(named.page);await proof('goals-restricted-input',named.page)
+    for(const session of [...readers,managed,own])await session.context.close()
+    console.log(`Goal visibility and accountable owners at ${size}px passed`)
+  }
 } finally {
   await browser.close()
   await w.stop()
