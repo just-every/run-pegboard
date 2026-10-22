@@ -545,7 +545,7 @@ describe('PEG-001 one work graph', { concurrency: false }, () => {
   })
 
   it('never lets an approval task\'s owner, former owner or an approve-only grant decide it, says why it waits and notifies no one', async () => {
-    const worker=await w.person('decision-worker@example.com','Decision worker'),reader=await w.person('decision-reader@example.com','Decision reader'),p=await project('Decision boundary')
+    const worker=mia,reader=nina,p=await project('Decision boundary')
     await ok(owner.post('/api/v1/grants',{objectType:'project',objectId:p.id,granteeId:worker.id,level:'editor'}))
     await ok(owner.post('/api/v1/grants',{objectType:'project',objectId:p.id,granteeId:reader.id,level:'viewer',scope:'approve'}))
     const task=await ok(owner.post('/api/v1/tasks',{title:'Sign off vendor terms',projectId:p.id,kind:'approval'}))
@@ -559,8 +559,9 @@ describe('PEG-001 one work graph', { concurrency: false }, () => {
     // An approve-scoped grant reads the task but cannot decide it yet.
     assert.equal((await preview(reader)).canDecide,false);assert.equal((await decide(reader)).status,403)
     // Reassigning to an administrator does not launder sign-off: the administrator owner and the former owner are both refused.
-    const adminA=await w.person('decision-admin-a@example.com','Decision admin A'),adminB=await w.person('decision-admin-b@example.com','Decision admin B')
-    for(const a of [adminA,adminB])await ok(owner.post(`/api/v1/workspaces/ws_main/people/${a.id}/account`,{role:'admin'}))
+    const invited=[await w.person('decision-admin-a@example.com','Decision admin A'),await w.person('decision-admin-b@example.com','Decision admin B')]
+    for(const a of invited)await ok(owner.post(`/api/v1/workspaces/ws_main/people/${a.id}/account`,{role:'admin'}))
+    const [adminA,adminB]=await Promise.all(invited.map(a=>w.signIn(a.email,a.name,a.id)))
     await ok(owner.patch(`/api/v1/tasks/${task.id}`,{ownerId:adminA.id}))
     for(const client of [owner,adminA]){v=await preview(client);assert.equal(v.canDecide,false);assert.equal(v.waiting,'you_own_or_owned_this');assert.equal((await decide(client)).status,403)}
     assert.equal((await preview(adminB)).canDecide,true)
@@ -592,7 +593,7 @@ describe('PEG-001 one work graph', { concurrency: false }, () => {
     assert.equal((await lead.post(`/api/v1/recurrences/${schedule.id}/run`,{})).status,404)
     assert.equal((await ok(lead.get(`/api/v1/recurrences/${schedule.id}`))).occurrences.length,1);assert.equal(await tasksIn(b),1);assert.equal(await tasksIn(a),2)
     // A fresh project occurrence is private: a person who reaches the source by workspace visibility and a direct grant still cannot open it.
-    const reader=await w.person('recurrence-reader@example.com','Recurrence reader'),shared=await project('Recurring shared source',{visibility:'workspace',workspaceLevel:'editor'})
+    const reader=nina,shared=await project('Recurring shared source',{visibility:'workspace',workspaceLevel:'editor'})
     await ok(owner.post('/api/v1/grants',{objectType:'project',objectId:shared.id,granteeId:reader.id,level:'editor'}));await ok(owner.post('/api/v1/tasks',{title:'Shared source task',projectId:shared.id}))
     const projectInput={sourceType:'project',sourceId:shared.id,mode:'calendar',timezone:'America/New_York',unit:'month',interval:1,start:'2026-03-01',count:1}
     const pp=await ok(owner.post('/api/v1/recurrences/preview',projectInput)),ps=await ok(owner.post('/api/v1/recurrences',{...projectInput,revision:pp.token}))
@@ -648,9 +649,9 @@ describe('PEG-001 one work graph', { concurrency: false }, () => {
   })
 
   it('lets a named company-goal owner check in and record observations, refuses agent, guest and analyst owners and never yields progress from an override over a flagged input', async () => {
-    const named=await w.person('goal-named-owner@example.com','Goal named owner'),peer=await w.person('goal-peer@example.com','Goal peer'),agent=await w.person('goal-agent@example.com','Goal agent','agent'),guest=await w.person('goal-guest@example.com','Goal guest','guest'),analyst=await w.person('goal-analyst@example.com','Goal analyst','analyst')
+    const named=await w.person('goal-named-owner@example.com','Goal named owner'),peer=mia,agent=await w.person('goal-agent@example.com','Goal agent','agent'),guest=gus
     const create=(client,extra={})=>client.post('/api/v1/goals',{title:'Pipeline key result',scope:'company',kind:'key_result',periodStart:'2026-10-01',periodEnd:'2026-12-31',mode:'numeric',unit:'qualified leads',target:20,...extra})
-    for(const who of [agent,guest,analyst])assert.equal((await create(owner,{ownerId:who.id})).status,400,'company goal owners are active internal humans')
+    for(const who of [agent,guest])assert.equal((await create(owner,{ownerId:who.id})).status,400,'company goal owners are active internal humans')
     const goal=await ok(create(owner,{ownerId:named.id})),observation={key:'synthetic-pegboard-501',value:10,observedAt:Date.now()}
     await ok(named.post(`/api/v1/goals/${goal.id}/numeric-events`,observation))
     let view=await ok(named.get(`/api/v1/goals/${goal.id}`));assert.equal(view.progress,50)
@@ -667,10 +668,11 @@ describe('PEG-001 one work graph', { concurrency: false }, () => {
     for(const who of [agent,guest])assert.equal((await create(who,{scope:'personal'})).status,403)
     await ok(owner.patch(`/api/v1/workspaces/ws_main/people/${named.id}`,{role:'analyst'}))
     assert.equal((await named.get(`/api/v1/goals/${goal.id}`)).status,404,'a demoted owner no longer reads the goal')
+    assert.equal((await create(owner,{ownerId:named.id})).status,400,'an analyst cannot be named owner')
     // An override never turns a stale, missing or restricted input into success.
     const stale=await ok(create(owner,{ownerId:owner.id,staleAfterSeconds:30})),missing=await ok(create(owner,{ownerId:owner.id}))
     await ok(owner.post(`/api/v1/goals/${stale.id}/numeric-events`,{key:'synthetic-pegboard-503',value:20,observedAt:Date.now()-60000}))
-    const p=await project('Override restricted work'),reader=await w.person('goal-restricted@example.com','Goal restricted');await ok(owner.post('/api/v1/tasks',{title:'Restricted override task',projectId:p.id}))
+    const p=await project('Override restricted work'),reader=nina;await ok(owner.post('/api/v1/tasks',{title:'Restricted override task',projectId:p.id}))
     const access=await ok(owner.post('/api/v1/grants',{objectType:'project',objectId:p.id,granteeId:reader.id,level:'viewer'})),mine=await ok(create(reader,{scope:'personal',mode:'work'}))
     await ok(reader.post(`/api/v1/goals/${mine.id}/links`,{sourceType:'project',sourceId:p.id}));await ok(owner.delete(`/api/v1/grants/${access.id}`))
     for(const [client,id,state] of [[owner,stale.id,'stale_input'],[owner,missing.id,'missing_numeric_input'],[reader,mine.id,'restricted_input']]){
