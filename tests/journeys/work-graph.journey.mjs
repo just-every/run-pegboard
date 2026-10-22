@@ -498,6 +498,33 @@ try {
     await expect(named.page.getByRole('status')).toContainText('50%')
     await named.page.getByRole('form',{name:'Goal check-in'}).getByLabel('Check-in note').fill(`Accountable owner note ${size}`);await named.page.getByRole('button',{name:'Record check-in'}).click()
     await expect(named.page.locator('main')).toContainText(`Accountable owner note ${size}`);await flat(named.page);await proof('goals-named-owner',named.page)
+    // A reviewed CSV and a scoped integration update the same native numeric goal; replays retain one observation.
+    const authorize=named.page.getByRole('form',{name:'Authorize CSV source'})
+    await authorize.getByLabel('CSV source name').fill(`Quarterly metric ${size}`);await authorize.locator('input[name=consent]').check();await authorize.getByRole('button',{name:'Authorize CSV source'}).click()
+    const csv=`event_key,value,observed_at\nsynthetic-pegboard-801,75,${Date.now()}`
+    const csvForm=named.page.getByRole('form',{name:`Preview CSV Quarterly metric ${size}`})
+    await csvForm.getByLabel('Metric CSV',{exact:true}).fill(csv);await csvForm.getByRole('button',{name:'Preview numeric CSV'}).click()
+    await expect(named.page.locator('main')).toContainText('1 new · 0 replays');await flat(named.page);await proof('goals-numeric-csv-preview',named.page)
+    await named.page.getByRole('button',{name:'Apply reviewed numeric CSV'}).click();await expect(named.page.getByRole('status')).toContainText('75%')
+    await named.page.getByRole('form',{name:`Preview CSV Quarterly metric ${size}`}).getByLabel('Metric CSV',{exact:true}).fill(csv);await named.page.getByRole('button',{name:'Preview numeric CSV'}).click();await expect(named.page.locator('main')).toContainText('0 new · 1 replays');await named.page.getByRole('button',{name:'Apply reviewed numeric CSV'}).click()
+    const apiSource=ok(await member.post(`/api/v1/goals/${companyId}/sources`,{kind:'api',name:`Metric integration ${size}`,consent:true}))
+    const provider=new owner.constructor(w.origin,'','Authorized metric provider'),event={key:'synthetic-pegboard-802',value:90,observedAt:Date.now()},providerHeaders={authorization:'Bearer '+apiSource.token}
+    ok(await provider.call('POST',`/api/v1/metric-sources/${apiSource.id}/events`,event,providerHeaders));assert.equal(ok(await provider.call('POST',`/api/v1/metric-sources/${apiSource.id}/events`,event,providerHeaders)).replayed,true)
+    await named.page.goto(companyUrl);await expect(named.page.getByRole('status')).toContainText('90%');await flat(named.page);await proof('goals-numeric-integration',named.page)
+    await named.page.getByRole('button',{name:`Revoke Metric integration ${size}`}).click();await expect(named.page.getByRole('status')).toContainText('restricted input')
+    assert.equal((await provider.call('POST',`/api/v1/metric-sources/${apiSource.id}/events`,event,providerHeaders)).status,403)
+    const aged=ok(await member.post('/api/v1/goals',{title:`Stale metric ${size}`,scope:'personal',mode:'numeric',staleAfterSeconds:30,periodStart:'2026-01-01',periodEnd:'2026-12-31'})),agedSource=ok(await member.post(`/api/v1/goals/${aged.id}/sources`,{kind:'csv',name:'Aged observations',consent:true})),agedCsv=`event_key,value,observed_at\nsynthetic-pegboard-803,100,${Date.now()-60000}`
+    const agedPreview=ok(await member.post(`/api/v1/metric-sources/${agedSource.id}/csv-preview`,{csv:agedCsv}));ok(await member.post(`/api/v1/metric-sources/${agedSource.id}/csv`,{csv:agedCsv,revision:agedPreview.token}))
+    await named.page.goto(`${w.origin}/app/goals/${aged.id}`);await expect(named.page.getByRole('status')).toContainText('stale input');await flat(named.page);await proof('goals-stale-numeric-source',named.page)
+    // Weighted project/task/subgoal inputs deduplicate the same task through every link.
+    ok(await owner.patch(`/api/v1/tasks/${task.id}`,{status:'done'}))
+    ok(await owner.post('/api/v1/tasks',{title:`Second weighted task ${size}`,projectId:project.id}))
+    const workGoal=async title=>ok(await owner.post('/api/v1/goals',{title,scope:'company',mode:'work',periodStart:'2026-01-01',periodEnd:'2026-12-31'}))
+    const childGoal=await workGoal(`Execution key result ${size}`),rootGoal=await workGoal(`Weighted objective ${size}`)
+    const link=async(g,type,id,weight=1)=>ok(await owner.post(`/api/v1/goals/${g.id}/links`,{sourceType:type,sourceId:id,weight}))
+    await link(childGoal,'task',task.id,2);await link(rootGoal,'project',project.id);await link(rootGoal,'task',task.id,3);await link(rootGoal,'goal',childGoal.id)
+    await named.page.goto(`${w.origin}/app/goals/${rootGoal.id}`);await expect(named.page.getByRole('status')).toContainText('75%');await expect(named.page.locator('main')).toContainText('2 permitted inputs');await named.page.getByRole('link',{name:`Execution key result ${size}`,exact:true}).waitFor();await flat(named.page);await proof('goals-weighted-deduplicated-hierarchy',named.page)
+
     await readers[1].page.goto(companyUrl);assert.equal(await readers[1].page.getByRole('button',{name:'Record observation'}).count(),0);assert.equal(await readers[1].page.getByRole('button',{name:'Record check-in'}).count(),0)
     const companyView=ok(await other.get(`/api/v1/goals/${companyId}`))
     assert.equal((await other.post(`/api/v1/goals/${companyId}/checkins`,{revision:companyView.token,note:'No editor authority'})).status,403)
