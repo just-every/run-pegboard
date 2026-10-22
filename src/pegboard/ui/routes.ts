@@ -1,3 +1,4 @@
+import {decisionPreview} from '../decisions/tasks'
 import {listNumericSources,previewNumericCsv} from '../goals/sources'
 import {GoalsPage} from './pages/goals'
 import {listGoals,goalView,goalAudience,goalAudiencePreview} from '../goals/goals'
@@ -120,7 +121,7 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
       try { task = await viewTask(db, actor, decodeURIComponent(id)) } catch (error) { if (error instanceof PegError && error.status === 404) return refuse(db, actor, viewer, decodeURIComponent(id)); throw error }
       const open = (await listProjects(db, actor, workspace)).filter(project => project.level && ['editor', 'admin'].includes(project.level) && !task.projects.some(own => own.id === project.id))
       const sections = Object.fromEntries(await Promise.all(task.projects.map(async project => [project.id, (await listSections(db, project.id)).map(entry => ({ value: entry.id, label: entry.name }))])))
-      return page('Task', h(TaskPage, { viewer, task, addable: open.map(project => ({ value: project.id, label: project.name })), sections, tagOptions:(await tagCatalogue(db,actor,workspace)).filter(t=>!t.archived).map(t=>({value:t.id,label:t.name})), preview: task.personal && url.searchParams.get('projectId') ? await visibilityPreview(db,actor,task.id,url.searchParams.get('projectId')!) : null }))
+      return page('Task', h(TaskPage, { viewer, task, decision:task.kind==='approval'?await decisionPreview(db,actor,task.id):null, addable: open.map(project => ({ value: project.id, label: project.name })), sections, tagOptions:(await tagCatalogue(db,actor,workspace)).filter(t=>!t.archived).map(t=>({value:t.id,label:t.name})), preview: task.personal && url.searchParams.get('projectId') ? await visibilityPreview(db,actor,task.id,url.searchParams.get('projectId')!) : null }))
     }
     if (section === 'my-tasks') { const prefs=await settings(db,actor), on=url.searchParams.get('on')??undefined; const tasks=await myTasks(db,actor,on); return page('My tasks',h(MyTasksPage,{viewer,tasks,workspace,meta:await personalMeta(db,actor),day:on??localDay(Date.now(),prefs.timezone),on})) }
     if (section === 'teams' && !id) return page('Teams', h(TeamsPage, { viewer, teams: (await listTeams(db, actor, workspace, url.searchParams.get('q') ?? '')).teams, query: url.searchParams.get('q') ?? '', workspace, canCreate: ['owner', 'admin', 'manager'].includes((await workspaceRole(db, actor.id, workspace)) as string) }))

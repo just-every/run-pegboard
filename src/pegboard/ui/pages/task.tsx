@@ -1,3 +1,4 @@
+import type {decisionPreview} from '../../decisions/tasks'
 import {fieldError} from '../field-errors'
 import type { visibilityPreview } from '../../tasks/personal'
 import type { viewTask } from '../../tasks/view'
@@ -5,28 +6,36 @@ import type { Viewer } from '../../../ui/viewer'
 import { Area, Card, Field, Form, Pick, Shell, Submit, levelLabel, when } from '../shell'
 
 type View = Awaited<ReturnType<typeof viewTask>>
-const kindLabel: Record<string, string> = { created: 'created the task', 'status.changed': 'changed the status', updated: 'edited the task', 'project.added': 'hung it in a project', 'project.removed': 'took it out of a project', 'section.changed': 'moved it to a section', 'fields.changed': 'changed project fields', 'comment.added': 'commented', 'attachment.added': 'attached a file', 'collaborators.changed': 'changed collaborators', 'internal.changed': 'changed internal notes' }
+const kindLabel: Record<string, string> = { 'decision.reopened':'reopened sign-off after a work change','decision.approve':'approved this revision','decision.changes':'requested changes','decision.reject':'rejected this revision', created: 'created the task', 'status.changed': 'changed the status', updated: 'edited the task', 'project.added': 'hung it in a project', 'project.removed': 'took it out of a project', 'section.changed': 'moved it to a section', 'fields.changed': 'changed project fields', 'comment.added': 'commented', 'attachment.added': 'attached a file', 'collaborators.changed': 'changed collaborators', 'internal.changed': 'changed internal notes' }
 const statusLabel: Record<string, string> = { todo: 'To do', doing: 'Doing', done: 'Done' }
 
-export function TaskPage({ viewer, task, addable, sections, preview, tagOptions }: { viewer: Viewer; task: View; addable: { value: string; label: string }[]; sections: Record<string, { value: string; label: string }[]>; preview: Awaited<ReturnType<typeof visibilityPreview>> | null; tagOptions: {value:string;label:string}[] }) {
+export function TaskPage({ viewer, task, addable, sections, preview, tagOptions,decision }: { viewer: Viewer; task: View; decision:Awaited<ReturnType<typeof decisionPreview>>|null; addable: { value: string; label: string }[]; sections: Record<string, { value: string; label: string }[]>; preview: Awaited<ReturnType<typeof visibilityPreview>> | null; tagOptions: {value:string;label:string}[] }) {
   const can = (capability: string) => (task.capabilities as string[]).includes(capability)
+  const approval=!!decision
+  const stateLabels:Record<string,string>={approved:'Approved',reopened:'Reopened — new decision required',rejected:'Rejected',changes_requested:'Changes requested',pending:'Pending decision'}
+  const waiting:Record<string,string>={personal_share_required:'This personal approval needs a reviewed project share before anyone can decide it.',you_own_or_owned_this:'You own or have owned this work. Another eligible owner or administrator must decide it.',another_decider_needed:'Another eligible owner or administrator is needed. Nothing approves automatically.',administrator_required:'A different eligible workspace owner or administrator must decide this work.'}
   const here = `/app/tasks/${task.id}`
   const first = task.projects[0]
-  return <Shell viewer={viewer} current="/app/projects" title={task.title} chip={statusLabel[task.status].toUpperCase()} facts={[task.ref ?? 'No reference', `Owner ${task.owner.name}`, `Priority ${task.priority}`, task.dueDate ? `Due ${task.dueDate}` : 'No due date', task.personal ? 'Personal task, only you see it' : `Your access ${levelLabel(task.level)}`]}
+  return <Shell viewer={viewer} current="/app/projects" title={task.title} chip={decision?({approved:'APPROVED',reopened:'REOPENED',rejected:'REJECTED',changes_requested:'CHANGES',pending:'PENDING'}[decision.state]):statusLabel[task.status].toUpperCase()} facts={[task.ref ?? 'No reference', `Owner ${task.owner.name}`, `Priority ${task.priority}`, task.dueDate ? `Due ${task.dueDate}` : 'No due date', task.personal ? 'Personal task, only you see it' : `Your access ${levelLabel(task.level)}`]}
     crumbs={[...(first ? [{ label: first.name, href: `/app/projects/${first.id}` }] : [{ label: 'My tasks', href: '/app/my-tasks' }]), { label: task.ref ?? 'Task', href: here, current: true }]}>
     <Card title="Task">
       <p className="muted">Task ID <code>{task.id}</code>{task.ref && <> · reference <strong>{task.ref}</strong></>}{task.aliases.length > 0 && <> · earlier references {task.aliases.join(', ')}</>}</p>
       {task.description && <p>{task.description}</p>}
-      {can('edit') && <div className="inline">
+      {task.parentId===null&&(task.personal||can('manage_templates'))&&<p><a className="button quiet" href={`/app/recurrences?sourceType=task&sourceId=${task.id}&start=${new Date().toISOString().slice(0,10)}&unit=week`}>Make task recurring</a></p>}
+      {can('edit') && !approval && <div className="inline">
         <form method="post" action={`/api/v1/tasks/${task.id}/complete`}><input type="hidden" name="_next" value={here} />{task.status === 'done' ? <><input type="hidden" name="reopen" value="1" /><button className="button quiet" type="submit">Reopen</button></> : <button className="button primary" type="submit">Mark complete</button>}</form>
       </div>}
       {task.subtasks.length > 0 && <><h3>Subtasks</h3><ul className="rows">{task.subtasks.map(sub => <li key={sub.id}><span className="grow"><a href={`/app/tasks/${sub.id}`}>{sub.title}</a></span>{sub.ref && <small>{sub.ref}</small>}<span className={sub.status === 'done' ? 'tagline on' : 'tagline'}>{statusLabel[sub.status]}</span></li>)}</ul></>}
       {can('edit') && <Form action="/api/v1/tasks" next={here} label="Add a subtask"><input type="hidden" name="parentId" value={task.id} /><div className="inline"><Field label="New subtask" name="title" /><Submit quiet>Add subtask</Submit></div></Form>}
     </Card>
+    {decision&&<Card title="Approval decision"><p role="status">{stateLabels[decision.state]}</p>{decision.waiting&&<p>{waiting[decision.waiting]}</p>}<p>The owner is accountable for the work, never its approver. Decisions apply to this exact revision and send nothing outward.</p>
+      {decision.canDecide&&<Form action={`/api/v1/tasks/${task.id}/decision`} next={here} label="Decide approval task"><input type="hidden" name="revision" value={decision.token}/><Pick label="Decision" name="action" options={[{value:'approve',label:'Approve'},{value:'changes',label:'Request changes'},{value:'reject',label:'Reject'}]}/><Area label="Decision reason" name="reason"/><Submit>Record reviewed decision</Submit></Form>}
+      <h3>Decision history</h3><ol className="rows">{decision.decisions.map(d=><li key={d.id}>{d.actor} · {stateLabels[d.action==='approve'?'approved':d.action==='reject'?'rejected':'changes_requested']} · {when(d.at)}<p>{d.reason}</p></li>)}</ol>
+    </Card>}
     {can('edit') && <Card title="Edit">
       <Form action={`/api/v1/tasks/${task.id}/update`} next={here} label="Edit task">
         <Field label="Title" name="title" value={task.title} required /><Area label="Description" name="description" value={task.description} />
-        <div className="inline"><Pick label="Status" name="status" value={task.status} options={[{ value: 'todo', label: 'To do' }, { value: 'doing', label: 'Doing' }, { value: 'done', label: 'Done' }]} /><Pick label="Priority" name="priority" value={task.priority} options={['low', 'normal', 'high', 'urgent'].map(value => ({ value, label: value }))} /><input type="hidden" name="dueDateKind" value={task.dueDate?.includes('T')?'instant':'date'}/><Field label={task.dueDate?.includes('T')?'Due (UTC)':'Due'} name="dueDate" type={task.dueDate?.includes('T')?'datetime-local':'date'} step={task.dueDate?.includes('T')?'0.001':undefined} value={task.dueDate?.replace(/Z$/,'')} /><Field label="Estimate (hours)" name="estimateHours" type="number" value={task.estimateHours} /></div>
+        <div className="inline">{!approval&&<Pick label="Status" name="status" value={task.status} options={[{ value: 'todo', label: 'To do' }, { value: 'doing', label: 'Doing' }, { value: 'done', label: 'Done' }]} />}<Pick label="Priority" name="priority" value={task.priority} options={['low', 'normal', 'high', 'urgent'].map(value => ({ value, label: value }))} /><input type="hidden" name="dueDateKind" value={task.dueDate?.includes('T')?'instant':'date'}/><Field label={task.dueDate?.includes('T')?'Due (UTC)':'Due'} name="dueDate" type={task.dueDate?.includes('T')?'datetime-local':'date'} step={task.dueDate?.includes('T')?'0.001':undefined} value={task.dueDate?.replace(/Z$/,'')} /><Field label="Estimate (hours)" name="estimateHours" type="number" value={task.estimateHours} /></div>
         {'internalNotes' in task && <Area label="Internal notes (members only)" name="internalNotes" value={task.internalNotes} />}
         <Submit>Save</Submit>
       </Form>

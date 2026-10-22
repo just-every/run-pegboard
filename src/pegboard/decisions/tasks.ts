@@ -1,6 +1,6 @@
 import { all, bound, conflict, first, forbidden, invalid, newId, now } from '../db'
 import { isAdministrator } from '../authorization/levels'
-import { workspaceRole, type Actor } from '../workspace/people'
+import { displayNames, workspaceRole, type Actor } from '../workspace/people'
 import { openTask } from '../tasks/access'
 import { historyStatement } from '../tasks/history'
 import { digest, guarded, revision } from './revision'
@@ -17,7 +17,9 @@ export async function decisionPreview(db: D1Database, actor: Actor, id: string) 
   const canDecide=waiting===null
   const decisions=await all<{id:string;actor_id:string;at:number;revision:string;action:string;reason:string}>(db,'SELECT * FROM peg_task_decisions WHERE task_id=? ORDER BY at,id',task.id)
   // The revision includes all current work and access changes. Reading it does not approve anything.
-  return {taskId:task.id, title:task.title, canDecide, waiting, anotherDeciderNeeded:!access.personal&&!eligible.length, decisions, rev, token:await digest([task,rev])}
+  const last=decisions.at(-1),names=await displayNames(db,decisions.map(d=>d.actor_id)),reopen=await first<{at:number}>(db,"SELECT at FROM peg_history WHERE task_id=? AND kind='decision.reopened' ORDER BY id DESC LIMIT 1",task.id)
+  const state=task.status==='done'&&last?.action==='approve'?'approved':last?.action==='approve'?'reopened':last?.action==='reject'?'rejected':last?.action==='changes'?'changes_requested':'pending'
+  return {state,reopenedAt:reopen?.at??null,taskId:task.id, title:task.title, canDecide, waiting, anotherDeciderNeeded:!access.personal&&!eligible.length, decisions:decisions.map(d=>({...d,actor:names.get(d.actor_id)??'Former member'})), rev, token:await digest([task,rev])}
 }
 export async function decideTask(db: D1Database, actor: Actor, id: string, input: Record<string,any>) {
   const preview=await decisionPreview(db,actor,id)

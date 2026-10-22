@@ -245,6 +245,10 @@
       "sha256": "f32cce33f59768b69639c19642363e6ae054c83b59acf14f4a8d3c94c571c0e8",
       "executable": false
     },
+    "migrations/core/0028_attributed_approval_reopens.sql": {
+      "sha256": "8fa7f6469b4938fde715f8dd58a86159fed60b1ff28011d7e7f6f06a15809525",
+      "executable": false
+    },
     "ONBOARDING.md": {
       "sha256": "24b685d6eddeae5480ce4dfbf44c0590e54bcfe83641373de5bba985765380bd",
       "executable": false
@@ -1846,7 +1850,7 @@
       "executable": false
     },
     "src/pegboard/decisions/tasks.ts": {
-      "sha256": "41ccfde310e79cd5764fec56fecb67e9fc6c921ae346e224ef0a61abd493e88b",
+      "sha256": "210f6c9549617ff768cf0877b6e8900ebc6c16c65dd74617f71582d14f6d376b",
       "executable": false
     },
     "src/pegboard/fields/definitions.ts": {
@@ -1858,7 +1862,7 @@
       "executable": false
     },
     "src/pegboard/fields/values.ts": {
-      "sha256": "87be6841c00ae9d1e9163569731b176faf4ec541092319a2d415bcc30ae611d6",
+      "sha256": "9d77fd112681f2f64d05f0de6a1a3f82e38b724358333bd8eb9aa89a2274baf9",
       "executable": false
     },
     "src/pegboard/goals/goals.ts": {
@@ -1886,7 +1890,7 @@
       "executable": false
     },
     "src/pegboard/tags/tags.ts": {
-      "sha256": "e6d4d7f00795b59a3c3f496568214a6dbca44dfb0f20c9be7a8fd99bd0aa6a2f",
+      "sha256": "34ad6f9f8e04c00f3f2d2027816786c889e45faf00ff51b0352a29874e6e773f",
       "executable": false
     },
     "src/pegboard/tasks/access.ts": {
@@ -1898,7 +1902,7 @@
       "executable": false
     },
     "src/pegboard/tasks/history.ts": {
-      "sha256": "9b87b4560c73e634172a5168c5055a7ee1b0d02026c0c4a6a578c1b664c27ca9",
+      "sha256": "087dbcb4ebe72c0f2a0472059b224a33357bb56e383ea08b30e987313f988575",
       "executable": false
     },
     "src/pegboard/tasks/personal.ts": {
@@ -1906,11 +1910,11 @@
       "executable": false
     },
     "src/pegboard/tasks/tasks.ts": {
-      "sha256": "c2cd7a1d086bd957e941272a2983560863c4d290348652dd1e7d5054aae0102e",
+      "sha256": "c317dda0fcf66356f17bb7ffd53bcea7fe72bb539fc98af04196548a896b8e38",
       "executable": false
     },
     "src/pegboard/tasks/view.ts": {
-      "sha256": "399f699edcd04287e2554a6ddcfff78118be845aae83fa4ba30e0411c12a1c53",
+      "sha256": "9de72319a65788702c29db4eee291e76ea46eaf5873bb3303d10f1a383b433b8",
       "executable": false
     },
     "src/pegboard/time/time.ts": {
@@ -1918,7 +1922,7 @@
       "executable": false
     },
     "src/pegboard/ui/error.tsx": {
-      "sha256": "27d173b6ef572246e72aa4c44ef2fb4e0f643c36adad1427cbfc8567da9bc69b",
+      "sha256": "e05ac2cedc134d1ff9b40032ec1a1e3883619d2f31d792a27b7ee925c36e63f8",
       "executable": false
     },
     "src/pegboard/ui/field-errors.ts": {
@@ -1958,7 +1962,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/project.tsx": {
-      "sha256": "b9c55803da21d25590108afb224511a98eb79a6593c75dbfa06a1cff6431f377",
+      "sha256": "34aaf0221a7e914d93aa37ab20881ca82ecb3b44e806555c9d2ca07468dbd429",
       "executable": false
     },
     "src/pegboard/ui/pages/projects.tsx": {
@@ -1978,7 +1982,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/task.tsx": {
-      "sha256": "69866117c966703d4b1ffcf08017fd1d30261f6af67571f9feee17fe489f5c07",
+      "sha256": "206f672e1b731e7f90d89e8fbb5b4623db48eb7e1a8ab0910309515035384f93",
       "executable": false
     },
     "src/pegboard/ui/pages/team-gate.tsx": {
@@ -1998,7 +2002,7 @@
       "executable": false
     },
     "src/pegboard/ui/routes.ts": {
-      "sha256": "4a5f7ee1a38d5a769c97ebb426938e08ff1a1e73a3a41c28f24ed577de4b5340",
+      "sha256": "723e6988a796a838d557f800f7530e78e2f3f97949ab792bf150c89903a0620f",
       "executable": false
     },
     "src/pegboard/ui/shell.tsx": {
@@ -2202,7 +2206,7 @@
       "executable": false
     },
     "tests/work-graph.test.mjs": {
-      "sha256": "1e6b3b38b457f31d158fd9bcc8db5c0bfc88c2cd8f1d02ae684b0245efa7292a",
+      "sha256": "d2d3da8eef41b519090cceac095cd77cd989481b3582a279567515cc7e0a3e5e",
       "executable": false
     },
     "tsconfig.json": {

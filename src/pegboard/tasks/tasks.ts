@@ -10,7 +10,7 @@ import { issueRef, setPrefix } from '../references/refs'
 import { fieldReadable, need, openProject } from '../workspace/projects'
 import { displayNames, workspaceRole, type Actor } from '../workspace/people'
 import { openTask, require } from './access'
-import { historyStatement } from './history'
+import { historyStatement, reopenGuard } from './history'
 
 const statuses = ['todo', 'doing', 'done'], priorities = ['low', 'normal', 'high', 'urgent'], kinds = ['task', 'subtask', 'milestone', 'approval']
 const title = (value: unknown) => { if (typeof value !== 'string' || !value.trim() || value.length > 300) throw invalid('title'); return value.trim() }
@@ -102,14 +102,14 @@ export async function updateTask(db: D1Database, actor: Actor, idOrRef: string, 
   const at = now(), statements: D1PreparedStatement[] = []
   if (next.status !== task.status) next.completed_at = next.status === 'done' ? at : null
   if (Object.keys(changes).length) {
-    statements.push(bound(db, 'UPDATE peg_tasks SET title=?,description=?,status=?,priority=?,start_date=?,due_date=?,owner_id=?,estimate_hours=?,internal_only=?,internal_notes=?,completed_at=?,updated_at=? WHERE id=?',
+    statements.push(reopenGuard(db,task.id,actor.id,'task_edit'),bound(db, 'UPDATE peg_tasks SET title=?,description=?,status=?,priority=?,start_date=?,due_date=?,owner_id=?,estimate_hours=?,internal_only=?,internal_notes=?,completed_at=?,updated_at=? WHERE id=?',
       [next.title, next.description, next.status, next.priority, next.start_date, next.due_date, next.owner_id, next.estimate_hours, next.internal_only, next.internal_notes, next.completed_at, at, task.id]))
     const shown = Object.fromEntries(Object.entries(changes).filter(([key]) => key !== 'internal_notes' && key !== 'internal_only'))
     const hidden = Object.keys(changes).some(key => key === 'internal_notes' || key === 'internal_only')
     if (Object.keys(shown).length) statements.push(historyStatement(db, task.id, null, actor.id, next.status !== task.status && Object.keys(shown).length === 1 ? 'status.changed' : 'updated', shown))
     if (hidden) statements.push(historyStatement(db, task.id, null, actor.id, 'internal.changed', {}))
   }
-  if (patch.collaborators) statements.push(bound(db, 'DELETE FROM peg_task_collaborators WHERE task_id=?', [task.id]), ...[...new Set(patch.collaborators)].map(id => bound(db, 'INSERT INTO peg_task_collaborators(task_id,operator_id) VALUES (?,?)', [task.id, id])), historyStatement(db, task.id, null, actor.id, 'collaborators.changed', { count: new Set(patch.collaborators).size }))
+  if (patch.collaborators) statements.push(reopenGuard(db,task.id,actor.id,'collaborators',patch.collaborators.length?'1':'EXISTS(SELECT 1 FROM peg_task_collaborators WHERE task_id=t.id)'),bound(db, 'DELETE FROM peg_task_collaborators WHERE task_id=?', [task.id]), ...[...new Set(patch.collaborators)].map(id => bound(db, 'INSERT INTO peg_task_collaborators(task_id,operator_id) VALUES (?,?)', [task.id, id])), historyStatement(db, task.id, null, actor.id, 'collaborators.changed', { count: new Set(patch.collaborators).size }))
   if (statements.length) await batch(db, statements)
   return (await first<TaskRow>(db, 'SELECT * FROM peg_tasks WHERE id=?', task.id))!
 }
@@ -126,6 +126,7 @@ export async function addToProject(db: D1Database, actor: Actor, idOrRef: string
   if (await first(db, 'SELECT 1 FROM peg_task_projects WHERE task_id=? AND project_id=?', task.id, project.id)) throw conflict('already_in_project')
   const section = await sectionFor(db, project.id, input.sectionId)
   await batch(db, [
+    reopenGuard(db,task.id,actor.id,'project_membership'),
     bound(db, 'INSERT INTO peg_task_projects(task_id,project_id,section_id,position,added_by,added_at) VALUES (?,?,?,?,?,?)', [task.id, project.id, section?.id ?? null, await nextPosition(db, project.id, section?.id ?? null), actor.id, now()]),
     historyStatement(db, task.id, project.id, actor.id, 'project.added', { section: section?.name ?? null }),
   ])
@@ -145,6 +146,7 @@ export async function moveToProject(db: D1Database, actor: Actor, idOrRef: strin
   if (input.from === input.to || await first(db, 'SELECT 1 FROM peg_task_projects WHERE task_id=? AND project_id=?', task.id, project.id)) throw conflict('already_in_project')
   const section = await sectionFor(db, project.id, input.sectionId)
   await batch(db, [
+    reopenGuard(db,task.id,actor.id,'project_membership'),
     bound(db, 'DELETE FROM peg_task_projects WHERE task_id=? AND project_id=?', [task.id, input.from]),
     bound(db, 'INSERT INTO peg_task_projects(task_id,project_id,section_id,position,added_by,added_at) VALUES (?,?,?,?,?,?)', [task.id, project.id, section?.id ?? null, await nextPosition(db, project.id, section?.id ?? null), actor.id, now()]),
     historyStatement(db, task.id, input.from, actor.id, 'project.removed', { moved: true }),
@@ -160,7 +162,7 @@ export async function removeFromProject(db: D1Database, actor: Actor, idOrRef: s
   need(context, 'edit')
   if (task.parent_id) throw conflict('subtask_follows_parent')
   if (access.contexts.size + 0 < 1 || (await first<{ n: number }>(db, 'SELECT COUNT(*) n FROM peg_task_projects WHERE task_id=?', task.id))!.n < 2) throw conflict('last_project')
-  await batch(db, [bound(db, 'DELETE FROM peg_task_projects WHERE task_id=? AND project_id=?', [task.id, projectId]), historyStatement(db, task.id, projectId, actor.id, 'project.removed', {})])
+  await batch(db, [reopenGuard(db,task.id,actor.id,'project_membership'),bound(db, 'DELETE FROM peg_task_projects WHERE task_id=? AND project_id=?', [task.id, projectId]), historyStatement(db, task.id, projectId, actor.id, 'project.removed', {})])
 }
 
 /** Move within a project: the section decides the one shared status when it maps to one. */
@@ -171,7 +173,7 @@ export async function setSection(db: D1Database, actor: Actor, idOrRef: string, 
   need(context, 'edit')
   if (task.parent_id) throw conflict('subtask_follows_parent')
   const section = await sectionFor(db, projectId, sectionId)
-  const statements = [bound(db, 'UPDATE peg_task_projects SET section_id=?,position=? WHERE task_id=? AND project_id=?', [section!.id, await nextPosition(db, projectId, section!.id), task.id, projectId]),
+  const statements = [reopenGuard(db,task.id,actor.id,'project_membership'),bound(db, 'UPDATE peg_task_projects SET section_id=?,position=? WHERE task_id=? AND project_id=?', [section!.id, await nextPosition(db, projectId, section!.id), task.id, projectId]),
     historyStatement(db, task.id, projectId, actor.id, 'section.changed', { section: section!.name })]
   if (section!.maps_to && section!.maps_to !== task.status) statements.push(
     bound(db, 'UPDATE peg_tasks SET status=?,completed_at=?,updated_at=? WHERE id=?', [section!.maps_to, section!.maps_to === 'done' ? now() : null, now(), task.id]),

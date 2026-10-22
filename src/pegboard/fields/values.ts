@@ -19,7 +19,7 @@ import {
   fieldInput,
   projectTaskIds,
 } from './definitions'
-import { historyStatement } from '../tasks/history'
+import { historyStatement, reopenGuard, reopenFieldGuards } from '../tasks/history'
 import { auditStatement } from '../authorization/audit'
 
 export type FieldValue = string | number | boolean | string[] | null
@@ -321,6 +321,7 @@ export async function setValues(
     if (field.type === 'rollup' && Array.isArray(normalized))
       for (const id of normalized) await openTask(db, actor, id)
     statements.push(
+      reopenGuard(db,task.id,actor.id,'field_value',normalized===null?'EXISTS(SELECT 1 FROM peg_field_values WHERE task_id=t.id AND field_id=?)':'1',normalized===null?[field.id]:[]),
       normalized === null
         ? bound(
             db,
@@ -435,6 +436,7 @@ export async function changeDefinition(
   // The preview guards every stored value; version fencing prevents competing definition changes.
   try {
     await batch(db, [
+      reopenFieldGuards(db,fieldId,actor.id),
       bound(db, 'INSERT INTO peg_personal_guards VALUES(?,?)', [
         newId('guard'),
         preview.revision,

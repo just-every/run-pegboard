@@ -1,3 +1,4 @@
+import {reopenGuard} from '../tasks/history'
 // A workspace catalogue filtered by actual project access or the person's private custody.
 import {
   all,
@@ -222,6 +223,7 @@ export async function tagTask(
   )
     throw forbidden('tag_project')
   await batch(db, [
+    reopenGuard(db,task.id,actor.id,'tag',remove?'EXISTS(SELECT 1 FROM peg_task_tags WHERE task_id=t.id AND tag_id=?)':'NOT EXISTS(SELECT 1 FROM peg_task_tags WHERE task_id=t.id AND tag_id=?)',[tag.id]),
     remove
       ? bound(db, 'DELETE FROM peg_task_tags WHERE task_id=? AND tag_id=?', [
           task.id,

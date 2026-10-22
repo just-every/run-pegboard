@@ -30,7 +30,7 @@ export function ProjectPage({ viewer, data, id }: { viewer: Viewer; data: Board;
           {can('edit') && <Card title="Add a task">
             <Form action="/api/v1/tasks" next={`/app/projects/${id}`} label="Add a task">
               <input type="hidden" name="projectId" value={id} />
-              <Field label="Task title" name="title" required />
+              <Field label="Task title" name="title" required /><Pick label="Task kind" name="kind" options={[{value:"task",label:"Task"},{value:"approval",label:"Approval"},{value:"milestone",label:"Milestone"}]}/>
               <div className="inline"><Pick label="Section" name="sectionId" options={sections} /><Field label="Estimate (hours)" name="estimateHours" type="number" value="0" /><Field label="Due date" name="dueDate" type="date" /></div>
               <Submit>Add task</Submit>
             </Form>

@@ -9,7 +9,7 @@ import { currentRef, aliases } from '../references/refs'
 import { fieldReadable } from '../workspace/projects'
 import { displayNames, type Actor } from '../workspace/people'
 import { openTask, require } from './access'
-import { historyOf, historyStatement } from './history'
+import { historyOf, historyStatement, reopenGuard } from './history'
 
 export const attachmentTypes = ['image/png', 'image/jpeg', 'application/pdf', 'text/plain']
 export const attachmentLimit = 512 * 1024
@@ -62,7 +62,7 @@ export async function addComment(db: D1Database, actor: Actor, idOrRef: string, 
   if (typeof body !== 'string' || !body.trim() || body.length > 10000) throw invalid('body')
   const via = [...access.contexts].filter(([, effective]) => effective.capabilities.has('comment')).sort((a, b) => b[1].paths.length - a[1].paths.length)[0]?.[0] ?? null
   const id = newId('cmt')
-  await batch(db, [bound(db, 'INSERT INTO peg_comments(id,task_id,project_id,author_id,body,created_at) VALUES (?,?,?,?,?,?)', [id, task.id, via, actor.id, body.trim(), now()]), historyStatement(db, task.id, null, actor.id, 'comment.added', {})])
+  await batch(db, [reopenGuard(db,task.id,actor.id,'comment'),bound(db, 'INSERT INTO peg_comments(id,task_id,project_id,author_id,body,created_at) VALUES (?,?,?,?,?,?)', [id, task.id, via, actor.id, body.trim(), now()]), historyStatement(db, task.id, null, actor.id, 'comment.added', {})])
   return { id }
 }
 
@@ -81,7 +81,7 @@ export async function addAttachment(db: D1Database, actor: Actor, idOrRef: strin
     require({ ...access, capabilities: context.capabilities }, 'comment')
   }
   const id = newId('att')
-  await batch(db, [bound(db, 'INSERT INTO peg_attachments(id,task_id,project_id,name,content_type,size,data,created_by,created_at) VALUES (?,?,?,?,?,?,?,?,?)', [id, task.id, projectId, name, contentType, input.bytes.byteLength, Array.from(new Uint8Array(input.bytes)) as never, actor.id, now()]),
+  await batch(db, [reopenGuard(db,task.id,actor.id,'attachment'),bound(db, 'INSERT INTO peg_attachments(id,task_id,project_id,name,content_type,size,data,created_by,created_at) VALUES (?,?,?,?,?,?,?,?,?)', [id, task.id, projectId, name, contentType, input.bytes.byteLength, Array.from(new Uint8Array(input.bytes)) as never, actor.id, now()]),
     historyStatement(db, task.id, projectId, actor.id, 'attachment.added', { name })])
   return { id, name, contentType }
 }

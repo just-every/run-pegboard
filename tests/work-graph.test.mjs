@@ -483,6 +483,44 @@ describe('Work planning time, recurrence and decisions', { concurrency: false },
     assert.equal((await expiryPerson.post(`/api/v1/timesheets/${expirySheet.id}/decision`,{action:'approve',revision:expiryView.token})).status,404)
   })
 
+  it('attributes every existing sign-off reopening door to its writer without inventing a reopen for a no-op', async () => {
+    const worker=await w.person('reopen-writer@example.com','Sign-off writer'),p=await project('Attributed sign-off'),q=await project('Second sign-off home')
+    for(const home of [p,q])await ok(owner.post('/api/v1/grants',{objectType:'project',objectId:home.id,granteeId:worker.id,level:'editor'}))
+    const field=await ok(owner.post(`/api/v1/projects/${p.id}/fields`,{key:'review_context',label:'Review context',type:'text'})),tag=await ok(owner.post('/api/v1/tags',{projectId:p.id,name:'Review scope'})),sections=(await ok(owner.get(`/api/v1/projects/${p.id}`))).columns.filter(c=>c.section).map(c=>c.section)
+    const cases=[
+      ['task_edit',worker,t=>worker.patch(`/api/v1/tasks/${t.id}`,{description:'Changed work under review'})],
+      ['comment',worker,t=>worker.post(`/api/v1/tasks/${t.id}/comments`,{body:'New review evidence'})],
+      ['attachment',worker,t=>worker.post(`/api/v1/tasks/${t.id}/attachments?projectId=${p.id}&name=review.txt`,'synthetic-pegboard-901',{'content-type':'text/plain'})],
+      ['field_value',worker,t=>worker.post(`/api/v1/tasks/${t.id}/fields`,{projectId:p.id,values:{review_context:'Revised context'}})],
+      ['field_value',worker,t=>worker.post(`/api/v1/tasks/${t.id}/fields`,{projectId:p.id,values:{review_context:null}}),'delete'],
+      ['field_definition',owner,async t=>{const change={label:'Revised review definition'},preview=await ok(owner.get(`/api/v1/fields/${field.id}/change-preview?label=${encodeURIComponent(change.label)}`));return owner.post(`/api/v1/fields/${field.id}/change`,{...change,previewRevision:preview.token})}],
+      ['collaborators',worker,t=>worker.patch(`/api/v1/tasks/${t.id}`,{collaborators:[nina.id]})],
+      ['tag',worker,t=>worker.post(`/api/v1/tasks/${t.id}/tags`,{tagId:tag.id})],
+      ['tag',worker,t=>worker.post(`/api/v1/tasks/${t.id}/tags`,{tagId:tag.id,remove:true}),'remove'],
+      ['project_membership',worker,t=>worker.post(`/api/v1/tasks/${t.id}/projects`,{projectId:q.id})],
+      ['project_membership',worker,t=>worker.post(`/api/v1/tasks/${t.id}/move`,{from:p.id,to:q.id})],
+      ['project_membership',worker,t=>worker.delete(`/api/v1/tasks/${t.id}/projects/${q.id}`),'remove_home'],
+      ['project_membership',worker,t=>worker.post(`/api/v1/tasks/${t.id}/section`,{projectId:p.id,sectionId:sections.find(s=>s.mapsTo==='doing'||s.maps_to==='doing').id})],
+    ]
+    for(const [cause,actor,mutate,setup] of cases){
+      const task=await ok(owner.post('/api/v1/tasks',{title:'Approval '+cause+(setup??''),kind:'approval',projectId:p.id,ownerId:worker.id}))
+      if(setup==='delete')await ok(worker.post(`/api/v1/tasks/${task.id}/fields`,{projectId:p.id,values:{review_context:'Original'}}))
+      if(setup==='remove')await ok(worker.post(`/api/v1/tasks/${task.id}/tags`,{tagId:tag.id}))
+      if(setup==='remove_home')await ok(worker.post(`/api/v1/tasks/${task.id}/projects`,{projectId:q.id}))
+      const preview=await ok(owner.get(`/api/v1/tasks/${task.id}/decision-preview`))
+      await ok(owner.post(`/api/v1/tasks/${task.id}/decision`,{action:'approve',revision:preview.token,reason:'Reviewed exact current work'}))
+      await ok(mutate(task))
+      const view=await ok(owner.get(`/api/v1/tasks/${task.id}`)),reopens=view.history.filter(h=>h.kind==='decision.reopened')
+      assert.notEqual(view.status,'done',cause);assert.equal(reopens.length,1,cause);assert.equal(reopens[0].actor,actor.name,cause);assert.equal(reopens[0].detail.cause,cause)
+      assert.equal((await ok(owner.get(`/api/v1/tasks/${task.id}/decision-preview`))).state,'reopened')
+    }
+    const task=await ok(owner.post('/api/v1/tasks',{title:'No-op does not invent sign-off changes',kind:'approval',projectId:p.id,ownerId:worker.id}))
+    await ok(worker.post(`/api/v1/tasks/${task.id}/tags`,{tagId:tag.id}))
+    const pv=await ok(owner.get(`/api/v1/tasks/${task.id}/decision-preview`));await ok(owner.post(`/api/v1/tasks/${task.id}/decision`,{action:'approve',revision:pv.token,reason:'Current tag included'}))
+    await ok(worker.post(`/api/v1/tasks/${task.id}/tags`,{tagId:tag.id}))
+    const unchanged=await ok(owner.get(`/api/v1/tasks/${task.id}`));assert.equal(unchanged.status,'done');assert.equal(unchanged.history.filter(h=>h.kind==='decision.reopened').length,0)
+  })
+
   it('pins recurring work templates and generates one occurrence across restart, DST, exceptions and concurrent runners', async () => {
     const p=await project('Recurring onboarding'),person=await w.person('recurrence-worker@example.com','Recurring worker')
     const task=await ok(owner.post('/api/v1/tasks',{title:'Weekly review',projectId:p.id,ownerId:person.id,kind:'approval'}))
