@@ -26,9 +26,9 @@ export function Form({ action, next, children, label }: { action: string; next: 
 }
 export const Field = ({ label, name, type = 'text', value, required, placeholder, step }: { label: string; name: string; type?: string; value?: string | number | null; required?: boolean; placeholder?: string;step?:string|number }) =>
   <label className="field">{label}<input className="input" name={name} type={type} defaultValue={value ?? undefined} required={required} placeholder={placeholder} step={step} /></label>
-export const Area = ({ label, name, value }: { label: string; name: string; value?: string }) => <label className="field">{label}<textarea className="input" name={name} rows={3} defaultValue={value} /></label>
+export const Area = ({ label, name, value }: { label: string; name: string; value?: string }) => <label className="field">{label}<textarea className="input" aria-label={label} name={name} rows={3} defaultValue={value} /></label>
 export function Pick({ label, name, options, value, blank }: { label: string; name: string; options: { value: string; label: string }[]; value?: string | null; blank?: string }) {
-  return <label className="field">{label}<select className="select" name={name} defaultValue={value ?? ''}>{blank !== undefined && <option value="">{blank}</option>}{options.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
+  return <label className="field">{label}<select className="select" aria-label={label} name={name} defaultValue={value ?? ''}>{blank !== undefined && <option value="">{blank}</option>}{options.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
 }
 export const Check = ({ label, name, checked }: { label: string; name: string; checked?: boolean }) => <label className="checkbox"><input type="checkbox" name={name} defaultChecked={checked} />{label}</label>
 export const Submit = ({ children, quiet }: { children: ReactNode; quiet?: boolean }) => <button type="submit" className={quiet ? 'button quiet' : 'button primary'}>{children}</button>

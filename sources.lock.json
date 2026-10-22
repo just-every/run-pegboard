@@ -1862,7 +1862,7 @@
       "executable": false
     },
     "src/pegboard/goals/goals.ts": {
-      "sha256": "84e9be1addecb5ef0a53ff2e69006e3f8fbf89a54933f075fc0b22b7f95edccb",
+      "sha256": "897caa12d1ac781b12357dbec49e3312696f0d83d9c24fc8be7abe33581b8656",
       "executable": false
     },
     "src/pegboard/goals/sources.ts": {
@@ -2002,7 +2002,7 @@
       "executable": false
     },
     "src/pegboard/ui/shell.tsx": {
-      "sha256": "f9065fcd49b3113d55f605aa92033e80c5d01f70271bc0308bd3b187d2fcb1cb",
+      "sha256": "ac8939181e41aca6f1ef3f53e0d1c0c920fc3822b20edf62959137831d3dcc6f",
       "executable": false
     },
     "src/pegboard/workspace/people.ts": {
