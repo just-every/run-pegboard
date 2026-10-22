@@ -454,6 +454,18 @@ try {
     await flat(page);await proof('recurrence-held',page)
     const oversight=await open(admin);await oversight.page.goto(`${w.origin}/app/recurrences`);await oversight.page.getByRole('link',{name:`Monthly onboarding ${size}`,exact:true}).click();await flat(oversight.page);await proof('recurrence-admin',oversight.page)
     await oversight.page.getByRole('button',{name:'Stop schedule'}).click();assert.equal(ok(await owner.get(`/api/v1/recurrences/${id}`)).schedule.active,0)
+    // The task template retains a home after its live source leaves; lost pinned-home authority holds it.
+    const homeA=ok(await owner.post('/api/v1/projects',{name:`Pinned home A ${size}`})),homeB=ok(await owner.post('/api/v1/projects',{name:`Pinned home B ${size}`}))
+    const authority=[]
+    for(const home of [homeA,homeB])authority.push(ok(await owner.post('/api/v1/grants',{objectType:'project',objectId:home.id,granteeId:lead.id,level:'admin'})))
+    const task=ok(await owner.post('/api/v1/tasks',{title:`Pinned recurring task ${size}`,projectId:homeA.id}));ok(await owner.post(`/api/v1/tasks/${task.id}/projects`,{projectId:homeB.id}))
+    await page.goto(`${w.origin}/app/recurrences?sourceType=task&sourceId=${task.id}&start=2026-01-01&unit=month&count=2`)
+    await page.getByRole('button',{name:'Activate reviewed schedule'}).click();await page.waitForURL(/\/app\/recurrences\/recurrence_/)
+    const taskSchedule=page.url().split('/').pop()
+    ok(await owner.delete(`/api/v1/tasks/${task.id}/projects/${homeB.id}`));ok(await owner.delete(`/api/v1/grants/${authority[1].id}`))
+    await page.getByRole('button',{name:'Run due occurrence'}).click();await expect(page.getByRole('status')).toContainText('Held for re-review')
+    assert.equal(ok(await owner.get(`/api/v1/recurrences/${taskSchedule}`)).occurrences.length,0)
+    await flat(page);await proof('recurrence-pinned-home-held',page)
     await oversight.context.close();await own.context.close();console.log(`Accountable recurring work at ${size}px passed`)
   }
 } finally {

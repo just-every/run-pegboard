@@ -527,10 +527,13 @@ describe('PEG-001 one work graph', { concurrency: false }, () => {
     await ok(owner.post('/api/v1/tasks',{title:'Unreachable onboarding task',projectId:p.id,ownerId:outsider.id}))
     const direct=await ok(owner.post('/api/v1/grants',{objectType:'project',objectId:p.id,granteeId:editor.id,level:'editor'}))
     const external=await ok(owner.post('/api/v1/grants',{objectType:'project',objectId:p.id,granteeId:guest.id,level:'viewer'}))
-    const input={sourceType:'project',sourceId:p.id,unit:'month',start:'2026-01-01',count:1,grantIds:[direct.id]}
+    const chosenTeam=await ok(owner.post('/api/v1/teams',{name:'Chosen recurring team',privacy:'private'}))
+    for(const person of [editor,guest])await ok(owner.post('/api/v1/grants',{objectType:'team',objectId:chosenTeam.id,granteeId:person.id,level:'viewer'}))
+    const teamGrant=await ok(owner.post('/api/v1/grants',{objectType:'project',objectId:p.id,granteeType:'team',granteeId:chosenTeam.id,level:'viewer'}))
+    const input={sourceType:'project',sourceId:p.id,unit:'month',start:'2026-01-01',count:1,grantIds:[direct.id,teamGrant.id]}
     const preview=await ok(owner.post('/api/v1/recurrences/preview',input))
     assert.equal(preview.audience.project.visibility,'team');assert.equal(preview.audience.project.team_level,'commenter')
-    assert.deepEqual(preview.audience.grants.map(g=>g.id),[direct.id]);assert.ok(!preview.choices.some(g=>g.id===external.id))
+    assert.deepEqual(preview.audience.grants.map(g=>g.id).sort(),[direct.id,teamGrant.id].sort());assert.ok(!preview.choices.some(g=>g.id===external.id))
     assert.deepEqual(preview.unreachableAssignees.map(a=>a.name),['Unreachable assignee'])
     assert.equal((await owner.post('/api/v1/recurrences/preview',{...input,grantIds:[external.id]})).status,400)
     const schedule=await ok(owner.post('/api/v1/recurrences',{...input,revision:preview.token}))
@@ -544,7 +547,7 @@ describe('PEG-001 one work graph', { concurrency: false }, () => {
     assert.equal((await ok(editor.get(`/api/v1/projects/${occurrence.object_id}`))).level,'editor')
     for(const person of [guest,outsider])assert.equal((await person.get(`/api/v1/projects/${occurrence.object_id}`)).status,404)
     const grants=(await ok(owner.get(`/api/v1/grants?objectType=project&objectId=${occurrence.object_id}`))).grants
-    assert.equal(grants.length,1);assert.equal(grants[0].grantee_id,editor.id)
+    assert.equal(grants.length,2);assert.ok(grants.some(g=>g.grantee_id===editor.id));assert.ok(grants.some(g=>g.grantee_id===chosenTeam.id))
   })
 
   it('holds changed recurring audiences and lost authority without sharing, retains oversight and requires a fresh reviewed audience', async () => {
