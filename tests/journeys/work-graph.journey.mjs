@@ -471,6 +471,45 @@ try {
     await oversight.context.close();await own.context.close();console.log(`Accountable recurring work at ${size}px passed`)
   }
   if(!process.env.PEGBOARD_JOURNEY){await w.stop();w=await startWorker();owner=w.owner}
+  // Recurrence and revision-bound human approval: explicit states and attributed reopens.
+  if(!process.env.PEGBOARD_JOURNEY||process.env.PEGBOARD_JOURNEY==='approvals')for(const [size,viewport] of sizes){
+    const open=async client=>{const context=await browser.newContext({viewport});await context.addCookies(cookies(client));return {context,page:await context.newPage()}}
+    const flat=async page=>assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`approval no sideways scroll ${size}`)
+    const proof=async(name,page)=>{if(process.env.PEGBOARD_PROOF_DIR){await mkdir(process.env.PEGBOARD_PROOF_DIR,{recursive:true});await page.screenshot({path:join(process.env.PEGBOARD_PROOF_DIR,`${name}-${size}.png`),fullPage:true})}}
+    const worker=await w.person(`approval-worker-${size}@example.com`,`Approval worker ${size}`),project=ok(await owner.post('/api/v1/projects',{name:`Approval campaign ${size}`}))
+    ok(await owner.post('/api/v1/grants',{objectType:'project',objectId:project.id,granteeId:worker.id,level:'editor'}))
+    const writer=await open(worker),reviewer=await open(owner)
+    await writer.page.goto(`${w.origin}/app/projects/${project.id}`)
+    const add=writer.page.getByRole('form',{name:'Add a task'});await add.getByLabel('Task title',{exact:true}).fill(`Approve campaign ${size}`);await add.locator('select[name=kind]').selectOption('approval');await add.getByRole('button',{name:'Add task',exact:true}).click();await writer.page.getByRole('link',{name:`Approve campaign ${size}`,exact:true}).click();await writer.page.waitForURL(/\/app\/tasks\/tsk_/)
+    const url=writer.page.url(),id=url.split('/').pop()
+    await expect(writer.page.getByRole('status')).toHaveText('Pending decision');assert.equal(await writer.page.getByRole('button',{name:'Mark complete',exact:true}).count(),0);assert.equal(await writer.page.getByRole('button',{name:'Record reviewed decision'}).count(),0)
+    await expect(writer.page.locator('main')).toContainText('You own or have owned this work.');await flat(writer.page);await proof('approval-owner-waits',writer.page)
+    await reviewer.page.goto(url)
+    const decide=async(action,reason)=>{const form=reviewer.page.getByRole('form',{name:'Decide approval task'});await form.locator('select[name=action]').selectOption(action);await form.getByLabel('Decision reason',{exact:true}).fill(reason);await form.getByRole('button',{name:'Record reviewed decision'}).click()}
+    await decide('changes','Add current campaign evidence');await expect(reviewer.page.getByRole('status')).toHaveText('Changes requested');await flat(reviewer.page);await proof('approval-changes-requested',reviewer.page)
+    await writer.page.goto(url);await writer.page.getByRole('form',{name:'Edit task'}).getByLabel('Description',{exact:true}).fill('Current evidence is attached to this revision.');await writer.page.getByRole('form',{name:'Edit task'}).getByRole('button',{name:'Save',exact:true}).click()
+    await reviewer.page.goto(url);await decide('approve','Reviewed the current evidence');await expect(reviewer.page.getByRole('status')).toHaveText('Approved');await flat(reviewer.page);await proof('approval-approved',reviewer.page)
+    // The stale reviewer cannot decide after a new comment reopens sign-off.
+    await writer.page.goto(url);await writer.page.getByRole('form',{name:'Comment',exact:true}).getByLabel('Comment',{exact:true}).fill('New evidence changes this review.');await writer.page.getByRole('form',{name:'Comment',exact:true}).getByRole('button',{name:'Comment',exact:true}).click()
+    await expect(writer.page.getByRole('status')).toContainText('Reopened');await expect(writer.page.locator('.history')).toContainText(`Approval worker ${size} reopened sign-off after a work change`)
+    await decide('approve','A stale tab must be refused');await expect(reviewer.page.locator('main')).toContainText('This approval or its access changed.')
+    assert.equal(ok(await owner.get(`/api/v1/tasks/${id}/decision-preview`)).decisions.length,2)
+    await reviewer.page.goto(url);await decide('reject','Current evidence is insufficient');await expect(reviewer.page.getByRole('status')).toHaveText('Rejected');await flat(reviewer.page);await proof('approval-rejected',reviewer.page)
+    await writer.page.goto(url);await writer.page.getByRole('form',{name:'Edit task'}).getByLabel('Description',{exact:true}).fill('The rejected issues have been corrected.');await writer.page.getByRole('form',{name:'Edit task'}).getByRole('button',{name:'Save',exact:true}).click()
+    await reviewer.page.goto(url);await decide('approve','Reviewed corrected current work');await expect(reviewer.page.getByRole('status')).toHaveText('Approved')
+    await reviewer.page.getByRole('link',{name:'Make task recurring'}).click()
+    const repeat=reviewer.page.getByRole('form',{name:'Preview recurring work'});await repeat.getByLabel('First date',{exact:true}).fill('2026-03-08');await repeat.locator('select[name=unit]').selectOption('week');await repeat.getByLabel('Occurrences',{exact:true}).fill('1');await repeat.getByLabel('Skip dates (comma separated)',{exact:true}).fill('2026-03-08');await repeat.getByRole('button',{name:'Preview occurrences'}).click()
+    await expect(reviewer.page.locator('main')).toContainText('2026-03-15');await flat(reviewer.page);await proof('approval-weekly-recurrence-preview',reviewer.page)
+    await reviewer.page.getByRole('button',{name:'Activate reviewed schedule'}).click();await reviewer.page.waitForURL(/\/app\/recurrences\/recurrence_/);const scheduleId=reviewer.page.url().split('/').pop()
+    await reviewer.page.getByRole('button',{name:'Run due occurrence'}).click();await w.restart();await reviewer.page.goto(`${w.origin}/app/recurrences/${scheduleId}`)
+    const result=ok(await owner.get(`/api/v1/recurrences/${scheduleId}`));assert.equal(result.occurrences.length,1)
+    await reviewer.page.getByRole('link',{name:'2026-03-15',exact:true}).click();await expect(reviewer.page.getByRole('status')).toHaveText('Pending decision');assert.equal(ok(await owner.get(`/api/v1/tasks/${result.occurrences[0].object_id}/decision-preview`)).decisions.length,0);await flat(reviewer.page);await proof('approval-recurring-copy-pending',reviewer.page)
+    // A personal approval and an owner who is the only eligible decider state why they wait.
+    const personal=ok(await worker.post('/api/v1/tasks',{title:`Personal approval ${size}`,kind:'approval'}));await writer.page.goto(`${w.origin}/app/tasks/${personal.id}`);await expect(writer.page.locator('main')).toContainText('This personal approval needs a reviewed project share');assert.equal(await writer.page.getByRole('button',{name:'Record reviewed decision'}).count(),0);await flat(writer.page);await proof('approval-personal-waits',writer.page)
+    const sole=ok(await owner.post('/api/v1/tasks',{title:`Only reviewer owns this work ${size}`,projectId:project.id,kind:'approval'}));await reviewer.page.goto(`${w.origin}/app/tasks/${sole.id}`);await expect(reviewer.page.locator('main')).toContainText('Another eligible owner or administrator must decide it.');assert.equal(await reviewer.page.getByRole('button',{name:'Record reviewed decision'}).count(),0);await flat(reviewer.page);await proof('approval-sole-reviewer-waits',reviewer.page)
+    await writer.context.close();await reviewer.context.close();console.log(`Recurring work and human decisions at ${size}px passed`)
+  }
+  if(!process.env.PEGBOARD_JOURNEY){await w.stop();w=await startWorker();owner=w.owner}
   // Goal visibility and accountable owners: complete native Goals workflows at both widths.
   if(!process.env.PEGBOARD_JOURNEY||process.env.PEGBOARD_JOURNEY==='goals')for(const [size,viewport] of sizes){
     const open=async client=>{const context=await browser.newContext({viewport});await context.addCookies(cookies(client));return {context,page:await context.newPage()}}
