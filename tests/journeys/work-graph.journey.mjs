@@ -433,7 +433,7 @@ try {
     await page.getByRole('form',{name:'Preview recurring work'}).locator(`input[value="${direct.id}"]`).check()
     await page.getByRole('button',{name:'Preview occurrences'}).click()
     const audience=page.locator('article').filter({has:page.getByRole('heading',{name:'Standing occurrence audience'})})
-    await expect(audience).toContainText(`Recurring editor ${size}`);await expect(audience).toContainText('Source team · Commenter');await expect(audience).toContainText(`Unreachable assignee ${size}`)
+    await expect(audience).toContainText(`Recurring editor ${size}`);await expect(audience).toContainText(`Source team: Onboarding team ${size} · Commenter`);await expect(audience).toContainText(`Unreachable assignee ${size}`)
     assert.ok(!(await audience.innerText()).includes(`Recurring guest ${size}`))
     await flat(page);await proof('recurrence-preview',page)
     await page.getByRole('button',{name:'Activate reviewed schedule'}).click();await page.waitForURL(/\/app\/recurrences\/recurrence_/)
@@ -451,7 +451,7 @@ try {
       await flat(session.page);await proof(`recurrence-project-${allowed?person===member?'team':'editor':'refused'}`,session.page);await session.context.close()
     }
     ok(await owner.delete(`/api/v1/grants/${leadGrant.id}`))
-    await page.getByRole('button',{name:'Run due occurrence'}).click();await expect(page.getByRole('status')).toContainText('Held for re-review: source_or_target_authority_lost');await expect(page.locator('main')).toContainText(`Accountable owner: Recurring lead ${size}`)
+    await page.getByRole('button',{name:'Run due occurrence'}).click();await expect(page.getByRole('status')).toContainText('Authority over the source or a recorded target project was lost.');await expect(page.locator('main')).toContainText(`Accountable owner: Recurring lead ${size}`)
     assert.equal(ok(await owner.get(`/api/v1/recurrences/${id}`)).occurrences.length,1)
     await flat(page);await proof('recurrence-held',page)
     const oversight=await open(admin);await oversight.page.goto(`${w.origin}/app/recurrences`);await oversight.page.getByRole('link',{name:`Monthly onboarding ${size}`,exact:true}).click();await flat(oversight.page);await proof('recurrence-admin',oversight.page)

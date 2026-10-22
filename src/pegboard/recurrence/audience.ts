@@ -7,7 +7,7 @@ import { displayNames, operatorRow, workspaceRole, workspaceSettings, type Actor
 import { digest } from '../decisions/revision'
 import type { GrantRow, ProjectRow, TaskRow } from '../model'
 import type { Snapshot } from './recurrence'
-export interface Audience { project:Pick<ProjectRow,'visibility'|'team_id'|'team_level'|'workspace_level'>|null; grants:GrantRow[]; revision:string; labels:{id:string;name:string;level:string}[] }
+export interface Audience { teamName:string|null; project:Pick<ProjectRow,'visibility'|'team_id'|'team_level'|'workspace_level'>|null; grants:GrantRow[]; revision:string; labels:{id:string;name:string;level:string}[] }
 const internal = async(db:D1Database,id:string,workspace:string) => sharesWithWorkspace(await workspaceRole(db,id,workspace))
 async function standing(db:D1Database,workspace:string,person:string) {
   const operator=await operatorRow(db,person)
@@ -22,7 +22,7 @@ async function teamStanding(db:D1Database,workspace:string,id:string) {
   return [team,people]
 }
 export async function reviewAudience(db:D1Database,actor:Actor,source:Snapshot,selected:string[]):Promise<Audience> {
-  if(!source.project)return {project:null,grants:[],revision:await digest(null),labels:[]}
+  if(!source.project)return {teamName:null,project:null,grants:[],revision:await digest(null),labels:[]}
   const {project:p,effective}=await openProject(db,actor,source.sourceId)
   need(effective,'manage_shares')
   const project={visibility:p.visibility,team_id:p.team_id,team_level:p.team_level,workspace_level:p.workspace_level}
@@ -48,7 +48,8 @@ export async function reviewAudience(db:D1Database,actor:Actor,source:Snapshot,s
     const people=await all<{id:string}>(db,`SELECT o.id FROM oa_operators o LEFT JOIN peg_workspace_members m ON m.operator_id=o.id AND m.workspace_id=? WHERE o.status='active' AND (o.role IN ('owner','admin') OR m.role IN ('manager','member','analyst')) ORDER BY o.id`,p.workspace_id)
     for(const person of people)states.push(await standing(db,p.workspace_id,person.id))
   }
-  return {project,grants,labels,revision:await digest([project,p.policy_rev,grants,states])}
+  const teamName=p.team_id?(await first<{name:string}>(db,'SELECT name FROM peg_teams WHERE id=?',p.team_id))?.name??null:null
+  return {teamName,project,grants,labels,revision:await digest([project,p.policy_rev,grants,states])}
 }
 export async function audienceChoices(db:D1Database,actor:Actor,source:Snapshot) {
   if(!source.project)return []

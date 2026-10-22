@@ -128,7 +128,7 @@ export async function recurrenceView(db:D1Database,actor:Actor,id:string) {
     reviews.push({...occurrence,...(review?{audience:JSON.parse(review.audience),unreachableAssignees:JSON.parse(review.unreachable)}:{})})
   }
   const {audience:stored,...metadata}=schedule
-  return {schedule:metadata,title:full?(source.project?.name??source.tasks[0]?.title??'Recurring work'):'Recurring work',owner:names.get(schedule.created_by)??'Unavailable activator',canRun:actor.id===schedule.created_by,canReview:full&&actor.id===schedule.created_by,audience:full&&stored?JSON.parse(stored) as Audience:null,plan,occurrences:reviews,next:dates(plan,schedule.next_date)}
+  return {objectType:source.type,schedule:metadata,title:full?(source.project?.name??source.tasks[0]?.title??'Recurring work'):'Recurring work',owner:names.get(schedule.created_by)??'Unavailable activator',canRun:actor.id===schedule.created_by,canReview:full&&actor.id===schedule.created_by,audience:full&&stored?JSON.parse(stored) as Audience:null,plan,occurrences:reviews,next:dates(plan,schedule.next_date)}
 }
 export async function listRecurrences(db:D1Database,actor:Actor,workspace:string) {
   if(!await workspaceRole(db,actor.id,workspace))throw forbidden()
