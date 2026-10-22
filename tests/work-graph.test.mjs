@@ -591,7 +591,7 @@ describe('Work planning time, recurrence and decisions', { concurrency: false },
     const p=await project('Recurring onboarding'),person=await w.person('recurrence-worker@example.com','Recurring worker')
     const task=await ok(owner.post('/api/v1/tasks',{title:'Weekly review',projectId:p.id,ownerId:person.id,kind:'approval'}))
     const child=await ok(owner.post('/api/v1/tasks',{title:'Review checklist',parentId:task.id}))
-    await ok(owner.post(`/api/v1/projects/${p.id}/fields`,{key:'planned_count',label:'Planned count',type:'number'}))
+    const sharedField=await ok(owner.post(`/api/v1/projects/${p.id}/fields`,{key:'planned_count',label:'Planned count',type:'number'}))
     await ok(owner.post(`/api/v1/tasks/${task.id}/fields`,{projectId:p.id,values:{planned_count:12}}))
     const decide=await ok(owner.get(`/api/v1/tasks/${task.id}/decision-preview`))
     await ok(owner.post(`/api/v1/tasks/${task.id}/decision`,{action:'approve',revision:decide.token,reason:'Reviewed exact work'}))
@@ -614,7 +614,7 @@ describe('Work planning time, recurrence and decisions', { concurrency: false },
     assert.equal((await person.get(`/api/v1/recurrences/${schedule.id}`)).status,403)
     const projectInput={...input,sourceType:'project',sourceId:p.id,start:'2026-11-01',end:'2026-11-30',exceptions:[]}
     const dst=await ok(owner.post('/api/v1/recurrences/preview',projectInput));assert.deepEqual(dst.occurrences,['2026-11-01'])
-    projectInput.start='2026-03-01';projectInput.end='2026-03-31'
+    projectInput.start='2026-03-01';projectInput.end='2026-03-31';projectInput.count=2
     const pp=await ok(owner.post('/api/v1/recurrences/preview',projectInput)),projectSchedule=await ok(owner.post('/api/v1/recurrences',{...projectInput,revision:pp.token}))
     const interrupted=owner.post(`/api/v1/recurrences/${projectSchedule.id}/run`,{}).catch(()=>null)
     await w.restart();await interrupted
@@ -623,6 +623,24 @@ describe('Work planning time, recurrence and decisions', { concurrency: false },
     const generated={id:projectResult.occurrences[0].object_id}
     const board=await ok(owner.get(`/api/v1/projects/${generated.id}`)),sourceBoard=await ok(owner.get(`/api/v1/projects/${p.id}`));assert.equal(board.counts.tasks,sourceBoard.counts.tasks)
     assert.equal((await person.get(`/api/v1/projects/${generated.id}`)).status,404,'project recurrence copies no grants')
+    // A recurring project adopts the original library definition; its values belong to its fresh tasks.
+    const fields=await ok(owner.get(`/api/v1/projects/${generated.id}/fields`))
+    assert.equal(fields.fields.find(f=>f.key==='planned_count').id,sharedField.id,'recurrence retains the shared field identity')
+    let report=await ok(owner.get(`/api/v1/projects/${generated.id}/field-report`))
+    const generatedTask=report.rows.find(r=>r.title==='Weekly review')
+    assert.equal(generatedTask.fields.find(f=>f.id===sharedField.id).value,12)
+    await ok(owner.post(`/api/v1/tasks/${generatedTask.id}/fields`,{projectId:generated.id,values:{planned_count:18}}))
+    report=await ok(owner.get(`/api/v1/projects/${generated.id}/field-report`))
+    assert.equal(report.rows.find(r=>r.id===generatedTask.id).fields.find(f=>f.id===sharedField.id).value,18)
+    assert.equal((await ok(owner.get(`/api/v1/tasks/${task.id}`))).projects[0].fields.find(f=>f.id===sharedField.id).value,12)
+    const change={label:'Planned people'},changePreview=await ok(owner.get(`/api/v1/fields/${sharedField.id}/change-preview?label=Planned%20people`))
+    assert.ok(changePreview.projects.includes(generated.id),'definition changes cover the occurrence too')
+    await ok(owner.post(`/api/v1/fields/${sharedField.id}/change`,{...change,previewRevision:changePreview.token}))
+    for(const home of [p,generated])assert.equal((await ok(owner.get(`/api/v1/projects/${home.id}/fields`))).fields.find(f=>f.id===sharedField.id).label,change.label)
+    const held=await ok(owner.post(`/api/v1/recurrences/${projectSchedule.id}/run`,{}))
+    assert.equal(held.state,'held');assert.equal(held.cause,'template_definition_changed')
+    assert.equal((await ok(owner.get(`/api/v1/recurrences/${projectSchedule.id}`))).occurrences.length,1,'a changed definition cannot create a differently interpreted pinned occurrence')
+
     const completionInput={...input,sourceType:'task',sourceId:child.id,mode:'completion',start:'2026-03-01',exceptions:[]}
     assert.equal((await owner.post('/api/v1/recurrences/preview',completionInput)).status,400,'recurrence is rooted, not detached from its parent')
     const normal=await ok(owner.post('/api/v1/tasks',{title:'Completion-based recurring task',projectId:p.id}))
