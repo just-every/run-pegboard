@@ -229,6 +229,10 @@
       "sha256": "d87f065391eaf1a940f877842d4c2af1faab55a9930ab0be214847e9f0074edb",
       "executable": false
     },
+    "migrations/core/0024_approval_owner_history.sql": {
+      "sha256": "34ae29d6f9ffa7782541bafcd087de903c412f9a4991933d98d78fe9f0bc36ba",
+      "executable": false
+    },
     "ONBOARDING.md": {
       "sha256": "24b685d6eddeae5480ce4dfbf44c0590e54bcfe83641373de5bba985765380bd",
       "executable": false
