@@ -575,13 +575,17 @@ try {
     // Current team membership is checked at every read.
     const team=ok(await owner.post('/api/v1/teams',{name:`Goals team ${size}`,privacy:'private'}))
     ok(await owner.post('/api/v1/grants',{objectType:'team',objectId:team.id,granteeId:member.id,level:'viewer'}))
-    const teamGoal=ok(await owner.post('/api/v1/goals',{title:`Team outcome ${size}`,scope:'team',teamId:team.id,periodStart:'2026-01-01',periodEnd:'2026-12-31'}))
+    await page.goto(`${w.origin}/app/goals`)
+    const teamCreate=page.getByRole('form',{name:'Create a goal'});await teamCreate.getByLabel('Goal title',{exact:true}).fill(`Team outcome ${size}`);await teamCreate.locator('select[name=scope]').selectOption('team');await teamCreate.locator('select[name=teamId]').selectOption(team.id);await teamCreate.getByLabel('Period ends').fill('2026-12-31');await teamCreate.getByRole('button',{name:'Create goal',exact:true}).click();await page.waitForURL(/\/app\/goals\/goal_/)
+    const teamGoal={id:page.url().split('/').pop()}
     await named.page.goto(`${w.origin}/app/goals/${teamGoal.id}`);await expect(named.page.getByRole('heading',{name:`Team outcome ${size}`,exact:true})).toBeVisible();await flat(named.page);await proof('goals-team-member',named.page)
     assert.equal((await readers[1].page.goto(`${w.origin}/app/goals/${teamGoal.id}`)).status(),404)
     // An owner previews notes and permitted linked titles before a personal share, then revokes it.
     const privateProject=ok(await owner.post('/api/v1/projects',{name:`Private input project ${size}`})),privateTask=ok(await owner.post('/api/v1/tasks',{title:`Hidden source title ${size}`,projectId:privateProject.id,ownerId:other.id}))
     const access=ok(await owner.post('/api/v1/grants',{objectType:'project',objectId:privateProject.id,granteeId:member.id,level:'viewer'}));ok(await owner.post('/api/v1/grants',{objectType:'project',objectId:privateProject.id,granteeId:manager.id,level:'viewer'}))
-    const personal=ok(await member.post('/api/v1/goals',{title:`Personal outcome ${size}`,scope:'personal',mode:'work',periodStart:'2026-01-01',periodEnd:'2026-12-31'}));ok(await member.post(`/api/v1/goals/${personal.id}/links`,{sourceType:'task',sourceId:privateTask.id}))
+    await named.page.goto(`${w.origin}/app/goals`)
+    const personalCreate=named.page.getByRole('form',{name:'Create a goal'});await personalCreate.getByLabel('Goal title',{exact:true}).fill(`Personal outcome ${size}`);await personalCreate.locator('select[name=scope]').selectOption('personal');await personalCreate.locator('select[name=mode]').selectOption('work');await personalCreate.getByLabel('Period ends').fill('2026-12-31');await personalCreate.getByRole('button',{name:'Create goal',exact:true}).click();await named.page.waitForURL(/\/app\/goals\/goal_/)
+    const personal={id:named.page.url().split('/').pop()};ok(await member.post(`/api/v1/goals/${personal.id}/links`,{sourceType:'task',sourceId:privateTask.id}))
     const personalUrl=`${w.origin}/app/goals/${personal.id}`
     await named.page.goto(personalUrl);await named.page.getByRole('form',{name:'Goal check-in'}).getByLabel('Check-in note').fill(`Personal disclosure note ${size}`);await named.page.getByRole('button',{name:'Record check-in'}).click()
     const managed=await open(manager)

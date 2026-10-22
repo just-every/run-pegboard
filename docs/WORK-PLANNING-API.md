@@ -108,3 +108,27 @@ Re-review through `POST /api/v1/recurrences/:id/audience-preview`, then repeat t
 Company goals are managed by workspace owners/administrators. Team Admins and the existing workspace manager role (which covers all teams in its workspace) also manage team goals. Personal owners manage their own goals. Management does not itself grant check-in or observation authority: the accountable owner and named editors contribute. Company/team owners must be active internal humans other than agents, guests and analysts. Membership, role and account changes cannot abandon an owned goal; reviewed owner transfer is required first. PEG-032 inherits this invariant when it adds offboarding doors. Guests and agents receive no goal access through these internal sharing doors; future PEG-019/062 doors must retain their reviewed scopes and never grant contribution authority.
 
 `POST /api/v1/goals/:id/audience-preview` accepts a replacement `{ownerId, visibility, people, teams, editors}` plan (`visibility` is `default` or `restricted`; personal goals stay `restricted`). Its preview lists new readers, check-in notes and linked titles they could newly read. Confirm the exact plan and returned `revision` at `POST /api/v1/goals/:id/audience`. Omitting audience lists clears them. `GET /api/v1/goals/:id/audience` is manager-only. Source reads remain independently authorized for each reader; a restricted input yields null progress, source count and freshness, hides its title/owner, and invalidates a check-in opened before revocation. Numeric observations still come from native signed-in humans; external numeric sources remain PEG-014's gap.
+
+
+## Authorized numeric sources (interim authority pending ct)
+
+The current active human goal owner may `POST /api/v1/goals/:id/sources` with `{kind:"csv"|"api", name, consent:true, expiresAt?}`. Default expiry is one day, maximum 30 days. This explicit audited consent permits publishing observations to this goal only. Named editors retain the native observation door but cannot mint a source. A source credential grants no reads, no cross-goal writes and no outbound action. Agents and guests cannot authorize or publish. This conservative source-authority default is adopted pending ct approval; PEG-014 remains partial.
+
+For API integrations, save the returned `token` once. It is stored only as a digest and never returned by source listing. The native integration schema is `POST /api/v1/metric-sources/:sourceId/events`, `Authorization: Bearer <source credential>`, JSON `{key, value, observedAt}`. `key` is the source's stable event ID (maximum 120 characters); `value` is a finite number; `observedAt` is UTC epoch milliseconds, never a future time. The request is bounded to 8 KiB. Identical replay returns `{key,replayed:true}`; a changed value/time under the same key is refused. Source/goal/owner authority and expiry are rechecked at commit. This receipt proves native schema ingestion, not a live unnamed provider's qualification.
+
+A CSV source accepts this exact documented format, with one unquoted row per observation and no embedded commas:
+
+```csv
+event_key,value,observed_at
+synthetic-pegboard-1,35,1792627200000
+```
+
+Keys use letters, digits, `_`, `.`, `:` or `-`; at most 1,000 rows and 200,000 characters are accepted. Preview with `POST /api/v1/metric-sources/:id/csv-preview` and `{csv}`, then repeat the exact text and returned `revision` at `/api/v1/metric-sources/:id/csv`. The whole reviewed file applies atomically. Identical source keys reconcile without duplicate events; changed keys or malformed rows write nothing. Replays retain original observation time and cannot freshen stale input. Goals offers the same CSV preview and apply forms.
+
+`GET /api/v1/goals/:id/sources` lists safe configuration for the current goal owner. `POST /api/v1/metric-sources/:id/revoke` revokes a source; a replacement owner may revoke the earlier owner's source without recovering its credential. Revoked/expired sources or a lost sponsor cannot publish. Their latest input is restricted, with null progress/count/freshness and no source event metadata, even under an override. PEG-027 and PEG-062 inherit these authorization and revocation duties.
+
+## Approval decision screens and reopening
+
+A task created with `kind:"approval"` shows its current pending, changes-requested, approved, reopened or rejected state, attributed decision history and a privacy-safe waiting reason. Its native Task screen posts the exact preview token to `/api/v1/tasks/:id/decision`. Ordinary completion cannot approve it. Weekly recurrence creates a fresh pending approval, never copied sign-off. A personal approval waits for a reviewed project share; a current/former owner or sole ineligible decider waits for another eligible administrator.
+
+The existing invalidation set is unchanged: task edits, comments, files, field values/definitions, collaborators, tags and project membership/section writes reopen approved work. Each current public door supplies a one-shot writer guard in the mutation transaction. The database refuses an unattributed reopen and writes exactly one `decision.reopened` history entry when a real reopen occurs; no-op tagging records none. Future PEG-010/036/064/087 write doors inherit that guard and exact current-revision decision boundary.
