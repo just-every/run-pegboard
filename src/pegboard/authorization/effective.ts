@@ -60,8 +60,10 @@ export async function projectEffective(db: D1Database, actor: Actor, project: Pr
   const occurrence=!!await first(db,"SELECT 1 FROM peg_template_origins WHERE object_type='project' AND object_id=?",project.id)
   if (isAdministrator(role)) paths.push({ via: 'Workspace administrator', level: 'admin', capabilities: capabilitiesOf('admin'), source: 'role' })
   if (project.owner_id === actor.id) paths.push({ via: 'Project owner', level: 'admin', capabilities: capabilitiesOf('admin'), source: 'owner' })
-  for (const grant of await activeGrants(db, 'project', project.id, 'person', [actor.id]))
+  for (const grant of await activeGrants(db, 'project', project.id, 'person', [actor.id])) {
+    if(occurrence&&!sharesWithWorkspace(role)&&await first(db,'SELECT 1 FROM peg_recurring_grants WHERE grant_id=?',grant.id))continue
     paths.push({ via: grant.source === 'request' ? 'Approved access request' : 'Direct grant', level: grant.level, capabilities: pathCapabilities(grant.level, grant), source: 'direct', grantId: grant.id, scope: grant.scope })
+  }
   const teams = new Map((await teamsOf(db, actor.id)).map(grant => [grant.object_id, grant]))
   if (teams.size) for (const grant of await activeGrants(db, 'project', project.id, 'team', [...teams.keys()])) {
     if(occurrence&&!sharesWithWorkspace(role)&&await first(db,'SELECT 1 FROM peg_recurring_grants WHERE grant_id=?',grant.id))continue

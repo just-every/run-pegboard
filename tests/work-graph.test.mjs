@@ -598,6 +598,8 @@ describe('Work planning time, recurrence and decisions', { concurrency: false },
     for(const person of [guest,outsider])assert.equal((await person.get(`/api/v1/projects/${occurrence.object_id}`)).status,404)
     const grants=(await ok(owner.get(`/api/v1/grants?objectType=project&objectId=${occurrence.object_id}`))).grants
     assert.equal(grants.length,2);assert.ok(grants.some(g=>g.grantee_id===editor.id));assert.ok(grants.some(g=>g.grantee_id===chosenTeam.id))
+    await ok(owner.patch(`/api/v1/workspaces/ws_main/people/${editor.id}`,{role:'guest'}))
+    assert.equal((await editor.get(`/api/v1/projects/${occurrence.object_id}`)).status,404,'an internal standing share never becomes an unreviewed guest share')
   })
 
   it('holds changed recurring audiences and lost authority without sharing, retains oversight and requires a fresh reviewed audience', async () => {
