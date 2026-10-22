@@ -478,7 +478,7 @@ try {
     const own=await open(owner),page=own.page
     await page.goto(`${w.origin}/app/goals`)
     const create=page.getByRole('form',{name:'Create a goal'})
-    await create.getByLabel('Goal title',{exact:true}).fill(`Company outcome ${size}`);await create.getByLabel('Scope',{exact:true}).selectOption('company');await create.getByLabel('Kind',{exact:true}).selectOption('key_result');await create.getByLabel('Progress',{exact:true}).selectOption('numeric');await create.getByLabel('Period ends').fill('2026-12-31');await create.getByRole('button',{name:'Create goal',exact:true}).click();await page.waitForURL(/\/app\/goals\/goal_/)
+    await create.getByLabel('Goal title',{exact:true}).fill(`Company outcome ${size}`);await create.locator('select[name=scope]').selectOption('company');await create.locator('select[name=kind]').selectOption('key_result');await create.locator('select[name=mode]').selectOption('numeric');await create.getByLabel('Period ends').fill('2026-12-31');await create.getByRole('button',{name:'Create goal',exact:true}).click();await page.waitForURL(/\/app\/goals\/goal_/)
     const companyUrl=page.url(),companyId=companyUrl.split('/').pop()
     await page.getByRole('form',{name:'Link goal work'}).getByLabel('Linked work ID').fill(task.id);await page.getByRole('button',{name:'Link work',exact:true}).click()
     const readers=[]
@@ -487,7 +487,7 @@ try {
     }
     await proof('goals-company-member',readers[0].page)
     const edit=page.getByRole('form',{name:'Preview goal audience'})
-    await edit.getByLabel('Accountable owner',{exact:true}).selectOption(member.id);await edit.getByRole('button',{name:'Preview audience and ownership'}).click()
+    await edit.locator('select[name=ownerId]').selectOption(member.id);await edit.getByRole('button',{name:'Preview audience and ownership'}).click()
     await page.getByRole('button',{name:'Confirm reviewed goal audience'}).click()
     const named=readers[0];await named.page.goto(companyUrl)
     const observation=named.page.getByRole('form',{name:'Numeric observation'})
@@ -499,7 +499,7 @@ try {
     const companyView=ok(await other.get(`/api/v1/goals/${companyId}`))
     assert.equal((await other.post(`/api/v1/goals/${companyId}/checkins`,{revision:companyView.token,note:'No editor authority'})).status,403)
     for(const invalid of [agent,guest,analyst])assert.equal((await owner.post(`/api/v1/goals/${companyId}/audience-preview`,{ownerId:invalid.id})).status,400)
-    await page.goto(companyUrl);await page.getByRole('form',{name:'Preview goal audience'}).getByLabel('Visibility',{exact:true}).selectOption('restricted');await page.getByRole('button',{name:'Preview audience and ownership'}).click();await page.getByRole('button',{name:'Confirm reviewed goal audience'}).click()
+    await page.goto(companyUrl);await page.getByRole('form',{name:'Preview goal audience'}).locator('select[name=visibility]').selectOption('restricted');await page.getByRole('button',{name:'Preview audience and ownership'}).click();await page.getByRole('button',{name:'Confirm reviewed goal audience'}).click()
     for(const client of [other,guest,agent]){
       const session=await open(client);assert.equal((await session.page.goto(companyUrl)).status(),404);assert.ok(!(await session.page.locator('main').innerText()).includes(`Company outcome ${size}`));await flat(session.page);await proof(`goals-restricted-${client===other?'member':client===guest?'guest':'agent'}`,session.page);await session.context.close()
     }

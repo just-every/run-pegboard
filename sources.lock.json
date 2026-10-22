@@ -2178,7 +2178,7 @@
       "executable": false
     },
     "tests/journeys/work-graph.journey.mjs": {
-      "sha256": "7a6f4dda4d3df5a3542965fdec1926c34f8990e45a0a14cc5d8061d850027b0f",
+      "sha256": "14574127e1eada5ef2c487ecb5cb48e54e40f48fd3923ca51deea32204a43ed9",
       "executable": false
     },
     "tests/runtime.mjs": {
