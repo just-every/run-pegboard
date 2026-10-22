@@ -321,6 +321,18 @@ describe('PEG-001 one work graph', { concurrency: false }, () => {
     await ok(mia.post(`/api/v1/tasks/${t.id}/fields`,{projectId:p.id,values:{count:5}}));assert.equal((await ok(nina.get(`/api/v1/tasks/${t.id}`))).projects[0].fields[0].value,5)
   })
 
+})
+
+// Independent domains use independent installations; native invitation limits remain unchanged.
+describe('Work planning time, recurrence and decisions', { concurrency: false }, () => {
+  before(async () => {
+    w = await startWorker(); owner = w.owner
+    mia = await w.person('mia@example.com', 'Mia Member')
+    gus = await w.person('gus@example.com', 'Gus Guest', 'guest')
+    nina = await w.person('nina@example.com', 'Nina Newcomer')
+  }, { timeout: 120000 })
+  after(() => w?.stop())
+
   it('keeps one durable timer per person and reconnects without duplicate intent or entries', async () => {
     const timerPerson=await w.person('timer@example.com','Timer Person'),p=await ok(timerPerson.post('/api/v1/projects',{name:'Timed work'})),a=await ok(timerPerson.post('/api/v1/tasks',{title:'First timed task',projectId:p.id,estimateHours:2})),b=await ok(timerPerson.post('/api/v1/tasks',{title:'Second timed task',projectId:p.id,estimateHours:1}))
     const day=new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())
@@ -659,6 +671,18 @@ describe('PEG-001 one work graph', { concurrency: false }, () => {
     assert.equal((await reader.get(`/api/v1/projects/${shared.id}`)).status,200);assert.equal((await reader.get(`/api/v1/projects/${generated}`)).status,200)
     assert.equal((await ok(owner.get(`/api/v1/grants?objectType=project&objectId=${generated}`))).grants.length,0,'an unselected direct grant is not carried')
   })
+
+})
+
+// Independent domains use independent installations; native invitation limits remain unchanged.
+describe('Goal visibility and accountability', { concurrency: false }, () => {
+  before(async () => {
+    w = await startWorker(); owner = w.owner
+    mia = await w.person('mia@example.com', 'Mia Member')
+    gus = await w.person('gus@example.com', 'Gus Guest', 'guest')
+    nina = await w.person('nina@example.com', 'Nina Newcomer')
+  }, { timeout: 120000 })
+  after(() => w?.stop())
 
   it('tracks company, team and personal goals with weighted deduplicated execution, numeric freshness and attributed overrides', async () => {
     const person=await w.person('goal-owner@example.com','Goal owner'),other=await w.person('goal-reader@example.com','Goal reader'),team=await ok(owner.post('/api/v1/teams',{name:'Goal team',privacy:'private'})),p=await project('Goal work'),q=await project('Shared goal work')

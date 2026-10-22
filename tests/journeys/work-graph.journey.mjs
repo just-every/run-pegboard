@@ -6,12 +6,13 @@ import {join} from 'node:path'
 import { chromium, expect } from '@playwright/test'
 import { startWorker } from '../support/worker.mjs'
 
-const w = await startWorker()
+let w = await startWorker()
 const browser = await chromium.launch({ headless: true, args: ['--use-mock-keychain', '--password-store=basic'] })
 const cookies = client => client.cookie.split('; ').map(pair => ({ name: pair.slice(0, pair.indexOf('=')), value: pair.slice(pair.indexOf('=') + 1), url: w.origin }))
 const sizes = [['1440', { width: 1440, height: 900 }], ['390', { width: 390, height: 844 }]]
 try {
-  const owner = w.owner, ok = (r, status = 200) => { assert.equal(r.status, status, JSON.stringify(r.body)); return r.body }
+  let owner = w.owner
+  const ok = (r, status = 200) => { assert.equal(r.status, status, JSON.stringify(r.body)); return r.body }
   ok(await owner.post('/api/v1/teams', { name: 'Brand crew', privacy: 'public' }))
   for (const [size, viewport] of (process.env.PEGBOARD_JOURNEY ? [] : sizes)) {
     const open = async client => { const context = await browser.newContext({ viewport }); await context.addCookies(cookies(client)); return { context, page: await context.newPage() } }
@@ -411,6 +412,7 @@ try {
     await own.context.close()
     console.log(`journey at ${size}px passed`)
   }
+  if(!process.env.PEGBOARD_JOURNEY){await w.stop();w=await startWorker();owner=w.owner}
   // Accountable recurring work: the standing audience, occurrence and held schedule, at both widths.
   if(!process.env.PEGBOARD_JOURNEY||process.env.PEGBOARD_JOURNEY==='recurrence')for(const [size,viewport] of sizes){
     const open=async client=>{const context=await browser.newContext({viewport});await context.addCookies(cookies(client));return {context,page:await context.newPage()}}
@@ -468,6 +470,7 @@ try {
     await flat(page);await proof('recurrence-pinned-home-held',page)
     await oversight.context.close();await own.context.close();console.log(`Accountable recurring work at ${size}px passed`)
   }
+  if(!process.env.PEGBOARD_JOURNEY){await w.stop();w=await startWorker();owner=w.owner}
   // Goal visibility and accountable owners: complete native Goals workflows at both widths.
   if(!process.env.PEGBOARD_JOURNEY||process.env.PEGBOARD_JOURNEY==='goals')for(const [size,viewport] of sizes){
     const open=async client=>{const context=await browser.newContext({viewport});await context.addCookies(cookies(client));return {context,page:await context.newPage()}}

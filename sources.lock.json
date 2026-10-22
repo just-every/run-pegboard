@@ -2178,7 +2178,7 @@
       "executable": false
     },
     "tests/journeys/work-graph.journey.mjs": {
-      "sha256": "14574127e1eada5ef2c487ecb5cb48e54e40f48fd3923ca51deea32204a43ed9",
+      "sha256": "820ce734570b672f32beeaad332b42c6c9470311a7aa1531e01d5abcb34ee10d",
       "executable": false
     },
     "tests/runtime.mjs": {
@@ -2194,7 +2194,7 @@
       "executable": false
     },
     "tests/work-graph.test.mjs": {
-      "sha256": "9ad64f03743127a70c4d36f03b892589d86a429ef0b27a7d645f0ed36e6822ff",
+      "sha256": "d791af1128252d61fb35cb649bae6f3ffea549f069459742d8a2a7a20d1437c9",
       "executable": false
     },
     "tsconfig.json": {
