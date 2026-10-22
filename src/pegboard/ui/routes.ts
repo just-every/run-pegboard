@@ -1,3 +1,4 @@
+import {listNumericSources,previewNumericCsv} from '../goals/sources'
 import {GoalsPage} from './pages/goals'
 import {listGoals,goalView,goalAudience,goalAudiencePreview} from '../goals/goals'
 import {RecurrencesPage} from './pages/recurrences'
@@ -86,7 +87,7 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
       const view=id?await goalView(db,actor,id):null
       const role=await workspaceRole(db,actor.id,workspace)
       const people=['agent','guest'].includes(role??'')?[]:(await all<{id:string;display_name:string}>(db,`SELECT o.id,o.display_name FROM oa_operators o LEFT JOIN peg_workspace_members m ON m.operator_id=o.id AND m.workspace_id=? WHERE o.status='active' AND (o.role IN ('owner','admin') OR m.role IN ('manager','member','analyst')) ORDER BY o.display_name`,workspace)).map(p=>({value:p.id,label:p.display_name}))
-      return page('Goals',h(GoalsPage,{viewer,input,view,goals:id?[]:await listGoals(db,actor,workspace),people,teams:await teamOptions(db,actor,workspace),audience:view?.canManage?await goalAudience(db,actor,id):[],preview:id&&input.previewAudience?await goalAudiencePreview(db,actor,id,input):null}))
+      return page('Goals',h(GoalsPage,{viewer,input,view,sources:view?.goal.mode==='numeric'&&view.goal.owner_id===actor.id?await listNumericSources(db,actor,id):[],csvPreview:id&&input.csvSource?await previewNumericCsv(db,actor,input.csvSource,input):null,goals:id?[]:await listGoals(db,actor,workspace),people,teams:await teamOptions(db,actor,workspace),audience:view?.canManage?await goalAudience(db,actor,id):[],preview:id&&input.previewAudience?await goalAudiencePreview(db,actor,id,input):null}))
     }
     if(section==='recurrences'&&!tail){
       const input:Record<string,any>=Object.fromEntries(url.searchParams);input.grantIds=url.searchParams.getAll('grantIds[]')

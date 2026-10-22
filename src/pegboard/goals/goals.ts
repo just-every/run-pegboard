@@ -10,7 +10,7 @@ import { teamEffective, teamsOf } from '../authorization/effective'
 import type { TeamRow } from '../model'
 interface Goal {visibility:'default'|'restricted';id:string;workspace_id:string;scope:'company'|'team'|'personal';team_id:string|null;owner_id:string;created_by:string;title:string;kind:'objective'|'key_result';period_start:string;period_end:string;mode:'manual'|'work'|'numeric';unit:string;baseline:number;target:number;manual_percent:number;override_percent:number|null;stale_after_seconds:number;created_at:number;updated_at:number}
 interface Link {goal_id:string;source_type:'task'|'project'|'goal';source_id:string;weight:number}
-interface Event {goal_id:string;event_key:string;value:number;observed_at:number;received_at:number;actor_id:string}
+interface Event {source_id:string|null;goal_id:string;event_key:string;value:number;observed_at:number;received_at:number;actor_id:string}
 const finite=(value:unknown)=>{const n=Number(value);if(!Number.isFinite(n))throw invalid('finite_number');return n}
 const percent=(value:unknown)=>{const n=finite(value);if(n<0||n>100)throw invalid('percent');return n}
 const text=(value:unknown,max:number)=>{if(typeof value!=='string'||!value.trim()||value.length>max)throw invalid('text');return value.trim()}
@@ -109,7 +109,7 @@ export async function numericEvent(db:D1Database,actor:Actor,id:string,input:Rec
   if(!Number.isSafeInteger(observed)||observed<0||observed>now())throw invalid('observation_time')
   const prior=await first<Event>(db,'SELECT * FROM peg_goal_events WHERE goal_id=? AND event_key=?',id,key)
   if(prior){if(prior.value!==value||prior.observed_at!==observed)throw conflict('numeric_event_key_reused');return {id,key,replayed:true}}
-  await guarded(db,rev,[bound(db,'INSERT INTO peg_goal_events VALUES(?,?,?,?,?,?)',[id,key,value,observed,now(),actor.id])])
+  await guarded(db,rev,[bound(db,'INSERT INTO peg_goal_events(goal_id,event_key,value,observed_at,received_at,actor_id) VALUES(?,?,?,?,?,?)',[id,key,value,observed,now(),actor.id])])
   return {id,key,replayed:false}
 }
 export async function checkIn(db:D1Database,actor:Actor,id:string,input:Record<string,any>) {
@@ -137,6 +137,10 @@ async function leaves(db:D1Database,actor:Actor,goal:Goal,weight:number,found:Ma
   if(goal.mode==='numeric'){
     const event=await first<Event>(db,'SELECT * FROM peg_goal_events WHERE goal_id=? ORDER BY observed_at DESC,event_key DESC LIMIT 1',goal.id)
     if(!event){flags.add('missing_numeric_input');return}
+    if(event.source_id){
+      const source=await first<{owner_id:string;expires_at:number;revoked_at:number|null}>(db,'SELECT owner_id,expires_at,revoked_at FROM peg_goal_sources WHERE id=? AND goal_id=?',event.source_id,goal.id)
+      if(!source||source.revoked_at!==null||source.expires_at<=now()||source.owner_id!==goal.owner_id||!sharesWithWorkspace(await workspaceRole(db,source.owner_id,goal.workspace_id))){flags.add('restricted_input');return}
+    }
     put({key:`goal:${goal.id}`,percent:clamp((event.value-goal.baseline)/(goal.target-goal.baseline)*100),weight,observedAt:event.observed_at,stale:now()-event.observed_at>goal.stale_after_seconds*1000});return
   }
   const links=await all<Link>(db,'SELECT * FROM peg_goal_links WHERE goal_id=? ORDER BY source_type,source_id',goal.id)
@@ -171,7 +175,8 @@ export async function goalView(db:D1Database,actor:Actor,id:string) {
   }
   const events=goal.mode==='numeric'?await all<Event>(db,'SELECT * FROM peg_goal_events WHERE goal_id=? ORDER BY observed_at DESC,event_key',id):[]
   const checkins=await all<{id:string;actor_id:string;at:number;note:string;detail:string}>(db,'SELECT * FROM peg_goal_checkins WHERE goal_id=? ORDER BY at,id',id)
-  return {goal,canManage:await manager(db,actor,goal),canCheckIn:await contributor(db,actor,goal).then(()=>true,()=>false),owner:(await displayNames(db,[goal.owner_id])).get(goal.owner_id)??'Unavailable owner',links,events,checkins:checkins.map(c=>({...c,detail:flags.has('restricted_input')?{}:JSON.parse(c.detail)})),progress:flags.size||!total?null:goal.override_percent??rows.reduce((n,l)=>n+l.percent*l.weight,0)/total,states:[...flags],sourceCount:flags.has('restricted_input')?null:rows.length,unit:goal.unit,calculation:goal.mode==='work'?'Weighted completion; each task counts once at its highest linked weight':goal.mode==='numeric'?'(latest observed value - baseline) / (target - baseline) × 100':'Manual percent',freshness:!flags.has('restricted_input')&&rows.length?Math.min(...rows.map(r=>r.observedAt)):null,overridden:goal.override_percent!==null,rev,token:await digest([goal,rev,links,events,checkins])}
+  const names=await displayNames(db,checkins.map(c=>c.actor_id))
+  return {goal,actorId:actor.id,canManage:await manager(db,actor,goal),canCheckIn:await contributor(db,actor,goal).then(()=>true,()=>false),owner:(await displayNames(db,[goal.owner_id])).get(goal.owner_id)??'Unavailable owner',links,events,checkins:checkins.map(c=>({...c,actor:names.get(c.actor_id)??'Former member',detail:flags.has('restricted_input')?{}:JSON.parse(c.detail)})),progress:flags.size||!total?null:goal.override_percent??rows.reduce((n,l)=>n+l.percent*l.weight,0)/total,states:[...flags],sourceCount:flags.has('restricted_input')?null:rows.length,unit:goal.unit,calculation:goal.mode==='work'?'Weighted completion; each task counts once at its highest linked weight':goal.mode==='numeric'?'(latest observed value - baseline) / (target - baseline) × 100':'Manual percent',freshness:!flags.has('restricted_input')&&rows.length?Math.min(...rows.map(r=>r.observedAt)):null,overridden:goal.override_percent!==null,rev,token:await digest([goal,rev,links,events,checkins])}
 }
 export async function listGoals(db:D1Database,actor:Actor,workspace:string) {
   const out=[]
@@ -229,4 +234,13 @@ export async function updateGoalAudience(db:D1Database,actor:Actor,id:string,inp
 export async function goalAudience(db:D1Database,actor:Actor,id:string) {
   await editable(db,actor,id)
   return all<AudienceGrant>(db,'SELECT * FROM peg_goal_audience WHERE goal_id=? ORDER BY grantee_type,grantee_id',id)
+}
+
+/** Interim source custody: current active human owner only; no agent or guest publishing. */
+export async function numericSourceGoal(db:D1Database,actor:Actor,id:string) {
+  const goal=await load(db,actor,id)
+  await contributor(db,actor,goal)
+  if(goal.owner_id!==actor.id)throw forbidden('goal_source_owner')
+  if(goal.mode!=='numeric')throw invalid('numeric_goal_required')
+  return goal
 }
