@@ -82,7 +82,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "0fb54c2d536e6cf915ea18f53add8874b124af96d8562ede14843ed0bc3c6232",
+      "sha256": "c38f4c3a621837fca0daf2e55649727b809d08b373994493762ca1c67c59c174",
       "executable": false
     },
     "AGENTS.md": {
@@ -98,7 +98,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "b24729740206629d8de3f97219308bbb1c55716ed332c942fb3042e8bb7349dc",
+      "sha256": "3fb0ded9a864b77e22cc9ba29e48c493c5dd2c8a5ef53f76c4b5d344327fa81b",
       "executable": false
     },
     "DEMO.md": {
@@ -126,7 +126,7 @@
       "executable": false
     },
     "docs/WORK-PLANNING-API.md": {
-      "sha256": "94f6454f882de8a6aea5ea18c4bb4f1fc76cdde2fffb62ad03c4e82a87b2f36c",
+      "sha256": "9e842f460101a06243562d275c5c1842f5f68539fd965000b424979f5f624c64",
       "executable": false
     },
     "edition.json": {
@@ -1898,7 +1898,7 @@
       "executable": false
     },
     "src/pegboard/recurrence/recurrence.ts": {
-      "sha256": "482c3f3c5b18af8b6f3c538991eda891e23c5e62f18feb1f1e13a627df972fa7",
+      "sha256": "9bc7f9927f1f49bed7de5048e981d4dca7e417b9cc40ee6a9400c9a46c6c581b",
       "executable": false
     },
     "src/pegboard/references/refs.ts": {
@@ -2210,7 +2210,7 @@
       "executable": false
     },
     "tests/journeys/work-graph.journey.mjs": {
-      "sha256": "3a92db09cb6aa8c252842ed3af22017e517a4fae0b5fa889a7fa950eb7af889b",
+      "sha256": "8a5fc536f638328a26ca29ed808fdd9dc722a702d00b03f4a7c3bdef22d442c1",
       "executable": false
     },
     "tests/runtime.mjs": {
@@ -2226,7 +2226,7 @@
       "executable": false
     },
     "tests/work-graph.test.mjs": {
-      "sha256": "a28cc9a8c3197513097254405bed044fbaf0c7cdec59d0249ed6723465b28ff1",
+      "sha256": "8a9504d2c7656d990fc8590f1296f8f2f358ec9c4a81ac341ebe8229fb6874e6",
       "executable": false
     },
     "tsconfig.json": {
