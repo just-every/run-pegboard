@@ -1,3 +1,5 @@
+import {RecurrencesPage} from './pages/recurrences'
+import {listRecurrences,recurrenceView,previewRecurrence,rereviewRecurrence} from '../recurrence/recurrence'
 import {TimePage} from './pages/time'
 import {listSheets,sheetView,timeTaskOptions} from '../time/time'
 import {catalogue} from '../fields/definitions'
@@ -76,7 +78,11 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
   const { viewer, workspace } = await context(db, actor, session.operator.role)
   const [, section, id, tail] = segments
   try {
-    if(section==='time'&&!tail){const prefs=await settings(db,actor);return page('Timesheets',h(TimePage,{viewer,sheets:await listSheets(db,actor,workspace),view:id?await sheetView(db,actor,id):null,tasks:await timeTaskOptions(db,actor,workspace),day:localDay(Date.now(),prefs.timezone)}))}
+    if(section==='recurrences'&&!tail){
+      const input:Record<string,any>=Object.fromEntries(url.searchParams);input.grantIds=url.searchParams.getAll('grantIds[]')
+      return page('Recurring work',h(RecurrencesPage,{viewer,input,items:id?[]:await listRecurrences(db,actor,workspace),view:id?await recurrenceView(db,actor,id):null,preview:!id&&input.sourceId?await previewRecurrence(db,actor,input):null,review:id&&input.review?await rereviewRecurrence(db,actor,id,input):null}))
+    }
+    if(section==='time' &&!tail){const prefs=await settings(db,actor);return page('Timesheets',h(TimePage,{viewer,sheets:await listSheets(db,actor,workspace),view:id?await sheetView(db,actor,id):null,tasks:await timeTaskOptions(db,actor,workspace),day:localDay(Date.now(),prefs.timezone)}))}
     if (section === 'projects' && !id) return page('Projects', h(ProjectsPage, { viewer, projects: await listProjects(db, actor, workspace), teams: (await listTeams(db, actor, workspace)).teams, canCreate: !!(await workspaceRole(db, actor.id, workspace)) && !['guest', 'analyst', 'agent'].includes((await workspaceRole(db, actor.id, workspace)) as string), workspace }))
     if (section === 'projects' && id && !tail) {
       try { return await page('Project', h(ProjectPage, { viewer, data: await board(db, actor, id), id })) } catch (error) { if (error instanceof PegError && error.status === 404) return refuse(db, actor, viewer, id); throw error }

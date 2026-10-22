@@ -1,15 +1,19 @@
-import { all, bound, conflict, first, forbidden, invalid, newId, now } from '../db'
+import { all, bound, conflict, first, forbidden, invalid, newId, now, PegError } from '../db'
 import { openTask } from '../tasks/access'
 import { openProject, need } from '../workspace/projects'
-import { workspaceRole, type Actor } from '../workspace/people'
+import { displayNames, workspaceRole, type Actor } from '../workspace/people'
 import { localDay, dayNumber } from '../tasks/personal'
 import { historyStatement } from '../tasks/history'
 import { auditStatement } from '../authorization/audit'
 import { digest, guarded, revision } from '../decisions/revision'
 import type { TaskRow, ProjectRow, SectionRow, TaskProjectRow, FieldRow } from '../model'
 interface Config { mode:'calendar'|'completion'; unit:'day'|'week'|'month'; interval:number; timezone:string; start:string; end:string|null; count:number; exceptions:string[] }
-interface Snapshot { type:'task'|'project'; sourceId:string; project:ProjectRow|null; tasks:(TaskRow & {approval:boolean})[]; sections:SectionRow[]; homes:TaskProjectRow[]; fields:FieldRow[]; values:{task_id:string;field_id:string;value:string}[] }
-interface Schedule {id:string;template_id:string;workspace_id:string;created_by:string;config:string;next_date:string;last_object_id:string;generated:number;active:number;last_error:string|null}
+export interface Snapshot { type:'task'|'project'; sourceId:string; project:ProjectRow|null; tasks:(TaskRow & {approval:boolean})[]; sections:SectionRow[]; homes:TaskProjectRow[]; fields:FieldRow[]; values:{task_id:string;field_id:string;value:string}[] }
+import { activeGrants } from '../authorization/effective'
+import { isAdministrator } from '../authorization/levels'
+import { grantStatements } from '../authorization/grants'
+import { reviewAudience, audienceChoices, unreachable, type Audience } from './audience'
+interface Schedule {audience:string|null;held:number;attempted_at:number;id:string;template_id:string;workspace_id:string;created_by:string;config:string;next_date:string;last_object_id:string;generated:number;active:number;last_error:string|null}
 interface Template {id:string;source_type:string;source_id:string;snapshot:string;workspace_id:string;version:number}
 function date(value:unknown) { const d=String(value??'');dayNumber(d);return d }
 function config(input:Record<string,any>):Config {
@@ -81,9 +85,11 @@ async function snapshot(db:D1Database,actor:Actor,type:unknown,id:string):Promis
   }
   return {type:type as Snapshot['type'],sourceId:id,project,tasks,sections,homes,fields,values}
 }
+const selection=(input:Record<string,any>):string[]=>Array.isArray(input.grantIds)?input.grantIds.map(String):[]
 export async function previewRecurrence(db:D1Database,actor:Actor,input:Record<string,any>) {
   const rev=await revision(db),plan=config(input),source=await snapshot(db,actor,input.sourceType,String(input.sourceId??''))
-  return {config:plan,source,rev,token:await digest([source,plan,rev]),occurrences:dates(plan),notice:'A pinned template creates fresh work. Decisions, time, comments, files and grants are not copied. New projects are private to their owner. Review every assignment and date before activation.'}
+  const audience=await reviewAudience(db,actor,source,selection(input)),unreachableAssignees=await unreachable(db,actor,source,audience)
+  return {config:plan,source,rev,audience,choices:await audienceChoices(db,actor,source),unreachableAssignees,token:await digest([source,plan,rev,audience]),occurrences:dates(plan),notice:'Review the standing internal audience for every occurrence. Guests, approve-only shares and external links are excluded and need a fresh reviewed share. Assignment never grants access. Decisions, time, comments and files are not copied.'}
 }
 export async function createRecurrence(db:D1Database,actor:Actor,input:Record<string,any>) {
   const view=await previewRecurrence(db,actor,input)
@@ -91,38 +97,74 @@ export async function createRecurrence(db:D1Database,actor:Actor,input:Record<st
   const id=newId('recurrence'),templateId=newId('template'),workspace=view.source.project?.workspace_id??view.source.tasks[0].workspace_id,at=now()
   await guarded(db,view.rev,[
     bound(db,'INSERT INTO peg_work_templates VALUES(?,?,?,?,?,?,?,?)',[templateId,workspace,view.source.type,view.source.sourceId,1,JSON.stringify(view.source),actor.id,at]),
-    bound(db,'INSERT INTO peg_recurrences(id,template_id,workspace_id,created_by,config,next_date,last_object_id,created_at) VALUES(?,?,?,?,?,?,?,?)',[id,templateId,workspace,actor.id,JSON.stringify(view.config),view.config.start,view.source.sourceId,at]),
-    auditStatement(db,{workspaceId:workspace,actorId:actor.id,action:'recurrence.activated',targetType:view.source.type,targetId:view.source.sourceId,detail:{id,templateId,config:view.config}}),
+    bound(db,'INSERT INTO peg_recurrences(id,template_id,workspace_id,created_by,config,next_date,last_object_id,created_at,audience) VALUES(?,?,?,?,?,?,?,?,?)',[id,templateId,workspace,actor.id,JSON.stringify(view.config),view.config.start,view.source.sourceId,at,JSON.stringify(view.audience)]),
+    auditStatement(db,{workspaceId:workspace,actorId:actor.id,action:'recurrence.activated',targetType:view.source.type,targetId:view.source.sourceId,detail:{id,templateId,config:view.config,audience:view.audience}}),
   ])
   return {id,templateId}
 }
 async function load(db:D1Database,actor:Actor,id:string) {
   const schedule=await first<Schedule>(db,'SELECT * FROM peg_recurrences WHERE id=?',id)
-  if(!schedule||schedule.created_by!==actor.id)throw forbidden('recurrence_owner')
+  if(!schedule)throw forbidden('recurrence_owner')
   const template=(await first<Template>(db,'SELECT * FROM peg_work_templates WHERE id=?',schedule.template_id))!
-  await snapshot(db,actor,template.source_type,template.source_id)
-  return {schedule,template,source:JSON.parse(template.snapshot) as Snapshot,plan:JSON.parse(schedule.config) as Config}
+  const source=JSON.parse(template.snapshot) as Snapshot,role=await workspaceRole(db,actor.id,schedule.workspace_id)
+  let oversight=isAdministrator(role)
+  if(role&&!['agent','guest','analyst'].includes(role))for(const projectId of new Set(source.project?[source.project.id]:source.homes.map(h=>h.project_id))){
+    try{if((await openProject(db,actor,projectId)).effective.capabilities.has('manage_templates'))oversight=true}catch{}
+  }
+  if(!role||actor.id!==schedule.created_by&&!oversight)throw forbidden('recurrence_owner')
+  return {schedule,template,source,plan:JSON.parse(schedule.config) as Config,oversight}
 }
 export async function recurrenceView(db:D1Database,actor:Actor,id:string) {
-  const view=await load(db,actor,id)
-  return {...view,occurrences:await all(db,'SELECT * FROM peg_occurrences WHERE schedule_id=? ORDER BY local_date',id),next:dates(view.plan,view.schedule.next_date)}
+  const {schedule,source,plan}=await load(db,actor,id)
+  let full=false
+  try{await snapshot(db,actor,source.type,source.sourceId);full=true}catch{}
+  const names=await displayNames(db,[schedule.created_by])
+  const occurrences=await all<{local_date:string;object_id:string}>(db,'SELECT * FROM peg_occurrences WHERE schedule_id=? ORDER BY local_date',id)
+  const reviews=[]
+  for(const occurrence of occurrences){
+    let canRead=false
+    try{if(source.project)await openProject(db,actor,occurrence.object_id);else await openTask(db,actor,occurrence.object_id);canRead=true}catch{}
+    const review=full||canRead?await first<{audience:string;unreachable:string}>(db,'SELECT * FROM peg_occurrence_reviews WHERE schedule_id=? AND local_date=?',id,occurrence.local_date):null
+    reviews.push({...occurrence,...(review?{audience:JSON.parse(review.audience),unreachableAssignees:JSON.parse(review.unreachable)}:{})})
+  }
+  const {audience:stored,...metadata}=schedule
+  return {schedule:metadata,title:full?(source.project?.name??source.tasks[0]?.title??'Recurring work'):'Recurring work',owner:names.get(schedule.created_by)??'Unavailable activator',canRun:actor.id===schedule.created_by,canReview:full&&actor.id===schedule.created_by,audience:full&&stored?JSON.parse(stored) as Audience:null,plan,occurrences:reviews,next:dates(plan,schedule.next_date)}
 }
 export async function listRecurrences(db:D1Database,actor:Actor,workspace:string) {
   if(!await workspaceRole(db,actor.id,workspace))throw forbidden()
   const out=[]
-  for(const row of await all<{id:string}>(db,'SELECT id FROM peg_recurrences WHERE workspace_id=? AND created_by=? ORDER BY created_at,id',workspace,actor.id)){
+  for(const row of await all<{id:string}>(db,'SELECT id FROM peg_recurrences WHERE workspace_id=? ORDER BY created_at,id',workspace)){
     try{out.push(await recurrenceView(db,actor,row.id))}catch{}
   }
   return out
+}
+export async function rereviewRecurrence(db:D1Database,actor:Actor,id:string,input:Record<string,any>,commit=false) {
+  const rev=await revision(db),{schedule,source}=await load(db,actor,id)
+  if(schedule.created_by!==actor.id)throw forbidden('recurrence_owner')
+  await snapshot(db,actor,source.type,source.sourceId)
+  if(source.type==='task')for(const home of source.homes)need((await openProject(db,actor,home.project_id)).effective,'manage_templates')
+  const audience=await reviewAudience(db,actor,source,selection(input)),token=await digest([id,rev,audience])
+  const view={audience,token,choices:await audienceChoices(db,actor,source),unreachableAssignees:await unreachable(db,actor,source,audience)}
+  if(commit){
+    if(input.revision!==token)throw conflict('recurrence_preview_changed')
+    await guarded(db,rev,[bound(db,'UPDATE peg_recurrences SET audience=?,held=0,last_error=NULL WHERE id=?',[JSON.stringify(audience),id]),auditStatement(db,{workspaceId:schedule.workspace_id,actorId:actor.id,action:'recurrence.audience_reviewed',targetType:'recurrence',targetId:id,detail:{audience}})])
+  }
+  return view
 }
 function shifted(value:string|null,from:string,to:string) {
   if(!value)return null
   const delta=(dayNumber(to)-dayNumber(from))*86400000
   return new Date(Date.parse(value.length===10?value+'T00:00:00Z':value)+delta).toISOString().slice(0,value.length===10?10:24)
 }
-export async function runRecurrence(db:D1Database,actor:Actor,id:string) {
+async function generate(db:D1Database,actor:Actor,id:string) {
   const rev=await revision(db),{schedule:s,template,source,plan:c}=await load(db,actor,id)
+  if(s.created_by!==actor.id)throw forbidden('recurrence_owner')
   if(!s.active||s.generated>=c.count)return {state:'finished'}
+  if(s.held)return {state:'held',cause:s.last_error,ownerId:s.created_by}
+  await snapshot(db,actor,template.source_type,template.source_id)
+  const audience=await reviewAudience(db,actor,source,s.audience?(JSON.parse(s.audience) as Audience).grants.map(g=>g.id):[])
+  if(source.project&&(!s.audience||audience.revision!==(JSON.parse(s.audience) as Audience).revision))throw conflict('audience_changed_review_required')
+  const unreachableAssignees=await unreachable(db,actor,source,audience)
   let due=s.next_date
   if(c.mode==='completion'){
     const previous=source.type==='task'?await first<{status:string;completed_at:number|null}>(db,'SELECT status,completed_at FROM peg_tasks WHERE id=?',s.last_object_id):await first<{status:string;completed_at:number|null}>(db,'SELECT p.status,c.at completed_at FROM peg_projects p LEFT JOIN peg_project_completion c ON c.project_id=p.id WHERE p.id=?',s.last_object_id)
@@ -137,8 +179,15 @@ export async function runRecurrence(db:D1Database,actor:Actor,id:string) {
   // The pinned template is what gets written, so authority is rechecked on every project it will land in, not only on the live source's.
   if(source.type==='task')for(const projectId of new Set(source.homes.map(h=>h.project_id)))need((await openProject(db,actor,projectId)).effective,'manage_templates')
   const at=now(),target=source.type==='project'?newId('prj'):newId('tsk'),taskIds=new Map(source.tasks.map(t=>[t.id,source.type==='task'&&t.id===source.sourceId?target:newId('tsk')])),sectionIds=new Map(source.sections.map(s=>[s.id,newId('sec')]))
-  const statements:D1PreparedStatement[]=[bound(db,'INSERT INTO peg_occurrences VALUES(?,?,?,?,?)',[id,due,target,at,template.id])]
-  if(source.project){const p=source.project;statements.push(bound(db,"INSERT INTO peg_projects(id,workspace_id,name,description,owner_id,visibility,start_date,due_date,created_by,created_at) VALUES(?,?,?,?,?,'private',?,?,?,?)",[target,p.workspace_id,`${p.name} · ${due}`,p.description,actor.id,shifted(p.start_date,c.start,due),shifted(p.due_date,c.start,due),actor.id,at]))}
+  const statements:D1PreparedStatement[]=[bound(db,'INSERT INTO peg_occurrences VALUES(?,?,?,?,?)',[id,due,target,at,template.id]),bound(db,'INSERT INTO peg_occurrence_reviews VALUES(?,?,?,?)',[id,due,JSON.stringify(audience),JSON.stringify(unreachableAssignees.map(a=>({...a,taskId:taskIds.get(a.taskId)})))])]
+  if(source.project){
+    const p=source.project,a=audience.project!
+    statements.push(bound(db,'INSERT INTO peg_projects(id,workspace_id,name,description,owner_id,visibility,team_id,team_level,workspace_level,start_date,due_date,created_by,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)',[target,p.workspace_id,`${p.name} · ${due}`,p.description,actor.id,a.visibility,a.team_id,a.team_level,a.workspace_level,shifted(p.start_date,c.start,due),shifted(p.due_date,c.start,due),actor.id,at]))
+    for(const g of audience.grants){
+      const grant=grantStatements(db,actor.id,p.workspace_id,{objectType:'project',objectId:target,granteeType:g.grantee_type,granteeId:g.grantee_id,level:g.level,scope:g.scope,scopes:g.scopes?.split(','),expiresAt:g.expires_at},{source:'direct',at})
+      statements.push(...grant.statements,bound(db,'INSERT INTO peg_recurring_grants VALUES(?)',[grant.id]))
+    }
+  }
   for(const section of source.sections)statements.push(bound(db,'INSERT INTO peg_sections VALUES(?,?,?,?,?)',[sectionIds.get(section.id)!,target,section.name,section.position,section.maps_to]))
   for(const task of source.tasks){
     if(!await workspaceRole(db,task.owner_id,task.workspace_id))throw conflict('template_owner_unavailable')
@@ -159,23 +208,34 @@ export async function runRecurrence(db:D1Database,actor:Actor,id:string) {
   }
   for(const home of source.homes)statements.push(bound(db,'INSERT INTO peg_task_projects(task_id,project_id,section_id,position,added_by,added_at) VALUES(?,?,?,?,?,?)',[taskIds.get(home.task_id)!,source.type==='project'?target:home.project_id,source.type==='project'?sectionIds.get(home.section_id??'')??null:home.section_id,home.position,actor.id,at]))
   if(source.type==='project')statements.push(bound(db,'INSERT INTO peg_template_origins VALUES(?,?,?,?)',['project',target,template.id,source.sourceId]))
-  statements.push(bound(db,'UPDATE peg_recurrences SET next_date=?,last_object_id=?,generated=generated+1,active=?,last_error=NULL WHERE id=?',[advance(due,c),target,s.generated+1>=c.count?0:1,id]))
+  statements.push(bound(db,'UPDATE peg_recurrences SET next_date=?,last_object_id=?,generated=generated+1,active=?,held=0,last_error=NULL WHERE id=?',[advance(due,c),target,s.generated+1>=c.count?0:1,id]))
   await guarded(db,rev,statements)
-  return {state:'generated',id:target,date:due,templateId:template.id}
+  return {state:'generated',id:target,date:due,templateId:template.id,unreachableAssignees}
 }
 export async function stopRecurrence(db:D1Database,actor:Actor,id:string) {
   const rev=await revision(db);await load(db,actor,id)
   await guarded(db,rev,[bound(db,'UPDATE peg_recurrences SET active=0 WHERE id=?',[id])]);return {id,active:false}
 }
 
-/** The scheduled Worker and the signed-in Run door use the same restart-safe transaction. */
+/** Authorization failures become durable held work, visible even when the activator loses the source. */
+export async function runRecurrence(db:D1Database,actor:Actor,id:string) {
+  const {schedule}=await load(db,actor,id)
+  if(schedule.created_by!==actor.id)throw forbidden('recurrence_owner')
+  try{return await generate(db,actor,id)}catch(error){
+    if(!(error instanceof PegError)||error.code==='review_changed')throw error
+    const cause=error.code==='not_found'||error.code==='forbidden'?'source_or_target_authority_lost':error.code
+    await db.prepare('UPDATE peg_recurrences SET held=1,last_error=?,attempted_at=? WHERE id=?').bind(cause,now(),id).run()
+    return {state:'held',cause,ownerId:schedule.created_by}
+  }
+}
+/** Fair retries: held work leaves the automatic queue, and waiting work goes behind untouched work. */
 export async function processRecurrences(db:D1Database) {
-  const pending=await all<Schedule>(db,'SELECT * FROM peg_recurrences WHERE active=1 ORDER BY next_date,id LIMIT 100')
+  const pending=await all<Schedule>(db,'SELECT * FROM peg_recurrences WHERE active=1 AND held=0 ORDER BY attempted_at,next_date,id LIMIT 100')
   for(const s of pending){
     const actor:Actor={id:s.created_by,email:'',displayName:'',baseRole:'member'}
-    try{await runRecurrence(db,actor,s.id)}catch(error){
-      const code=error instanceof Error?error.message:'generation_failed'
-      await db.prepare('UPDATE peg_recurrences SET last_error=? WHERE id=?').bind(code.slice(0,120),s.id).run()
+    try{await runRecurrence(db,actor,s.id)}catch{
+      await db.prepare('UPDATE peg_recurrences SET held=1,last_error=? WHERE id=?').bind('generation_failed_review_required',s.id).run()
     }
+    await db.prepare('UPDATE peg_recurrences SET attempted_at=? WHERE id=?').bind(now(),s.id).run()
   }
 }

@@ -25,6 +25,7 @@ export const homeTabs = (viewer: Viewer, current = '/app'): Tab[] => [
   { label: 'Home', href: '/app' },
   { label: 'Projects', href: '/app/projects' },
   { label: 'My tasks', href: '/app/my-tasks' },
+  { label: 'Recurring work', href: '/app/recurrences' },
   { label: 'Teams', href: '/app/teams' },
   { label: 'Inbox', href: '/app/inbox' },
   ...(viewer.role === 'member' ? [] : [{ label: 'Access', href: '/app/access-review' }, { label: 'Admin', href: '/app/admin' }]),

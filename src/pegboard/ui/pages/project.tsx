@@ -35,7 +35,7 @@ export function ProjectPage({ viewer, data, id }: { viewer: Viewer; data: Board;
               <Submit>Add task</Submit>
             </Form>
           </Card>}
-          <Card title="This project"><p className="muted">{data.project.description || 'No description yet.'}</p>
+          <Card title="This project">{can('manage_templates')&&<p><a className="button quiet" href={`/app/recurrences?sourceType=project&sourceId=${id}&start=${new Date().toISOString().slice(0,10)}&unit=month`}>Make recurring</a></p>}<p className="muted">{data.project.description || 'No description yet.'}</p>
             <p><a className="button quiet" href={`/app/projects/${id}/settings`}>{can('manage_settings') ? 'Settings, sharing and fields' : 'Who can see this'}</a></p></Card>
         </div>}
       </PathWall>

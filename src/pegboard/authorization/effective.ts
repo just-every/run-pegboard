@@ -57,16 +57,18 @@ export async function projectEffective(db: D1Database, actor: Actor, project: Pr
   const role = await workspaceRole(db, actor.id, project.workspace_id)
   if (!role) return none(null)
   const paths: Path[] = []
+  const occurrence=!!await first(db,"SELECT 1 FROM peg_template_origins WHERE object_type='project' AND object_id=?",project.id)
   if (isAdministrator(role)) paths.push({ via: 'Workspace administrator', level: 'admin', capabilities: capabilitiesOf('admin'), source: 'role' })
   if (project.owner_id === actor.id) paths.push({ via: 'Project owner', level: 'admin', capabilities: capabilitiesOf('admin'), source: 'owner' })
   for (const grant of await activeGrants(db, 'project', project.id, 'person', [actor.id]))
     paths.push({ via: grant.source === 'request' ? 'Approved access request' : 'Direct grant', level: grant.level, capabilities: pathCapabilities(grant.level, grant), source: 'direct', grantId: grant.id, scope: grant.scope })
   const teams = new Map((await teamsOf(db, actor.id)).map(grant => [grant.object_id, grant]))
   if (teams.size) for (const grant of await activeGrants(db, 'project', project.id, 'team', [...teams.keys()])) {
+    if(occurrence&&!sharesWithWorkspace(role)&&await first(db,'SELECT 1 FROM peg_recurring_grants WHERE grant_id=?',grant.id))continue
     const team = await first<{ name: string }>(db, 'SELECT name FROM peg_teams WHERE id=?', grant.grantee_id)
     paths.push({ via: `Team grant (${team?.name ?? 'team'})`, level: grant.level, capabilities: pathCapabilities(grant.level, grant), source: 'team', grantId: grant.id, scope: grant.scope })
   }
-  if (project.visibility === 'team' && project.team_id && teams.has(project.team_id) && role !== 'agent')
+  if (project.visibility === 'team' && project.team_id && teams.has(project.team_id) && role !== 'agent' && (!occurrence || sharesWithWorkspace(role)))
     paths.push({ via: 'Team default', level: project.team_level, capabilities: capabilitiesOf(project.team_level), source: 'default' })
   if (project.visibility === 'workspace' && sharesWithWorkspace(role))
     paths.push({ via: 'Shared with workspace', level: project.workspace_level, capabilities: capabilitiesOf(project.workspace_level), source: 'default' })

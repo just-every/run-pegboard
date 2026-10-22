@@ -519,6 +519,60 @@ describe('PEG-001 one work graph', { concurrency: false }, () => {
     await ok(owner.post(`/api/v1/recurrences/${cs.id}/stop`,{}));assert.equal((await ok(owner.post(`/api/v1/recurrences/${cs.id}/run`,{}))).state,'finished')
   })
 
+  it('reviews one standing internal recurring audience, names unreachable assignees and applies it once across restart and replay', async () => {
+    const member=await w.person('recurring-team@example.com','Recurring teammate'),editor=await w.person('recurring-editor@example.com','Recurring editor'),outsider=await w.person('recurring-outside@example.com','Unreachable assignee'),guest=await w.person('recurring-guest@example.com','Recurring guest','guest')
+    const team=await ok(owner.post('/api/v1/teams',{name:'Recurring onboarding team',privacy:'private'}))
+    for(const person of [member,guest])await ok(owner.post('/api/v1/grants',{objectType:'team',objectId:team.id,granteeId:person.id,level:'viewer'}))
+    const p=await project('Monthly onboarding',{teamId:team.id,visibility:'team',teamLevel:'commenter'})
+    await ok(owner.post('/api/v1/tasks',{title:'Unreachable onboarding task',projectId:p.id,ownerId:outsider.id}))
+    const direct=await ok(owner.post('/api/v1/grants',{objectType:'project',objectId:p.id,granteeId:editor.id,level:'editor'}))
+    const external=await ok(owner.post('/api/v1/grants',{objectType:'project',objectId:p.id,granteeId:guest.id,level:'viewer'}))
+    const input={sourceType:'project',sourceId:p.id,unit:'month',start:'2026-01-01',count:1,grantIds:[direct.id]}
+    const preview=await ok(owner.post('/api/v1/recurrences/preview',input))
+    assert.equal(preview.audience.project.visibility,'team');assert.equal(preview.audience.project.team_level,'commenter')
+    assert.deepEqual(preview.audience.grants.map(g=>g.id),[direct.id]);assert.ok(!preview.choices.some(g=>g.id===external.id))
+    assert.deepEqual(preview.unreachableAssignees.map(a=>a.name),['Unreachable assignee'])
+    assert.equal((await owner.post('/api/v1/recurrences/preview',{...input,grantIds:[external.id]})).status,400)
+    const schedule=await ok(owner.post('/api/v1/recurrences',{...input,revision:preview.token}))
+    const raced=await Promise.all([owner.post(`/api/v1/recurrences/${schedule.id}/run`,{}),owner.post(`/api/v1/recurrences/${schedule.id}/run`,{})])
+    assert.ok(raced.some(r=>r.status===200&&r.body.state==='generated'))
+    await w.restart();await ok(owner.post(`/api/v1/recurrences/${schedule.id}/run`,{}))
+    const view=await ok(owner.get(`/api/v1/recurrences/${schedule.id}`));assert.equal(view.occurrences.length,1)
+    const occurrence=view.occurrences[0]
+    assert.deepEqual(occurrence.unreachableAssignees.map(a=>a.name),['Unreachable assignee'])
+    assert.equal((await ok(member.get(`/api/v1/projects/${occurrence.object_id}`))).level,'commenter')
+    assert.equal((await ok(editor.get(`/api/v1/projects/${occurrence.object_id}`))).level,'editor')
+    for(const person of [guest,outsider])assert.equal((await person.get(`/api/v1/projects/${occurrence.object_id}`)).status,404)
+    const grants=(await ok(owner.get(`/api/v1/grants?objectType=project&objectId=${occurrence.object_id}`))).grants
+    assert.equal(grants.length,1);assert.equal(grants[0].grantee_id,editor.id)
+  })
+
+  it('holds changed recurring audiences and lost authority without sharing, retains oversight and requires a fresh reviewed audience', async () => {
+    const activator=await w.person('recurring-activator@example.com','Schedule activator'),admin=await w.person('recurring-admin@example.com','Project schedule admin'),reader=await w.person('recurring-reader@example.com','Standing reader')
+    const p=await project('Held onboarding'),leadGrant=await ok(owner.post('/api/v1/grants',{objectType:'project',objectId:p.id,granteeId:activator.id,level:'admin'}))
+    await ok(owner.post('/api/v1/grants',{objectType:'project',objectId:p.id,granteeId:admin.id,level:'admin'}))
+    const direct=await ok(owner.post('/api/v1/grants',{objectType:'project',objectId:p.id,granteeId:reader.id,level:'editor'}))
+    await ok(owner.post('/api/v1/tasks',{title:'Held work',projectId:p.id}))
+    const input={sourceType:'project',sourceId:p.id,unit:'month',start:'2026-01-01',count:2,grantIds:[direct.id]}
+    const activate=async()=>{const v=await ok(activator.post('/api/v1/recurrences/preview',input));return ok(activator.post('/api/v1/recurrences',{...input,revision:v.token}))}
+    const schedule=await activate()
+    await ok(owner.delete(`/api/v1/grants/${direct.id}`))
+    assert.equal((await ok(activator.post(`/api/v1/recurrences/${schedule.id}/run`,{}))).state,'held')
+    let view=await ok(admin.get(`/api/v1/recurrences/${schedule.id}`));assert.equal(view.schedule.held,1);assert.equal(view.occurrences.length,0);assert.equal(view.owner,'Schedule activator');assert.ok(view.schedule.last_error)
+    assert.ok((await ok(owner.get('/api/v1/recurrences'))).recurrences.some(r=>r.schedule.id===schedule.id))
+    const review=await ok(activator.post(`/api/v1/recurrences/${schedule.id}/audience-preview`,{grantIds:[]}))
+    await ok(activator.post(`/api/v1/recurrences/${schedule.id}/audience`,{grantIds:[],revision:review.token}))
+    await ok(activator.post(`/api/v1/recurrences/${schedule.id}/run`,{}))
+    view=await ok(admin.get(`/api/v1/recurrences/${schedule.id}`));assert.equal(view.occurrences.length,1)
+    assert.equal((await reader.get(`/api/v1/projects/${view.occurrences[0].object_id}`)).status,404)
+    await ok(owner.delete(`/api/v1/grants/${leadGrant.id}`))
+    assert.equal((await ok(activator.post(`/api/v1/recurrences/${schedule.id}/run`,{}))).state,'held')
+    view=await ok(activator.get(`/api/v1/recurrences/${schedule.id}`));assert.equal(view.audience,null);assert.equal(view.occurrences.length,1);assert.equal(view.schedule.last_error,'source_or_target_authority_lost')
+    assert.ok((await ok(admin.get('/api/v1/recurrences'))).recurrences.some(r=>r.schedule.id===schedule.id))
+    await ok(admin.post(`/api/v1/recurrences/${schedule.id}/stop`,{}))
+    assert.equal((await ok(owner.get(`/api/v1/recurrences/${schedule.id}`))).schedule.active,0)
+  })
+
   it('attributes approval-task decisions to the reviewed revision and refuses copied, stale, self and agent sign-off', async () => {
     const person=await w.person('decision-subject@example.com','Decision subject'),agent=await w.person('decision-agent@example.com','Decision agent','agent'),p=await project('Decision work')
     await ok(owner.post('/api/v1/grants',{objectType:'project',objectId:p.id,granteeId:person.id,level:'editor'}))
@@ -590,16 +644,17 @@ describe('PEG-001 one work graph', { concurrency: false }, () => {
     await ok(owner.delete(`/api/v1/tasks/${task.id}/projects/${b.id}`))
     const grant=(await ok(owner.get(`/api/v1/grants?objectType=project&objectId=${b.id}`))).grants.find(g=>g.grantee_id===lead.id)
     await ok(owner.delete(`/api/v1/grants/${grant.id}`))
-    assert.equal((await lead.post(`/api/v1/recurrences/${schedule.id}/run`,{})).status,404)
+    assert.equal((await ok(lead.post(`/api/v1/recurrences/${schedule.id}/run`,{}))).state,'held')
     assert.equal((await ok(lead.get(`/api/v1/recurrences/${schedule.id}`))).occurrences.length,1);assert.equal(await tasksIn(b),1);assert.equal(await tasksIn(a),2)
-    // A fresh project occurrence is private: a person who reaches the source by workspace visibility and a direct grant still cannot open it.
+    // The recorded workspace audience is inherited; an unselected direct grant is not copied.
     const reader=nina,shared=await project('Recurring shared source',{visibility:'workspace',workspaceLevel:'editor'})
     await ok(owner.post('/api/v1/grants',{objectType:'project',objectId:shared.id,granteeId:reader.id,level:'editor'}));await ok(owner.post('/api/v1/tasks',{title:'Shared source task',projectId:shared.id}))
     const projectInput={sourceType:'project',sourceId:shared.id,mode:'calendar',timezone:'America/New_York',unit:'month',interval:1,start:'2026-03-01',count:1}
     const pp=await ok(owner.post('/api/v1/recurrences/preview',projectInput)),ps=await ok(owner.post('/api/v1/recurrences',{...projectInput,revision:pp.token}))
     await ok(owner.post(`/api/v1/recurrences/${ps.id}/run`,{}))
     const generated=(await ok(owner.get(`/api/v1/recurrences/${ps.id}`))).occurrences[0].object_id
-    assert.equal((await reader.get(`/api/v1/projects/${shared.id}`)).status,200);assert.equal((await reader.get(`/api/v1/projects/${generated}`)).status,404)
+    assert.equal((await reader.get(`/api/v1/projects/${shared.id}`)).status,200);assert.equal((await reader.get(`/api/v1/projects/${generated}`)).status,200)
+    assert.equal((await ok(owner.get(`/api/v1/grants?objectType=project&objectId=${generated}`))).grants.length,0,'an unselected direct grant is not carried')
   })
 
   it('tracks company, team and personal goals with weighted deduplicated execution, numeric freshness and attributed overrides', async () => {
