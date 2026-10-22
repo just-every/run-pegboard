@@ -13,21 +13,30 @@ const finite=(value:unknown)=>{const n=Number(value);if(!Number.isFinite(n))thro
 const percent=(value:unknown)=>{const n=finite(value);if(n<0||n>100)throw invalid('percent');return n}
 const text=(value:unknown,max:number)=>{if(typeof value!=='string'||!value.trim()||value.length>max)throw invalid('text');return value.trim()}
 const clamp=(n:number)=>Math.max(0,Math.min(100,n))
+/** Who may be named accountable for a company or team goal: an active internal human, never an agent, guest or analyst. */
+const accountableRoles=['owner','admin','manager','member']
+/** Personal goals are their owner's alone. Company and team goals are read by workspace administrators and by their named owner while that owner is still an accountable human. */
 async function load(db:D1Database,actor:Actor,id:string) {
   const goal=await first<Goal>(db,'SELECT * FROM peg_goals WHERE id=?',id)
   if(!goal)throw notFound()
   const role=await workspaceRole(db,actor.id,goal.workspace_id)
-  if(!role||role==='agent'||(goal.scope==='personal'?goal.owner_id!==actor.id:!isAdministrator(role)))throw notFound()
+  if(!role||role==='agent'||role==='guest')throw notFound()
+  if(goal.scope==='personal'?goal.owner_id!==actor.id:!isAdministrator(role)&&!(goal.owner_id===actor.id&&accountableRoles.includes(role)))throw notFound()
   return goal
 }
-async function editable(db:D1Database,actor:Actor,id:string){return load(db,actor,id)}
+/** Linking work and managing a goal stay with workspace administrators (and a personal goal's owner), never a named owner alone. */
+async function editable(db:D1Database,actor:Actor,id:string) {
+  const goal=await load(db,actor,id)
+  if(goal.scope!=='personal'&&!isAdministrator(await workspaceRole(db,actor.id,goal.workspace_id)))throw forbidden('workspace_administrator')
+  return goal
+}
 export async function createGoal(db:D1Database,actor:Actor,workspace:string,input:Record<string,any>) {
   const rev=await revision(db),role=await workspaceRole(db,actor.id,workspace),scope=input.scope??'personal',mode=input.mode??'manual',kind=input.kind??'objective'
   if(!role||role==='agent'||role==='guest')throw forbidden('human_goal_owner')
   if(!['company','team','personal'].includes(scope)||!['manual','work','numeric'].includes(mode)||!['objective','key_result'].includes(kind))throw invalid('goal_type')
   if(scope!=='personal'&&!isAdministrator(role))throw forbidden('workspace_administrator')
   const owner=scope==='personal'?actor.id:String(input.ownerId??actor.id)
-  if(!await workspaceRole(db,owner,workspace))throw invalid('owner')
+  if(!accountableRoles.includes(await workspaceRole(db,owner,workspace)??''))throw invalid('goal_owner_human_required')
   const teamId=scope==='team'?String(input.teamId??''):null
   if(teamId!==null&&!await first(db,'SELECT 1 FROM peg_teams WHERE id=? AND workspace_id=?',teamId,workspace))throw invalid('team')
   const start=String(input.periodStart??''),end=String(input.periodEnd??'')
@@ -60,7 +69,7 @@ export async function linkGoal(db:D1Database,actor:Actor,id:string,input:Record<
   return {id}
 }
 export async function numericEvent(db:D1Database,actor:Actor,id:string,input:Record<string,any>) {
-  const rev=await revision(db),goal=await editable(db,actor,id)
+  const rev=await revision(db),goal=await load(db,actor,id)
   if(goal.mode!=='numeric')throw invalid('numeric_goal_required')
   const key=text(input.key,120),value=finite(input.value),observed=Number(input.observedAt)
   if(!Number.isSafeInteger(observed)||observed<0||observed>now())throw invalid('observation_time')

@@ -134,6 +134,8 @@ export async function runRecurrence(db:D1Database,actor:Actor,id:string) {
   if(due>localDay(now(),c.timezone))return {state:'waiting',date:due}
   const prior=await first<{object_id:string}>(db,'SELECT object_id FROM peg_occurrences WHERE schedule_id=? AND local_date=?',id,due)
   if(prior)return {state:'generated',id:prior.object_id}
+  // The pinned template is what gets written, so authority is rechecked on every project it will land in, not only on the live source's.
+  if(source.type==='task')for(const projectId of new Set(source.homes.map(h=>h.project_id)))need((await openProject(db,actor,projectId)).effective,'manage_templates')
   const at=now(),target=source.type==='project'?newId('prj'):newId('tsk'),taskIds=new Map(source.tasks.map(t=>[t.id,source.type==='task'&&t.id===source.sourceId?target:newId('tsk')])),sectionIds=new Map(source.sections.map(s=>[s.id,newId('sec')]))
   const statements:D1PreparedStatement[]=[bound(db,'INSERT INTO peg_occurrences VALUES(?,?,?,?,?)',[id,due,target,at,template.id])]
   if(source.project){const p=source.project;statements.push(bound(db,"INSERT INTO peg_projects(id,workspace_id,name,description,owner_id,visibility,start_date,due_date,created_by,created_at) VALUES(?,?,?,?,?,'private',?,?,?,?)",[target,p.workspace_id,`${p.name} · ${due}`,p.description,actor.id,shifted(p.start_date,c.start,due),shifted(p.due_date,c.start,due),actor.id,at]))}

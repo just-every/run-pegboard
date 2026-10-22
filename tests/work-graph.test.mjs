@@ -544,6 +544,63 @@ describe('PEG-001 one work graph', { concurrency: false }, () => {
     assert.deepEqual(history.map(d=>d.action),['changes','approve','reject']);assert.ok(history.every(d=>d.actor_id===owner.id&&d.at&&d.revision&&d.reason))
   })
 
+  it('never lets an approval task\'s owner, former owner or an approve-only grant decide it, says why it waits and notifies no one', async () => {
+    const worker=await w.person('decision-worker@example.com','Decision worker'),reader=await w.person('decision-reader@example.com','Decision reader'),p=await project('Decision boundary')
+    await ok(owner.post('/api/v1/grants',{objectType:'project',objectId:p.id,granteeId:worker.id,level:'editor'}))
+    await ok(owner.post('/api/v1/grants',{objectType:'project',objectId:p.id,granteeId:reader.id,level:'viewer',scope:'approve'}))
+    const task=await ok(owner.post('/api/v1/tasks',{title:'Sign off vendor terms',projectId:p.id,kind:'approval'}))
+    const preview=client=>ok(client.get(`/api/v1/tasks/${task.id}/decision-preview`)),decide=async(client,action='approve')=>client.post(`/api/v1/tasks/${task.id}/decision`,{action,revision:(await preview(client)).token,reason:'Reviewed exact terms'})
+    const effects=async()=>JSON.parse(await w.sql('SELECT (SELECT COUNT(*) FROM peg_inbox) inbox, (SELECT COUNT(*) FROM rer_mail_development_outbox) mail'))[0].results
+    // The only administrator owns the task: it waits, says so, and nothing approves it.
+    let v=await preview(owner);assert.equal(v.canDecide,false);assert.equal(v.waiting,'you_own_or_owned_this');assert.equal(v.anotherDeciderNeeded,true)
+    assert.equal((await preview(worker)).waiting,'another_decider_needed')
+    assert.equal((await decide(owner)).status,403);assert.equal((await decide(worker)).status,403)
+    assert.equal((await ok(owner.get(`/api/v1/tasks/${task.id}`))).status,'todo')
+    // An approve-scoped grant reads the task but cannot decide it yet.
+    assert.equal((await preview(reader)).canDecide,false);assert.equal((await decide(reader)).status,403)
+    // Reassigning to an administrator does not launder sign-off: the administrator owner and the former owner are both refused.
+    const adminA=await w.person('decision-admin-a@example.com','Decision admin A'),adminB=await w.person('decision-admin-b@example.com','Decision admin B')
+    for(const a of [adminA,adminB])await ok(owner.post(`/api/v1/workspaces/ws_main/people/${a.id}/account`,{role:'admin'}))
+    await ok(owner.patch(`/api/v1/tasks/${task.id}`,{ownerId:adminA.id}))
+    for(const client of [owner,adminA]){v=await preview(client);assert.equal(v.canDecide,false);assert.equal(v.waiting,'you_own_or_owned_this');assert.equal((await decide(client)).status,403)}
+    assert.equal((await preview(adminB)).canDecide,true)
+    const before=await effects()
+    await ok(decide(adminB))
+    assert.deepEqual(await effects(),before,'a decision queues no notification or provider mail')
+    assert.equal((await ok(owner.get(`/api/v1/tasks/${task.id}`))).status,'done')
+    // After that decision the earlier owner may review the next revision; the owner at the decision may not.
+    await ok(worker.patch(`/api/v1/tasks/${task.id}`,{description:'Revised terms'}))
+    assert.equal((await preview(adminA)).waiting,'you_own_or_owned_this');assert.equal((await preview(owner)).canDecide,true)
+    // A personal approval task cannot be decided by anyone until a reviewed share places it in a project.
+    const personal=await ok(worker.post('/api/v1/tasks',{title:'Private sign-off',kind:'approval'}))
+    v=await ok(worker.get(`/api/v1/tasks/${personal.id}/decision-preview`));assert.equal(v.canDecide,false);assert.equal(v.waiting,'personal_share_required')
+    assert.equal((await owner.get(`/api/v1/tasks/${personal.id}/decision-preview`)).status,404)
+  })
+
+  it('writes a recurring task only into projects where its activator still holds authority', async () => {
+    const lead=await w.person('recurrence-lead@example.com','Recurrence lead'),a=await project('Recurring home A'),b=await project('Recurring home B')
+    for(const p of [a,b])await ok(owner.post('/api/v1/grants',{objectType:'project',objectId:p.id,granteeId:lead.id,level:'admin'}))
+    const task=await ok(owner.post('/api/v1/tasks',{title:'Monthly vendor check',projectId:a.id}));await ok(owner.post(`/api/v1/tasks/${task.id}/projects`,{projectId:b.id}))
+    const input={sourceType:'task',sourceId:task.id,mode:'calendar',timezone:'America/New_York',unit:'week',interval:1,start:'2026-03-01',count:2}
+    const pv=await ok(lead.post('/api/v1/recurrences/preview',input)),schedule=await ok(lead.post('/api/v1/recurrences',{...input,revision:pv.token}))
+    const tasksIn=async p=>(await ok(owner.get(`/api/v1/projects/${p.id}`))).counts.tasks
+    assert.equal((await ok(lead.post(`/api/v1/recurrences/${schedule.id}/run`,{}))).state,'generated');assert.equal(await tasksIn(a),2);assert.equal(await tasksIn(b),2)
+    // The source leaves B and the activator then loses authority there: the pinned template must not write into B.
+    await ok(owner.delete(`/api/v1/tasks/${task.id}/projects/${b.id}`))
+    const grant=(await ok(owner.get(`/api/v1/grants?objectType=project&objectId=${b.id}`))).grants.find(g=>g.grantee_id===lead.id)
+    await ok(owner.delete(`/api/v1/grants/${grant.id}`))
+    assert.equal((await lead.post(`/api/v1/recurrences/${schedule.id}/run`,{})).status,404)
+    assert.equal((await ok(lead.get(`/api/v1/recurrences/${schedule.id}`))).occurrences.length,1);assert.equal(await tasksIn(b),1);assert.equal(await tasksIn(a),2)
+    // A fresh project occurrence is private: a person who reaches the source by workspace visibility and a direct grant still cannot open it.
+    const reader=await w.person('recurrence-reader@example.com','Recurrence reader'),shared=await project('Recurring shared source',{visibility:'workspace',workspaceLevel:'editor'})
+    await ok(owner.post('/api/v1/grants',{objectType:'project',objectId:shared.id,granteeId:reader.id,level:'editor'}));await ok(owner.post('/api/v1/tasks',{title:'Shared source task',projectId:shared.id}))
+    const projectInput={sourceType:'project',sourceId:shared.id,mode:'calendar',timezone:'America/New_York',unit:'month',interval:1,start:'2026-03-01',count:1}
+    const pp=await ok(owner.post('/api/v1/recurrences/preview',projectInput)),ps=await ok(owner.post('/api/v1/recurrences',{...projectInput,revision:pp.token}))
+    await ok(owner.post(`/api/v1/recurrences/${ps.id}/run`,{}))
+    const generated=(await ok(owner.get(`/api/v1/recurrences/${ps.id}`))).occurrences[0].object_id
+    assert.equal((await reader.get(`/api/v1/projects/${shared.id}`)).status,200);assert.equal((await reader.get(`/api/v1/projects/${generated}`)).status,404)
+  })
+
   it('tracks company, team and personal goals with weighted deduplicated execution, numeric freshness and attributed overrides', async () => {
     const person=await w.person('goal-owner@example.com','Goal owner'),other=await w.person('goal-reader@example.com','Goal reader'),team=await ok(owner.post('/api/v1/teams',{name:'Goal team',privacy:'private'})),p=await project('Goal work'),q=await project('Shared goal work')
     const a=await ok(owner.post('/api/v1/tasks',{title:'Goal complete task',projectId:p.id})),b=await ok(owner.post('/api/v1/tasks',{title:'Goal pending task',projectId:p.id}))
@@ -588,6 +645,38 @@ describe('PEG-001 one work graph', { concurrency: false }, () => {
     const restricted=await ok(person.get(`/api/v1/goals/${privateRollup.id}`));assert.equal(restricted.progress,null);assert.ok(restricted.states.includes('restricted_input'));assert.equal(restricted.links.length,0);assert.ok(!JSON.stringify(restricted).includes('Goal complete task'))
     assert.equal((await person.post(`/api/v1/goals/${privateRollup.id}/checkins`,{revision:before.token,note:'Stale check-in',percent:100})).status,409)
     assert.equal((await other.post(`/api/v1/goals/${numeric.id}/numeric-events`,event)).status,404)
+  })
+
+  it('lets a named company-goal owner check in and record observations, refuses agent, guest and analyst owners and never yields progress from an override over a flagged input', async () => {
+    const named=await w.person('goal-named-owner@example.com','Goal named owner'),peer=await w.person('goal-peer@example.com','Goal peer'),agent=await w.person('goal-agent@example.com','Goal agent','agent'),guest=await w.person('goal-guest@example.com','Goal guest','guest'),analyst=await w.person('goal-analyst@example.com','Goal analyst','analyst')
+    const create=(client,extra={})=>client.post('/api/v1/goals',{title:'Pipeline key result',scope:'company',kind:'key_result',periodStart:'2026-10-01',periodEnd:'2026-12-31',mode:'numeric',unit:'qualified leads',target:20,...extra})
+    for(const who of [agent,guest,analyst])assert.equal((await create(owner,{ownerId:who.id})).status,400,'company goal owners are active internal humans')
+    const goal=await ok(create(owner,{ownerId:named.id})),observation={key:'synthetic-pegboard-501',value:10,observedAt:Date.now()}
+    await ok(named.post(`/api/v1/goals/${goal.id}/numeric-events`,observation))
+    let view=await ok(named.get(`/api/v1/goals/${goal.id}`));assert.equal(view.progress,50)
+    await ok(named.post(`/api/v1/goals/${goal.id}/checkins`,{revision:view.token,note:'Owner check-in',percent:60}))
+    assert.ok((await ok(named.get('/api/v1/goals'))).goals.some(g=>g.goal.id===goal.id))
+    assert.equal((await named.post(`/api/v1/goals/${goal.id}/links`,{sourceType:'goal',sourceId:goal.id})).status,403,'the named owner does not manage links')
+    for(const who of [peer,agent,guest]){
+      assert.equal((await who.get(`/api/v1/goals/${goal.id}`)).status,404)
+      assert.equal((await who.post(`/api/v1/goals/${goal.id}/numeric-events`,{...observation,key:'synthetic-pegboard-502'})).status,404)
+      assert.equal((await who.post(`/api/v1/goals/${goal.id}/checkins`,{revision:view.token,note:'No access',percent:1})).status,404)
+      assert.equal((await who.post(`/api/v1/goals/${goal.id}/links`,{sourceType:'goal',sourceId:goal.id})).status,404)
+      assert.equal((await ok(who.get('/api/v1/goals'))).goals.length,0)
+    }
+    for(const who of [agent,guest])assert.equal((await create(who,{scope:'personal'})).status,403)
+    await ok(owner.patch(`/api/v1/workspaces/ws_main/people/${named.id}`,{role:'analyst'}))
+    assert.equal((await named.get(`/api/v1/goals/${goal.id}`)).status,404,'a demoted owner no longer reads the goal')
+    // An override never turns a stale, missing or restricted input into success.
+    const stale=await ok(create(owner,{ownerId:owner.id,staleAfterSeconds:30})),missing=await ok(create(owner,{ownerId:owner.id}))
+    await ok(owner.post(`/api/v1/goals/${stale.id}/numeric-events`,{key:'synthetic-pegboard-503',value:20,observedAt:Date.now()-60000}))
+    const p=await project('Override restricted work'),reader=await w.person('goal-restricted@example.com','Goal restricted');await ok(owner.post('/api/v1/tasks',{title:'Restricted override task',projectId:p.id}))
+    const access=await ok(owner.post('/api/v1/grants',{objectType:'project',objectId:p.id,granteeId:reader.id,level:'viewer'})),mine=await ok(create(reader,{scope:'personal',mode:'work'}))
+    await ok(reader.post(`/api/v1/goals/${mine.id}/links`,{sourceType:'project',sourceId:p.id}));await ok(owner.delete(`/api/v1/grants/${access.id}`))
+    for(const [client,id,state] of [[owner,stale.id,'stale_input'],[owner,missing.id,'missing_numeric_input'],[reader,mine.id,'restricted_input']]){
+      view=await ok(client.get(`/api/v1/goals/${id}`));await ok(client.post(`/api/v1/goals/${id}/checkins`,{revision:view.token,note:'Override over a flagged input',percent:100}))
+      view=await ok(client.get(`/api/v1/goals/${id}`));assert.equal(view.overridden,true);assert.equal(view.progress,null);assert.ok(view.states.includes(state))
+    }
   })
 
 })

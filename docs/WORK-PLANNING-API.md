@@ -49,9 +49,16 @@ time and reviewed revision. Approval completes the task through a guarded
 transaction. Ordinary completion cannot replace sign-off. Later work changes
 reopen approved work; historical decisions remain attributed.
 
-Pending contract-policy approval, only a different workspace owner/admin may
-decide non-personal approval tasks. Agents and the task's owner cannot decide.
-No notification or external action is part of this door.
+Interim authority (ct-ruled 22 Oct 2026): a workspace owner or administrator who
+does not own the task, and has not owned it since its previous decision, decides
+non-personal approval tasks. Its requester may decide. Agents and approve-scoped
+grants cannot decide yet (named approvers and stages are PEG-036). The preview
+returns `canDecide` and, when false, a `waiting` reason that names no one:
+`personal_share_required` (a personal approval task waits for a reviewed share),
+`you_own_or_owned_this`, `another_decider_needed` or `administrator_required`;
+`anotherDeciderNeeded` is true when no eligible administrator exists, so the task
+stays pending. Nothing approves automatically. No notification or external
+action is part of this door.
 
 ## Goals
 
@@ -59,8 +66,11 @@ POST `/api/v1/goals` with `title`, `scope` (`company`, `team`, `personal`),
 `teamId` for team scope, `kind` (`objective`, `key_result`), `periodStart`,
 `periodEnd`, `mode` (`manual`, `work`, `numeric`), `unit`, `baseline`, `target`
 and `staleAfterSeconds`. The goal retains its owner and period. Personal goals
-are owner-only. Pending contract-policy approval, company/team goals are
-restricted to workspace owners/admins; agents cannot create or update goals.
+are owner-only. Interim access (ct-ruled 22 Oct 2026): company/team goals are
+created, linked and managed by workspace owners/admins; their named `ownerId`
+must be an active internal human (owner, administrator, manager or member, never
+an agent, guest or analyst) and may read the goal, check in and record numeric
+observations. Agents and guests cannot read, create or update goals.
 
 POST `/api/v1/goals/:id/links` with `sourceType` (`task`, `project`, `goal`),
 `sourceId` and positive `weight`. Cycles refuse. Work rollups deduplicate tasks
