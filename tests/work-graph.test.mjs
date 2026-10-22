@@ -710,7 +710,9 @@ describe('PEG-001 one work graph', { concurrency: false }, () => {
     const named=await w.person('goal-named-owner@example.com','Goal named owner'),peer=mia,agent=await w.person('goal-agent@example.com','Goal agent','agent'),guest=gus
     const create=(client,extra={})=>client.post('/api/v1/goals',{title:'Pipeline key result',scope:'company',kind:'key_result',periodStart:'2026-10-01',periodEnd:'2026-12-31',mode:'numeric',unit:'qualified leads',target:20,...extra})
     for(const who of [agent,guest])assert.equal((await create(owner,{ownerId:who.id})).status,400,'company goal owners are active internal humans')
-    const goal=await ok(create(owner,{ownerId:named.id})),observation={key:'synthetic-pegboard-501',value:10,observedAt:Date.now()}
+    const goal=await ok(create(owner,{ownerId:named.id})),restriction=await ok(owner.post(`/api/v1/goals/${goal.id}/audience-preview`,{visibility:'restricted'}))
+    await ok(owner.post(`/api/v1/goals/${goal.id}/audience`,{...restriction.plan,revision:restriction.token}))
+    const observation={key:'synthetic-pegboard-501',value:10,observedAt:Date.now()}
     await ok(named.post(`/api/v1/goals/${goal.id}/numeric-events`,observation))
     let view=await ok(named.get(`/api/v1/goals/${goal.id}`));assert.equal(view.progress,50)
     await ok(named.post(`/api/v1/goals/${goal.id}/checkins`,{revision:view.token,note:'Owner check-in',percent:60}))
@@ -721,7 +723,7 @@ describe('PEG-001 one work graph', { concurrency: false }, () => {
       assert.equal((await who.post(`/api/v1/goals/${goal.id}/numeric-events`,{...observation,key:'synthetic-pegboard-502'})).status,404)
       assert.equal((await who.post(`/api/v1/goals/${goal.id}/checkins`,{revision:view.token,note:'No access',percent:1})).status,404)
       assert.equal((await who.post(`/api/v1/goals/${goal.id}/links`,{sourceType:'goal',sourceId:goal.id})).status,404)
-      assert.equal((await ok(who.get('/api/v1/goals'))).goals.length,0)
+      assert.ok(!(await ok(who.get('/api/v1/goals'))).goals.some(g=>g.goal.id===goal.id))
     }
     for(const who of [agent,guest])assert.equal((await create(who,{scope:'personal'})).status,403)
     await ok(owner.patch(`/api/v1/workspaces/ws_main/people/${named.id}`,{role:'analyst'}))
@@ -737,6 +739,85 @@ describe('PEG-001 one work graph', { concurrency: false }, () => {
       view=await ok(client.get(`/api/v1/goals/${id}`));await ok(client.post(`/api/v1/goals/${id}/checkins`,{revision:view.token,note:'Override over a flagged input',percent:100}))
       view=await ok(client.get(`/api/v1/goals/${id}`));assert.equal(view.overridden,true);assert.equal(view.progress,null);assert.ok(view.states.includes(state))
     }
+  })
+
+  it('reads company defaults and current team goals, restricts named audiences and gives team Admins and managers only their goal management authority', async () => {
+    const member=await w.person('visible-goal-member@example.com','Visible member'),outsider=await w.person('visible-goal-outsider@example.com','Outside member'),analyst=await w.person('visible-goal-analyst@example.com','Visible analyst','analyst'),agent=await w.person('visible-goal-agent@example.com','Visible agent','agent'),guest=await w.person('visible-goal-guest@example.com','Visible guest','guest'),manager=await w.person('visible-goal-manager@example.com','Workspace manager','manager')
+    const create=(client,extra={})=>ok(client.post('/api/v1/goals',{title:'Visible company goal',scope:'company',mode:'work',periodStart:'2026-01-01',periodEnd:'2026-12-31',...extra}))
+    const p=await project('Permitted company work',{visibility:'workspace'}),task=await ok(owner.post('/api/v1/tasks',{title:'Permitted goal title',projectId:p.id}))
+    const company=await create(owner);await ok(owner.post(`/api/v1/goals/${company.id}/links`,{sourceType:'task',sourceId:task.id}))
+    for(const reader of [member,outsider,analyst,manager]){
+      const v=await ok(reader.get(`/api/v1/goals/${company.id}`));assert.equal(v.links[0].title,'Permitted goal title');assert.equal(v.sourceCount,1)
+    }
+    const team=await ok(owner.post('/api/v1/teams',{name:'Current goal team',privacy:'private'}))
+    const membership=await ok(owner.post('/api/v1/grants',{objectType:'team',objectId:team.id,granteeId:member.id,level:'admin'}))
+    const teamGoal=await create(member,{scope:'team',teamId:team.id,title:'Team goal',ownerId:member.id})
+    await ok(member.get(`/api/v1/goals/${teamGoal.id}`));assert.equal((await outsider.get(`/api/v1/goals/${teamGoal.id}`)).status,404)
+    assert.equal((await ok(manager.get(`/api/v1/goals/${teamGoal.id}`))).canManage,true)
+    assert.equal((await member.post('/api/v1/goals',{scope:'company'})).status,403)
+    let preview=await ok(owner.post(`/api/v1/goals/${company.id}/audience-preview`,{visibility:'restricted',teams:[team.id]}))
+    await ok(owner.post(`/api/v1/goals/${company.id}/audience`,{...preview.plan,revision:preview.token}))
+    await ok(member.get(`/api/v1/goals/${company.id}`))
+    for(const reader of [outsider,analyst,guest,agent])assert.equal((await reader.get(`/api/v1/goals/${company.id}`)).status,404)
+    await ok(owner.delete(`/api/v1/grants/${membership.id}`))
+    assert.equal((await member.get(`/api/v1/goals/${company.id}`)).status,404);assert.equal((await member.get(`/api/v1/goals/${teamGoal.id}`)).status,200,'the accountable owner keeps their own team goal')
+    assert.equal((await ok(member.get(`/api/v1/goals/${teamGoal.id}`))).canManage,false)
+  })
+
+  it('reviews company goal ownership and editors, permits their observations and check-ins, and refuses invalid or stale authority', async () => {
+    const named=await w.person('accountable-goal-owner@example.com','Accountable owner'),editor=await w.person('accountable-goal-editor@example.com','Named goal editor'),other=await w.person('accountable-goal-other@example.com','Unnamed goal member'),analyst=await w.person('accountable-goal-analyst@example.com','Goal analyst','analyst'),guest=await w.person('accountable-goal-guest@example.com','Goal guest','guest'),agent=await w.person('accountable-goal-agent@example.com','Goal agent','agent')
+    const input={title:'Accountable key result',scope:'company',kind:'key_result',mode:'numeric',periodStart:'2026-01-01',periodEnd:'2026-12-31',target:20}
+    const goal=await ok(owner.post('/api/v1/goals',input))
+    let v=await ok(owner.get(`/api/v1/goals/${goal.id}`));await ok(owner.post(`/api/v1/goals/${goal.id}/checkins`,{revision:v.token,note:'Ownership disclosure note'}))
+    const plan={ownerId:named.id,visibility:'restricted',editors:[editor.id]}
+    let preview=await ok(owner.post(`/api/v1/goals/${goal.id}/audience-preview`,plan))
+    await ok(owner.post(`/api/v1/goals/${goal.id}/audience`,{...plan,revision:preview.token}))
+    const event={key:'synthetic-pegboard-601',value:10,observedAt:Date.now()}
+    for(const person of [named,editor]){
+      await ok(person.post(`/api/v1/goals/${goal.id}/numeric-events`,{...event,key:event.key+person.id}))
+      v=await ok(person.get(`/api/v1/goals/${goal.id}`));await ok(person.post(`/api/v1/goals/${goal.id}/checkins`,{revision:v.token,note:'Accountable check-in'}))
+      assert.equal((await person.post(`/api/v1/goals/${goal.id}/links`,{sourceType:'goal',sourceId:goal.id})).status,403)
+    }
+    assert.equal((await other.post(`/api/v1/goals/${goal.id}/numeric-events`,event)).status,404)
+    v=await ok(owner.get(`/api/v1/goals/${goal.id}`));assert.equal((await owner.post(`/api/v1/goals/${goal.id}/checkins`,{revision:v.token,note:'Manager is not an editor'})).status,403)
+    for(const person of [analyst,guest,agent]){
+      assert.equal((await owner.post('/api/v1/goals',{...input,ownerId:person.id})).status,400)
+      assert.equal((await owner.post(`/api/v1/goals/${goal.id}/audience-preview`,{ownerId:person.id})).status,400)
+    }
+    // A preview cannot survive a change to the named editor's role.
+    preview=await ok(owner.post(`/api/v1/goals/${goal.id}/audience-preview`,{ownerId:named.id,visibility:'restricted',editors:[editor.id]}))
+    await ok(owner.patch(`/api/v1/workspaces/ws_main/people/${editor.id}`,{role:'guest'}))
+    assert.equal((await owner.post(`/api/v1/goals/${goal.id}/audience`,{...preview.plan,revision:preview.token})).status,400)
+    assert.equal((await editor.get(`/api/v1/goals/${goal.id}`)).status,404)
+    assert.equal((await editor.post(`/api/v1/goals/${goal.id}/numeric-events`,event)).status,404)
+    assert.equal((await editor.post(`/api/v1/goals/${goal.id}/checkins`,{revision:v.token,note:'Revoked editor'})).status,404)
+  })
+
+  it('previews personal goal notes and permitted titles before sharing, revokes ordinary manager access and fences check-ins without hidden source metadata', async () => {
+    const person=await w.person('personal-goal-person@example.com','Personal goal owner'),manager=await w.person('personal-goal-manager@example.com','Personal goal reader','manager'),sourceOwner=await w.person('personal-goal-source@example.com','Restricted source owner')
+    const project=await ok(owner.post('/api/v1/projects',{name:'Restricted goal source'})),task=await ok(owner.post('/api/v1/tasks',{title:'Hidden goal input title',projectId:project.id,ownerId:sourceOwner.id}))
+    const access=await ok(owner.post('/api/v1/grants',{objectType:'project',objectId:project.id,granteeId:person.id,level:'viewer'}))
+    await ok(owner.post('/api/v1/grants',{objectType:'project',objectId:project.id,granteeId:manager.id,level:'viewer'}))
+    const goal=await ok(person.post('/api/v1/goals',{title:'Private personal objective',scope:'personal',mode:'work',periodStart:'2026-01-01',periodEnd:'2026-12-31'}))
+    await ok(person.post(`/api/v1/goals/${goal.id}/links`,{sourceType:'task',sourceId:task.id}))
+    let v=await ok(person.get(`/api/v1/goals/${goal.id}`));await ok(person.post(`/api/v1/goals/${goal.id}/checkins`,{revision:v.token,note:'Personal note to review'}))
+    assert.equal((await manager.get(`/api/v1/goals/${goal.id}`)).status,404);assert.equal((await owner.get(`/api/v1/goals/${goal.id}`)).status,404)
+    let preview=await ok(person.post(`/api/v1/goals/${goal.id}/audience-preview`,{people:[manager.id]}))
+    assert.deepEqual(preview.newlyRevealed.map(p=>({name:p.name,notes:p.notes,titles:p.linkedTitles})),[{name:'Personal goal reader',notes:['Personal note to review'],titles:['Hidden goal input title']}])
+    assert.equal((await person.post(`/api/v1/goals/${goal.id}/audience`,{people:[manager.id]})).status,409)
+    await ok(person.post(`/api/v1/goals/${goal.id}/audience`,{...preview.plan,revision:preview.token}))
+    assert.equal((await ok(manager.get(`/api/v1/goals/${goal.id}`))).checkins[0].note,'Personal note to review')
+    assert.equal((await owner.get(`/api/v1/goals/${goal.id}`)).status,404)
+    preview=await ok(person.post(`/api/v1/goals/${goal.id}/audience-preview`,{}))
+    await ok(person.post(`/api/v1/goals/${goal.id}/audience`,{...preview.plan,revision:preview.token}))
+    assert.equal((await manager.get(`/api/v1/goals/${goal.id}`)).status,404)
+    v=await ok(person.get(`/api/v1/goals/${goal.id}`))
+    await ok(owner.delete(`/api/v1/grants/${access.id}`))
+    assert.equal((await person.post(`/api/v1/goals/${goal.id}/checkins`,{revision:v.token,note:'Stale after revocation'})).status,409)
+    const restricted=await ok(person.get(`/api/v1/goals/${goal.id}`))
+    assert.equal(restricted.progress,null);assert.equal(restricted.sourceCount,null);assert.equal(restricted.freshness,null);assert.equal(restricted.links.length,0)
+    assert.ok(restricted.states.includes('restricted_input'))
+    for(const hidden of ['Hidden goal input title',sourceOwner.id,task.id])assert.ok(!JSON.stringify(restricted).includes(hidden))
   })
 
 })

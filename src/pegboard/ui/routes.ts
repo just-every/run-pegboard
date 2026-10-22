@@ -1,3 +1,5 @@
+import {GoalsPage} from './pages/goals'
+import {listGoals,goalView,goalAudience,goalAudiencePreview} from '../goals/goals'
 import {RecurrencesPage} from './pages/recurrences'
 import {listRecurrences,recurrenceView,previewRecurrence,rereviewRecurrence} from '../recurrence/recurrence'
 import {TimePage} from './pages/time'
@@ -78,6 +80,14 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
   const { viewer, workspace } = await context(db, actor, session.operator.role)
   const [, section, id, tail] = segments
   try {
+    if(section==='goals'&&!tail){
+      const input:Record<string,any>=Object.fromEntries(url.searchParams)
+      for(const field of ['people','teams','editors'])if(input.previewAudience)input[field]=url.searchParams.getAll(field+'[]')
+      const view=id?await goalView(db,actor,id):null
+      const role=await workspaceRole(db,actor.id,workspace)
+      const people=['agent','guest'].includes(role??'')?[]:(await all<{id:string;display_name:string}>(db,`SELECT o.id,o.display_name FROM oa_operators o LEFT JOIN peg_workspace_members m ON m.operator_id=o.id AND m.workspace_id=? WHERE o.status='active' AND (o.role IN ('owner','admin') OR m.role IN ('manager','member','analyst')) ORDER BY o.display_name`,workspace)).map(p=>({value:p.id,label:p.display_name}))
+      return page('Goals',h(GoalsPage,{viewer,input,view,goals:id?[]:await listGoals(db,actor,workspace),people,teams:await teamOptions(db,actor,workspace),audience:view?.canManage?await goalAudience(db,actor,id):[],preview:id&&input.previewAudience?await goalAudiencePreview(db,actor,id,input):null}))
+    }
     if(section==='recurrences'&&!tail){
       const input:Record<string,any>=Object.fromEntries(url.searchParams);input.grantIds=url.searchParams.getAll('grantIds[]')
       return page('Recurring work',h(RecurrencesPage,{viewer,input,items:id?[]:await listRecurrences(db,actor,workspace),view:id?await recurrenceView(db,actor,id):null,preview:!id&&input.sourceId?await previewRecurrence(db,actor,input):null,review:id&&input.review?await rereviewRecurrence(db,actor,id,input):null}))

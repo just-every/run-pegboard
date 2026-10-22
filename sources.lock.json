@@ -237,6 +237,10 @@
       "sha256": "76908a5a13c60e0abc3d9929ebce993db6cda8f2a880ad5ceba89973763d5414",
       "executable": false
     },
+    "migrations/core/0026_goal_visibility.sql": {
+      "sha256": "a4e88aeb511a420bc243e5612d49d0928bc841be47625d1a60cc30fb15189d65",
+      "executable": false
+    },
     "ONBOARDING.md": {
       "sha256": "24b685d6eddeae5480ce4dfbf44c0590e54bcfe83641373de5bba985765380bd",
       "executable": false
@@ -1790,7 +1794,7 @@
       "executable": false
     },
     "src/pegboard/api/goal-routes.ts": {
-      "sha256": "edeb0f84a2be0c17e9d404339d21b4aee0cbbabc1ee68a3275fba5170c2dd354",
+      "sha256": "ff871d4b10da5aea3b40f78f1466d522983d3320f6687addb3e03d71d34b04ab",
       "executable": false
     },
     "src/pegboard/api/index.ts": {
@@ -1854,7 +1858,7 @@
       "executable": false
     },
     "src/pegboard/goals/goals.ts": {
-      "sha256": "eac8446d37f19972165990d68e1d62dc3af99e2b306a64418fe3abe474188e6e",
+      "sha256": "35fdf96d31c191367ffce5c68d163444625bb062f539fad95a4930a4d6b210a8",
       "executable": false
     },
     "src/pegboard/model.ts": {
@@ -1929,6 +1933,10 @@
       "sha256": "ef7060a7b2979625d7d6ed6a63b5b05646609afaa5568ea65c9613712e0a8afb",
       "executable": false
     },
+    "src/pegboard/ui/pages/goals.tsx": {
+      "sha256": "f80f4e2630c031c7189ef61182848234d75761dc19ab2109ec02090475b8b399",
+      "executable": false
+    },
     "src/pegboard/ui/pages/inbox.tsx": {
       "sha256": "c12a4ee1516a087c0cdcaac13c70ed0c35872f1a27ff8b7b2323ec0aef7e881a",
       "executable": false
@@ -1982,7 +1990,7 @@
       "executable": false
     },
     "src/pegboard/ui/routes.ts": {
-      "sha256": "1040aa81f742eaef11dabdcc54af1179efecf66f69e71291ca744a58fde4645c",
+      "sha256": "dca5e7abc525836f0bfa31f8ec7286628f250cb03226e667600d35b283d01aa8",
       "executable": false
     },
     "src/pegboard/ui/shell.tsx": {
@@ -2134,7 +2142,7 @@
       "executable": false
     },
     "src/ui/home.tsx": {
-      "sha256": "741351bd3eb2ee48e0239e021dd0c5e141d0155558e84df2bce9b31950fbdf3c",
+      "sha256": "62f87e2167663e02d33a30bb53defac7e1ad97d79411b383f8ced76cd4fa8f04",
       "executable": false
     },
     "src/ui/icons.tsx": {
@@ -2186,7 +2194,7 @@
       "executable": false
     },
     "tests/work-graph.test.mjs": {
-      "sha256": "66855c12d214a24466648c15acfd4ee55d385c694845060d48249d86d84a9392",
+      "sha256": "cd45be6d2c7e4716d7b8f960fb66469f20c11d2268bc688ad58562a333b3398b",
       "executable": false
     },
     "tsconfig.json": {
