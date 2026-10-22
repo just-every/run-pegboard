@@ -8,15 +8,14 @@ import { auditStatement } from '../authorization/audit'
 import { digest, guarded, revision } from '../decisions/revision'
 import { teamEffective, teamsOf } from '../authorization/effective'
 import type { TeamRow } from '../model'
-interface Goal {visibility:'default'|'restricted';id:string;workspace_id:string;scope:'company'|'team'|'personal';team_id:string|null;owner_id:string;created_by:string;title:string;kind:'objective'|'key_result';period_start:string;period_end:string;mode:'manual'|'work'|'numeric';unit:string;baseline:number;target:number;manual_percent:number;override_percent:number|null;stale_after_seconds:number;created_at:number;updated_at:number}
+import {accountableRoles,sourceOf,sourceStanding,type SourceRow} from './source-state'
+export interface Goal {visibility:'default'|'restricted';id:string;workspace_id:string;scope:'company'|'team'|'personal';team_id:string|null;owner_id:string;created_by:string;title:string;kind:'objective'|'key_result';period_start:string;period_end:string;mode:'manual'|'work'|'numeric';unit:string;baseline:number;target:number;manual_percent:number;override_percent:number|null;stale_after_seconds:number;created_at:number;updated_at:number}
 interface Link {goal_id:string;source_type:'task'|'project'|'goal';source_id:string;weight:number}
-interface Event {source_id:string|null;goal_id:string;event_key:string;value:number;observed_at:number;received_at:number;actor_id:string}
+interface Event {source_id:string;goal_id:string;event_key:string;value:number;observed_at:number;received_at:number;actor_id:string}
 const finite=(value:unknown)=>{const n=Number(value);if(!Number.isFinite(n))throw invalid('finite_number');return n}
 const percent=(value:unknown)=>{const n=finite(value);if(n<0||n>100)throw invalid('percent');return n}
 const text=(value:unknown,max:number)=>{if(typeof value!=='string'||!value.trim()||value.length>max)throw invalid('text');return value.trim()}
 const clamp=(n:number)=>Math.max(0,Math.min(100,n))
-/** Who may be named accountable for a company or team goal: an active internal human, never an agent, guest or analyst. */
-const accountableRoles=['owner','admin','manager','member']
 interface AudienceGrant {grantee_type:'person'|'team';grantee_id:string;editor:number}
 async function manager(db:D1Database,actor:Actor,goal:Goal) {
   const role=await workspaceRole(db,actor.id,goal.workspace_id)
@@ -107,7 +106,7 @@ export async function numericEvent(db:D1Database,actor:Actor,id:string,input:Rec
   if(goal.mode!=='numeric')throw invalid('numeric_goal_required')
   const key=text(input.key,120),value=finite(input.value),observed=typeof input.observedAt==='string'&&input.observedAt.includes('T')?Date.parse(input.observedAt.endsWith('Z')||/[+-]\d\d:\d\d$/.test(input.observedAt)?input.observedAt:input.observedAt+'Z'):Number(input.observedAt)
   if(!Number.isSafeInteger(observed)||observed<0||observed>now())throw invalid('observation_time')
-  const prior=await first<Event>(db,'SELECT * FROM peg_goal_events WHERE goal_id=? AND event_key=?',id,key)
+  const prior=await first<Event>(db,"SELECT * FROM peg_goal_events WHERE goal_id=? AND source_id='' AND event_key=?",id,key)
   if(prior){if(prior.value!==value||prior.observed_at!==observed)throw conflict('numeric_event_key_reused');return {id,key,replayed:true}}
   await guarded(db,rev,[bound(db,'INSERT INTO peg_goal_events(goal_id,event_key,value,observed_at,received_at,actor_id) VALUES(?,?,?,?,?,?)',[id,key,value,observed,now(),actor.id])])
   return {id,key,replayed:false}
@@ -135,11 +134,14 @@ async function leaves(db:D1Database,actor:Actor,goal:Goal,weight:number,found:Ma
   const put=(leaf:Leaf)=>{const prior=found.get(leaf.key);if(!prior||leaf.weight>prior.weight)found.set(leaf.key,leaf)}
   if(goal.mode==='manual'){put({key:`goal:${goal.id}`,percent:goal.override_percent??goal.manual_percent,weight,observedAt:goal.updated_at,stale:now()-goal.updated_at>goal.stale_after_seconds*1000});return}
   if(goal.mode==='numeric'){
-    const event=await first<Event>(db,'SELECT * FROM peg_goal_events WHERE goal_id=? ORDER BY observed_at DESC,event_key DESC LIMIT 1',goal.id)
+    const event=await first<Event>(db,'SELECT * FROM peg_goal_events WHERE goal_id=? ORDER BY observed_at DESC,received_at DESC,source_id,event_key DESC LIMIT 1',goal.id)
     if(!event){flags.add('missing_numeric_input');return}
     if(event.source_id){
-      const source=await first<{owner_id:string;expires_at:number;revoked_at:number|null}>(db,'SELECT owner_id,expires_at,revoked_at FROM peg_goal_sources WHERE id=? AND goal_id=?',event.source_id,goal.id)
-      if(!source||source.revoked_at!==null||source.expires_at<=now()||source.owner_id!==goal.owner_id||!sharesWithWorkspace(await workspaceRole(db,source.owner_id,goal.workspace_id))){flags.add('restricted_input');return}
+      const source=await sourceOf(db,event.source_id)
+      if(!source||source.goal_id!==goal.id){flags.add('restricted_input');return}
+      // A reviewed CSV's rows were checked by a person when applied, so they outlast their source; a live API feed does not.
+      const standing=source.kind==='api'?await sourceStanding(db,source,goal):{active:true as const}
+      if(!standing.active){flags.add('source_ended:'+standing.cause);return}
     }
     put({key:`goal:${goal.id}`,percent:clamp((event.value-goal.baseline)/(goal.target-goal.baseline)*100),weight,observedAt:event.observed_at,stale:now()-event.observed_at>goal.stale_after_seconds*1000});return
   }
@@ -173,10 +175,20 @@ export async function goalView(db:D1Database,actor:Actor,id:string) {
   for(const link of await all<Link>(db,'SELECT * FROM peg_goal_links WHERE goal_id=? ORDER BY source_type,source_id',id)){
     try{const visible=await source(db,actor,link.source_type,link.source_id,goal.workspace_id);links.push({...link,title:visible.title})}catch{}
   }
-  const events=goal.mode==='numeric'?await all<Event>(db,'SELECT * FROM peg_goal_events WHERE goal_id=? ORDER BY observed_at DESC,event_key',id):[]
+  const events=goal.mode==='numeric'?await all<Event>(db,'SELECT * FROM peg_goal_events WHERE goal_id=? ORDER BY observed_at DESC,received_at DESC,source_id,event_key',id):[]
+  const sources=new Map<string,SourceRow>()
+  for(const e of events)if(e.source_id&&!sources.has(e.source_id)){const row=await sourceOf(db,e.source_id);if(row)sources.set(row.id,row)}
   const checkins=await all<{id:string;actor_id:string;at:number;note:string;detail:string}>(db,'SELECT * FROM peg_goal_checkins WHERE goal_id=? ORDER BY at,id',id)
-  const names=await displayNames(db,checkins.map(c=>c.actor_id))
-  return {goal,actorId:actor.id,canManage:await manager(db,actor,goal),canCheckIn:await contributor(db,actor,goal).then(()=>true,()=>false),owner:(await displayNames(db,[goal.owner_id])).get(goal.owner_id)??'Unavailable owner',links,events:flags.has('restricted_input')?[]:events,checkins:checkins.map(c=>({...c,actor:names.get(c.actor_id)??'Former member',detail:flags.has('restricted_input')?{}:JSON.parse(c.detail)})),progress:flags.size||!total?null:goal.override_percent??rows.reduce((n,l)=>n+l.percent*l.weight,0)/total,states:[...flags],sourceCount:flags.has('restricted_input')?null:rows.length,unit:goal.unit,calculation:goal.mode==='work'?'Weighted completion; each task counts once at its highest linked weight':goal.mode==='numeric'?'(latest observed value - baseline) / (target - baseline) × 100':'Manual percent',freshness:!flags.has('restricted_input')&&rows.length?Math.min(...rows.map(r=>r.observedAt)):null,overridden:goal.override_percent!==null,rev,token:await digest([goal,rev,links,events,checkins])}
+  const names=await displayNames(db,[...checkins.map(c=>c.actor_id),...events.filter(e=>!e.source_id).map(e=>e.actor_id),...[...sources.values()].map(s=>s.owner_id)])
+  // History stays visible after a source ends: each observation names its source, who authorized it, and its standing now.
+  const history=[]
+  for(const {actor_id,...e} of events){
+    const row=sources.get(e.source_id),standing=row?await sourceStanding(db,row,goal):null
+    history.push({...e,recordedBy:row?null:names.get(actor_id)??'Former member',source:row&&standing?{id:row.id,name:row.name,kind:row.kind,authorizedBy:names.get(row.owner_id)??'Former member',authorizedAt:row.created_at,ended:!standing.active,endCause:standing.active?null:standing.cause,endedAt:standing.active?null:standing.at}:null})
+  }
+  const states=[...new Set([...flags].map(f=>f.startsWith('source_ended:')?'source_ended':f))],endCauses=[...flags].filter(f=>f.startsWith('source_ended:')).map(f=>f.slice(13))
+  const progress=flags.size||!total?null:goal.override_percent??rows.reduce((n,l)=>n+l.percent*l.weight,0)/total
+  return {goal,actorId:actor.id,canManage:await manager(db,actor,goal),canCheckIn:await contributor(db,actor,goal).then(()=>true,()=>false),owner:(await displayNames(db,[goal.owner_id])).get(goal.owner_id)??'Unavailable owner',links,events:flags.has('restricted_input')?[]:history,checkins:checkins.map(c=>({...c,actor:names.get(c.actor_id)??'Former member',detail:flags.has('restricted_input')?{}:JSON.parse(c.detail)})),progress,states,endCauses,sourceCount:flags.has('restricted_input')?null:rows.length,unit:goal.unit,calculation:goal.mode==='work'?'Weighted completion; each task counts once at its highest linked weight':goal.mode==='numeric'?'(latest observed value - baseline) / (target - baseline) × 100':'Manual percent',freshness:!flags.has('restricted_input')&&rows.length?Math.min(...rows.map(r=>r.observedAt)):null,overridden:goal.override_percent!==null,overrideHeld:goal.override_percent!==null&&progress===null,rev,token:await digest([goal,rev,links,events,checkins,[...sources.values()]])}
 }
 export async function listGoals(db:D1Database,actor:Actor,workspace:string) {
   const out=[]

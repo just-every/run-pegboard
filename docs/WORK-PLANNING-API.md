@@ -1,8 +1,7 @@
 # Work planning API foundations
 
-Recurrence, approval-task decisions and goals currently have authenticated JSON API
-workflows. Their browser workflows are not complete; PEG-005 and PEG-014 remain
-partial. All writes require a native session and the same-origin request checks
+Recurrence, approval-task decisions and goals have authenticated JSON API
+workflows and signed-in browser screens. All writes require a native session and the same-origin request checks
 used by the other `/api/v1` doors.
 
 ## Recurring work
@@ -110,9 +109,9 @@ Company goals are managed by workspace owners/administrators. Team Admins and th
 `POST /api/v1/goals/:id/audience-preview` accepts a replacement `{ownerId, visibility, people, teams, editors}` plan (`visibility` is `default` or `restricted`; personal goals stay `restricted`). Its preview lists new readers, check-in notes and linked titles they could newly read. Confirm the exact plan and returned `revision` at `POST /api/v1/goals/:id/audience`. Omitting audience lists clears them. `GET /api/v1/goals/:id/audience` is manager-only. Source reads remain independently authorized for each reader; a restricted input yields null progress, source count and freshness, hides its title/owner, and invalidates a check-in opened before revocation. Numeric observations still come from native signed-in humans; external numeric sources remain PEG-014's gap.
 
 
-## Authorized numeric sources (interim authority pending ct)
+## Authorized numeric sources
 
-The current active human goal owner may `POST /api/v1/goals/:id/sources` with `{kind:"csv"|"api", name, consent:true, expiresAt?}`. Default expiry is one day, maximum 30 days. This explicit audited consent permits publishing observations to this goal only. Named editors retain the native observation door but cannot mint a source. A source credential grants no reads, no cross-goal writes and no outbound action. Agents and guests cannot authorize or publish. This conservative source-authority default is adopted pending ct approval; PEG-014 remains partial.
+The current active human goal owner may `POST /api/v1/goals/:id/sources` (or use **Authorize API source** / **Authorize CSV source** on the goal's screen) with `{kind:"csv"|"api", name, consent:true, expiresAt?|expiresInDays?}`. The owner chooses a finite expiry, as a UTC time or a number of days; one day is the default and 30 days the engineering maximum. Consent is an explicit audited authorization recorded against the owner, not legal consent: it permits publishing observations to this goal only. Named editors retain the native observation door but cannot mint a source. A source credential grants no reads, no cross-goal writes and no outbound action, and confers no identity or authority on whoever holds it: the observation it publishes is recorded as the source's own, with the authorizing person shown as its authorizer. Agents and guests cannot authorize or publish. PEG-027 and PEG-062 inherit this scoped source boundary.
 
 For API integrations, save the returned `token` once. It is stored only as a digest and never returned by source listing. The native integration schema is `POST /api/v1/metric-sources/:sourceId/events`, `Authorization: Bearer <source credential>`, JSON `{key, value, observedAt}`. `key` is the source's stable event ID (maximum 120 characters); `value` is a finite number; `observedAt` is UTC epoch milliseconds, never a future time. The request is bounded to 8 KiB. Identical replay returns `{key,replayed:true}`; a changed value/time under the same key is refused. Source/goal/owner authority and expiry are rechecked at commit. This receipt proves native schema ingestion, not a live unnamed provider's qualification.
 
@@ -125,7 +124,9 @@ synthetic-pegboard-1,35,1792627200000
 
 Keys use letters, digits, `_`, `.`, `:` or `-`; at most 1,000 rows and 200,000 characters are accepted. Preview with `POST /api/v1/metric-sources/:id/csv-preview` and `{csv}`, then repeat the exact text and returned `revision` at `/api/v1/metric-sources/:id/csv`. The whole reviewed file applies atomically. Identical source keys reconcile without duplicate events; changed keys or malformed rows write nothing. Replays retain original observation time and cannot freshen stale input. Goals offers the same CSV preview and apply forms.
 
-`GET /api/v1/goals/:id/sources` lists safe configuration for the current goal owner. `POST /api/v1/metric-sources/:id/revoke` revokes a source; a replacement owner may revoke the earlier owner's source without recovering its credential. Revoked/expired sources or a lost sponsor cannot publish. Their latest input is restricted, with null progress/count/freshness and no source event metadata, even under an override. PEG-027 and PEG-062 inherit these authorization and revocation duties.
+`GET /api/v1/goals/:id/sources` lists safe configuration for the current goal owner, with each source's `state` and, once ended, its `endCause` (`revoked`, `expired` or `ownership_changed`) and `endedAt`. `POST /api/v1/metric-sources/:id/revoke` revokes a source; a replacement owner may revoke the earlier owner's source without recovering its credential.
+
+A source ends for good on revocation, on its expiry, or when the goal's accountable owner changes (the database ends it wherever the owner changes). It never resumes, even if the earlier owner holds the goal again. Publishing to an ended source answers `403 numeric_source_ended` with its `cause`. An ended API source's latest input gives no progress, even under an override: the goal view reports `source_ended` in `states`, the named causes in `endCauses`, and `overrideHeld` when an override is on record but not shown as progress. The observation history stays visible to every reader of the goal: each event carries its `source` (name, kind, authorizer, whether and why it ended) or its human `recordedBy`. Rows from a reviewed CSV were checked by a person when applied, so they outlast their source and still count. An observation's identity is its goal, source and key, so a person's key never collides with a source's.
 
 ## Approval decision screens and reopening
 

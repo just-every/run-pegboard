@@ -577,12 +577,18 @@ try {
     await expect(named.page.locator('main')).toContainText('1 new · 0 replays');await flat(named.page);await proof('goals-numeric-csv-preview',named.page)
     await named.page.getByRole('button',{name:'Apply reviewed numeric CSV'}).click();await expect(named.page.getByRole('status')).toContainText('75%')
     await named.page.getByRole('form',{name:`Preview CSV Quarterly metric ${size}`}).getByLabel('Metric CSV',{exact:true}).fill(csv);await named.page.getByRole('button',{name:'Preview numeric CSV'}).click();await expect(named.page.locator('main')).toContainText('0 new · 1 replays');await named.page.getByRole('button',{name:'Apply reviewed numeric CSV'}).click()
-    const apiSource=ok(await member.post(`/api/v1/goals/${companyId}/sources`,{kind:'api',name:`Metric integration ${size}`,consent:true}))
+    // The owner authorizes an API source through Goals, chooses its expiry and sees the credential once.
+    const apiForm=named.page.getByRole('form',{name:'Authorize API source'})
+    await apiForm.getByLabel('API source name').fill(`Metric integration ${size}`);await apiForm.getByLabel('Expires in days (1–30)').fill('7');await apiForm.locator('input[name=consent]').check();await apiForm.getByRole('button',{name:'Authorize API source'}).click()
+    await expect(named.page.getByRole('heading',{name:'API source authorized'})).toBeVisible();await flat(named.page);await proof('goals-api-source-credential',named.page)
+    const credential=await named.page.locator('article code').first().innerText(),endpoint=await named.page.locator('article code').nth(2).innerText()
+    const apiSource={id:endpoint.split('/')[4],token:credential}
     const provider=new owner.constructor(w.origin,'','Authorized metric provider'),event={key:'synthetic-pegboard-802',value:90,observedAt:Date.now()},providerHeaders={authorization:'Bearer '+apiSource.token}
     ok(await provider.call('POST',`/api/v1/metric-sources/${apiSource.id}/events`,event,providerHeaders));assert.equal(ok(await provider.call('POST',`/api/v1/metric-sources/${apiSource.id}/events`,event,providerHeaders)).replayed,true)
-    await named.page.goto(companyUrl);await expect(named.page.getByRole('status')).toContainText('90%');await flat(named.page);await proof('goals-numeric-integration',named.page)
-    await named.page.getByRole('button',{name:`Revoke Metric integration ${size}`}).click();await expect(named.page.getByRole('status')).toContainText('restricted input')
-    assert.equal((await provider.call('POST',`/api/v1/metric-sources/${apiSource.id}/events`,event,providerHeaders)).status,403)
+    await named.page.goto(companyUrl);await expect(named.page.getByRole('status')).toContainText('90%');await expect(named.page.getByRole('heading',{name:'Observation history'})).toBeVisible();await expect(named.page.locator('main')).toContainText(`API source “Metric integration ${size}”`);await flat(named.page);await proof('goals-numeric-integration',named.page)
+    await named.page.getByRole('button',{name:`Revoke Metric integration ${size}`}).click();await expect(named.page.getByRole('status')).toContainText('source ended');await expect(named.page.getByRole('alert')).toContainText('Numeric source ended: revoked')
+    await expect(named.page.locator('main')).toContainText('source ended: revoked');await flat(named.page);await proof('goals-source-ended',named.page)
+    const refusedPublish=await provider.call('POST',`/api/v1/metric-sources/${apiSource.id}/events`,event,providerHeaders);assert.equal(refusedPublish.status,403);assert.equal(refusedPublish.body.cause,'revoked')
     const aged=ok(await member.post('/api/v1/goals',{title:`Stale metric ${size}`,scope:'personal',mode:'numeric',staleAfterSeconds:30,periodStart:'2026-01-01',periodEnd:'2026-12-31'})),agedSource=ok(await member.post(`/api/v1/goals/${aged.id}/sources`,{kind:'csv',name:'Aged observations',consent:true})),agedCsv=`event_key,value,observed_at\nsynthetic-pegboard-803,100,${Date.now()-60000}`
     const agedPreview=ok(await member.post(`/api/v1/metric-sources/${agedSource.id}/csv-preview`,{csv:agedCsv}));ok(await member.post(`/api/v1/metric-sources/${agedSource.id}/csv`,{csv:agedCsv,revision:agedPreview.token}))
     await named.page.goto(`${w.origin}/app/goals/${aged.id}`);await expect(named.page.getByRole('status')).toContainText('stale input');await flat(named.page);await proof('goals-stale-numeric-source',named.page)
