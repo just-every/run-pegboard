@@ -1,6 +1,7 @@
 import type { Hono } from 'hono'
 import type { Bindings } from '../../auth.server'
 import { door } from './door'
+import { timePacket, reconcileTimePacket } from '../connectors/time/packets'
 import {
   createSheet,
   listSheets,
@@ -14,6 +15,11 @@ import {
   exportSheet,
 } from '../time/time'
 export function timeRoutes(app: Hono<{ Bindings: Bindings }>) {
+  app.post('/timesheets/:id/provider-packet', door(async ({ actor, db, params, input }) =>
+    new Response(JSON.stringify(await timePacket(db, actor, params.id, input), null, 2), {
+      headers: { 'content-type': 'application/json; charset=utf-8', 'content-disposition': `attachment; filename="${params.id}-time-packet.json"`, 'cache-control': 'private, no-store' },
+    })))
+  app.post('/timesheets/:id/provider-reconciliation', door(({ actor, db, params, input }) => reconcileTimePacket(db, actor, params.id, input)))
   app.get(
     '/timesheets',
     door(async ({ actor, db, workspace }) => ({

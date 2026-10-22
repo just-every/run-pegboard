@@ -387,6 +387,72 @@ describe('Work planning time, recurrence and decisions', { concurrency: false },
     assert.equal(view.totalSeconds+(await ok(person.get(`/api/v1/timesheets/${correctionSheet.id}`))).totalSeconds,4800)
   })
 
+  it('prepares approved time service packets and reconciles official-schema readbacks without sending', async () => {
+    const person=await w.person('time-packets@example.com','Time packet owner'),p=await ok(person.post('/api/v1/projects',{name:'Client campaign effort'})),a=await ok(person.post('/api/v1/tasks',{title:'Campaign planning',projectId:p.id})),b=await ok(person.post('/api/v1/tasks',{title:'Campaign review',projectId:p.id}))
+    const day='2026-10-22',sheet=await ok(person.post('/api/v1/timesheets',{startDate:day,endDate:day}))
+    const e1=await ok(person.post(`/api/v1/timesheets/${sheet.id}/entries`,{taskId:a.id,date:day,seconds:3600,key:'synthetic-pegboard-901'})),e2=await ok(person.post(`/api/v1/timesheets/${sheet.id}/entries`,{taskId:b.id,date:day,seconds:72,key:'synthetic-pegboard-902'}))
+    const mapping={people:{[person.id]:101},projects:{[p.id]:201},tasks:{[a.id]:301,[b.id]:302},jobcodes:{[`${p.id}/${a.id}`]:401,[`${p.id}/${b.id}`]:402}}
+    const packet=(service,extra={})=>person.post(`/api/v1/timesheets/${sheet.id}/provider-packet`,{service,mapping,...extra})
+    assert.equal((await packet('harvest')).status,409,'draft time never enters a packet')
+    let view=await ok(person.get(`/api/v1/timesheets/${sheet.id}`));await ok(person.post(`/api/v1/timesheets/${sheet.id}/decision`,{action:'submit',revision:view.token}))
+    view=await ok(owner.get(`/api/v1/timesheets/${sheet.id}`));await ok(owner.post(`/api/v1/timesheets/${sheet.id}/decision`,{action:'approve',revision:view.token}))
+    assert.equal((await nina.post(`/api/v1/timesheets/${sheet.id}/provider-packet`,{service:'harvest',mapping})).status,404)
+    assert.equal((await packet('unknown')).status,400)
+    const anonymous=new owner.constructor(w.origin,'','Signed out')
+    assert.equal((await anonymous.post(`/api/v1/timesheets/${sheet.id}/provider-packet`,{service:'harvest',mapping})).status,401)
+    assert.equal((await person.call('POST',`/api/v1/timesheets/${sheet.id}/provider-packet`,{service:'harvest',mapping},{origin:'https://elsewhere.example'})).status,403)
+    for(const service of ['harvest','quickbooks-time']){
+      const missing=await ok(packet(service,{mapping:{}}));assert.equal(missing.rows.length,0);assert.equal(missing.pending.length,2);assert.equal(missing.requests.length,0)
+      const expected=await ok(packet(service));assert.equal(expected.delivery,'not_sent');assert.equal(expected.totalSeconds,3672);assert.equal(expected.exportableSeconds,3672);assert.equal(expected.pending.length,0)
+      assert.deepEqual((await ok(packet(service))).requests,expected.requests,'replay keeps external identities and never submits requests')
+      let response
+      if(service==='harvest'){
+        assert.deepEqual(expected.requests.map(r=>[r.method,r.url,r.body.user_id,r.body.project_id,r.body.task_id,r.body.spent_date,r.body.hours,r.body.external_reference.id]),[
+          ['POST','https://api.harvestapp.com/v2/time_entries',101,201,301,day,1,e1.id],['POST','https://api.harvestapp.com/v2/time_entries',101,201,302,day,0.02,e2.id]])
+        response={time_entries:[{id:501,user:{id:101},project:{id:201},task:{id:301},spent_date:day,hours:1,is_running:false,external_reference:{id:e1.id,group_id:sheet.id}},{id:502,user:{id:101},project:{id:201},task:{id:302},spent_date:day,hours:0.02,is_running:false,external_reference:{id:e2.id,group_id:sheet.id}}],next_page:null,total_pages:1}
+      }else{
+        assert.equal(expected.requests.length,1);assert.equal(expected.requests[0].url,'https://rest.tsheets.com/api/v1/timesheets')
+        assert.deepEqual(expected.requests[0].body.data,[{user_id:101,jobcode_id:401,type:'manual',date:day,duration:3600,notes:`[Pegboard:${e1.id}] `},{user_id:101,jobcode_id:402,type:'manual',date:day,duration:72,notes:`[Pegboard:${e2.id}] `}])
+        response={results:{timesheets:{501:{id:501,user_id:101,jobcode_id:401,type:'manual',date:day,duration:3600,notes:`[Pegboard:${e1.id}] `},502:{id:502,user_id:101,jobcode_id:402,type:'manual',date:day,duration:72,notes:`[Pegboard:${e2.id}] `}}},more:false}
+      }
+      const reconcile=(receipt,revision=expected.revision)=>person.post(`/api/v1/timesheets/${sheet.id}/provider-reconciliation`,{service,mapping,revision,response:receipt})
+      const result=await ok(reconcile(response));assert.equal(result.reconciled,true);assert.equal(result.matchedSeconds,3672);assert.equal(result.receiptAuthority,'user_supplied_unverified');assert.equal(result.delivery,'not_sent')
+      assert.deepEqual(await ok(reconcile(response)),result,'reconciliation is repeatable and writes no provider or local time entries')
+      const changed=structuredClone(response),row=service==='harvest'?changed.time_entries[1]:changed.results.timesheets[502]
+      if(service==='harvest')row.hours=0.03;else row.duration=108
+      assert.equal((await ok(reconcile(changed))).reconciled,false,'rounding is never accepted as exact')
+      if(service==='harvest')row.hours=0.02;else row.duration=72
+      if(service==='harvest')row.task.id=999;else row.jobcode_id=999
+      assert.equal((await ok(reconcile(changed))).reconciled,false,'incorrect task/job mapping is visible')
+      const duplicate=structuredClone(response)
+      if(service==='harvest')duplicate.time_entries.push({...response.time_entries[0],id:503});else duplicate.results.timesheets[503]={...response.results.timesheets[501],id:503}
+      const duplicated=await ok(reconcile(duplicate));assert.equal(duplicated.reconciled,false);assert.ok(duplicated.issues.some(i=>i.reason==='duplicate_external_id'))
+      const sameId=structuredClone(response)
+      if(service==='harvest')sameId.time_entries[1].id=501;else sameId.results.timesheets[502].id=501
+      assert.equal((await ok(reconcile(sameId))).reconciled,false,'two sources cannot claim one provider entry')
+      const absent=structuredClone(response)
+      if(service==='harvest')absent.time_entries.pop();else delete absent.results.timesheets[502]
+      assert.equal((await ok(reconcile(absent))).reconciled,false)
+      if(service==='quickbooks-time'){
+        const refused=structuredClone(response);refused.results.timesheets[502]._status_code=417
+        assert.equal((await ok(reconcile(refused))).reconciled,false,'provider validation failures never reconcile')
+      }
+      const paged=structuredClone(response);if(service==='harvest')paged.next_page=2;else paged.more=true
+      assert.equal((await reconcile(paged)).status,400)
+      assert.equal((await reconcile(response,'synthetic-pegboard-stale')).status,409)
+    }
+    // Unsupported adjustments and sub-hundredth durations remain in an exportable repair packet, never silently rounded.
+    const correction=await ok(person.post('/api/v1/timesheets',{startDate:day,endDate:day})),adjustment=await ok(person.post(`/api/v1/time/${e1.id}/adjust`,{sheetId:correction.id,date:day,seconds:-36,reason:'Overcounted review',key:'synthetic-pegboard-903'}))
+    await ok(person.post(`/api/v1/timesheets/${correction.id}/entries`,{taskId:b.id,date:day,seconds:1,key:'synthetic-pegboard-904'}))
+    view=await ok(person.get(`/api/v1/timesheets/${correction.id}`));await ok(person.post(`/api/v1/timesheets/${correction.id}/decision`,{action:'submit',revision:view.token}));view=await ok(owner.get(`/api/v1/timesheets/${correction.id}`));await ok(owner.post(`/api/v1/timesheets/${correction.id}/decision`,{action:'approve',revision:view.token}))
+    const held=await ok(person.post(`/api/v1/timesheets/${correction.id}/provider-packet`,{service:'quickbooks-time',mapping}));assert.equal(held.totalSeconds,-35);assert.equal(held.rows.length,0);assert.equal(held.pending.find(e=>e.externalId===adjustment.id).adjustmentOf,e1.id);assert.deepEqual(held.pending.map(e=>e.reason).sort(),['adjustment_requires_reviewed_provider_correction','provider_rounds_manual_duration'])
+    assert.equal((await ok(person.get(`/api/v1/timesheets/${sheet.id}`))).totalSeconds,3672)
+    // A retained owner sheet no longer discloses a removed project's references, notes or mappings.
+    const moved=await ok(person.post('/api/v1/projects',{name:'Later work home'}));await ok(person.post(`/api/v1/tasks/${a.id}/projects`,{projectId:moved.id}))
+    await ok(person.delete(`/api/v1/tasks/${a.id}/projects/${p.id}`))
+    assert.equal((await packet('harvest')).status,403)
+  })
+
   it('fences stale time review and keeps private no-project work out of ordinary administrator review', async () => {
     const person=await w.person('private-time@example.com','Private Time'),t=await ok(person.post('/api/v1/tasks',{title:'Private planning'}))
     const day=new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())

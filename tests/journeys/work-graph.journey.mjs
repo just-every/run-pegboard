@@ -516,6 +516,30 @@ try {
     await writer.context.close();await reviewer.context.close();console.log(`Recurring work and human decisions at ${size}px passed`)
   }
   if(!process.env.PEGBOARD_JOURNEY){await w.stop();w=await startWorker();owner=w.owner}
+  // Read-only time service packets: approved downloads and explicit pending work at both widths.
+  if(!process.env.PEGBOARD_JOURNEY||process.env.PEGBOARD_JOURNEY==='time-packets')for(const [size,viewport] of sizes){
+    const person=await w.person(`packet-${size}@example.com`,`Campaign coordinator ${size}`),project=ok(await person.post('/api/v1/projects',{name:`Autumn campaign ${size}`})),task=ok(await person.post('/api/v1/tasks',{title:'Prepare launch brief',projectId:project.id}))
+    const sheet=ok(await person.post('/api/v1/timesheets',{startDate:'2026-10-22',endDate:'2026-10-22'}))
+    ok(await person.post(`/api/v1/timesheets/${sheet.id}/entries`,{taskId:task.id,date:'2026-10-22',seconds:72,notes:'Review the launch brief',key:'synthetic-pegboard-951'}))
+    let view=ok(await person.get(`/api/v1/timesheets/${sheet.id}`));ok(await person.post(`/api/v1/timesheets/${sheet.id}/decision`,{action:'submit',revision:view.token}));view=ok(await owner.get(`/api/v1/timesheets/${sheet.id}`));ok(await owner.post(`/api/v1/timesheets/${sheet.id}/decision`,{action:'approve',revision:view.token}))
+    const context=await browser.newContext({viewport});await context.addCookies(cookies(person));const page=await context.newPage()
+    await page.goto(`${w.origin}/app/time/${sheet.id}`)
+    const form=page.getByRole('form',{name:'Prepare time service packet'})
+    await expect(form.getByRole('button',{name:'Download time service packet'})).toBeVisible()
+    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`time packet reflow ${size}`)
+    if(process.env.PEGBOARD_PROOF_DIR){await mkdir(process.env.PEGBOARD_PROOF_DIR,{recursive:true});await page.screenshot({path:join(process.env.PEGBOARD_PROOF_DIR,`time-service-packet-${size}.png`),fullPage:true})}
+    for(const service of ['harvest','quickbooks-time']){
+      await form.getByLabel('Time service',{exact:true}).selectOption(service)
+      await form.getByLabel('Provider ID mapping (JSON)').fill(JSON.stringify({people:{[person.id]:101},projects:{[project.id]:201},tasks:{[task.id]:301},jobcodes:{[`${project.id}/${task.id}`]:401}}))
+      const downloaded=page.waitForEvent('download');await form.getByRole('button',{name:'Download time service packet'}).click();const download=await downloaded
+      const stream=await download.createReadStream(),chunks=[];for await(const chunk of stream)chunks.push(chunk)
+      const packet=JSON.parse(Buffer.concat(chunks).toString());assert.equal(packet.service,service);assert.equal(packet.totalSeconds,72);assert.equal(packet.delivery,'not_sent');assert.equal(packet.pending.length,0);assert.equal(packet.rows[0].taskId,task.id)
+    }
+    await form.getByLabel('Provider ID mapping (JSON)').fill('{}')
+    const downloaded=page.waitForEvent('download');await form.getByRole('button',{name:'Download time service packet'}).click();const download=await downloaded,stream=await download.createReadStream(),chunks=[];for await(const chunk of stream)chunks.push(chunk)
+    const packet=JSON.parse(Buffer.concat(chunks).toString());assert.equal(packet.rows.length,0);assert.equal(packet.pending[0].reason,'map_person')
+    await context.close();console.log(`Read-only time service packets at ${size}px passed`)
+  }
   // Goal visibility and accountable owners: complete native Goals workflows at both widths.
   if(!process.env.PEGBOARD_JOURNEY||process.env.PEGBOARD_JOURNEY==='goals')for(const [size,viewport] of sizes){
     const open=async client=>{const context=await browser.newContext({viewport});await context.addCookies(cookies(client));return {context,page:await context.newPage()}}

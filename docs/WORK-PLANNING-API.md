@@ -132,3 +132,9 @@ Keys use letters, digits, `_`, `.`, `:` or `-`; at most 1,000 rows and 200,000 c
 A task created with `kind:"approval"` shows its current pending, changes-requested, approved, reopened or rejected state, attributed decision history and a privacy-safe waiting reason. Its native Task screen posts the exact preview token to `/api/v1/tasks/:id/decision`. Ordinary completion cannot approve it. Weekly recurrence creates a fresh pending approval, never copied sign-off. A personal approval waits for a reviewed project share; a current/former owner or sole ineligible decider waits for another eligible administrator.
 
 The existing invalidation set is unchanged: task edits, comments, files, field values/definitions, collaborators, tags and project membership/section writes reopen approved work. Each current public door supplies a one-shot writer guard in the mutation transaction. The database refuses an unattributed reopen and writes exactly one `decision.reopened` history entry when a real reopen occurs; no-op tagging records none. Future PEG-010/036/064/087 write doors inherit that guard and exact current-revision decision boundary.
+
+## Approved time service packets
+
+The signed-in read-only packet and comparison doors are documented in
+[TIME-SERVICE-PACKETS.md](TIME-SERVICE-PACKETS.md). They send nothing and never
+claim authenticated provider receipts. PEG-017/042 remain partial.

@@ -1,6 +1,6 @@
 import type { Viewer } from '../../../ui/viewer'
 import type { listSheets, sheetView } from '../../time/time'
-import { Card, Field, Form, Pick, Shell, Submit, when } from '../shell'
+import { Area, Card, Field, Form, Pick, Shell, Submit, when } from '../shell'
 import { newId } from '../../db'
 const actions: Record<string, string> = {
   timer_started: 'Started timer',
@@ -269,9 +269,13 @@ export function TimePage({
               >
                 Download approved CSV
               </a>
-              <p>
-                Gauge, Harvest and QuickBooks Time exports are not available.
-              </p>
+              <p>Prepare a Harvest or QuickBooks Time packet for review. Nothing is sent. Missing mappings, adjustments and durations the service would round remain pending.</p>
+              <Form action={`/api/v1/timesheets/${view.sheet.id}/provider-packet`} next={here} label="Prepare time service packet">
+                <Pick label="Time service" name="service" options={[{ value: 'harvest', label: 'Harvest' }, { value: 'quickbooks-time', label: 'QuickBooks Time' }]} />
+                <Area label="Provider ID mapping (JSON)" name="mapping" value={'{"people":{},"projects":{},"tasks":{},"jobcodes":{}}'} />
+                <Submit>Download time service packet</Submit>
+              </Form>
+              <p><a href="https://github.com/just-every/run-pegboard/blob/main/docs/TIME-SERVICE-PACKETS.md">Mapping and reconciliation guide</a>. Gauge transfer remains unavailable.</p>
             </Card>
           )}
           <Card title="Time history">

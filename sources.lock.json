@@ -82,7 +82,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "bac003f32217a42d78e75da961be3dcf6851432ed364d1f921997d690afbc901",
+      "sha256": "6f848cad6d9246bdfb572b418be16fafc72f6f027264671f387952a2c099e15b",
       "executable": false
     },
     "AGENTS.md": {
@@ -98,7 +98,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "e85f15bce69edcb76f4ee155a67cb4471cfb90b22abb062c42cd5d4efc08aacd",
+      "sha256": "7952d0b500038f74dcffc28546d9ab3a4bea806a350b2bf67ef19afca1d96b06",
       "executable": false
     },
     "DEMO.md": {
@@ -121,8 +121,12 @@
       "sha256": "94bc7a03477dc817d5342734ee4386dbde1ddb9dc0f2b0871fd46e7728a5b797",
       "executable": false
     },
+    "docs/TIME-SERVICE-PACKETS.md": {
+      "sha256": "14e9ae3c6e0b80a8b573d42fbb4ad5bbfa2ce5c2c4c1bf19e15e84b2c64ccad3",
+      "executable": false
+    },
     "docs/WORK-PLANNING-API.md": {
-      "sha256": "5584a3420031d3924988e035029ea0db4683231be921561b020ca71f57cc8f8b",
+      "sha256": "8bdeac1c15e51d03866836476181ee079280f0f910ff9f3b6f24e1f51c1d962b",
       "executable": false
     },
     "edition.json": {
@@ -1818,7 +1822,7 @@
       "executable": false
     },
     "src/pegboard/api/time-routes.ts": {
-      "sha256": "b003e21b19660b24cf6261e91d2b9aa146db0cab6b80cbb8397160754f014a66",
+      "sha256": "94604fb037f24870f8c69f5eef2c409f1ce8834ba161f41f050c1f31f54930bc",
       "executable": false
     },
     "src/pegboard/api/workspace-routes.ts": {
@@ -1839,6 +1843,10 @@
     },
     "src/pegboard/authorization/levels.ts": {
       "sha256": "b893b48914b29fae0e870c7865351cd61abdd0406609ba3f1339e937f779e00a",
+      "executable": false
+    },
+    "src/pegboard/connectors/time/packets.ts": {
+      "sha256": "b15e6e2d8842dce48859793865a21c9a59f3784040cd7c35245b143f736028ee",
       "executable": false
     },
     "src/pegboard/db.ts": {
@@ -1998,7 +2006,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/time.tsx": {
-      "sha256": "f883480b2af6a41b448187c4e97ebe33bd4f2e175be9063989b10a0b4c1b1d92",
+      "sha256": "cfdfd046bec5f08fbe34d595251b1fe29a6378637af3cdb28ba4988aac4d171b",
       "executable": false
     },
     "src/pegboard/ui/routes.ts": {
@@ -2190,7 +2198,7 @@
       "executable": false
     },
     "tests/journeys/work-graph.journey.mjs": {
-      "sha256": "853c527d489419f63e7538c8beb3b9ea188388cc1d1f6765b7261fcfecd8abec",
+      "sha256": "6d1335f51addbbf9e3b95c9c3d9973fad360e218ea02f1c702f73992e551aa01",
       "executable": false
     },
     "tests/runtime.mjs": {
@@ -2206,7 +2214,7 @@
       "executable": false
     },
     "tests/work-graph.test.mjs": {
-      "sha256": "56893966f4e76629615ea33967112f4add68b57761d88846a40a9758ed501a7b",
+      "sha256": "41e71d874ca32ed361ce8f9422d80e926eac96a9bf516f867a5a4509f950cfd4",
       "executable": false
     },
     "tsconfig.json": {
