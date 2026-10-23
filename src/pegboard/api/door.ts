@@ -1,3 +1,6 @@
+import { permanentEvent } from '../audit/search'
+import { batch, newId } from '../db'
+import { workspaceRole } from '../workspace/people'
 // The one way a request reaches Pegboard's services: a signed-in person, a same-origin write, a body in JSON or form
 // fields, and one error shape. Forms and the JSON API are the same door; a form post answers with a redirect.
 import type { Context, Handler } from 'hono'
@@ -48,6 +51,7 @@ export interface Options { next?: (result: any, door: Door) => string; raw?: boo
 export const door = (handler: (door: Door) => Promise<unknown>, options: Options = {}): Handler<Env> => async (c: Context<Env>) => {
   const request = c.req.raw, env = runtimeBindings(c.env)
   let form = false
+  let audited: { context: Door; id: string; action: string; subject: string; type: string } | null = null
   try {
     const writing = !['GET', 'HEAD'].includes(request.method)
     const session = await operatorAuth(env).getSession(request)
@@ -67,12 +71,19 @@ export const door = (handler: (door: Door) => Promise<unknown>, options: Options
       delivery: { origin: new URL(env.AUTH_ORIGIN).origin, from: env.MAIL_FROM, mail: operatorMail(env) },
       invite: input => auth.invite(request, input),
     }
+    if ((writing || /\/export$/.test(new URL(request.url).pathname)) && await workspaceRole(env.DB,context.actor.id,context.workspace)) {
+      const id=newId('operation'), route=c.req.routePath, subject=/^(?:[a-z]+_[a-f0-9]{20}|[a-f0-9-]{36})$/.test(context.params.id??'')?context.params.id:id
+      audited={context,id,action:request.method+' '+route,subject,type:route.split('/').filter(Boolean)[2]??'operation'}
+      await batch(env.DB,[permanentEvent(env.DB,{workspace:/\/(tasks|my-tasks|goals|metric-sources|time)(\/|$)/.test(c.req.routePath)?null:context.workspace,actor:context.actor.id,action:audited.action,type:audited.type,id:subject,result:'started'})])
+    }
     const result = await handler(context)
+    if(audited) await batch(env.DB,[permanentEvent(env.DB,{workspace:/\/(tasks|my-tasks|goals|metric-sources|time)(\/|$)/.test(c.req.routePath)?null:context.workspace,actor:context.actor.id,action:audited.action,type:audited.type,id:audited.subject,result:result instanceof Response&&result.status>=400?'failure':'success'})])
     if (result instanceof Response) return result
     if (form && writing) return new Response(null, { status: 303, headers: { ...headers, location: landing(read.input, options.next?.(result, context) ?? '/app') } })
     return json(result ?? { ok: true })
   } catch (error) {
     const failure = describe(error)
+    if(audited) await batch(env.DB,[permanentEvent(env.DB,{workspace:/\/(tasks|my-tasks|goals|metric-sources|time)(\/|$)/.test(c.req.routePath)?null:audited.context.workspace,actor:audited.context.actor.id,action:audited.action,type:audited.type,id:audited.subject,result:'failure'})])
     if (form) return errorDocument(failure.status, failure.code)
     return json({ error: failure.code, ...failure.detail }, failure.status)
   }

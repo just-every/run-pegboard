@@ -30,7 +30,8 @@ export const homeTabs = (viewer: Viewer, current = '/app'): Tab[] => [
   { label: 'Teams', href: '/app/teams' },
   { label: 'Inbox', href: '/app/inbox' },
   ...(viewer.role === 'member' ? [] : [{ label: 'Access', href: '/app/access-review' }, { label: 'Admin', href: '/app/admin' }]),
-  ...(viewer.role === 'owner' ? [{ label: 'Settings', href: settingsPath }] : []),
+  ...(['owner','admin'].includes(viewer.role) ? [{label:'Audit',href:'/app/audit'}] : []),
+  ...(viewer.role === 'owner' ? [{label:'Data',href:'/app/data'},{ label: 'Settings', href: settingsPath }] : []),
 ].map(tab => ({ ...tab, current: tab.href === current }))
 
 export function AppHome({ viewer }: { viewer: Viewer }) {

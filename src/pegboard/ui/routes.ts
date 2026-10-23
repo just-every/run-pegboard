@@ -1,3 +1,9 @@
+import { DataPage } from './pages/data'
+import { AuditPage } from './pages/audit'
+import { dataSettings, retentionPreview } from '../data/settings'
+import { erasurePlan } from '../data/erasure'
+import { expiryPlan } from '../data/expiry'
+import { searchAudit } from '../audit/search'
 import {decisionPreview} from '../decisions/tasks'
 import {listNumericSources,previewNumericCsv} from '../goals/sources'
 import {GoalsPage} from './pages/goals'
@@ -83,6 +89,11 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
   const { viewer, workspace } = await context(db, actor, session.operator.role)
   const [, section, id, tail] = segments
   try {
+    if(section==='audit'&&!id)return page('Permanent audit',h(AuditPage,{viewer,data:await searchAudit(db,actor,workspace,Object.fromEntries(url.searchParams)),input:Object.fromEntries(url.searchParams)}))
+    if(section==='data'&&!id){
+      const input=Object.fromEntries(url.searchParams),data=await dataSettings(db,actor,workspace)
+      return page('Data settings',h(DataPage,{viewer,data,input,retention:input.review==='retention'?await retentionPreview(db,actor,workspace,input):null,erasure:input.review==='erase'?await erasurePlan(db,actor,workspace,input.type,input.id):null,expiry:input.review==='expiry'?await expiryPlan(db,actor,workspace,input):null}))
+    }
     if(section==='goals'&&!tail){
       const input:Record<string,any>=Object.fromEntries(url.searchParams)
       for(const field of ['people','teams','editors'])if(input.previewAudience)input[field]=url.searchParams.getAll(field+'[]')

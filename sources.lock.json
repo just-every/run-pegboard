@@ -746,7 +746,7 @@
       "executable": false
     },
     "scripts/installer/local.mjs": {
-      "sha256": "bbcadebcaaeb554ea857fef1f0b96fabbbaf39908b0dc6517edda59e5e690e66",
+      "sha256": "233495ab5f5d96489932773546784fac65e616afbc04310ab22fa6aef7d89c52",
       "executable": false
     },
     "scripts/installer/seed.mjs": {
@@ -1806,7 +1806,7 @@
       "executable": false
     },
     "src/pegboard/api/door.ts": {
-      "sha256": "352c6117ad2f4d6c8675c85bf245af786fb1d595be886cf5106251a61b4b54a5",
+      "sha256": "afbef8c742d979837940a4ee9af4e8b6f01f161ba3d09a23b9d9f05df0335c87",
       "executable": false
     },
     "src/pegboard/api/field-routes.ts": {
@@ -1818,7 +1818,7 @@
       "executable": false
     },
     "src/pegboard/api/index.ts": {
-      "sha256": "30cb409de8f5565e852e22d2a6486201a5acc6adf59d63169c60da79778b8eea",
+      "sha256": "7d6e5cee294881adcb304dd80a19acd20f40b53d6957c89066d0ac3b89395467",
       "executable": false
     },
     "src/pegboard/api/recurrence-routes.ts": {
@@ -2034,7 +2034,7 @@
       "executable": false
     },
     "src/pegboard/ui/routes.ts": {
-      "sha256": "56e80c8de027b9658a9262f167f35ecd0424f7cde0c103a4e0203b69ae10fba2",
+      "sha256": "ea7a94757cac3858ef368cda493b21c79697e87e8bafd6f5ef67d2f2a54c1af0",
       "executable": false
     },
     "src/pegboard/ui/shell.tsx": {
@@ -2070,7 +2070,7 @@
       "executable": false
     },
     "src/server.ts": {
-      "sha256": "bab33364398764395b15507baea9b95b0dc52b698da03135854cb104e6ca27c9",
+      "sha256": "2a0e3acf1a43d7c4bfb36cefeffafee78745bb3d82bb05a3d8017d4be0f36b3c",
       "executable": false
     },
     "src/site/copy.ts": {
@@ -2186,7 +2186,7 @@
       "executable": false
     },
     "src/ui/home.tsx": {
-      "sha256": "62f87e2167663e02d33a30bb53defac7e1ad97d79411b383f8ced76cd4fa8f04",
+      "sha256": "a722aef9e6375508729718d1c627a00fd8c8d74a2514f3d78273d94bfd0eeb37",
       "executable": false
     },
     "src/ui/icons.tsx": {
@@ -2222,7 +2222,7 @@
       "executable": false
     },
     "tests/journeys/work-graph.journey.mjs": {
-      "sha256": "295c4bbe7289a204df4f9170f1715964c08026f2d276eccf963f610420605e2d",
+      "sha256": "72393a87dc9fdf509687f0ab46ea3f15e30a77964b525e176fb67a5cca5c6bbc",
       "executable": false
     },
     "tests/runtime.mjs": {
@@ -2242,7 +2242,7 @@
       "executable": false
     },
     "tests/work-graph.test.mjs": {
-      "sha256": "4cbe6d2adbf4b8ad2ab72ad38ba44f482471bc3c448d2f117051f55b56ece156",
+      "sha256": "5ee2c7ed0d2d884f5001855b8d32461b79fb38d2eecbdeea283949605e055558",
       "executable": false
     },
     "tsconfig.json": {

@@ -716,6 +716,42 @@ try {
     for(const session of [...readers,managed,own])await session.context.close()
     console.log(`Goal visibility and accountable owners at ${size}px passed`)
   }
+
+  if(!process.env.PEGBOARD_JOURNEY){await w.stop();w=await startWorker({settings});owner=w.owner}
+  // Data settings and permanent audit, through the same HTML forms as the owner uses.
+  if(!process.env.PEGBOARD_JOURNEY||process.env.PEGBOARD_JOURNEY==='custody')for(const [size,viewport] of sizes){
+    const context=await browser.newContext({viewport});await context.addCookies(cookies(owner));const page=await context.newPage()
+    const proof=async name=>{
+      assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`no sideways scroll: ${name} ${size}`)
+      // All controls in these screens have visible words; there are no icon-only controls requiring a tooltip.
+      for(const control of await page.locator('button,a[href]').all())assert.ok((await control.innerText()).trim().length>0,'control has visible words')
+      const focus=page.locator('main button,main input:not([type=hidden]),main select,main a').first();await focus.focus();assert.ok(await focus.evaluate(el=>el===document.activeElement))
+      if(process.env.PEGBOARD_PROOF_DIR){await mkdir(process.env.PEGBOARD_PROOF_DIR,{recursive:true});await page.screenshot({path:join(process.env.PEGBOARD_PROOF_DIR,`${name}-${size}.png`),fullPage:true})}
+    }
+    const p=ok(await owner.post('/api/v1/projects',{name:`Custody review ${size}`})),task=ok(await owner.post('/api/v1/tasks',{projectId:p.id,title:`Custody task ${size}`}))
+    ok(await owner.post(`/api/v1/tasks/${task.id}/comments`,{body:'synthetic-pegboard-701@example.com'}))
+    ok(await owner.post(`/api/v1/tasks/${task.id}/attachments?name=synthetic-pegboard-702.txt`,'synthetic-pegboard-703',{'content-type':'text/plain'}))
+    await page.goto(`${w.origin}/app/data`);await expect(page.getByRole('heading',{name:'Data settings',exact:true})).toBeVisible();await proof('data-settings')
+    let form=page.getByRole('form',{name:'Review retention',exact:true})
+    await form.getByLabel('Retention class',{exact:true}).selectOption('attachments_proofs');await form.getByLabel('Days to keep (blank keeps until explicit erasure)').fill('1');await form.getByRole('button',{name:'Preview retention',exact:true}).click()
+    await expect(page.getByRole('heading',{name:'Review retention change'})).toBeVisible();await proof('data-retention-review')
+    await page.getByRole('button',{name:'Publish retention',exact:true}).click();await expect(page.getByText('1 days, then eligible for reviewed expiry',{exact:true})).toBeVisible()
+    form=page.getByRole('form',{name:'Apply legal hold',exact:true});await form.getByLabel('Hold scope').selectOption('project');await form.getByLabel('Scope ID',{exact:true}).fill(p.id);await form.getByLabel('Authority for this hold').fill(`Custody authority ${size}`);await form.getByLabel('Hold expiry (UTC)').fill(new Date(Date.now()+86400000).toISOString().slice(0,16));await form.getByRole('button',{name:'Apply hold',exact:true}).click()
+    form=page.getByRole('form',{name:'Review erasure',exact:true});await form.getByLabel('Type of data').selectOption('project');await form.getByLabel('Record ID',{exact:true}).fill(p.id);await form.getByRole('button',{name:'Preview erasure'}).click()
+    await expect(page.getByText(`Legal hold: Custody authority ${size}`,{exact:false})).toBeVisible();await expect(page.getByRole('button',{name:'Record retained outcome'})).toBeVisible();await proof('data-held-erasure')
+    form=page.getByRole('form',{name:'Confirm erasure',exact:true});await form.getByRole('checkbox').check();await form.getByRole('button',{name:'Record retained outcome'}).click();await expect(page.getByRole('list',{name:'Data receipts'})).toContainText('retained')
+    form=page.getByRole('form',{name:'Release hold',exact:true}).last();await form.getByLabel('Confirm release').check();await form.getByRole('button',{name:'Release hold',exact:true}).click()
+    await page.goto(`${w.origin}/app/data?review=expiry&class=attachments_proofs`);await expect(page.getByRole('heading',{name:'Review eligible expiry'})).toBeVisible();await proof('data-expiry-review')
+    await page.getByRole('button',{name:'Expire reviewed records',exact:true}).click()
+    await page.goto(`${w.origin}/app/data?review=erase&type=project&id=${p.id}`);await expect(page.getByRole('button',{name:'Erase reviewed data',exact:true})).toBeVisible();await proof('data-erasure-review')
+    form=page.getByRole('form',{name:'Confirm erasure',exact:true});await form.getByRole('checkbox').check();await form.getByRole('button',{name:'Erase reviewed data',exact:true}).click()
+    await expect(page.getByRole('list',{name:'Data receipts'})).toContainText('complete');await proof('data-receipt')
+    assert.equal((await owner.get(`/api/v1/tasks/${task.id}`)).status,404)
+    await page.goto(`${w.origin}/app/audit`);form=page.getByRole('form',{name:'Search audit',exact:true});await form.getByLabel('Subject ID').fill(p.id);await form.getByRole('button',{name:'Search audit',exact:true}).click()
+    const rows=page.getByRole('list',{name:'Permanent audit events'});await expect(rows).toContainText('data.erasure');assert.ok(!(await rows.innerText()).includes('synthetic-pegboard-701@example.com'));await proof('permanent-audit')
+    const download=await page.request.get(w.origin+await page.getByRole('link',{name:'Export this page as JSON'}).getAttribute('href'));assert.equal(download.status(),200);assert.ok((await download.json()).events.every(e=>e.target_id===p.id))
+    await context.close();console.log(`Data custody at ${size}px passed`)
+  }
 } finally {
   await browser.close()
   await w.stop()
