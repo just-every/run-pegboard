@@ -1131,7 +1131,7 @@ describe('Goal visibility and accountability', { concurrency: false }, () => {
 
 // Public-door custody behavior shares the existing work graph test budget.
 describe('Data custody', {concurrency:false},()=>{
-  let server,chief,member,admin,erasedActorId
+  let server,chief,member,admin
   const pass=async(p,status=200)=>{const r=await p;assert.equal(r.status,status,JSON.stringify(r.body));return r.body}
   const makeProject=()=>pass(chief.post('/api/v1/projects',{name:'synthetic-pegboard-601'}))
   const makeTask=(projectId,extra={})=>pass(chief.post('/api/v1/tasks',{projectId,title:'synthetic-pegboard-602',...extra}))
@@ -1375,7 +1375,7 @@ describe('Data custody', {concurrency:false},()=>{
   })
 
   it('anonymizes an erased inactive actor without losing the permanent audit chain',async()=>{
-    const person=await server.person('synthetic-pegboard-622@example.com','Planted Actor synthetic-pegboard-622');erasedActorId=person.id
+    const person=await server.person('synthetic-pegboard-622@example.com','Planted Actor synthetic-pegboard-622')
     const p=await makeProject(),t=await makeTask(p.id)
     await pass(chief.post('/api/v1/grants',{objectType:'project',objectId:p.id,granteeId:person.id,level:'commenter'}))
     await pass(person.post(`/api/v1/tasks/${t.id}/comments`,{body:'synthetic-pegboard-623'}))
@@ -1402,7 +1402,15 @@ describe('Data custody', {concurrency:false},()=>{
     await pass(chief.post(`/api/v1/tasks/${t.id}/comments`,{body:'synthetic-pegboard-624'}))
     const kept=await makeProject(),keptTask=await makeTask(kept.id,{ownerId:member.id}),pdf=proofDocument('synthetic-pegboard-670'),keptFile=await pass(chief.post(`/api/v1/tasks/${keptTask.id}/attachments?name=synthetic-pegboard-670.pdf`,pdf,{'content-type':'application/pdf'})),keptProof=await pass(chief.post(`/api/v1/tasks/${keptTask.id}/proofs`,{attachmentId:keptFile.id})),keptDecision=await pass(chief.get(`/api/v1/proofs/${keptProof.id}/decision-preview`))
     await pass(chief.post(`/api/v1/proofs/${keptProof.id}/decisions`,{versionId:keptProof.versionId,token:keptDecision.token,action:'approve',reason:'synthetic-pegboard-671'}))
-    const followups=(await pass(chief.get('/api/v1/data'))).processorDeletions
+    const archivedActor=await server.person('synthetic-pegboard-672@example.com','synthetic-pegboard-672')
+    await pass(chief.post('/api/v1/grants',{objectType:'project',objectId:kept.id,granteeId:archivedActor.id,level:'commenter'}))
+    await pass(archivedActor.post(`/api/v1/tasks/${keptTask.id}/comments`,{body:'synthetic-pegboard-673'}))
+    await pass(chief.post(`/api/v1/workspaces/ws_main/people/${archivedActor.id}/account`,{status:'inactive'}))
+    await pass(eraseReview(await review('person',archivedActor.id)))
+    const archiveAgent=await server.person('synthetic-pegboard-674@example.com','synthetic-pegboard-674','agent')
+    await pass(chief.post('/api/v1/grants',{objectType:'project',objectId:p.id,granteeId:archiveAgent.id,level:'editor',scopes:['read','edit']}))
+    await pass(chief.post('/api/v1/data/processors',{processor:'synthetic-pegboard-675',approved:true,sharing:false,training:false,confirm:true}))
+    const archivedOutput=await pass(archiveAgent.post(`/api/v1/tasks/${t.id}/agent-outputs`,{projectId:p.id,processor:'synthetic-pegboard-675',body:'synthetic-pegboard-676',key:'synthetic-pegboard-677'}))
     const old=await archive()
     assert.ok((await pass(chief.get('/api/v1/admin/audit?action=archive.export'))).events.length>0)
     assert.deepEqual((await pass(admin.get('/api/v1/admin/audit?action=archive.export'))).events,[])
@@ -1410,6 +1418,7 @@ describe('Data custody', {concurrency:false},()=>{
     assert.equal((await member.post('/api/portability/exports',{})).status,403)
     const before=(await allAudit()).filter(e=>e.target_id===p.id)
     await pass(eraseReview(await review('project',p.id)))
+    const followups=(await pass(chief.get('/api/v1/data'))).processorDeletions;assert.ok(followups.some(r=>r.subject_id===archivedOutput.id))
     const later=await archive(),records=later.trim().split('\n').map(line=>JSON.parse(line))
     const archivedEvents=records.filter(r=>r.kind==='part').flatMap(r=>r.items).filter(r=>r.kind==='row'&&r.table==='peg_permanent_audit').map(r=>r.row)
     for(const event of before)assert.ok(archivedEvents.some(row=>row.id===event.id&&row.action===event.action))
@@ -1433,7 +1442,7 @@ describe('Data custody', {concurrency:false},()=>{
       assert.ok(items.some(r=>r.kind==='row'&&r.table==='peg_data_receipts'&&r.row.target_id===p.id))
       const copy=await startWorker({restoredPersist:join(scratch,'.wrangler/state')})
       try{
-        const restoredActor=await pass(copy.owner.get('/api/v1/admin/audit?actor='+erasedActorId))
+        const restoredActor=await pass(copy.owner.get('/api/v1/admin/audit?actor='+archivedActor.id))
         assert.ok(restoredActor.events.length>0);assert.ok(restoredActor.events.every(e=>e.actor==='Erased actor'));assert.ok((await pass(copy.owner.get('/api/v1/admin/audit?action=archive.restored'))).events.length>0)
         assert.equal((await copy.owner.get('/api/v1/tasks/'+t.id)).status,404)
         const pinned=await pass(copy.owner.get('/api/v1/proofs/'+keptProof.id));assert.equal(pinned.state,'approve');assert.equal(pinned.versions[0].digest,keptProof.digest)

@@ -2330,7 +2330,7 @@
       "executable": false
     },
     "tests/work-graph.test.mjs": {
-      "sha256": "50dbbcca32fe3d933573c8a3c36e0b5f838984ea066f8b25afc03b86bb513f83",
+      "sha256": "0ccb0cd86ea44bee1eda7aaef530657690e1c87bdee75cba3abb15e917d1ab85",
       "executable": false
     },
     "tsconfig.json": {
