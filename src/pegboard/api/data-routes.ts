@@ -4,7 +4,7 @@ import type { Hono } from 'hono'
 import type { Bindings } from '../../auth.server'
 import { operatorAuth, runtimeBindings } from '../../auth.server'
 import { actorOf } from '../workspace/people'
-import { all, batch, bound } from '../db'
+import { all, batch, bound, first, notFound } from '../db'
 import { permanentEvent, searchAudit, exportAudit } from '../audit/search'
 import { dataSettings, retentionPreview, setRetention, addHold, releaseHold, setProcessor, requireOwner } from '../data/settings'
 import { erasurePlan, erase } from '../data/erasure'
@@ -15,6 +15,12 @@ export function dataRoutes(app:Hono<{Bindings:Bindings}>) {
   app.get('/admin/audit',door(({db,actor,workspace,query})=>searchAudit(db,actor,workspace,Object.fromEntries(query))))
   app.get('/admin/audit/export',door(({db,actor,workspace,query})=>exportAudit(db,actor,workspace,Object.fromEntries(query))))
   app.get('/data',door(({db,actor,workspace})=>dataSettings(db,actor,workspace)))
+  app.get('/data/receipts/:id',door(async({db,actor,workspace,params})=>{
+    await requireOwner(db,actor,workspace)
+    const row=await first<{id:string;counts:string;retained:string}>(db,'SELECT * FROM peg_data_receipts WHERE id=? AND workspace_id=?',params.id,workspace)
+    if(!row)throw notFound()
+    return {...row,counts:JSON.parse(row.counts),retained:JSON.parse(row.retained)}
+  }))
   app.post('/data/retention-preview',door(({db,actor,workspace,input})=>retentionPreview(db,actor,workspace,input)))
   app.post('/data/retention',door(({db,actor,workspace,input})=>setRetention(db,actor,workspace,input),{next:()=>'/app/data'}))
   app.post('/data/holds',door(({db,actor,workspace,input})=>addHold(db,actor,workspace,input),{next:()=>'/app/data'}))

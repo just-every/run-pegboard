@@ -1210,6 +1210,10 @@ describe('Data custody', {concurrency:false},()=>{
     const journal=await pass(chief.get('/api/v1/data/journal'));assert.ok(journal.epoch>0&&journal.journal.length>3)
     await server.restart()
     const data=await pass(chief.get('/api/v1/data'));assert.ok(data.receipts.some(r=>r.id===receipt.id&&r.outcome==='complete'))
+    const saved=await pass(chief.get('/api/v1/data/receipts/'+receipt.id));assert.equal(saved.outcome,'complete');assert.deepEqual(saved.counts,receipt.counts)
+    assert.equal((await member.get('/api/v1/data/receipts/'+receipt.id)).status,403)
+    assert.equal((await chief.get('/api/v1/data/receipts/missing')).status,404)
+
     assert.equal((await chief.get(`/api/v1/tasks/${t.id}`)).status,404)
     const audit=await pass(chief.get('/api/v1/admin/audit?subject='+p.id));assert.ok(audit.events.some(e=>e.action==='data.erasure'&&e.result==='success'))
     const home=await makeProject(),remaining=await makeProject(),signoff=await makeTask(home.id,{kind:'approval',ownerId:member.id})
@@ -1247,6 +1251,23 @@ describe('Data custody', {concurrency:false},()=>{
     assert.ok(updated.receipts.some(r=>r.id===done.id&&r.outcome==='partial'))
   })
 
+
+  it('cleans expired local authentication separately from held work retention',async()=>{
+    const person=await server.person('synthetic-pegboard-629@example.com','synthetic-pegboard-629')
+    const p=await makeProject(),task=await makeTask(p.id)
+    const hold=await pass(chief.post('/api/v1/data/holds',{type:'task',id:task.id,authority:'synthetic-pegboard-630',expiresAt:Date.now()+86400000}))
+    await retention('transient_credentials_sessions',1)
+    await server.sql(`UPDATE oa_sessions SET expires_at=${Date.now()-3*86400000} WHERE operator_id='${person.id}'`)
+    assert.equal((await person.get('/api/v1/me')).status,401)
+    const input={class:'transient_credentials_sessions'},preview=await pass(chief.post('/api/v1/data/expiry-preview',input))
+    assert.equal(preview.counts.oa_sessions,1);assert.equal(preview.held,0,'a task hold does not retain expired authentication')
+    const result=await pass(chief.post('/api/v1/data/expire',{...input,cutoff:preview.cutoff,token:preview.token,confirm:true}))
+    assert.equal(result.counts.oa_sessions,1)
+    const remaining=await pass(chief.post('/api/v1/data/expiry-preview',{...input,cutoff:preview.cutoff}));assert.ok(!remaining.counts.oa_sessions)
+    assert.equal((await chief.get(`/api/v1/tasks/${task.id}`)).status,200)
+    assert.equal((await review('task',task.id)).blockers.includes('active_legal_hold'),true)
+    await pass(chief.post(`/api/v1/data/holds/${hold.id}/release`,{confirm:true}))
+  })
 
   it('anonymizes an erased inactive actor without losing the permanent audit chain',async()=>{
     const person=await server.person('synthetic-pegboard-622@example.com','Planted Actor synthetic-pegboard-622');erasedActorId=person.id

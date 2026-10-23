@@ -130,7 +130,7 @@ export async function erase(db:D1Database,actor:Actor,workspace:string,input:Rec
     }
     statements.push(bound(db,'DELETE FROM peg_data_erasing_tasks',[]))
   }
-  statements.push(bound(db,'INSERT INTO peg_data_receipts VALUES(?,?,?,?,?,?,?,?,?,?)',[id,workspace,actor.id,plan.type,plan.id,at,outcome,JSON.stringify(blocked?{}:plan.counts),JSON.stringify({counts:plan.retained,conflicts:plan.blockers}),externalLimits]),permanentEvent(db,{workspace,actor:actor.id,action:'data.erasure',type:plan.type,id:plan.id,result:blocked?'retained':'success'}))
+  statements.push(bound(db,'INSERT INTO peg_data_receipts VALUES(?,?,?,?,?,?,?,?,?,?)',[id,workspace,actor.id,plan.type,plan.id,at,outcome,JSON.stringify(blocked?{}:plan.counts),JSON.stringify({counts:plan.retained,conflicts:plan.blockers}),externalLimits]),permanentEvent(db,{workspace,actor:actor.id,action:'data.erasure',type:plan.type,id:plan.id,result:outcome==='complete'?'success':outcome}))
   await commitData(db,statements)
   return {id,outcome,counts:blocked?{}:plan.counts,retained:plan.retained,conflicts:plan.blockers,externalLimits}
 }
