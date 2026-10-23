@@ -1842,7 +1842,7 @@
       "executable": false
     },
     "src/pegboard/api/door.ts": {
-      "sha256": "e7a3f2165306f0a8d3282728b82108cfe784f636b73ca4eeb614e706d5401697",
+      "sha256": "b746422283d95f4c64f13bff025ed16c467d22f1cfdd67526eb623a2a7b8a5f8",
       "executable": false
     },
     "src/pegboard/api/field-routes.ts": {
@@ -2326,7 +2326,7 @@
       "executable": false
     },
     "tests/work-graph.test.mjs": {
-      "sha256": "d912fe648b2c6b24feaaef5ec3dbafbabf934128499f6eee2805c392cb57a37f",
+      "sha256": "0cf7674c2b71f04503d6e07909299fcb7296905ee77098125646dfc9da316cdc",
       "executable": false
     },
     "tsconfig.json": {

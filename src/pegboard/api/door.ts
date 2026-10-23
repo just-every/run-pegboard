@@ -75,16 +75,16 @@ export const door = (handler: (door: Door) => Promise<unknown>, options: Options
     if ((writing || /\/export$/.test(new URL(request.url).pathname)) && await workspaceRole(env.DB,context.actor.id,context.workspace)) {
       const id=newId('operation'), route=c.req.routePath, subject=/^(?:[a-z]+_[a-f0-9]{20}|[a-f0-9-]{36})$/.test(context.params.id??'')?context.params.id:id
       audited={context,id,action:request.method+' '+route,subject,type:route.split('/').filter(Boolean)[2]??'operation'}
-      await batch(env.DB,[permanentEvent(env.DB,{workspace:/\/(tasks|my-tasks|goals|metric-sources|time)(\/|$)/.test(c.req.routePath)?null:context.workspace,actor:context.actor.id,action:audited.action,type:audited.type,id:subject,result:'started',metadata:{id:audited.id}})])
+      await batch(env.DB,[permanentEvent(env.DB,{workspace:/\/(tasks|my-tasks|goals|metric-sources|time|timesheets)(\/|$)/.test(c.req.routePath)?null:context.workspace,actor:context.actor.id,action:audited.action,type:audited.type,id:subject,result:'started',metadata:{id:audited.id}})])
     }
     const result = await handler(context)
-    if(audited) await batch(env.DB,[permanentEvent(env.DB,{workspace:/\/(tasks|my-tasks|goals|metric-sources|time)(\/|$)/.test(c.req.routePath)?null:context.workspace,actor:context.actor.id,action:audited.action,type:audited.type,id:audited.subject,result:result instanceof Response&&result.status>=400?'failure':'success',metadata:{id:audited.id}})])
+    if(audited) await batch(env.DB,[permanentEvent(env.DB,{workspace:/\/(tasks|my-tasks|goals|metric-sources|time|timesheets)(\/|$)/.test(c.req.routePath)?null:context.workspace,actor:context.actor.id,action:audited.action,type:audited.type,id:audited.subject,result:result instanceof Response&&result.status>=400?'failure':'success',metadata:{id:audited.id}})])
     if (result instanceof Response) return result
     if (form && writing) return new Response(null, { status: 303, headers: { ...headers, location: landing(read.input, options.next?.(result, context) ?? '/app') } })
     return json(result ?? { ok: true })
   } catch (error) {
     const failure = describe(error)
-    if(audited) await batch(env.DB,[permanentEvent(env.DB,{workspace:/\/(tasks|my-tasks|goals|metric-sources|time)(\/|$)/.test(c.req.routePath)?null:audited.context.workspace,actor:audited.context.actor.id,action:audited.action,type:audited.type,id:audited.subject,result:'failure',metadata:{id:audited.id}})])
+    if(audited) await batch(env.DB,[permanentEvent(env.DB,{workspace:/\/(tasks|my-tasks|goals|metric-sources|time|timesheets)(\/|$)/.test(c.req.routePath)?null:audited.context.workspace,actor:audited.context.actor.id,action:audited.action,type:audited.type,id:audited.subject,result:'failure',metadata:{id:audited.id}})])
     if (form) return errorDocument(failure.status, failure.code)
     return json({ error: failure.code, ...failure.detail }, failure.status)
   }
