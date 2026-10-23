@@ -54,6 +54,8 @@ export async function erasurePlan(db:D1Database,actor:Actor,workspace:string,typ
     await take('peg_workspace_members','operator_id=?',[id]);await take('peg_personal_layout','operator_id=?',[id]);await take('peg_personal_moves','operator_id=?',[id]);await take('peg_personal_rules','operator_id=?',[id]);await take('peg_personal_sections','operator_id=?',[id]);await take('peg_personal_settings','operator_id=?',[id])
     await take('peg_grants',"grantee_type='person' AND grantee_id=?",[id]);await take('peg_task_collaborators','operator_id=?',[id]);await take('peg_approvers','operator_id=?',[id]);await take('peg_inbox','operator_id=? OR request_id IN(SELECT id FROM peg_access_requests WHERE requester_id=?)',[id,id]);await take('peg_access_requests','requester_id=?',[id])
     await take('peg_comments','author_id=?',[id]);await take('peg_attachments','created_by=?',[id])
+    retained.local_auth_material=(await first<{n:number}>(db,'SELECT (SELECT COUNT(*) FROM oa_sessions WHERE operator_id=?)+(SELECT COUNT(*) FROM oa_tokens WHERE operator_id=?)+(SELECT COUNT(*) FROM oa_credentials WHERE operator_id=?)+(SELECT COUNT(*) FROM oa_external_identities WHERE operator_id=?) n',id,id,id,id))!.n
+    retained.legacy_access_activity=(await first<{n:number}>(db,'SELECT COUNT(*) n FROM peg_audit WHERE actor_id=? OR subject_id=?',id,id))!.n
     // Identity values are replaced only after authority is explicitly deactivated. Permanent audit IDs remain opaque.
   }
   if(tasks.length||projects.length){
@@ -102,6 +104,7 @@ export async function erase(db:D1Database,actor:Actor,workspace:string,input:Rec
   const plan=await erasurePlan(db,actor,workspace,String(input.type),String(input.id))
   if(input.token!==plan.token||!(input.confirm===true||input.confirm==='yes'))throw conflict('erasure_review_required')
   const id=newId('erasure'),at=now(),blocked=plan.blockers.length>0
+  const outcome=blocked?'retained':plan.type==='person'?'partial':'complete'
   const deadline=Math.min(at+300000,...(await activeHolds(db,workspace)).map(h=>h.expires_at))
   const statements=[dataGuard(db,actor,plan.revision,deadline)]
   if(!blocked){
@@ -122,7 +125,7 @@ export async function erase(db:D1Database,actor:Actor,workspace:string,input:Rec
     }
     statements.push(bound(db,'DELETE FROM peg_data_erasing_tasks',[]))
   }
-  statements.push(bound(db,'INSERT INTO peg_data_receipts VALUES(?,?,?,?,?,?,?,?,?,?)',[id,workspace,actor.id,plan.type,plan.id,at,blocked?'retained':'complete',JSON.stringify(blocked?{}:plan.counts),JSON.stringify({counts:plan.retained,conflicts:plan.blockers}),externalLimits]),permanentEvent(db,{workspace,actor:actor.id,action:'data.erasure',type:plan.type,id:plan.id,result:blocked?'retained':'success'}))
+  statements.push(bound(db,'INSERT INTO peg_data_receipts VALUES(?,?,?,?,?,?,?,?,?,?)',[id,workspace,actor.id,plan.type,plan.id,at,outcome,JSON.stringify(blocked?{}:plan.counts),JSON.stringify({counts:plan.retained,conflicts:plan.blockers}),externalLimits]),permanentEvent(db,{workspace,actor:actor.id,action:'data.erasure',type:plan.type,id:plan.id,result:blocked?'retained':'success'}))
   await commitData(db,statements)
-  return {id,outcome:blocked?'retained':'complete',counts:blocked?{}:plan.counts,retained:plan.retained,conflicts:plan.blockers,externalLimits}
+  return {id,outcome,counts:blocked?{}:plan.counts,retained:plan.retained,conflicts:plan.blockers,externalLimits}
 }

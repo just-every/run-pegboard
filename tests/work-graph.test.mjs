@@ -1229,6 +1229,21 @@ describe('Data custody', {concurrency:false},()=>{
   })
 
 
+  it('anonymizes an erased inactive actor without losing the permanent audit chain',async()=>{
+    const person=await server.person('synthetic-pegboard-622@example.com','Planted Actor synthetic-pegboard-622')
+    const p=await makeProject(),t=await makeTask(p.id)
+    await pass(chief.post('/api/v1/grants',{objectType:'project',objectId:p.id,granteeId:person.id,level:'commenter'}))
+    await pass(person.post(`/api/v1/tasks/${t.id}/comments`,{body:'synthetic-pegboard-623'}))
+    const before=(await allAudit()).filter(e=>e.actor_id===person.id);assert.ok(before.length>0)
+    let preview=await review('person',person.id);assert.ok(preview.blockers.includes('deactivate_person_before_erasure'))
+    await pass(chief.post(`/api/v1/workspaces/ws_main/people/${person.id}/account`,{status:'inactive'}))
+    preview=await review('person',person.id);assert.deepEqual(preview.blockers,[])
+    const receipt=await pass(eraseReview(preview));assert.equal(receipt.outcome,'partial');assert.ok(receipt.retained.local_auth_material>0)
+    const after=await allAudit();for(const event of before){const row=after.find(e=>e.id===event.id);assert.ok(row);assert.equal(row.actor,'Erased actor');assert.equal(row.actor_id,person.id)}
+    assert.ok(!JSON.stringify(after).includes('Planted Actor')&&!JSON.stringify(after).includes('synthetic-pegboard-622@example.com'))
+    assert.equal((await person.get(`/api/v1/tasks/${t.id}`)).status,401)
+    const ownerPreview=await review('person',chief.id);assert.ok(ownerPreview.blockers.includes('owner_requires_explicit_installation_reset_or_replacement'))
+  })
   it('preserves permanent audit through native archive restore and refuses an old archive with the later erasure journal',async()=>{
     const archive=async()=>{
       const created=await pass(chief.post('/api/portability/exports',{}),201)
@@ -1250,7 +1265,7 @@ describe('Data custody', {concurrency:false},()=>{
     const scratch=await mkdtemp(join(tmpdir(),'pegboard-custody-archive-'))
     try{
       // Native public CLI restore into an empty installation of the exact committed product tree.
-      execFileSync('tar',['-xf','-','-C',scratch],{input:execFileSync('git',['archive','HEAD']),stdio:['pipe','pipe','pipe']})
+      execFileSync('git',['archive','--output',join(scratch,'product.tar'),'HEAD']);execFileSync('tar',['-xf',join(scratch,'product.tar'),'-C',scratch],{stdio:'pipe'})
       await symlink(join(process.cwd(),'node_modules'),join(scratch,'node_modules'),'dir')
       await mkdir(join(scratch,'exports'),{recursive:true})
       await writeFile(join(scratch,'exports/old.rer'),old,{mode:0o600});await writeFile(join(scratch,'exports/later.rer'),later,{mode:0o600})
@@ -1270,19 +1285,5 @@ describe('Data custody', {concurrency:false},()=>{
     }finally{await rm(scratch,{recursive:true,force:true})}
   },{timeout:180000})
 
-  it('anonymizes an erased inactive actor without losing the permanent audit chain',async()=>{
-    const person=await server.person('synthetic-pegboard-622@example.com','Planted Actor synthetic-pegboard-622')
-    const p=await makeProject(),t=await makeTask(p.id)
-    await pass(chief.post('/api/v1/grants',{objectType:'project',objectId:p.id,granteeId:person.id,level:'commenter'}))
-    await pass(person.post(`/api/v1/tasks/${t.id}/comments`,{body:'synthetic-pegboard-623'}))
-    const before=(await allAudit()).filter(e=>e.actor_id===person.id);assert.ok(before.length>0)
-    let preview=await review('person',person.id);assert.ok(preview.blockers.includes('deactivate_person_before_erasure'))
-    await pass(chief.post(`/api/v1/workspaces/ws_main/people/${person.id}/account`,{status:'inactive'}))
-    preview=await review('person',person.id);assert.deepEqual(preview.blockers,[])
-    const receipt=await pass(eraseReview(preview));assert.equal(receipt.outcome,'complete')
-    const after=await allAudit();for(const event of before){const row=after.find(e=>e.id===event.id);assert.ok(row);assert.equal(row.actor,'Erased actor');assert.equal(row.actor_id,person.id)}
-    assert.ok(!JSON.stringify(after).includes('Planted Actor')&&!JSON.stringify(after).includes('synthetic-pegboard-622@example.com'))
-    assert.equal((await person.get(`/api/v1/tasks/${t.id}`)).status,401)
-    const ownerPreview=await review('person',chief.id);assert.ok(ownerPreview.blockers.includes('owner_requires_explicit_installation_reset_or_replacement'))
-  })
+
 })

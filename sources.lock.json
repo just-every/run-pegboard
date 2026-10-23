@@ -1886,7 +1886,7 @@
       "executable": false
     },
     "src/pegboard/data/erasure.ts": {
-      "sha256": "3942c0957e26f065a6f3496d905866c32182153bbbd95d69b4e71ddc190ab486",
+      "sha256": "93659cdc7085c5c2392e7fb9522e74589b4384dedbe1af3e90e179cb4b520a9a",
       "executable": false
     },
     "src/pegboard/data/expiry.ts": {
@@ -1894,7 +1894,7 @@
       "executable": false
     },
     "src/pegboard/data/settings.ts": {
-      "sha256": "cfe5a8c7cb56ef898c74089343e4e09284653bee515d55ce8983acc37bac1151",
+      "sha256": "b791b88c7e3e17580aca3d7966bf89afb5ca328d48e74d3b718f14e9a95d5655",
       "executable": false
     },
     "src/pegboard/db.ts": {
@@ -2010,7 +2010,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/data.tsx": {
-      "sha256": "27901610e6b5afd0e210578146910bd08cb168bde4f1cd2e42c8d8b1be151538",
+      "sha256": "814f52b65b7143d6bd2c2e99623679f40992b718e6ee6e4ab29fcd349d2aeb8d",
       "executable": false
     },
     "src/pegboard/ui/pages/decision.tsx": {
@@ -2290,7 +2290,7 @@
       "executable": false
     },
     "tests/work-graph.test.mjs": {
-      "sha256": "13be15e21495be5eb402b79acc14c128d23d6e8071f3575d932e9ebf0771b593",
+      "sha256": "9b4c2ec7d67d0431794421812c0e0ac14a5825c49e126a5d06eeec24fe4942eb",
       "executable": false
     },
     "tsconfig.json": {
