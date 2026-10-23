@@ -118,7 +118,7 @@
       "executable": false
     },
     "docs/DATA-CUSTODY.md": {
-      "sha256": "4f82ba2356d7da14ac06f6c8bef5dfd9acb35f1641e0cd1e0fe0ae7839bb6e57",
+      "sha256": "ae8af796d04bd674a67273baf716494cf13443187596e031d1981a515eeecf00",
       "executable": false
     },
     "docs/DATA-RECORD-API.md": {
@@ -1922,7 +1922,7 @@
       "executable": false
     },
     "src/pegboard/data/expiry.ts": {
-      "sha256": "94b98dbbc7d021230969b5c2f7401b91d22c0a602b27aebdb5089da71a48cace",
+      "sha256": "257bf2998e6f5c66cdd0e55634a12d336c8629fed01cdaeec18ceafb24167879",
       "executable": false
     },
     "src/pegboard/data/processors.ts": {
@@ -2330,7 +2330,7 @@
       "executable": false
     },
     "tests/work-graph.test.mjs": {
-      "sha256": "63405eb081bd729b2c9e18ab709433235d88fa9d628549a919d12e5837aeb194",
+      "sha256": "0eef35827958cd9f4b52bb028fc0b9b04873f168ed8220ffc6cff16cf825c22c",
       "executable": false
     },
     "tsconfig.json": {

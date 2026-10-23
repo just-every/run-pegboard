@@ -1269,6 +1269,10 @@ describe('Data custody', {concurrency:false},()=>{
     await pass(chief.post('/api/v1/data/processors',{processor:'synthetic-pegboard-621',approved:true,sharing:false,training:false,confirm:true}))
     const updated=await pass(chief.get('/api/v1/data'));assert.equal(updated.processors.find(p=>p.processor==='synthetic-pegboard-621').training,0)
     assert.ok(updated.receipts.some(r=>r.id===done.id&&r.outcome==='partial'))
+    await retention('provider_logs',1)
+    const retainedLogs=await pass(chief.post('/api/v1/data/expiry-preview',{class:'provider_logs'}))
+    assert.equal(retainedLogs.supported,false);assert.match(retainedLogs.limits,/immutable and retained/);assert.deepEqual(retainedLogs.counts,{})
+    assert.equal((await chief.post('/api/v1/data/expire',{class:'provider_logs',cutoff:retainedLogs.cutoff,token:retainedLogs.token,confirm:true})).status,409)
   })
 
 

@@ -45,8 +45,9 @@ starts no automatic destructive job. Expiry has its own exact-scope review with
 a frozen cutoff.
 
 Current expiry covers work history, attachment/proof bytes and version/decision
-records, agent outputs/retrieval copies, provider delivery logs and expired local
-sessions/tokens. A proof expires as a coherent group after every version is
+records, agent outputs/retrieval copies and expired local sessions/tokens.
+Provider delivery logs remain immutable and retained; their expiry door is
+unavailable and its class preview discloses that limitation. A proof expires as a coherent group after every version is
 eligible and unheld. Otherwise the preview discloses retained dependencies.
 Trash/import-original and agent-prompt stores are not built; no cleanup of those
 stores is claimed. PEG-024/054/064 and PEG-062/074/075 inherit the retention classes

@@ -23,7 +23,7 @@ export async function expiryPlan(db:D1Database,actor:Actor,workspace:string,inpu
   if(input.class==='product_history')candidates.push({table:'peg_history',where:'at<=? AND task_id IN(SELECT id FROM peg_tasks WHERE workspace_id=?)',args:[cutoff,workspace],taskColumn:'task_id'})
   if(input.class==='attachments_proofs')candidates.push({table:'peg_attachments',where:'created_at<=? AND task_id IN(SELECT id FROM peg_tasks WHERE workspace_id=?)',args:[cutoff,workspace],taskColumn:'task_id'})
   if(input.class==='agent_prompts_outputs')candidates.push({table:'peg_agent_outputs',where:'created_at<=? AND task_id IN(SELECT id FROM peg_tasks WHERE workspace_id=?)',args:[cutoff,workspace],taskColumn:'task_id'})
-  if(input.class==='provider_logs')candidates.push({table:'peg_time_delivery_history',where:'at<=? AND sheet_id IN(SELECT id FROM peg_timesheets WHERE workspace_id=?)',args:[cutoff,workspace]})
+  // Provider delivery history is currently immutable. Keep it until a separately reviewed custody door exists.
   // Transient authority is installation-scoped; never mix it with retained work history.
   if(input.class==='transient_credentials_sessions'){
     const expired=await all<{id:string}>(db,'SELECT id FROM oa_sessions WHERE expires_at<=? OR revoked_at IS NOT NULL',cutoff)
@@ -74,11 +74,11 @@ export async function expiryPlan(db:D1Database,actor:Actor,workspace:string,inpu
   // Child decisions and versions must be removed before their proof and its bytes.
   const rank=(table:string)=>table==='peg_proof_decisions'?0:table==='peg_proof_versions'?1:table==='peg_proofs'?2:3
   selections.sort((a,b)=>rank(a.table)-rank(b.table))
-  const supported=['product_history','attachments_proofs','agent_prompts_outputs','provider_logs','transient_credentials_sessions'].includes(input.class)
+  const supported=['product_history','attachments_proofs','agent_prompts_outputs','transient_credentials_sessions'].includes(input.class)
   const counts:Record<string,number>={};for(const s of selections)counts[s.table]=(counts[s.table]??0)+s.keys.length
   const processorRequests=await processorFollowups(db,selections)
   const plan={class:input.class as string,cutoff,selections,processorRequests,proofs,reopenTasks,retainedDependencies,counts,held,supported,
-    limits:supported?'Only the named current stores are included. No external deletion has been confirmed.':'This retention class is published, but its product storage door is not implemented. No expiry or processor cleanup is claimed.'}
+    limits:supported?'Only the named current stores are included. No external deletion has been confirmed.':input.class==='provider_logs'?'Provider delivery history remains immutable and retained. Its expiry door is not implemented; no cleanup is claimed.':'This retention class is published, but its product storage door is not implemented. No expiry or processor cleanup is claimed.'}
   return {...plan,revision,token:await digest([workspace,actor.id,revision,plan])}
 }
 export async function expire(db:D1Database,actor:Actor,workspace:string,input:Record<string,any>) {
