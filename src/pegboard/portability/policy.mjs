@@ -4,7 +4,7 @@ const importSafety={peg_meetings:{revoked_at:[revoked],segments:['[]']},peg_meet
 export default {
  product:'runeditrun/foundation',
  includeTables:['oa_operators','oa_bootstrap','oa_external_identities','oa_invitation_cancellations','oa_tokens','oa_auth_settings','oa_auth_audit','oa_domain_rules','oa_logout_events','oc_owner_claims','oc_idp_grants'],
- excludeTables:['peg_meeting_guards','rer_dependency_keys','rer_dependency_pending','rer_dependency_codes','peg_webhooks','peg_data_guards','peg_data_erasing_tasks','peg_data_erasing_proofs'],
+ excludeTables:['peg_analytics_keys','peg_analytics_snapshots','peg_analytics_rows','peg_analytics_guards','peg_meeting_guards','rer_dependency_keys','rer_dependency_pending','rer_dependency_codes','peg_webhooks','peg_data_guards','peg_data_erasing_tasks','peg_data_erasing_proofs'],
  requiredConfiguration:['OWNER_EMAIL','SESSION_SECRET','SETUP_TOKEN','AUTH_ORIGIN','MAIL_PROVIDER','MAIL_FROM'],
  async validateStaged({db,tables}){
   const search=tables.peg_search_records,tasks=tables.peg_tasks

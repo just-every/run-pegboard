@@ -1,3 +1,4 @@
+import { analyticsRoutes } from './analytics-routes'
 import {meetingRoutes} from './meeting-routes'
 import { engineeringRoutes } from './engineering-routes'
 import { recordRoutes } from './record-routes'
@@ -33,3 +34,5 @@ recordRoutes(pegboardApi)
 engineeringRoutes(pegboardApi)
 
 meetingRoutes(pegboardApi)
+
+analyticsRoutes(pegboardApi)

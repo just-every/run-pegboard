@@ -54,7 +54,7 @@ Protocol references:
 - [GitHub REST issue comments](https://docs.github.com/en/rest/issues/comments)
 - [GitHub REST pull requests](https://docs.github.com/en/rest/pulls/pulls)
 
-Default adopted pending CT: owner or administrator only; source context private
+CT-approved defaults (23 October 2026, 12:11Z): owner or administrator only; source context private
 to its authorizing administrator; explicit read consent and separate exact
 outbound consent; no standing outbound authority; current task permissions
 always required. Verified provider event delivery and replay, shared source-grant administration and live qualification remain

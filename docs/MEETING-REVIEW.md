@@ -57,8 +57,8 @@ Protocol references:
 - [Google Meet transcript entries](https://developers.google.com/workspace/meet/api/reference/rest/v2/conferenceRecords.transcripts.entries/list)
 - [Microsoft Graph transcript content](https://learn.microsoft.com/en-us/graph/api/calltranscript-get)
 
-Default adopted pending CT: owner or administrator only, source context private
+CT-approved defaults (23 October 2026, 12:11Z): owner or administrator only, source context private
 to the importing person, explicit organizer and participant consent, no automatic
 recording, no implicit agent reads and separate exact approval of each internal
-project disclosure. PEG-039 stays partial pending CT and the remaining connection,
+project disclosure. PEG-039 stays partial pending the remaining connection,
 retention and live qualification work.

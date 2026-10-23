@@ -1601,3 +1601,115 @@ describe('Meeting review',{concurrency:false},()=>{
     assert.equal((await ok(admin.get(`/api/v1/meetings/${meeting.meeting.id}/context`))).meeting.segments.length,0)
   })
 })
+
+describe('Analyst exports', {concurrency:false}, () => {
+  let w, owner, mia
+  const project = name => ok(owner.post('/api/v1/projects', {name}))
+  before(async () => { w=await startWorker();owner=w.owner;mia=await w.person('analyst-member@example.com','Analyst member') }, {timeout:120000})
+  after(() => w?.stop())
+  it('reconciles scoped analyst snapshots and incremental removals across three projects', async () => {
+    const projects = await Promise.all(['Analytics one','Analytics two','Analytics three'].map(name => project(name)))
+    const tasks = []
+    for (const [i,p] of projects.entries()) tasks.push(await ok(owner.post('/api/v1/tasks', {projectId:p.id,title:'Analytics work '+i,estimateHours:i+1,internalNotes:'Never expose this note'})))
+    await ok(owner.post(`/api/v1/tasks/${tasks[0].id}/projects`, {projectId:projects[1].id}))
+    const child = await ok(owner.post('/api/v1/tasks', {parentId:tasks[0].id,title:'Analytics child',estimateHours:0.5}))
+    await ok(owner.post('/api/v1/tasks', {title:'Private analyst distraction'}))
+    const outside = await project('Outside analyst scope')
+    await ok(owner.post('/api/v1/tasks', {projectId:outside.id,title:'Outside analyst distraction'}))
+    const person = await w.person('analyst-time@example.com','Analyst time contributor')
+    await ok(owner.post('/api/v1/grants', {objectType:'project',objectId:projects[0].id,granteeId:person.id,level:'editor'}))
+    const sheet = await ok(person.post('/api/v1/timesheets', {startDate:'2026-10-22',endDate:'2026-10-22'}))
+    await ok(person.post(`/api/v1/timesheets/${sheet.id}/entries`, {taskId:tasks[0].id,projectId:projects[0].id,date:'2026-10-22',seconds:3723,key:'synthetic-pegboard-4401'}))
+    await ok(person.post(`/api/v1/timesheets/${sheet.id}/decision`, {action:'submit',revision:(await ok(person.get(`/api/v1/timesheets/${sheet.id}`))).token}))
+    await ok(owner.post(`/api/v1/timesheets/${sheet.id}/decision`, {action:'approve',revision:(await ok(owner.get(`/api/v1/timesheets/${sheet.id}`))).token}))
+    const key = await ok(owner.post('/api/v1/analytics/keys', {name:'Reviewed analyst access',projects:projects.map(p=>p.id),fields:{Projects:['id','name','status'],Tasks:['id','title','status','estimateHours'],TaskProjects:['id','taskId','projectId'],TimeEntries:['id','taskId','projectId','sheetId','seconds','adjustmentOf']},expiresAt:Date.now()+86400000,consent:true}))
+    const read = async(path, extra={}) => {
+      const response = await fetch(new URL(path,w.origin), {headers:{authorization:'Basic '+Buffer.from(key.id+':'+key.secret).toString('base64'),prefer:'odata.maxpagesize=2',...extra}})
+      return {status:response.status,body:response.headers.get('content-type').includes('xml')?await response.text():await response.json(),headers:response.headers}
+    }
+    assert.equal((await read(key.servicePath)).body.value.length,4)
+    const metadata = await read(key.servicePath+'/$metadata')
+    assert.equal(metadata.status,200);assert.match(metadata.body,/EntityType Name="Tasks"/);assert.ok(!metadata.body.includes('internal_notes'))
+    const first = await read(key.servicePath+'/Tasks?$count=true')
+    assert.equal(first.status,200);assert.equal(first.body['@odata.count'],4);assert.equal(first.body.value.length,2)
+    assert.equal(first.headers.get('cache-control'),'private, no-store')
+    const snapshot = first.body['@pegboard.snapshot']
+    await ok(owner.patch(`/api/v1/tasks/${tasks[0].id}`,{status:'doing'}))
+    let page = first.body, records = [...page.value]
+    while (page['@odata.nextLink']) { page = (await read(page['@odata.nextLink'])).body;records.push(...page.value) }
+    assert.equal(new Set(records.map(t=>t.id)).size,4);assert.equal(records.find(t=>t.id===tasks[0].id).status,'todo')
+    assert.ok(page['@pegboard.stale']);assert.ok(!JSON.stringify(records).includes('distraction'));assert.ok(!JSON.stringify(records).includes('Never expose'))
+    const native = await ok(owner.get('/api/v1/rollup?projects='+projects.map(p=>p.id).join(',')))
+    assert.equal(records.length,native.tasks);assert.equal(records.reduce((n,t)=>n+t.estimateHours,0),native.estimateHours)
+    const time = await read(key.servicePath+'/TimeEntries?snapshot='+snapshot)
+    assert.equal(time.body.value.reduce((n,t)=>n+t.seconds,0),(await ok(owner.get(`/api/v1/timesheets/${sheet.id}`))).totalSeconds)
+    const placements=[];let membership=(await read(key.servicePath+'/TaskProjects?snapshot='+snapshot)).body
+    for(;;){placements.push(...membership.value);if(!membership['@odata.nextLink'])break;membership=(await read(membership['@odata.nextLink'])).body}
+    assert.equal(placements.filter(p=>p.taskId===tasks[0].id).length,2);assert.equal(placements.filter(p=>p.taskId===child.id).length,2)
+    assert.equal((await read(key.servicePath+'/Tasks?$select=internal_notes')).status,400)
+    assert.equal((await read(key.servicePath+'/Tasks?$filter=title')).status,400)
+    const erase = await ok(owner.post('/api/v1/data/erasure-preview',{type:'task',id:tasks[2].id}))
+    await ok(owner.post('/api/v1/data/erase',{type:'task',id:tasks[2].id,token:erase.token,confirm:true}))
+    assert.equal((await read(first.body['@odata.nextLink'])).status,410,'an erased payload is unavailable even from a saved page')
+    const delta = await read(page['@odata.deltaLink'])
+    assert.equal(delta.status,200);assert.equal(delta.body.value.length,2)
+    assert.equal(delta.body.value.find(t=>t.id===tasks[0].id).status,'doing')
+    assert.ok(delta.body.value.some(t=>t.reason==='deleted'&&t.id.includes(tasks[2].id)))
+    assert.deepEqual((await read(delta.body['@odata.deltaLink'])).body.value,[],'a repeated refresh has no duplicate changes')
+    await w.restart()
+    assert.equal((await read(key.servicePath+'/Tasks')).body.value.length,2,'durable credential survives restart and still pages')
+    await ok(owner.post(`/api/v1/analytics/keys/${key.id}/revoke`,{}))
+    for(const path of [key.servicePath,key.servicePath+'/$metadata',page['@odata.deltaLink'],first.body['@odata.nextLink']])assert.equal((await read(path)).status,401)
+  })
+
+  it('denies analyst scope escalation and fences cached work after movement or credential expiry', async () => {
+    const p=await project('Analyst credential boundary'),outside=await project('Beyond analyst credential')
+    const task=await ok(owner.post('/api/v1/tasks',{projectId:p.id,title:'Scoped before movement'}))
+    const input={name:'Limited analyst',projects:[p.id],fields:{Tasks:['id','status']},expiresAt:Date.now()+86400000,consent:true}
+    assert.equal((await mia.post('/api/v1/analytics/keys',input)).status,403)
+    assert.equal((await owner.post('/api/v1/analytics/keys',{...input,consent:false})).status,400)
+    assert.equal((await owner.post('/api/v1/analytics/keys',{...input,fields:{Tasks:['description']}})).status,400)
+    const key=await ok(owner.post('/api/v1/analytics/keys',input)),other=await ok(owner.post('/api/v1/analytics/keys',input))
+    const read=async(path,secret=key.secret)=>{const response=await fetch(new URL(path,w.origin),{headers:{authorization:'Bearer '+secret}});return {status:response.status,body:await response.json()}}
+    const page=await read(key.servicePath+'/Tasks')
+    assert.deepEqual(Object.keys(page.body.value[0]).sort(),['id','status'])
+    assert.equal((await read(key.servicePath+'/Projects')).status,404)
+    assert.equal((await read(key.servicePath+'/Tasks',other.secret)).status,401)
+    assert.equal((await read(other.servicePath+'/Tasks?snapshot='+page.body['@pegboard.snapshot'],other.secret)).status,410)
+    const listed=JSON.stringify(await ok(owner.get('/api/v1/analytics/keys')))
+    assert.ok(!listed.includes(key.secret));assert.ok(!listed.includes('token_hash'))
+    await ok(owner.post(`/api/v1/tasks/${task.id}/move`,{from:p.id,to:outside.id}))
+    assert.equal((await read(key.servicePath+'/Tasks?snapshot='+page.body['@pegboard.snapshot'])).status,410)
+    assert.equal((await read(page.body['@odata.deltaLink'])).body.value[0].reason,'deleted')
+    await w.sql(`UPDATE peg_analytics_keys SET expires_at=1 WHERE id='${key.id}'`)
+    assert.equal((await read(key.servicePath+'/Tasks')).status,401)
+    let admin=await w.person('analyst-admin@example.com','Analyst administrator')
+    await ok(owner.post('/api/v1/workspaces/ws_main/people/'+admin.id+'/account',{role:'admin'}))
+    admin=await w.signIn(admin.email,admin.name,admin.id)
+    const delegated=await ok(admin.post('/api/v1/analytics/keys',input))
+    await ok(owner.post('/api/v1/workspaces/ws_main/people/'+admin.id+'/account',{role:'member'}))
+    assert.equal((await read(delegated.servicePath+'/Tasks',delegated.secret)).status,401)
+  })
+
+  it('keeps analyst credentials and cached export payloads out of native archives', async () => {
+    const p=await project('Archived analyst authority')
+    await ok(owner.post('/api/v1/tasks',{projectId:p.id,title:'Archived ordinary task'}))
+    const key=await ok(owner.post('/api/v1/analytics/keys',{name:'Archive exclusion',projects:[p.id],fields:{Tasks:['id','title']},expiresAt:Date.now()+86400000,consent:true}))
+    const feed=await fetch(new URL(key.servicePath+'/Tasks',w.origin),{headers:{authorization:'Bearer '+key.secret}})
+    assert.equal(feed.status,200)
+    const snapshot=(await feed.json())['@pegboard.snapshot']
+    const created=await ok(owner.post('/api/portability/exports',{}),201)
+    let archive
+    for(let page=0;page<100;page++){
+      const status=await ok(owner.post(`/api/portability/exports/${created.id}/advance`,{maxParts:16}))
+      if(status.phase==='complete'){archive=await ok(owner.get(`/api/portability/exports/${created.id}/download`));break}
+    }
+    assert.ok(archive,'native archive completes')
+    assert.ok(!archive.includes(key.secret),'the once-shown credential cannot travel')
+    assert.ok(!archive.includes(snapshot),'the export cache cannot travel')
+    const rows=archive.trim().split('\n').map(line=>JSON.parse(line)).filter(part=>part.kind==='part').flatMap(part=>part.items).filter(item=>item.kind==='row')
+    assert.ok(rows.some(item=>item.table==='peg_tasks'&&item.row.title==='Archived ordinary task'))
+    assert.ok(!rows.some(item=>item.table.startsWith('peg_analytics_')),'neither credential hashes nor temporary material travel')
+  })
+
+})

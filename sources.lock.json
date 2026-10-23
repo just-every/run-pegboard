@@ -82,7 +82,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "c6d4c912a6a9f4ea1c8cb650a2191ed2289b3bf2c8617347a5c987dde7ae0883",
+      "sha256": "e02a2412edea91f2f6c769a22b6bcd13050547a20c0fa014f4ca5ead55bce949",
       "executable": false
     },
     "AGENTS.md": {
@@ -98,7 +98,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "dce680cc3689fef1a6039060e2474effc7387f7b5c072f73e9e085c0c631212b",
+      "sha256": "aee0e96dd998382b5938546e00d898acad57b087c910f449707a50b5ee863c8e",
       "executable": false
     },
     "DEMO.md": {
@@ -117,6 +117,10 @@
       "sha256": "801b7451e69d7b1cffbfc09b780bf6007a8e6412777e28fea54a64fe13c3ad16",
       "executable": false
     },
+    "docs/ANALYTICS-EXPORT.md": {
+      "sha256": "1dd6c3a06f52a0d291dfe014f99e9765c7695bcd2ac7986fb698a3dcc493223f",
+      "executable": false
+    },
     "docs/DATA-CUSTODY.md": {
       "sha256": "ae8af796d04bd674a67273baf716494cf13443187596e031d1981a515eeecf00",
       "executable": false
@@ -126,7 +130,7 @@
       "executable": false
     },
     "docs/ENGINEERING-HANDOFF.md": {
-      "sha256": "0aea5d47219ebf5aad9118562fbb833e5d0abca8a3e22404d08f6c965d8a7f2f",
+      "sha256": "bbdba5ad539121c87eaee5406844757659f2b76364d06974d098975a9ee4017a",
       "executable": false
     },
     "docs/LOOK.md": {
@@ -134,7 +138,7 @@
       "executable": false
     },
     "docs/MEETING-REVIEW.md": {
-      "sha256": "9974ccb7f00697110ca22fa87a752eb496d6efca12eda4d6b587ea42429875e7",
+      "sha256": "e0200cf28eebde9537fbbc8fd191c8954c04d1f2e0f3ab823987d459c181cf35",
       "executable": false
     },
     "docs/TIME-SERVICE-PACKETS.md": {
@@ -311,6 +315,10 @@
     },
     "migrations/core/0039_meeting_review.sql": {
       "sha256": "6d2bf1329c9f54b6586acee881e23784db5fc41202b840ff4f06b098847bceeb",
+      "executable": false
+    },
+    "migrations/core/0040_analytics_export.sql": {
+      "sha256": "f57fe6bdc6214963b0c3e5b0253826f8d82a5c5a5c7377c589d084e4cdda13ea",
       "executable": false
     },
     "ONBOARDING.md": {
@@ -1853,8 +1861,24 @@
       "sha256": "fe9f566590b441e4db5a76f7c396b2c7e5edbcfd1c063ca4da7c1b75e6de540d",
       "executable": false
     },
+    "src/pegboard/analytics-export/keys.ts": {
+      "sha256": "f6a1c75c854eb69f5fc2f3a72ff248dd5dea2eda5d105e3fe1dbd1bea37a6daa",
+      "executable": false
+    },
+    "src/pegboard/analytics-export/schema.ts": {
+      "sha256": "ff7a2da78cc5db7e706fba58cceb4f8e7dca6ad06856372fd2ac88fa5eedf7da",
+      "executable": false
+    },
+    "src/pegboard/analytics-export/snapshots.ts": {
+      "sha256": "e8358e656b171195de1275da7b4bebd84103ac2a024d1b0051c59e839fdd4820",
+      "executable": false
+    },
     "src/pegboard/api/access-routes.ts": {
       "sha256": "e59eab4e325ee29cf9ef8e6efb3a3a0096b5ef0ff283cfd0e1e48bd6888019b8",
+      "executable": false
+    },
+    "src/pegboard/api/analytics-routes.ts": {
+      "sha256": "8634b433044336ab8fbccbcd1bd8102a1ffaef95a5844d348faddd0bea698bec",
       "executable": false
     },
     "src/pegboard/api/data-routes.ts": {
@@ -1878,7 +1902,7 @@
       "executable": false
     },
     "src/pegboard/api/index.ts": {
-      "sha256": "7de599d5cbbf9dc142e203c4b54509cb42c4bbf7cdd931a0d2d1ba32e0f3fe0b",
+      "sha256": "0a882e3a155064d9625152307aa3ab76f1cf2f5b854d2be497ec69d5d103829a",
       "executable": false
     },
     "src/pegboard/api/meeting-routes.ts": {
@@ -2022,7 +2046,7 @@
       "executable": false
     },
     "src/pegboard/portability/policy.mjs": {
-      "sha256": "883e976809c300632cca90b92791e120ff729fe417e9b829c1425e45057bf9bd",
+      "sha256": "23e70a2f1e4520a341ac6f11302cbc250c94cfaac2a6d6226b1580210282c013",
       "executable": false
     },
     "src/pegboard/records/custody.ts": {
@@ -2390,7 +2414,7 @@
       "executable": false
     },
     "tests/work-graph.test.mjs": {
-      "sha256": "7d0720495314e02dfd8cb970df479daf15dfd0a91befd2dddb5bd083b4bf507e",
+      "sha256": "09a759c072b5eac17719bb8417315d1e8d844d22a8c9ba10a5af658026806c75",
       "executable": false
     },
     "tsconfig.json": {
