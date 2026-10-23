@@ -76,8 +76,9 @@ Member/guest profiles must first be deactivated and owned work transferred.
 Current person removal anonymizes the profile and permanent-audit presentation,
 removes its reviewed work dependents and fences the inactive identity. Local
 authentication material and legacy access activity remain retained; the receipt
-is **partial** and lists those stores. No claim of complete identity erasure is
-made. The last owner requires an explicit installation reset or replacement.
+is **partial** and lists those stores. Scopes with retained legacy access metadata or attachment activity also receive
+partial receipts and disclose the retained history before removal. No claim of
+complete identity or historical erasure is made. The last owner requires an explicit installation reset or replacement.
 
 The native `rer export` / `rer import` commands and `/api/portability` use one
 seed-owned Base portability policy. Restored recurrences remain inactive, grants

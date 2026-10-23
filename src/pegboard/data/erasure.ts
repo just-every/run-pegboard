@@ -3,6 +3,7 @@ import policy from '../portability/policy.mjs'
 import { all, bound, conflict, first, invalid, newId, now, placeholders, type Param } from '../db'
 import { digest } from '../decisions/revision'
 import { permanentEvent } from '../audit/search'
+import { auditMetadata } from '../audit/metadata'
 import { openTask } from '../tasks/access'
 import { reopenGuard } from '../tasks/history'
 import type { Actor } from '../workspace/people'
@@ -100,6 +101,14 @@ export async function erasurePlan(db:D1Database,actor:Actor,workspace:string,typ
   const remaining=affected.filter(task=>!tasks.includes(task))
   const reopenTasks=(await all<{id:string}>(db,`SELECT id FROM peg_tasks WHERE id IN (${placeholders(remaining)}) AND status='done' AND EXISTS(SELECT 1 FROM peg_approval_tasks WHERE task_id=peg_tasks.id)`,...remaining)).map(t=>t.id)
   if(reopenTasks.length)retained.reopened_signoffs=reopenTasks.length
+  const targets=[...new Set([id,...tasks,...selections.flatMap(s=>s.keys.flatMap(k=>typeof k.id==='string'?[k.id]:[]))])]
+  const legacy=await all<{detail:string}>(db,`SELECT detail FROM peg_audit WHERE workspace_id=? AND target_id IN (${placeholders(targets)})`,workspace,...targets)
+  const unsafeLegacy=legacy.filter(row=>{const raw=JSON.parse(row.detail),safe=auditMetadata(raw);return Object.entries(raw).some(([key,value])=>value!==null&&value!==undefined&&JSON.stringify(safe[key])!==JSON.stringify(value))}).length
+  if(unsafeLegacy)retained.legacy_access_activity=Math.max(retained.legacy_access_activity??0,unsafeLegacy)
+  if(type==='attachment'){
+    const file=await first<{task_id:string}>(db,'SELECT task_id FROM peg_attachments WHERE id=?',id)
+    if(file)retained.attachment_activity=(await first<{n:number}>(db,"SELECT COUNT(*) n FROM peg_history WHERE task_id=? AND kind='attachment.added'",file.task_id))!.n
+  }
   const counts=Object.fromEntries(selections.map(s=>[s.table,s.keys.length]))
   const plan={type,id,name,tasks,projects,reopenTasks,selections,counts,blockers:[...new Set(blockers)],holds:holds.map(h=>({id:h.id,authority:h.authority,expiresAt:h.expires_at})),retained,externalLimits}
   return {...plan,revision,token:await digest([workspace,actor.id,revision,plan])}
@@ -108,7 +117,7 @@ export async function erase(db:D1Database,actor:Actor,workspace:string,input:Rec
   const plan=await erasurePlan(db,actor,workspace,String(input.type),String(input.id))
   if(input.token!==plan.token||!(input.confirm===true||input.confirm==='yes'))throw conflict('erasure_review_required')
   const id=newId('erasure'),at=now(),blocked=plan.blockers.length>0
-  const outcome=blocked?'retained':plan.type==='person'?'partial':'complete'
+  const outcome=blocked?'retained':plan.type==='person'||plan.retained.legacy_access_activity>0||plan.retained.attachment_activity>0?'partial':'complete'
   const deadline=Math.min(at+300000,...(await activeHolds(db,workspace)).map(h=>h.expires_at))
   const statements=[dataGuard(db,actor,plan.revision,deadline)]
   if(!blocked){
