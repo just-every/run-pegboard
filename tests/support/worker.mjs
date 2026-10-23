@@ -17,7 +17,7 @@ export class Client {
     if (body !== undefined) { init.headers['content-type'] ??= 'application/json'; init.body = typeof body === 'string' || body instanceof Uint8Array ? body : JSON.stringify(body) }
     const response = await fetch(`${this.origin}${path}`, init)
     const type = response.headers.get('content-type') ?? ''
-    const parsed = type.includes('json') ? await response.json() : await response.text()
+    const parsed = (type.includes('application/json') || type.includes('+json')) ? await response.json() : await response.text()
     return { status: response.status, body: parsed, headers: response.headers }
   }
   get(path) { return this.call('GET', path) }

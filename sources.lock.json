@@ -2282,7 +2282,7 @@
       "executable": false
     },
     "tests/support/worker.mjs": {
-      "sha256": "4c57fcba68c9276b57c0e649c77a5e6ce6ed9507c01004b04a8fb7517b9c8f9a",
+      "sha256": "baab8469884f975241e3e8b67c11e70f1ff7789ddbfa5d646903425afa39e30f",
       "executable": false
     },
     "tests/typecheck-checks.mjs": {
