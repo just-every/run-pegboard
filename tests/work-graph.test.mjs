@@ -1404,6 +1404,9 @@ describe('Data custody', {concurrency:false},()=>{
     await pass(chief.post(`/api/v1/proofs/${keptProof.id}/decisions`,{versionId:keptProof.versionId,token:keptDecision.token,action:'approve',reason:'synthetic-pegboard-671'}))
     const followups=(await pass(chief.get('/api/v1/data'))).processorDeletions
     const old=await archive()
+    assert.ok((await pass(chief.get('/api/v1/admin/audit?action=archive.export'))).events.length>0)
+    assert.deepEqual((await pass(admin.get('/api/v1/admin/audit?action=archive.export'))).events,[])
+    assert.deepEqual((await pass(admin.get('/api/v1/admin/audit?action=archive.exported'))).events,[])
     assert.equal((await member.post('/api/portability/exports',{})).status,403)
     const before=(await allAudit()).filter(e=>e.target_id===p.id)
     await pass(eraseReview(await review('project',p.id)))

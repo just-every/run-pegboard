@@ -47,6 +47,6 @@ export async function archiveResponse(request:Request,original:Bindings):Promise
     try{await requireOwner(env.DB,actorOf(session),'ws_main');return session.operator.id}catch{return null}
   }})
   const response=await handler(request)
-  if(response&&session&&response.status<400&&!['GET','HEAD'].includes(request.method))await batch(env.DB,[permanentEvent(env.DB,{workspace:'ws_main',actor:session.operator.id,action:new URL(request.url).pathname.includes('/imports')?'archive.import':'archive.export',type:'archive',id:'ws_main',result:response.status<400?'success':'failure'})])
+  if(response&&session&&response.status<400&&!['GET','HEAD'].includes(request.method))await batch(env.DB,[permanentEvent(env.DB,{workspace:null,actor:session.operator.id,action:new URL(request.url).pathname.includes('/imports')?'archive.import':'archive.export',type:'archive',id:'ws_main',result:response.status<400?'success':'failure'})])
   return response
 }
