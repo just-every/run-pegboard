@@ -7,7 +7,7 @@ export const permanentEvent=(db:D1Database,input:{workspace:string|null;actor:st
 export async function searchAudit(db:D1Database,actor:Actor,workspace:string,filter:Record<string,unknown>={}) {
   const role=await requireAdministrator(db,actor,workspace)
   // Installation authentication events are owner-only; personal work remains outside workspace audit.
-  const args:Param[]=[workspace], conditions=[role==='owner'?"(workspace_id=? OR (workspace_id IS NULL AND action LIKE 'authentication.%'))":'workspace_id=?']
+  const args:Param[]=[workspace,actor.id], conditions=[role==='owner'?"(workspace_id=? OR (workspace_id IS NULL AND (actor_id=? OR action LIKE 'authentication.%' OR action LIKE 'archive.%')))":'(workspace_id=? OR (workspace_id IS NULL AND actor_id=?))']
   for(const [key,column] of [['action','action'],['actor','actor_id'],['subject','target_id']] as const) if(filter[key]){
     const value=String(filter[key]);if(value.length>100)throw invalid('audit_filter')
     conditions.push(`${column}=?`);args.push(value)

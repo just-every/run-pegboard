@@ -1854,7 +1854,7 @@
       "executable": false
     },
     "src/pegboard/audit/search.ts": {
-      "sha256": "910c0b3114b5a457ade638101ce0aba6ebf8074490f3e22362f4e0c144b1941f",
+      "sha256": "9560c3fa74625d068d446f6c99c121957c8b1a85dcd60ae3e3dc8524b3cf709c",
       "executable": false
     },
     "src/pegboard/authorization/audit.ts": {
@@ -2290,7 +2290,7 @@
       "executable": false
     },
     "tests/work-graph.test.mjs": {
-      "sha256": "9b4c2ec7d67d0431794421812c0e0ac14a5825c49e126a5d06eeec24fe4942eb",
+      "sha256": "29844c472c45c5178ad94016c1a9b2dc6691ac89bad805c114ce0c0e9ba0d3df",
       "executable": false
     },
     "tsconfig.json": {
