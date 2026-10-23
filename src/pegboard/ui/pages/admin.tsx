@@ -7,6 +7,7 @@ type People = Awaited<ReturnType<typeof listPeople>>
 export function AdminPage({ viewer, workspace, settings, people }: { viewer: Viewer; workspace: string; settings: WorkspaceSettings; people: People }) {
   const here = '/app/admin'
   return <Shell viewer={viewer} current="/app/admin" title="Administration" chip={`${people.length} PEOPLE`} facts={['People, sharing and policy for this workspace']}>
+    <Card title="Data and audit"><p>Review permanent events, retention and irreversible removal.</p><p><a className="button quiet" href="/app/audit">Permanent audit</a> {viewer.role==='owner'&&<a className="button quiet" href="/app/data">Data settings</a>}</p></Card>
     <Card title="People">
       <ul className="rows">{people.map(person => <li key={person.id}><span className="grow"><strong>{person.name}</strong><br /><small>{person.email}</small></span><span className="tagline">{person.role}</span>{person.status !== 'active' && <span className="tagline warn">{person.status}</span>}
         {person.role !== 'owner' && person.role !== 'admin' && <form method="post" action={`/api/v1/workspaces/${workspace}/people/${person.id}/role`}><input type="hidden" name="_next" value={here} /><select className="select" name="role" defaultValue={person.role ?? 'member'} aria-label={`Role for ${person.name}`}>{['manager', 'member', 'analyst', 'guest', 'agent'].map(role => <option key={role} value={role}>{role}</option>)}</select><button className="button quiet" type="submit">Change role</button></form>}</li>)}</ul>

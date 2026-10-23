@@ -3,7 +3,7 @@ import type { Viewer } from '../../../ui/viewer'
 import type { searchAudit } from '../../audit/search'
 export function AuditPage({viewer,data,input}:{viewer:Viewer;data:Awaited<ReturnType<typeof searchAudit>>;input:Record<string,string>}) {
   const params=new URLSearchParams(input)
-  return <Shell viewer={viewer} current="/app/audit" title="Permanent audit" facts={['Append-only records','opaque identities','UTC']}>
+  return <Shell viewer={viewer} current="/app/admin" title="Permanent audit" facts={['Append-only records','opaque identities','UTC']}>
     <Card title="Find an event">
       <p>Task activity can contain work details. This permanent audit records actions and results without names, addresses, credentials or file bodies. Erased actors retain an opaque identity.</p>
       <form method="get" action="/app/audit" className="stack" aria-label="Search audit">

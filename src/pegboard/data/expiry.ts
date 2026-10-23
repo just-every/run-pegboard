@@ -1,3 +1,4 @@
+import { processorFollowups,followupStatements } from './processors'
 import { reopenGuard } from '../tasks/history'
 import { createPortability } from '@runeditrun/rer/modules/portability'
 import policy from '../portability/policy.mjs'
@@ -72,7 +73,8 @@ export async function expiryPlan(db:D1Database,actor:Actor,workspace:string,inpu
   selections.sort((a,b)=>rank(a.table)-rank(b.table))
   const supported=['product_history','attachments_proofs','agent_prompts_outputs','provider_logs','transient_credentials_sessions'].includes(input.class)
   const counts:Record<string,number>={};for(const s of selections)counts[s.table]=(counts[s.table]??0)+s.keys.length
-  const plan={class:input.class as string,cutoff,selections,proofs,reopenTasks,retainedDependencies,counts,held,supported,
+  const processorRequests=await processorFollowups(db,selections)
+  const plan={class:input.class as string,cutoff,selections,processorRequests,proofs,reopenTasks,retainedDependencies,counts,held,supported,
     limits:supported?'Only the named current stores are included. No external deletion has been confirmed.':'This retention class is published, but its product storage door is not implemented. No expiry or processor cleanup is claimed.'}
   return {...plan,revision,token:await digest([workspace,actor.id,revision,plan])}
 }
@@ -81,14 +83,14 @@ export async function expire(db:D1Database,actor:Actor,workspace:string,input:Re
   if(input.token!==plan.token||!(input.confirm===true||input.confirm==='yes'))throw conflict('expiry_review_required')
   if(!plan.supported)throw conflict('retention_store_not_implemented')
   const at=now(),id=newId('expiry'),service=await createPortability({db,policy}),deadline=Math.min(at+300000,...(await activeHolds(db,workspace)).map(h=>h.expires_at))
-  const statements=[dataGuard(db,actor,plan.revision,deadline),...await service.invalidateTransfersStatements()]
+  const statements=[dataGuard(db,actor,plan.revision,deadline),...followupStatements(db,actor,workspace,plan.processorRequests),...await service.invalidateTransfersStatements()]
   for(const task of plan.reopenTasks)statements.push(reopenGuard(db,task,actor.id,'retention_expiry'),bound(db,"UPDATE peg_tasks SET status='todo',completed_at=NULL,updated_at=? WHERE id=?",[at,task]))
   for(const proof of plan.proofs)statements.push(bound(db,'INSERT INTO peg_data_erasing_proofs VALUES(?)',[proof]))
   for(const selected of plan.selections.filter(s=>s.table==='peg_agent_outputs'))for(const key of selected.keys){const row=await first<{actor_id:string;operation_key:string}>(db,'SELECT actor_id,operation_key FROM peg_agent_outputs WHERE id=?',key.id);if(row)statements.push(bound(db,"INSERT OR IGNORE INTO peg_data_erased_objects VALUES('agent_output_key',?,?)",[await digest([row.actor_id,row.operation_key]),at]))}
   for(const selected of plan.selections){for(const key of selected.keys)statements.push(...await service.erasureStatements(selected.table,key));statements.push(...deletion(db,selected))}
   statements.push(bound(db,'DELETE FROM peg_data_erasing_proofs',[]))
   if(plan.selections.length)statements.push(...await service.redactionStatements())
-  statements.push(bound(db,'INSERT INTO peg_data_receipts VALUES(?,?,?,?,?,?,?,?,?,?)',[id,workspace,actor.id,'retention',plan.class,at,plan.held||plan.retainedDependencies?'partial':'complete',JSON.stringify(plan.counts),JSON.stringify({held:plan.held,retainedDependencies:plan.retainedDependencies}),externalLimits]),permanentEvent(db,{workspace,actor:actor.id,action:'retention.expired',type:'retention',id,result:plan.held||plan.retainedDependencies?'retained':'success'}))
+  statements.push(bound(db,'INSERT INTO peg_data_receipts VALUES(?,?,?,?,?,?,?,?,?,?)',[id,workspace,actor.id,'retention',plan.class,at,plan.held||plan.retainedDependencies||plan.processorRequests.length?'partial':'complete',JSON.stringify(plan.counts),JSON.stringify({held:plan.held,retainedDependencies:plan.retainedDependencies,processorRequests:plan.processorRequests.length}),externalLimits]),permanentEvent(db,{workspace,actor:actor.id,action:'retention.expired',type:'retention',id,result:plan.held||plan.retainedDependencies||plan.processorRequests.length?'retained':'success'}))
   await commitData(db,statements)
-  return {id,counts:plan.counts,held:plan.held,retainedDependencies:plan.retainedDependencies,externalLimits}
+  return {id,counts:plan.counts,held:plan.held,retainedDependencies:plan.retainedDependencies,processorRequests:plan.processorRequests.length,externalLimits}
 }

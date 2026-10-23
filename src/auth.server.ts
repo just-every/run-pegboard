@@ -1,3 +1,5 @@
+import { batch } from './pegboard/db'
+import { permanentEvent } from './pegboard/audit/search'
 import { rejectedResponse } from './base/rejected-response'
 import { createDependencies } from './modules/dependencies/index.mjs'
 import { createIdpOwnerClaimHandler, createOwnerClaimHandler } from './modules/owner-claim/index.mjs'
@@ -106,6 +108,10 @@ async function handleAuthResponse(request: Request, original: Bindings): Promise
 }
 
 export async function authResponse(request: Request, original: Bindings): Promise<Response | null> {
+ const path=new URL(request.url).pathname,authPath=path.startsWith('/auth/')||path==='/signin'
+ const before=authPath?await operatorAuth(runtimeBindings(original)).getSession(request):null
  const response = await handleAuthResponse(request, original)
+ if(authPath&&response&&[400,401,403,429].includes(response.status))await batch(original.DB,[permanentEvent(original.DB,{workspace:null,actor:before?.operator.id??null,action:'authentication.refused',type:'authentication',id:'installation',result:'failure'})])
+ if(path==='/auth/signout'&&response&&response.status<400)await batch(original.DB,[permanentEvent(original.DB,{workspace:null,actor:before?.operator.id??null,action:'authentication.signed_out',type:'authentication',id:'installation'})])
  return response ? rejectedResponse(request, response) : null
 }

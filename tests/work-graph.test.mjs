@@ -6,7 +6,7 @@ import {mkdtemp,readFile,writeFile,mkdir,symlink,rm} from 'node:fs/promises'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 import { after, before, describe, it } from 'node:test'
-import { startWorker } from './support/worker.mjs'
+import { startWorker,proofDocument } from './support/worker.mjs'
 import { startTimeServices } from './support/time-services.mjs'
 
 let w, owner, mia, gus, nina
@@ -1162,8 +1162,11 @@ describe('Data custody', {concurrency:false},()=>{
     await pass(chief.post('/api/v1/my-tasks/rules',{group:'Later',sectionId:section.id}));await pass(chief.get('/api/v1/my-tasks'))
     assert.ok((await pass(chief.get('/api/v1/admin/audit?subject='+personal.id))).events.some(e=>e.action==='rule.personal_effect'))
     assert.ok(!(await pass(admin.get('/api/v1/admin/audit?subject='+personal.id))).events.length,'another administrator cannot read personal audit')
+    const anonymous=new chief.constructor(server.origin,'','anonymous')
+    await pass(anonymous.post('/auth/confirm',{token:'synthetic-pegboard-660'}),400)
     const events=await allAudit(),raw=JSON.stringify(events)
-    for(const forbidden of ['Planted Name','planted@example.com','synthetic-pegboard-606','synthetic-pegboard-607','synthetic-pegboard-609',chief.cookie])assert.ok(!raw.includes(forbidden),forbidden)
+    assert.ok(events.some(e=>e.action==='authentication.refused'&&e.result==='failure'));assert.ok(events.some(e=>e.action==='authentication.signed_in'))
+    for(const forbidden of ['synthetic-pegboard-660','Planted Name','planted@example.com','synthetic-pegboard-606','synthetic-pegboard-607','synthetic-pegboard-609',chief.cookie])assert.ok(!raw.includes(forbidden),forbidden)
     assert.ok(events.some(e=>e.action==='person.role_changed'&&e.subject_id===member.id))
     assert.ok(events.some(e=>e.action==='task.comment.added'&&e.actor_id===member.id))
     assert.ok(events.some(e=>e.action.includes('/projects/:id/export')&&e.result==='success'))
@@ -1185,8 +1188,8 @@ describe('Data custody', {concurrency:false},()=>{
     const p=await makeProject(),other=await makeProject(),t=await makeTask(p.id,{title:'synthetic-pegboard-640',ownerId:member.id}),child=await makeTask(undefined,{parentId:t.id}),shared=await makeTask(p.id)
     await pass(chief.post(`/api/v1/tasks/${shared.id}/projects`,{projectId:other.id}))
     await pass(chief.post(`/api/v1/tasks/${t.id}/comments`,{body:'synthetic-pegboard-613'}))
-    const file=await pass(chief.post(`/api/v1/tasks/${t.id}/attachments?name=synthetic-pegboard-614.txt`,'synthetic-pegboard-615',{'content-type':'text/plain'}))
-    const proof=await pass(chief.post(`/api/v1/tasks/${t.id}/proofs`,{attachmentId:file.id})),v2File=await pass(chief.post(`/api/v1/tasks/${t.id}/attachments?name=synthetic-pegboard-653.txt`,'synthetic-pegboard-654',{'content-type':'text/plain'}))
+    const file=await pass(chief.post(`/api/v1/tasks/${t.id}/attachments?name=synthetic-pegboard-614.pdf`,proofDocument('synthetic-pegboard-615'),{'content-type':'application/pdf'}))
+    const proof=await pass(chief.post(`/api/v1/tasks/${t.id}/proofs`,{attachmentId:file.id})),v2File=await pass(chief.post(`/api/v1/tasks/${t.id}/attachments?name=synthetic-pegboard-653.pdf`,proofDocument('synthetic-pegboard-654'),{'content-type':'application/pdf'}))
     const v2=await pass(chief.post(`/api/v1/proofs/${proof.id}/versions`,{attachmentId:v2File.id,currentVersion:proof.versionId})),proofDecision=await pass(chief.get(`/api/v1/proofs/${proof.id}/decision-preview`))
     await pass(chief.post(`/api/v1/proofs/${proof.id}/decisions`,{versionId:v2.versionId,token:proofDecision.token,action:'approve',reason:'synthetic-pegboard-655'}))
     const agent=await server.person('synthetic-pegboard-656@example.com','synthetic-pegboard-656','agent')
@@ -1267,14 +1270,14 @@ describe('Data custody', {concurrency:false},()=>{
     const p=await makeProject(),q=await makeProject(),task=await makeTask(p.id,{ownerId:member.id})
     await pass(chief.post(`/api/v1/tasks/${task.id}/projects`,{projectId:q.id}))
     await pass(chief.post('/api/v1/grants',{objectType:'project',objectId:p.id,granteeId:member.id,level:'editor'}))
-    const file=await pass(chief.post(`/api/v1/tasks/${task.id}/attachments?projectId=${p.id}&name=synthetic-pegboard-642.txt`,'synthetic-pegboard-643',{'content-type':'text/plain'}))
+    const file=await pass(chief.post(`/api/v1/tasks/${task.id}/attachments?projectId=${p.id}&name=synthetic-pegboard-642.pdf`,proofDocument('synthetic-pegboard-643'),{'content-type':'application/pdf'}))
     const proof=await pass(chief.post(`/api/v1/tasks/${task.id}/proofs`,{attachmentId:file.id}))
-    const expected=await import('node:crypto').then(c=>c.createHash('sha256').update('synthetic-pegboard-643').digest('hex'));assert.equal(proof.digest,expected)
+    const expected=await import('node:crypto').then(c=>c.createHash('sha256').update(proofDocument('synthetic-pegboard-643')).digest('hex'));assert.equal(proof.digest,expected)
     let preview=await pass(chief.get(`/api/v1/proofs/${proof.id}/decision-preview`))
     assert.equal((await member.post(`/api/v1/proofs/${proof.id}/decisions`,{versionId:proof.versionId,token:preview.token,action:'approve',reason:'synthetic-pegboard-644'})).status,403)
     await pass(chief.post(`/api/v1/proofs/${proof.id}/decisions`,{versionId:proof.versionId,token:preview.token,action:'approve',reason:'planted-proof-reason@example.com'}))
     assert.equal((await pass(chief.get(`/api/v1/proofs/${proof.id}`))).state,'approve')
-    const nextFile=await pass(chief.post(`/api/v1/tasks/${task.id}/attachments?projectId=${q.id}&name=synthetic-pegboard-645.txt`,'synthetic-pegboard-646',{'content-type':'text/plain'}))
+    const nextFile=await pass(chief.post(`/api/v1/tasks/${task.id}/attachments?projectId=${q.id}&name=synthetic-pegboard-645.pdf`,proofDocument('synthetic-pegboard-646'),{'content-type':'application/pdf'}))
     const next=await pass(chief.post(`/api/v1/proofs/${proof.id}/versions`,{attachmentId:nextFile.id,currentVersion:proof.versionId}))
     assert.equal((await pass(chief.get(`/api/v1/proofs/${proof.id}`))).state,'pending')
     assert.equal((await chief.post(`/api/v1/proofs/${proof.id}/decisions`,{versionId:proof.versionId,token:preview.token,action:'approve',reason:'stale'})).status,409)
@@ -1286,6 +1289,26 @@ describe('Data custody', {concurrency:false},()=>{
     await pass(chief.post(`/api/v1/data/holds/${hold.id}/release`,{confirm:true}))
     await pass(eraseReview(await review('proof',proof.id)))
     for(const path of [`/api/v1/proofs/${proof.id}`,`/api/v1/attachments/${file.id}`,`/api/v1/attachments/${nextFile.id}`])assert.equal((await chief.get(path)).status,404)
+    assert.equal((await chief.get(`/api/v1/tasks/${task.id}`)).status,200)
+  })
+
+  it('expires proof versions together only after every version is eligible and no proof hold remains',async()=>{
+    const p=await makeProject(),task=await makeTask(p.id,{ownerId:member.id})
+    const upload=async n=>pass(chief.post(`/api/v1/tasks/${task.id}/attachments?name=synthetic-pegboard-${n}.pdf`,proofDocument('synthetic-pegboard-'+n),{'content-type':'application/pdf'}))
+    const a=await upload(661),proof=await pass(chief.post(`/api/v1/tasks/${task.id}/proofs`,{attachmentId:a.id})),b=await upload(662)
+    const v2=await pass(chief.post(`/api/v1/proofs/${proof.id}/versions`,{attachmentId:b.id,currentVersion:proof.versionId})),d=await pass(chief.get(`/api/v1/proofs/${proof.id}/decision-preview`))
+    await pass(chief.post(`/api/v1/proofs/${proof.id}/decisions`,{versionId:v2.versionId,token:d.token,action:'approve',reason:'synthetic-pegboard-663'}))
+    await retention('attachments_proofs',1)
+    await server.sql(`UPDATE peg_attachments SET created_at=${Date.now()-3*86400000} WHERE id='${a.id}'`)
+    const input={class:'attachments_proofs'},mixed=await pass(chief.post('/api/v1/data/expiry-preview',input))
+    assert.equal(mixed.retainedDependencies,1);assert.ok(!mixed.counts.peg_proof_versions);assert.equal(mixed.counts.peg_attachments,0)
+    await server.sql(`UPDATE peg_attachments SET created_at=${Date.now()-3*86400000} WHERE id='${b.id}'`)
+    const hold=await pass(chief.post('/api/v1/data/holds',{type:'proof',id:proof.id,authority:'synthetic-pegboard-664',expiresAt:Date.now()+86400000})),held=await pass(chief.post('/api/v1/data/expiry-preview',input))
+    assert.equal(held.held,2);assert.ok(!held.counts.peg_proof_versions)
+    await pass(chief.post(`/api/v1/data/holds/${hold.id}/release`,{confirm:true}))
+    const reviewed=await pass(chief.post('/api/v1/data/expiry-preview',input));assert.equal(reviewed.counts.peg_proof_versions,2);assert.equal(reviewed.counts.peg_proof_decisions,1)
+    const done=await pass(chief.post('/api/v1/data/expire',{...input,cutoff:reviewed.cutoff,token:reviewed.token,confirm:true}));assert.equal(done.counts.peg_attachments,2)
+    for(const path of [`/api/v1/proofs/${proof.id}`,`/api/v1/attachments/${a.id}`,`/api/v1/attachments/${b.id}`])assert.equal((await chief.get(path)).status,404)
     assert.equal((await chief.get(`/api/v1/tasks/${task.id}`)).status,200)
   })
 
@@ -1308,6 +1331,7 @@ describe('Data custody', {concurrency:false},()=>{
     await pass(chief.post(`/api/v1/data/holds/${hold.id}/release`,{confirm:true}))
     const preview=await pass(chief.post('/api/v1/data/expiry-preview',expiry));assert.equal(preview.counts.peg_agent_outputs,1);assert.equal(preview.counts.peg_agent_retrieval,1)
     const done=await pass(chief.post('/api/v1/data/expire',{...expiry,cutoff:preview.cutoff,token:preview.token,confirm:true}));assert.equal(done.counts.peg_agent_retrieval,1)
+    assert.equal(done.processorRequests,1);const followups=await pass(chief.get('/api/v1/data'));assert.ok(followups.processorDeletions.some(r=>r.subject_id===output.id&&r.state==='needs_owner_action'));assert.ok(followups.receipts.some(r=>r.id===done.id&&r.outcome==='partial'))
     assert.equal((await chief.get(`/api/v1/agent-outputs/${output.id}`)).status,404);assert.equal((await chief.get(`/api/v1/agent-outputs/${output.id}/retrieval`)).status,404)
     assert.equal((await agent.post(`/api/v1/tasks/${task.id}/agent-outputs`,input)).status,409,'the original intake key cannot resurrect an expired output')
   })

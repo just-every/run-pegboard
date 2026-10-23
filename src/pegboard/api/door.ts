@@ -57,6 +57,7 @@ export const door = (handler: (door: Door) => Promise<unknown>, options: Options
     const session = await operatorAuth(env).getSession(request)
     form = (request.headers.get('content-type') ?? '').includes('form')
     if (!session) {
+      await batch(env.DB,[permanentEvent(env.DB,{workspace:null,actor:null,action:'authentication.refused',type:'api',id:'installation',result:'failure'})])
       if (form) return new Response(null, { status: 303, headers: { ...headers, location: '/signin' } })
       return json({ error: 'unauthenticated' }, 401)
     }

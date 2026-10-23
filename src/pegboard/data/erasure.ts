@@ -1,3 +1,4 @@
+import { processorFollowups,followupStatements } from './processors'
 import { createPortability } from '@runeditrun/rer/modules/portability'
 import policy from '../portability/policy.mjs'
 import { all, bound, conflict, first, invalid, newId, now, placeholders, type Param } from '../db'
@@ -133,18 +134,20 @@ export async function erasurePlan(db:D1Database,actor:Actor,workspace:string,typ
     if(file)retained.attachment_activity=(await first<{n:number}>(db,"SELECT COUNT(*) n FROM peg_history WHERE task_id=? AND kind='attachment.added'",file.task_id))!.n
   }
   const counts=Object.fromEntries(selections.map(s=>[s.table,s.keys.length]))
-  const plan={type,id,name,tasks,projects,proofs,reopenTasks,selections,counts,blockers:[...new Set(blockers)],holds:holds.map(h=>({id:h.id,authority:h.authority,expiresAt:h.expires_at})),retained,externalLimits}
+  const processorRequests=await processorFollowups(db,selections)
+  const plan={type,id,name,tasks,projects,proofs,processorRequests,reopenTasks,selections,counts,blockers:[...new Set(blockers)],holds:holds.map(h=>({id:h.id,authority:h.authority,expiresAt:h.expires_at})),retained,externalLimits}
   return {...plan,revision,token:await digest([workspace,actor.id,revision,plan])}
 }
 export async function erase(db:D1Database,actor:Actor,workspace:string,input:Record<string,any>) {
   const plan=await erasurePlan(db,actor,workspace,String(input.type),String(input.id))
   if(input.token!==plan.token||!(input.confirm===true||input.confirm==='yes'))throw conflict('erasure_review_required')
   const id=newId('erasure'),at=now(),blocked=plan.blockers.length>0
-  const outcome=blocked?'retained':plan.type==='person'||plan.retained.legacy_access_activity>0||plan.retained.attachment_activity>0?'partial':'complete'
+  const outcome=blocked?'retained':plan.processorRequests.length>0||plan.type==='person'||plan.retained.legacy_access_activity>0||plan.retained.attachment_activity>0?'partial':'complete'
   const deadline=Math.min(at+300000,...(await activeHolds(db,workspace)).map(h=>h.expires_at))
   const statements=[dataGuard(db,actor,plan.revision,deadline)]
   if(!blocked){
     const service=await createPortability({db,policy})
+    statements.push(...followupStatements(db,actor,workspace,plan.processorRequests))
     statements.push(...await service.invalidateTransfersStatements())
     for(const task of plan.reopenTasks)statements.push(reopenGuard(db,task,actor.id,'custody_erasure'),bound(db,"UPDATE peg_tasks SET status='todo',completed_at=NULL,updated_at=? WHERE id=?",[at,task]))
     for(const proof of plan.proofs)statements.push(bound(db,'INSERT INTO peg_data_erasing_proofs VALUES(?)',[proof]))
@@ -164,7 +167,7 @@ export async function erase(db:D1Database,actor:Actor,workspace:string,input:Rec
     }
     statements.push(bound(db,'DELETE FROM peg_data_erasing_tasks',[]),bound(db,'DELETE FROM peg_data_erasing_proofs',[]))
   }
-  statements.push(bound(db,'INSERT INTO peg_data_receipts VALUES(?,?,?,?,?,?,?,?,?,?)',[id,workspace,actor.id,plan.type,plan.id,at,outcome,JSON.stringify(blocked?{}:plan.counts),JSON.stringify({counts:plan.retained,conflicts:plan.blockers}),externalLimits]),permanentEvent(db,{workspace,actor:actor.id,action:'data.erasure',type:plan.type,id:plan.id,result:outcome==='complete'?'success':outcome}))
+  statements.push(bound(db,'INSERT INTO peg_data_receipts VALUES(?,?,?,?,?,?,?,?,?,?)',[id,workspace,actor.id,plan.type,plan.id,at,outcome,JSON.stringify(blocked?{}:plan.counts),JSON.stringify({counts:plan.retained,conflicts:plan.blockers,processorRequests:blocked?0:plan.processorRequests.length}),externalLimits]),permanentEvent(db,{workspace,actor:actor.id,action:'data.erasure',type:plan.type,id:plan.id,result:outcome==='complete'?'success':outcome}))
   await commitData(db,statements)
-  return {id,outcome,counts:blocked?{}:plan.counts,retained:plan.retained,conflicts:plan.blockers,externalLimits}
+  return {id,outcome,counts:blocked?{}:plan.counts,retained:plan.retained,conflicts:plan.blockers,processorRequests:blocked?0:plan.processorRequests.length,externalLimits}
 }
