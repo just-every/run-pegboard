@@ -7,6 +7,7 @@ import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 import { after, before, describe, it } from 'node:test'
 import { startWorker,proofDocument } from './support/worker.mjs'
+import { startEngineeringServices, vectorTodo, vectorDone } from './support/engineering-services.mjs'
 import { startTimeServices } from './support/time-services.mjs'
 
 let w, owner, mia, gus, nina
@@ -1457,4 +1458,70 @@ describe('Data custody', {concurrency:false},()=>{
   },{timeout:180000})
 
 
+})
+
+
+describe('Engineering handoff', {concurrency:false},()=>{
+  let runtime,edge,admin,member,guest,task,projectId
+  const credential='synthetic-pegboard-800'
+  const settings=()=>({PEGBOARD_VECTOR_ORIGIN:'https://vector.example.com',PEGBOARD_LOCAL_ENGINEERING_ORIGINS:edge.origins})
+  before(async()=>{
+    edge=await startEngineeringServices();runtime=await startWorker({settings:settings()});admin=runtime.owner
+    member=await runtime.person('synthetic-pegboard-803@example.com','Synthetic task owner');guest=await runtime.person('synthetic-pegboard-804@example.com','Synthetic guest','guest')
+    projectId=(await ok(admin.post('/api/v1/projects',{name:'Synthetic engineering campaign'}))).id
+    task=await ok(admin.post('/api/v1/tasks',{projectId,title:'Synthetic launch approval',kind:'approval',ownerId:member.id}))
+    await ok(admin.post('/api/v1/grants',{objectType:'project',objectId:projectId,granteeId:member.id,level:'editor'}))
+    await ok(admin.post('/api/v1/grants',{objectType:'project',objectId:projectId,granteeId:guest.id,level:'viewer'}))
+  },{timeout:120000})
+  after(async()=>{await runtime?.stop();await edge?.stop()})
+  it('reconciles mapped issues at all three official boundaries without satisfying business acceptance',async()=>{
+    for(const service of ['vector','jira','github']){
+      const state=edge.services[service],todo=service==='vector'?vectorTodo:service==='jira'?'100':'open',done=service==='vector'?vectorDone:service==='jira'?'200':'closed'
+      const input={service,origin:'https://synthetic-pegboard-1.atlassian.net',locator:service==='github'?['synthetic-pegboard-1','synthetic-pegboard-2','issues','1'].join('/'):'SYN-1',mappings:{[todo]:'todo',[done]:'done'},ownerMappings:{[service==='github'?'801':state.owner]:member.id},direction:'both',consent:true,credential}
+      const link=await ok(admin.post(`/api/v1/tasks/${task.id}/engineering`,input));assert.equal(link.mapped_owner,member.id)
+      const duplicates=await Promise.all([1,2].map(()=>ok(admin.post(`/api/v1/tasks/${task.id}/engineering`,input))));assert.ok(duplicates.every(l=>l.id===link.id))
+      assert.equal((await admin.post(`/api/v1/engineering/${link.id}/backlink`,{credential})).status,400)
+      state.lose=true
+      const linked=await ok(admin.post(`/api/v1/engineering/${link.id}/backlink`,{credential,confirm:true}));assert.equal(linked.backlink_state,'posted')
+      await ok(admin.post(`/api/v1/engineering/${link.id}/backlink`,{credential,confirm:true}));assert.equal(state.commentWrites,1)
+      state.change(done)
+      let current=await ok(admin.post(`/api/v1/engineering/${link.id}/refresh`,{credential}));assert.equal(current.indicator,'done')
+      assert.equal((await ok(admin.get(`/api/v1/tasks/${task.id}`))).status,'todo')
+      const decision=await ok(admin.get(`/api/v1/tasks/${task.id}/decision-preview`));assert.equal(decision.state,'pending')
+      assert.equal((await admin.post(`/api/v1/engineering/${link.id}/update`,{credential,version:current.version,sourceStatus:'unmapped',confirm:true})).status,409)
+      state.change(todo);current=await ok(admin.post(`/api/v1/engineering/${link.id}/refresh`,{credential}))
+      const approval={credential,version:current.version,sourceStatus:done,transitionId:'31',confirm:true}
+      assert.equal((await admin.post(`/api/v1/engineering/${link.id}/update`,{...approval,confirm:false})).status,400)
+      state.lose=true
+      current=await ok(admin.post(`/api/v1/engineering/${link.id}/update`,approval));assert.equal(current.indicator,'done');assert.equal(state.writes,1)
+      assert.equal((await admin.post(`/api/v1/engineering/${link.id}/update`,approval)).status,409);assert.equal(state.writes,1)
+      state.change('synthetic-pegboard-805');current=await ok(admin.post(`/api/v1/engineering/${link.id}/refresh`,{credential}));assert.equal(current.state,'stale');assert.equal(current.indicator,null)
+      state.change(done);await ok(admin.post(`/api/v1/engineering/${link.id}/refresh`,{credential}))
+      state.outage=true;current=await ok(admin.post(`/api/v1/engineering/${link.id}/refresh`,{credential}));assert.equal(current.state,'stale');assert.equal(current.cause,'engineering_source_unavailable');state.outage=false
+      current=await ok(admin.post(`/api/v1/engineering/${link.id}/refresh`,{credential}));assert.equal(current.state,'current')
+      state.refused=true;current=await ok(admin.post(`/api/v1/engineering/${link.id}/refresh`,{credential}));assert.ok(current.revoked_at);assert.equal(current.source_owner,null);assert.equal(current.source_status,null);assert.equal(current.mapped_owner,null)
+      state.refused=false;assert.equal((await admin.post(`/api/v1/engineering/${link.id}/refresh`,{credential})).status,409)
+      assert.equal((await ok(admin.post(`/api/v1/tasks/${task.id}/engineering`,input))).id,link.id)
+      assert.equal((await ok(admin.get(`/api/v1/tasks/${task.id}`))).status,'todo')
+    }
+    const rows=(await ok(admin.get(`/api/v1/tasks/${task.id}/engineering`))).links;assert.equal(rows.length,3)
+    assert.ok(!JSON.stringify(rows).includes(credential));const audit=await ok(admin.get('/api/v1/admin/audit'));assert.ok(!JSON.stringify(audit).includes(credential))
+  })
+  it('denies unapproved source capture, foreign writes, private context and stale reviewed returns',async()=>{
+    const input={service:'vector',locator:'SYN-1',mappings:{[vectorTodo]:'todo',[vectorDone]:'done'},direction:'both',credential}
+    const another=await ok(admin.post('/api/v1/tasks',{projectId,title:'Synthetic engineering dependency'}))
+    assert.equal((await admin.post(`/api/v1/tasks/${another.id}/engineering`,input)).status,400)
+    assert.equal((await member.post(`/api/v1/tasks/${another.id}/engineering`,{...input,consent:true})).status,403)
+    for(const caller of [member,guest]){assert.equal((await caller.get(`/api/v1/tasks/${task.id}/engineering`)).status,403);assert.equal((await caller.get(`/app/engineering/${task.id}`)).status,403)}
+    assert.equal((await admin.post(`/api/v1/tasks/${another.id}/engineering`,{...input,consent:true},{origin:'https://foreign.example.com'})).status,403)
+    edge.services.vector.change(vectorTodo)
+    let l=await ok(admin.post(`/api/v1/tasks/${another.id}/engineering`,{...input,consent:true}))
+    edge.services.vector.change(vectorDone)
+    assert.equal((await admin.post(`/api/v1/engineering/${l.id}/update`,{credential,confirm:true,version:l.version,sourceStatus:vectorDone})).status,409)
+    const before=edge.services.vector.requests.length
+    await ok(admin.post(`/api/v1/engineering/${l.id}/revoke`,{}))
+    assert.equal((await admin.post(`/api/v1/engineering/${l.id}/refresh`,{credential})).status,409);assert.equal(edge.services.vector.requests.length,before)
+    await runtime.restart();assert.equal((await ok(admin.get(`/api/v1/tasks/${another.id}/engineering`))).links.length,1)
+    assert.equal((await admin.post(`/api/v1/engineering/${l.id}/update`,{credential,confirm:true,version:l.version,sourceStatus:vectorDone})).status,409)
+  })
 })

@@ -19,6 +19,7 @@ export function TaskPage({ viewer, task, addable, sections, preview, tagOptions,
   return <Shell viewer={viewer} current="/app/projects" title={task.title} chip={decision?({approved:'APPROVED',reopened:'REOPENED',rejected:'REJECTED',changes_requested:'CHANGES',pending:'PENDING'}[decision.state]):statusLabel[task.status].toUpperCase()} facts={[task.ref ?? 'No reference', `Owner ${task.owner.name}`, `Priority ${task.priority}`, task.dueDate ? `Due ${task.dueDate}` : 'No due date', task.personal ? 'Personal task, only you see it' : `Your access ${levelLabel(task.level)}`]}
     crumbs={[...(first ? [{ label: first.name, href: `/app/projects/${first.id}` }] : [{ label: 'My tasks', href: '/app/my-tasks' }]), { label: task.ref ?? 'Task', href: here, current: true }]}>
     <Card title="Task">
+      {can('edit')&&['owner','admin'].includes(viewer.role)&&<p><a href={`/app/engineering/${task.id}`}>Engineering handoff</a></p>}
       <p className="muted">Task ID <code>{task.id}</code>{task.ref && <> · reference <strong>{task.ref}</strong></>}{task.aliases.length > 0 && <> · earlier references {task.aliases.join(', ')}</>}</p>
       {task.description && <p>{task.description}</p>}
       {task.parentId===null&&(task.personal||can('manage_templates'))&&<p><a className="button quiet" href={`/app/recurrences?sourceType=task&sourceId=${task.id}&start=${new Date().toISOString().slice(0,10)}&unit=week`}>Make task recurring</a></p>}

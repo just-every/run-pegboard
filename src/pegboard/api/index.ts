@@ -1,3 +1,4 @@
+import { engineeringRoutes } from './engineering-routes'
 import { recordRoutes } from './record-routes'
 import { dataRoutes } from './data-routes'
 import {goalRoutes} from './goal-routes'
@@ -27,3 +28,5 @@ goalRoutes(pegboardApi)
 dataRoutes(pegboardApi)
 
 recordRoutes(pegboardApi)
+
+engineeringRoutes(pegboardApi)

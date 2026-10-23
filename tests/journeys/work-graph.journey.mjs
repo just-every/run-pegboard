@@ -5,10 +5,12 @@ import {mkdir} from 'node:fs/promises'
 import {join} from 'node:path'
 import { chromium, expect } from '@playwright/test'
 import { startWorker,proofDocument } from '../support/worker.mjs'
+import { startEngineeringServices,vectorTodo,vectorDone } from '../support/engineering-services.mjs'
 import { startTimeServices } from '../support/time-services.mjs'
 
 // Harvest and QuickBooks Time schema fakes at the network edge; every Worker below reaches them through local origins.
-const services = await startTimeServices(), settings = { PEGBOARD_LOCAL_TIME_SERVICE_ORIGINS: services.origins }
+const engineering = await startEngineeringServices()
+const services = await startTimeServices(), settings = { PEGBOARD_LOCAL_TIME_SERVICE_ORIGINS: services.origins, PEGBOARD_VECTOR_ORIGIN:'https://vector.example.com',PEGBOARD_LOCAL_ENGINEERING_ORIGINS:engineering.origins }
 let w = await startWorker({ settings })
 const browser = await chromium.launch({ headless: true, args: ['--use-mock-keychain', '--password-store=basic'] })
 const cookies = client => client.cookie.split('; ').map(pair => ({ name: pair.slice(0, pair.indexOf('=')), value: pair.slice(pair.indexOf('=') + 1), url: w.origin }))
@@ -718,6 +720,47 @@ try {
   }
 
   if(!process.env.PEGBOARD_JOURNEY){await w.stop();w=await startWorker({settings});owner=w.owner}
+  // Engineering handoff: actual review forms against all three provider wire boundaries.
+  if(!process.env.PEGBOARD_JOURNEY||process.env.PEGBOARD_JOURNEY==='engineering')for(const [size,viewport] of sizes){
+    const context=await browser.newContext({viewport});await context.addCookies(cookies(owner));const page=await context.newPage()
+    const proof=async name=>{
+      assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`engineering reflow ${name} ${size}`)
+      for(const control of await page.locator('button,a[href]').all())assert.ok((await control.innerText()).trim(),'all controls have visible words')
+      const focus=page.locator('main input:not([type=hidden]),main a,main button').first();await focus.focus();assert.ok(await focus.evaluate(el=>el===document.activeElement))
+      if(process.env.PEGBOARD_PROOF_DIR){await mkdir(process.env.PEGBOARD_PROOF_DIR,{recursive:true});await page.screenshot({path:join(process.env.PEGBOARD_PROOF_DIR,`engineering-${name}-${size}.png`),fullPage:true})}
+    }
+    const p=ok(await owner.post('/api/v1/projects',{name:`Engineering campaign ${size}`})),member=await w.person(`synthetic-pegboard-81${size}@example.com`,`Engineering owner ${size}`)
+    const task=ok(await owner.post('/api/v1/tasks',{projectId:p.id,title:`Human launch decision ${size}`,ownerId:member.id,kind:'approval'}))
+    await page.goto(`${w.origin}/app/tasks/${task.id}`);await proof('task-entry');await page.getByRole('link',{name:'Engineering handoff',exact:true}).click()
+    await expect(page.getByRole('heading',{name:'Engineering handoff',exact:true})).toBeVisible();await proof('empty')
+    for(const service of ['vector','jira','github']){
+      const state=engineering.services[service],todo=service==='vector'?vectorTodo:service==='jira'?'100':'open',done=service==='vector'?vectorDone:service==='jira'?'200':'closed',locator=service==='github'?['synthetic-pegboard-1','synthetic-pegboard-2','issues','1'].join('/'):'SYN-1'
+      state.refused=false;state.change(todo)
+      let form=page.getByRole('form',{name:'Link engineering work',exact:true})
+      await form.getByLabel('Engineering service',{exact:true}).selectOption(service)
+      if(service==='jira')await form.getByLabel('Jira site origin (Vector uses configured origin)').fill('https://synthetic-pegboard-1.atlassian.net')
+      await form.getByLabel('Source reference',{exact:false}).fill(locator)
+      await form.getByLabel('Credential for this request',{exact:false}).fill('synthetic-pegboard-800')
+      await form.getByLabel('Status ID mapping as JSON',{exact:false}).fill(JSON.stringify({[todo]:'todo',[done]:'done'}))
+      await form.getByLabel('Source owner ID to Pegboard person ID mapping as JSON').fill(JSON.stringify({[service==='github'?'801':state.owner]:member.id}))
+      await form.getByLabel('Sync direction').selectOption('both');await form.getByRole('checkbox').check();await form.getByRole('button',{name:'Link work',exact:true}).click()
+      let card=page.locator('article').filter({has:page.getByRole('heading',{name:`${service} · ${locator}`,exact:true})})
+      await expect(card).toContainText('Engineering indicator: todo');await expect(card).toContainText(member.id)
+      form=card.getByRole('form',{name:'Review source backlink',exact:true});await form.getByLabel('Source credential',{exact:true}).fill('synthetic-pegboard-800');await form.getByRole('checkbox').check();await form.getByRole('button',{name:'Publish or reconcile backlink'}).click();await expect(card).toContainText('Source backlink: posted')
+      form=card.getByRole('form',{name:'Review source update',exact:true});await form.getByLabel('Reviewed source status ID').selectOption(done)
+      if(service==='jira')await form.getByLabel('Jira transition ID').fill('31')
+      await form.getByLabel('Source credential',{exact:true}).fill('synthetic-pegboard-800');await form.getByRole('checkbox').check();await form.getByRole('button',{name:'Apply reviewed update',exact:true}).click()
+      await expect(card).toContainText('Engineering indicator: done');assert.equal(ok(await owner.get(`/api/v1/tasks/${task.id}`)).status,'todo')
+      await proof(service+'-current')
+      state.change('synthetic-pegboard-820')
+      form=card.getByRole('form',{name:`Refresh ${locator}`,exact:true});await form.getByLabel('Source credential',{exact:true}).fill('synthetic-pegboard-800');await form.getByRole('button',{name:'Refresh source'}).click()
+      await expect(card).toContainText('unmapped_source_status');await proof(service+'-unmapped')
+      await card.getByRole('button',{name:'Revoke source grant',exact:true}).click();await expect(card).toContainText('source_grant_revoked');await expect(card).toContainText('Source owner ID: Unavailable');await proof(service+'-revoked')
+    }
+    await page.getByRole('link',{name:'Return to task',exact:true}).click();await expect(page.getByText('Pending decision',{exact:false})).toBeVisible();await proof('human-decision')
+    await context.close();console.log(`Engineering handoff at ${size}px passed`)
+  }
+
   // Data settings and permanent audit, through the same HTML forms as the owner uses.
   if(!process.env.PEGBOARD_JOURNEY||process.env.PEGBOARD_JOURNEY==='custody')for(const [size,viewport] of sizes){
     const context=await browser.newContext({viewport});await context.addCookies(cookies(owner));const page=await context.newPage()
@@ -775,4 +818,5 @@ try {
   await browser.close()
   await w.stop()
   await services.stop()
+  await engineering.stop()
 }

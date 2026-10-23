@@ -1,0 +1,27 @@
+-- Source context is private to the administrator who supplied its source authority.
+CREATE TABLE peg_engineering_links (
+ id TEXT PRIMARY KEY,
+ task_id TEXT NOT NULL REFERENCES peg_tasks(id) ON DELETE CASCADE,
+ created_by TEXT NOT NULL REFERENCES oa_operators(id),
+ service TEXT NOT NULL CHECK(service IN ('vector','jira','github')),
+ origin TEXT NOT NULL,
+ locator TEXT NOT NULL,
+ external_id TEXT NOT NULL,
+ source_url TEXT NOT NULL,
+ source_status TEXT,
+ source_owner TEXT,
+ source_version TEXT,
+ mappings TEXT NOT NULL,
+ owner_mappings TEXT NOT NULL DEFAULT '{}',
+ mapped_owner TEXT,
+ pending_status TEXT,
+ backlink_state TEXT NOT NULL DEFAULT 'not_sent',
+ direction TEXT NOT NULL CHECK(direction IN ('inbound','both')),
+ indicator TEXT,
+ state TEXT NOT NULL,
+ cause TEXT,
+ checked_at INTEGER,
+ revoked_at INTEGER,
+ version INTEGER NOT NULL DEFAULT 1,
+ UNIQUE(task_id,created_by,service,origin,external_id)
+);

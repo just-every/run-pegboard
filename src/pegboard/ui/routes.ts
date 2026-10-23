@@ -1,3 +1,5 @@
+import { EngineeringPage } from './engineering-handoff/page'
+import { engineeringView } from '../engineering-links/links'
 import { DataPage } from './pages/data'
 import { AuditPage } from './pages/audit'
 import { dataSettings, retentionPreview } from '../data/settings'
@@ -89,6 +91,7 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
   const { viewer, workspace } = await context(db, actor, session.operator.role)
   const [, section, id, tail] = segments
   try {
+    if(section==='engineering'&&id&&!tail)return page('Engineering handoff',h(EngineeringPage,{viewer,data:await engineeringView(db,actor,id)}))
     if(section==='audit'&&!id)return page('Permanent audit',h(AuditPage,{viewer,data:await searchAudit(db,actor,workspace,Object.fromEntries(url.searchParams)),input:Object.fromEntries(url.searchParams)}))
     if(section==='data'&&!id){
       const input=Object.fromEntries(url.searchParams),data=await dataSettings(db,actor,workspace)
