@@ -82,7 +82,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "4c9e914d06492a71ba4753e13dbe5e17f3f523583eebd4eb529044f9fa3c7ea4",
+      "sha256": "3aa16283b3d996352b1ac137c2574400d5c184be1e7b6c25668e8f26acf3df9e",
       "executable": false
     },
     "AGENTS.md": {
@@ -98,7 +98,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "569f5c3b5d5f0cfd8a49ce446f90712792c1b0d0df161e8e95326b5f09c0aff2",
+      "sha256": "9afd868c4bc2959ef873937c4d74de108d459150e83fcfa097fdb2ed24e778f3",
       "executable": false
     },
     "DEMO.md": {
@@ -2282,7 +2282,7 @@
       "executable": false
     },
     "tests/journeys/work-graph.journey.mjs": {
-      "sha256": "acbe269f8fa6bdaf50807dbf8e57d120fdb51debc6fc0583c661e2cd36febdb5",
+      "sha256": "e591309a9f572be5218d998e0027e26af7811c9ebea97e478777bae22b51a7ce",
       "executable": false
     },
     "tests/runtime.mjs": {
