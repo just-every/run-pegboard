@@ -117,6 +117,10 @@
       "sha256": "801b7451e69d7b1cffbfc09b780bf6007a8e6412777e28fea54a64fe13c3ad16",
       "executable": false
     },
+    "docs/DATA-CUSTODY.md": {
+      "sha256": "605bbdae0184ef4bc76c8d7d915a4fadc32ed85e8420d4239575315cde9c5381",
+      "executable": false
+    },
     "docs/LOOK.md": {
       "sha256": "94bc7a03477dc817d5342734ee4386dbde1ddb9dc0f2b0871fd46e7728a5b797",
       "executable": false
@@ -267,6 +271,14 @@
     },
     "migrations/core/0032_data_custody.sql": {
       "sha256": "ec2e3320262bb7692983d5dff5f5abd2927970ce645fadb6e2b4aeb77e318fb9",
+      "executable": false
+    },
+    "migrations/core/0033_audit_outcomes.sql": {
+      "sha256": "c5c368efb85941ff0fb9ecbc0af676c61b73582e41793e494dddfb67f88f94a3",
+      "executable": false
+    },
+    "migrations/core/0034_delivery_revision_custody.sql": {
+      "sha256": "c481f1717d8cc57fce64df0356dc7945cb62c1af7749afae16c244e431adde62",
       "executable": false
     },
     "ONBOARDING.md": {
@@ -2290,7 +2302,7 @@
       "executable": false
     },
     "tests/work-graph.test.mjs": {
-      "sha256": "29844c472c45c5178ad94016c1a9b2dc6691ac89bad805c114ce0c0e9ba0d3df",
+      "sha256": "868ab8731cf5621e51531d83c867652fe3b39fd512c3a07ea1fe57664ef1758a",
       "executable": false
     },
     "tsconfig.json": {

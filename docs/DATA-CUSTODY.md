@@ -3,7 +3,7 @@
 An installation owner opens **Data** to review retention, holds and irreversible
 removal. Owners and installation administrators open **Audit** to search and
 export permanent events. Workspace administrators see that workspace's events;
-only an owner sees installation authentication events. Personal task, goal and
+only an owner sees installation-wide authentication/archive events. Each authorized administrator can also see their own personal audit. Personal task, goal and
 draft-time activity is not exposed by the workspace audit.
 
 ## Permanent audit

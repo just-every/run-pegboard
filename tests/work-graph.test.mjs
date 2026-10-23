@@ -1175,7 +1175,7 @@ describe('Data custody', {concurrency:false},()=>{
     await pass(member.patch(`/api/v1/tasks/${t.id}`,{title:'synthetic-pegboard-610'}))
     const after=await allAudit();for(const event of before)assert.deepEqual(after.find(e=>e.id===event.id),event)
     for(const verb of ['patch','delete'])assert.equal((await chief[verb]('/api/v1/admin/audit/'+before[0].id,{})).status,404)
-    assert.ok((await pass(admin.get('/api/v1/admin/audit'))).events.every(e=>!e.action.startsWith('authentication.')))
+    assert.ok((await pass(admin.get('/api/v1/admin/audit'))).events.every(e=>!e.action.startsWith('authentication.')||e.actor_id===admin.id))
     const foreign=await pass(chief.post('/api/v1/workspaces',{name:'synthetic-pegboard-611'}))
     await pass(chief.post('/api/v1/projects',{name:'synthetic-pegboard-612',workspaceId:foreign.id}))
     assert.ok(!(await allAudit()).some(e=>e.workspace_id===foreign.id))
