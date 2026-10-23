@@ -4,7 +4,7 @@ import assert from 'node:assert/strict'
 import {mkdir} from 'node:fs/promises'
 import {join} from 'node:path'
 import { chromium, expect } from '@playwright/test'
-import { startWorker } from '../support/worker.mjs'
+import { startWorker,proofDocument } from '../support/worker.mjs'
 import { startTimeServices } from '../support/time-services.mjs'
 
 // Harvest and QuickBooks Time schema fakes at the network edge; every Worker below reaches them through local origins.
@@ -728,10 +728,20 @@ try {
       const focus=page.locator('main button,main input:not([type=hidden]),main select,main a').first();await focus.focus();assert.ok(await focus.evaluate(el=>el===document.activeElement))
       if(process.env.PEGBOARD_PROOF_DIR){await mkdir(process.env.PEGBOARD_PROOF_DIR,{recursive:true});await page.screenshot({path:join(process.env.PEGBOARD_PROOF_DIR,`${name}-${size}.png`),fullPage:true})}
     }
-    const p=ok(await owner.post('/api/v1/projects',{name:`Custody review ${size}`})),task=ok(await owner.post('/api/v1/tasks',{projectId:p.id,title:`Custody task ${size}`}))
+    const member=await w.person(`synthetic-pegboard-72${size}@example.com`,`Custody reviewer ${size}`)
+    const p=ok(await owner.post('/api/v1/projects',{name:`Custody review ${size}`})),task=ok(await owner.post('/api/v1/tasks',{projectId:p.id,title:`Custody task ${size}`,ownerId:member.id}))
     ok(await owner.post(`/api/v1/tasks/${task.id}/comments`,{body:'synthetic-pegboard-701@example.com'}))
-    ok(await owner.post(`/api/v1/tasks/${task.id}/attachments?name=synthetic-pegboard-702.txt`,'synthetic-pegboard-703',{'content-type':'text/plain'}))
-    await page.goto(`${w.origin}/app/data`);await expect(page.getByRole('heading',{name:'Data settings',exact:true})).toBeVisible();await proof('data-settings')
+    const versionedProof=async n=>{
+      const file=async v=>ok(await owner.post(`/api/v1/tasks/${task.id}/attachments?name=synthetic-pegboard-${n}${v}.pdf`,proofDocument(`synthetic-pegboard-${n}${v}`),{'content-type':'application/pdf'}))
+      const a=await file(1),proof=ok(await owner.post(`/api/v1/tasks/${task.id}/proofs`,{attachmentId:a.id})),b=await file(2),v2=ok(await owner.post(`/api/v1/proofs/${proof.id}/versions`,{attachmentId:b.id,currentVersion:proof.versionId}))
+      const d=ok(await owner.get(`/api/v1/proofs/${proof.id}/decision-preview`));ok(await owner.post(`/api/v1/proofs/${proof.id}/decisions`,{versionId:v2.versionId,token:d.token,action:'approve',reason:'synthetic-pegboard-748'}));return proof
+    }
+    await versionedProof(741)
+    const agent=await w.person(`synthetic-pegboard-73${size}@example.com`,`Custody agent ${size}`,'agent')
+    ok(await owner.post('/api/v1/grants',{objectType:'project',objectId:p.id,granteeId:agent.id,level:'editor',scopes:['read','edit']}));ok(await owner.post('/api/v1/data/processors',{processor:'synthetic-pegboard-744',approved:true,sharing:false,training:false,confirm:true}))
+    const intake={projectId:p.id,processor:'synthetic-pegboard-744',body:'synthetic-pegboard-745',key:'synthetic-pegboard-746'},output=ok(await agent.post(`/api/v1/tasks/${task.id}/agent-outputs`,intake))
+    assert.ok(ok(await owner.get('/api/v1/search?q='+encodeURIComponent(`Custody task ${size}`))).results.some(r=>r.id===task.id))
+    await page.goto(`${w.origin}/app/admin`);await proof('admin-data-doors');await page.getByRole('link',{name:'Data settings',exact:true}).click();await expect(page.getByRole('heading',{name:'Data settings',exact:true})).toBeVisible();await proof('data-settings')
     let form=page.getByRole('form',{name:'Review retention',exact:true})
     await form.getByLabel('Retention class',{exact:true}).selectOption('attachments_proofs');await form.getByLabel('Days to keep (blank keeps until explicit erasure)').fill('1');await form.getByRole('button',{name:'Preview retention',exact:true}).click()
     await expect(page.getByRole('heading',{name:'Review retention change'})).toBeVisible();await proof('data-retention-review')
@@ -743,13 +753,16 @@ try {
     form=page.getByRole('form',{name:'Release hold',exact:true}).last();await form.getByLabel('Confirm release').check();await form.getByRole('button',{name:'Release hold',exact:true}).click()
     await w.sql(`UPDATE peg_attachments SET created_at=${Date.now()-3*86400000} WHERE task_id='${task.id}'`)
     await page.goto(`${w.origin}/app/data`);form=page.getByRole('form',{name:'Review expiry',exact:true});await form.getByLabel('Class to expire').selectOption('attachments_proofs');await form.getByRole('button',{name:'Preview eligible records'}).click()
-    await expect(page.getByRole('heading',{name:'Review eligible expiry'})).toBeVisible();await expect(page.locator('article').filter({has:page.getByRole('heading',{name:'Review eligible expiry'})})).toContainText('1 · Attachment bytes');await proof('data-expiry-review')
+    await expect(page.getByRole('heading',{name:'Review eligible expiry'})).toBeVisible();await expect(page.locator('article').filter({has:page.getByRole('heading',{name:'Review eligible expiry'})})).toContainText('2 · Attachment bytes');await proof('data-expiry-review')
     await page.getByRole('button',{name:'Expire reviewed records',exact:true}).click();assert.equal(ok(await owner.get(`/api/v1/tasks/${task.id}`)).attachments.length,0)
+    const finalProof=await versionedProof(749)
     await page.goto(`${w.origin}/app/data?review=erase&type=project&id=${p.id}`);await expect(page.getByRole('button',{name:'Erase reviewed data',exact:true})).toBeVisible();await proof('data-erasure-review')
     form=page.getByRole('form',{name:'Confirm erasure',exact:true});await form.getByRole('checkbox').check();await form.getByRole('button',{name:'Erase reviewed data',exact:true}).click()
-    await expect(page.getByRole('list',{name:'Data receipts'})).toContainText('complete');await proof('data-receipt')
+    await expect(page.getByRole('list',{name:'Data receipts'}).locator('li').filter({hasText:p.id}).first()).toContainText('partial');await expect(page.getByRole('list',{name:'Unresolved processor deletions'})).toContainText(output.id);await proof('data-receipt')
     assert.equal((await owner.get(`/api/v1/tasks/${task.id}`)).status,404)
-    const member=await w.person(`synthetic-pegboard-72${size}@example.com`,`Custody reviewer ${size}`),second=ok(await owner.post('/api/v1/projects',{name:`Shared custody ${size}`})),kept=ok(await owner.post('/api/v1/projects',{name:`Retained custody ${size}`})),signoff=ok(await owner.post('/api/v1/tasks',{projectId:second.id,title:`Shared sign-off ${size}`,kind:'approval',ownerId:member.id}))
+    for(const path of [`/api/v1/proofs/${finalProof.id}`,`/api/v1/agent-outputs/${output.id}`,`/api/v1/agent-outputs/${output.id}/retrieval`])assert.equal((await owner.get(path)).status,404)
+    assert.equal((await agent.post(`/api/v1/tasks/${task.id}/agent-outputs`,intake)).status,404);assert.deepEqual(ok(await owner.get('/api/v1/search?q='+encodeURIComponent(`Custody task ${size}`))).results,[])
+    const second=ok(await owner.post('/api/v1/projects',{name:`Shared custody ${size}`})),kept=ok(await owner.post('/api/v1/projects',{name:`Retained custody ${size}`})),signoff=ok(await owner.post('/api/v1/tasks',{projectId:second.id,title:`Shared sign-off ${size}`,kind:'approval',ownerId:member.id}))
     ok(await owner.post(`/api/v1/tasks/${signoff.id}/projects`,{projectId:kept.id}));const decision=ok(await owner.get(`/api/v1/tasks/${signoff.id}/decision-preview`));ok(await owner.post(`/api/v1/tasks/${signoff.id}/decision`,{revision:decision.token,action:'approve',reason:'synthetic-pegboard-731'}))
     await page.goto(`${w.origin}/app/data?review=erase&type=project&id=${second.id}`);await expect(page.getByText('The retained shared work needs a fresh human decision after its context is erased.',{exact:false})).toBeVisible();await proof('data-shared-signoff-review')
     form=page.getByRole('form',{name:'Confirm erasure',exact:true});await form.getByRole('checkbox').check();await form.getByRole('button',{name:'Erase reviewed data',exact:true}).click();assert.equal(ok(await owner.get(`/api/v1/tasks/${signoff.id}`)).status,'todo')

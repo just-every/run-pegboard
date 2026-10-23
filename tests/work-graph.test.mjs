@@ -1303,8 +1303,9 @@ describe('Data custody', {concurrency:false},()=>{
     const input={class:'attachments_proofs'},mixed=await pass(chief.post('/api/v1/data/expiry-preview',input))
     assert.equal(mixed.retainedDependencies,1);assert.ok(!mixed.counts.peg_proof_versions);assert.equal(mixed.counts.peg_attachments,0)
     await server.sql(`UPDATE peg_attachments SET created_at=${Date.now()-3*86400000} WHERE id='${b.id}'`)
+    const heldBefore=(await pass(chief.post('/api/v1/data/expiry-preview',input))).held
     const hold=await pass(chief.post('/api/v1/data/holds',{type:'proof',id:proof.id,authority:'synthetic-pegboard-664',expiresAt:Date.now()+86400000})),held=await pass(chief.post('/api/v1/data/expiry-preview',input))
-    assert.equal(held.held,2);assert.ok(!held.counts.peg_proof_versions)
+    assert.equal(held.held,heldBefore+2);assert.ok(!held.counts.peg_proof_versions)
     await pass(chief.post(`/api/v1/data/holds/${hold.id}/release`,{confirm:true}))
     const reviewed=await pass(chief.post('/api/v1/data/expiry-preview',input));assert.equal(reviewed.counts.peg_proof_versions,2);assert.equal(reviewed.counts.peg_proof_decisions,1)
     const done=await pass(chief.post('/api/v1/data/expire',{...input,cutoff:reviewed.cutoff,token:reviewed.token,confirm:true}));assert.equal(done.counts.peg_attachments,2)
@@ -1407,7 +1408,7 @@ describe('Data custody', {concurrency:false},()=>{
       const copy=await startWorker({restoredPersist:join(scratch,'.wrangler/state')})
       try{
         const restoredActor=await pass(copy.owner.get('/api/v1/admin/audit?actor='+erasedActorId))
-        assert.ok(restoredActor.events.length>0);assert.ok(restoredActor.events.every(e=>e.actor==='Erased actor'))
+        assert.ok(restoredActor.events.length>0);assert.ok(restoredActor.events.every(e=>e.actor==='Erased actor'));assert.ok((await pass(copy.owner.get('/api/v1/admin/audit?action=archive.restored'))).events.length>0)
         assert.equal((await copy.owner.get('/api/v1/tasks/'+t.id)).status,404)
       }finally{await copy.stop()}
 
