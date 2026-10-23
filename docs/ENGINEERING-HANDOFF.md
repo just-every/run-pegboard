@@ -57,5 +57,5 @@ Protocol references:
 Default adopted pending CT: owner or administrator only; source context private
 to its authorizing administrator; explicit read consent and separate exact
 outbound consent; no standing outbound authority; current task permissions
-always required. Shared source-grant administration and live qualification remain
+always required. Verified provider event delivery and replay, shared source-grant administration and live qualification remain
 unproved, so PEG-040 stays partial.

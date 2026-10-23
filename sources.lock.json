@@ -82,7 +82,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "26850ff3c74e8277a955a08315cb9b6aa2a7ad9fd2e2d5c3ade5b8101b928c8b",
+      "sha256": "c6d4c912a6a9f4ea1c8cb650a2191ed2289b3bf2c8617347a5c987dde7ae0883",
       "executable": false
     },
     "AGENTS.md": {
@@ -98,7 +98,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "da8b13ff482ccdd14d33aff10f9f7284c1c9c19837523ccaf24401a1f24a4b9e",
+      "sha256": "dce680cc3689fef1a6039060e2474effc7387f7b5c072f73e9e085c0c631212b",
       "executable": false
     },
     "DEMO.md": {
@@ -126,7 +126,7 @@
       "executable": false
     },
     "docs/ENGINEERING-HANDOFF.md": {
-      "sha256": "293eba4ee13c11323930c0dfbbabf221bfc3785ff097922f9584d968ed2a6a31",
+      "sha256": "0aea5d47219ebf5aad9118562fbb833e5d0abca8a3e22404d08f6c965d8a7f2f",
       "executable": false
     },
     "docs/LOOK.md": {
