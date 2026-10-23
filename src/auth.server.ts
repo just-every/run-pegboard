@@ -34,6 +34,8 @@ export interface Bindings {
  PEGBOARD_VECTOR_ORIGIN?: string
  /** Local schema-edge origins only; never used in deployed mode. */
  PEGBOARD_LOCAL_ENGINEERING_ORIGINS?: string
+ /** Local meeting provider schema edges only. */
+ PEGBOARD_LOCAL_MEETING_ORIGINS?: string
  /** Local runtimes only: the checkout's key gate and dev identity switch. Deploy refuses both. */
  RER_MODELS_SERVICE?: string
  RER_MODELS_KEY?: string

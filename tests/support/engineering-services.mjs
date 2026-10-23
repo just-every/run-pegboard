@@ -5,7 +5,7 @@ export async function startEngineeringServices(){
   const services={},origins={}
   for(const service of ['vector','jira','github']){
     const state={status:service==='vector'?vectorTodo:service==='jira'?'100':'open',version:1,refused:false,outage:false,lose:false,writes:0,comments:[],commentWrites:0,requests:[],owner:'synthetic-pegboard-801'}
-    const record=()=>service==='vector'?{id:'synthetic-pegboard-802',identifier:'SYN-1',version:state.version,status:{id:state.status,name:'Synthetic status',category:'started'},assignee:{id:state.owner,name:'Synthetic person'}}:service==='jira'?{id:'10001',key:'SYN-1',fields:{status:{id:state.status,name:'Synthetic status'},assignee:{accountId:state.owner},updated:`2026-10-23T12:00:${String(state.version).padStart(2,'0')}.000+0000`}}:{id:10001,number:1,state:state.status,assignee:{id:801},updated_at:`2026-10-23T12:00:${String(state.version).padStart(2,'0')}Z`}
+    const record=(pr=false)=>service==='vector'?{id:'synthetic-pegboard-802',identifier:'SYN-1',version:state.version,status:{id:state.status,name:'Synthetic status',category:'started'},assignee:{id:state.owner,name:'Synthetic person'}}:service==='jira'?{id:'10001',key:'SYN-1',fields:{status:{id:state.status,name:'Synthetic status'},assignee:{accountId:state.owner},updated:`2026-10-23T12:00:${String(state.version).padStart(2,'0')}.000+0000`}}:{id:pr?10002:10001,number:1,merged_at:pr&&state.merged?'2026-10-23T12:00:01Z':null,state:state.status,assignee:{id:801},updated_at:`2026-10-23T12:00:${String(state.version).padStart(2,'0')}Z`}
     const server=createServer(async(req,res)=>{
       let raw='';for await(const chunk of req)raw+=chunk
       const input=raw?JSON.parse(raw):null
@@ -28,7 +28,7 @@ export async function startEngineeringServices(){
         if(input?.transition?.id!=='31')return send(400,{errorMessages:['Invalid transition']})
         state.status='200';state.version++;state.writes++
       }else if(req.url!==path&&!(service==='github'&&req.url===path.replace('/issues/','/pulls/')))return send(404,{message:'Not found'})
-      else if(req.method==='GET')return send(200,record())
+      else if(req.method==='GET')return send(200,record(req.url.includes('/pulls/')))
       else if(req.method==='PATCH'){
         if(service==='vector'){
           if(Object.keys(input).sort().join(',')!=='expectedVersion,statusId'||input.expectedVersion!==state.version)return send(409,{error:'stale_version'})

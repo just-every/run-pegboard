@@ -37,3 +37,5 @@
   .inline .field{flex-basis:100%}
   .inline .button,.panel .button{min-height:48px}
 }
+
+.page .task-description,.page .meeting-source{overflow-wrap:anywhere;min-width:0}

@@ -4,7 +4,7 @@ import { Shell, Card, Form, Field, Area, Pick, Check, Submit, when } from '../sh
 export function EngineeringPage({viewer,data}:{viewer:Viewer;data:Awaited<ReturnType<typeof engineeringView>>}) {
   const next=`/app/engineering/${data.task.id}`
   return <Shell viewer={viewer} current="/app/projects" title="Engineering handoff" facts={['Source indicators never decide business acceptance']}>
-    <Card title={data.task.title}><a href={`/app/tasks/${data.task.id}`}>Return to task</a><p>Business task: {data.task.status}. Launch and business decisions remain human decisions.</p><p>These links are private to the administrator who authorized them. Credentials are used for this request only. Last checked context is a snapshot; refresh to confirm current source access.</p></Card>
+    <Card title={data.task.title}><a href={`/app/tasks/${data.task.id}`}>Return to task</a> · <a href="/app/meetings">Review meeting actions</a><p>Business task: {data.task.status}. Launch and business decisions remain human decisions.</p><p>These links are private to the administrator who authorized them. Credentials are used for this request only. Last checked context is a snapshot; refresh to confirm current source access.</p></Card>
     <Card title="Link existing engineering work"><Form action={`/api/v1/tasks/${data.task.id}/engineering`} next={next} label="Link engineering work">
       <Pick label="Engineering service" name="service" options={[{value:'vector',label:'Vector'},{value:'jira',label:'Jira'},{value:'github',label:'GitHub'}]}/>
       <Field label="Jira site origin (Vector uses configured origin)" name="origin" type="url"/>

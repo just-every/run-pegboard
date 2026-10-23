@@ -21,7 +21,8 @@ export function TaskPage({ viewer, task, addable, sections, preview, tagOptions,
     <Card title="Task">
       {can('edit')&&['owner','admin'].includes(viewer.role)&&<p><a href={`/app/engineering/${task.id}`}>Engineering handoff</a></p>}
       <p className="muted">Task ID <code>{task.id}</code>{task.ref && <> · reference <strong>{task.ref}</strong></>}{task.aliases.length > 0 && <> · earlier references {task.aliases.join(', ')}</>}</p>
-      {task.description && <p>{task.description}</p>}
+      {task.description && <p className="task-description">{task.description}</p>}
+      {task.meetingCitations.map(c=><p key={c.meetingId}><a href={`/app/meetings/${c.meetingId}#segment-${c.segmentIndex+1}`}>Meeting source segment {c.segmentIndex+1}</a></p>)}
       {task.parentId===null&&(task.personal||can('manage_templates'))&&<p><a className="button quiet" href={`/app/recurrences?sourceType=task&sourceId=${task.id}&start=${new Date().toISOString().slice(0,10)}&unit=week`}>Make task recurring</a></p>}
       {can('edit') && !approval && <div className="inline">
         <form method="post" action={`/api/v1/tasks/${task.id}/complete`}><input type="hidden" name="_next" value={here} />{task.status === 'done' ? <><input type="hidden" name="reopen" value="1" /><button className="button quiet" type="submit">Reopen</button></> : <button className="button primary" type="submit">Mark complete</button>}</form>

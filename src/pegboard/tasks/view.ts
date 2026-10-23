@@ -42,6 +42,7 @@ export async function viewTask(db: D1Database, actor: Actor, idOrRef: string) {
     owner: { id: task.owner_id, name: name(task.owner_id) }, collaborators: collaborators.map(id => ({ id, name: name(id) })), personal: access.personal,
     ...(internal ? { internalOnly: !!task.internal_only, internalNotes: task.internal_notes } : {}),
     tags:await taskTags(db,actor,task.id), capabilities: [...access.capabilities], level: access.level, projects, subtasks,
+    meetingCitations: await all<{meetingId:string;segmentIndex:number}>(db,`SELECT m.id AS meetingId,p.segment_index AS segmentIndex FROM peg_meeting_proposals p JOIN peg_meetings m ON m.id=p.meeting_id JOIN oa_operators o ON o.id=m.created_by WHERE p.task_id=? AND m.created_by=? AND m.revoked_at IS NULL AND o.status='active' AND o.role IN ('owner','admin')`,task.id,actor.id),
     history: history.filter(entry => internal || entry.kind !== 'internal.changed').map(entry => ({ id: entry.id, at: entry.at, actor: name(entry.actor_id), kind: entry.kind, projectId: entry.project_id, detail: entry.kind==='fields.changed'?{}:shareHistory(entry.detail, readable) })),
     comments: comments.map(comment => ({ id: comment.id, author: name(comment.author_id), body: comment.body, at: comment.created_at })),
     attachments: files.filter(file => file.project_id === null ? task.owner_id === actor.id : readable.has(file.project_id)).map(file => ({ id: file.id, projectId: file.project_id, name: file.name, contentType: file.content_type, size: file.size, by: name(file.created_by), at: file.created_at })),

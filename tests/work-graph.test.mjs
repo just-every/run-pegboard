@@ -7,6 +7,7 @@ import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 import { after, before, describe, it } from 'node:test'
 import { startWorker,proofDocument } from './support/worker.mjs'
+import {startMeetingServices} from './support/meeting-services.mjs'
 import { startEngineeringServices, vectorTodo, vectorDone } from './support/engineering-services.mjs'
 import { startTimeServices } from './support/time-services.mjs'
 
@@ -1412,6 +1413,10 @@ describe('Data custody', {concurrency:false},()=>{
     await pass(chief.post('/api/v1/grants',{objectType:'project',objectId:p.id,granteeId:archiveAgent.id,level:'editor',scopes:['read','edit']}))
     await pass(chief.post('/api/v1/data/processors',{processor:'synthetic-pegboard-675',approved:true,sharing:false,training:false,confirm:true}))
     const archivedOutput=await pass(archiveAgent.post(`/api/v1/tasks/${t.id}/agent-outputs`,{projectId:p.id,processor:'synthetic-pegboard-675',body:'synthetic-pegboard-676',key:'synthetic-pegboard-677'}))
+    let meetingArchive=await pass(chief.post('/api/v1/meetings',{service:'zoom',sourceId:'synthetic-pegboard-978',content:'WEBVTT\n\n1\n00:00:01.000 --> 00:00:05.000\nAction: Synthetic archive source context\n',sourceAuthority:true,organizerConsent:true,participantConsent:true}))
+    const proposalArchive=meetingArchive.proposals[0]
+    meetingArchive=await pass(chief.post(`/api/v1/meeting-proposals/${proposalArchive.id}/revise`,{version:proposalArchive.version,title:'Synthetic reviewed archive action',ownerId:member.id,dateResolved:true}))
+    const meetingTaskArchive=await pass(chief.post(`/api/v1/meeting-proposals/${proposalArchive.id}/adopt`,{projectId:kept.id,version:meetingArchive.proposals[0].version,confirm:true}))
     const old=await archive()
     assert.ok((await pass(chief.get('/api/v1/admin/audit?action=archive.export'))).events.length>0)
     assert.deepEqual((await pass(admin.get('/api/v1/admin/audit?action=archive.export'))).events,[])
@@ -1439,6 +1444,12 @@ describe('Data custody', {concurrency:false},()=>{
       const result=(await readFile(join(scratch,'exports/restored.rer'),'utf8')).trim().split('\n').map(line=>JSON.parse(line)),items=result.filter(r=>r.kind==='part').flatMap(r=>r.items)
       const audit=items.filter(r=>r.kind==='row'&&r.table==='peg_permanent_audit').map(r=>r.row)
       for(const event of archivedEvents)assert.deepEqual(audit.find(row=>row.id===event.id),event)
+      const inactiveMeeting=items.find(r=>r.kind==='row'&&r.table==='peg_meetings'&&r.row.id===meetingArchive.meeting.id)?.row
+      assert.ok(inactiveMeeting?.revoked_at);assert.equal(inactiveMeeting.segments,'[]')
+      assert.ok(items.some(r=>r.kind==='row'&&r.table==='peg_meeting_adoptions'&&r.row.task_id===meetingTaskArchive.taskId))
+      const inactiveProposal=items.find(r=>r.kind==='row'&&r.table==='peg_meeting_proposals'&&r.row.id===proposalArchive.id)?.row
+      assert.equal(inactiveProposal?.title,'');assert.equal(inactiveProposal?.owner_id,null)
+
       assert.ok(!items.some(r=>r.kind==='row'&&r.table==='peg_tasks'&&r.row.id===t.id))
       assert.ok(items.some(r=>r.kind==='row'&&r.table==='peg_data_receipts'&&r.row.target_id===p.id))
       const copy=await startWorker({restoredPersist:join(scratch,'.wrangler/state')})
@@ -1504,7 +1515,12 @@ describe('Engineering handoff', {concurrency:false},()=>{
       assert.equal((await ok(admin.post(`/api/v1/tasks/${task.id}/engineering`,input))).id,link.id)
       assert.equal((await ok(admin.get(`/api/v1/tasks/${task.id}`))).status,'todo')
     }
-    const rows=(await ok(admin.get(`/api/v1/tasks/${task.id}/engineering`))).links;assert.equal(rows.length,3)
+    const gh=edge.services.github
+    const pr=await ok(admin.post(`/api/v1/tasks/${task.id}/engineering`,{service:'github',locator:['synthetic-pegboard-1','synthetic-pegboard-2','pulls','1'].join('/'),mappings:{open:'todo',closed:'doing',merged:'done'},direction:'both',consent:true,credential}))
+    assert.notEqual(pr.external_id,'10001');gh.merged=true
+    const merged=await ok(admin.post(`/api/v1/engineering/${pr.id}/refresh`,{credential}));assert.equal(merged.indicator,'done')
+    assert.equal((await admin.post(`/api/v1/engineering/${pr.id}/update`,{credential,version:merged.version,sourceStatus:'closed',confirm:true})).status,400)
+    const rows=(await ok(admin.get(`/api/v1/tasks/${task.id}/engineering`))).links;assert.equal(rows.length,4)
     assert.ok(!JSON.stringify(rows).includes(credential));const audit=await ok(admin.get('/api/v1/admin/audit'));assert.ok(!JSON.stringify(audit).includes(credential))
   })
   it('denies unapproved source capture, foreign writes, private context and stale reviewed returns',async()=>{
@@ -1523,5 +1539,65 @@ describe('Engineering handoff', {concurrency:false},()=>{
     assert.equal((await admin.post(`/api/v1/engineering/${l.id}/refresh`,{credential})).status,409);assert.equal(edge.services.vector.requests.length,before)
     await runtime.restart();assert.equal((await ok(admin.get(`/api/v1/tasks/${another.id}/engineering`))).links.length,1)
     assert.equal((await admin.post(`/api/v1/engineering/${l.id}/update`,{credential,confirm:true,version:l.version,sourceStatus:vectorDone})).status,409)
+  })
+})
+
+
+describe('Meeting review',{concurrency:false},()=>{
+  let runtime,edge,admin,member,projectId
+  const vtt='WEBVTT\n\n1\n00:00:01.000 --> 00:00:05.000\nAction: Synthetic campaign follow-up with uncertain owner and date\n\n2\n00:00:05.000 --> 00:00:09.000\nDecision: Synthetic launch sign-off still needs a human\n'
+  const artifact=service=>({service,sourceId:'synthetic-pegboard-901',content:service==='meet'?{transcriptEntries:[{name:'synthetic-pegboard-902',participant:'synthetic-pegboard-903',startTime:'2026-10-23T12:00:01Z',endTime:'2026-10-23T12:00:05Z',text:'Action: Synthetic campaign follow-up with uncertain owner and date'},{name:'synthetic-pegboard-904',participant:'synthetic-pegboard-903',startTime:'2026-10-23T12:00:05Z',endTime:'2026-10-23T12:00:09Z',text:'Decision: Synthetic launch sign-off still needs a human'}]}:vtt,sourceAuthority:true,organizerConsent:true,participantConsent:true})
+  before(async()=>{edge=await startMeetingServices();runtime=await startWorker({settings:{PEGBOARD_LOCAL_MEETING_ORIGINS:edge.origins}});admin=runtime.owner;member=await runtime.person('synthetic-pegboard-905@example.com','Synthetic meeting participant');projectId=(await ok(admin.post('/api/v1/projects',{name:'Synthetic meeting campaign'}))).id},{timeout:120000})
+  after(async()=>{await runtime?.stop();await edge?.stop()})
+  it('imports authorized provider transcript exports and adopts each resolved cited action once',async()=>{
+    for(const service of ['zoom','meet','teams']){
+      let meeting=await ok(admin.post('/api/v1/meetings',artifact(service)))
+      assert.equal(meeting.meeting.segments.length,2);assert.equal(meeting.proposals.length,2)
+      assert.equal((await ok(admin.post('/api/v1/meetings',artifact(service)))).meeting.id,meeting.meeting.id)
+      let proposal=meeting.proposals[0]
+      const adopt=(extra={})=>admin.post(`/api/v1/meeting-proposals/${proposal.id}/adopt`,{projectId,version:proposal.version,confirm:true,...extra})
+      assert.equal((await adopt()).status,409)
+      const revision={version:proposal.version,title:'Reviewed synthetic delivery action',ownerId:member.id,dueDate:'2026-11-03',dateResolved:true}
+      assert.equal((await admin.post(`/api/v1/meeting-proposals/${proposal.id}/revise`,{...revision,dateResolved:false})).status,400)
+      meeting=await ok(admin.post(`/api/v1/meeting-proposals/${proposal.id}/revise`,revision));proposal=meeting.proposals[0]
+      assert.equal((await adopt({version:1})).status,409);assert.equal((await adopt({confirm:false})).status,400)
+      const adopted=await Promise.all([1,2].map(()=>ok(adopt())));assert.equal(adopted[0].taskId,adopted[1].taskId)
+      const task=await ok(admin.get(`/api/v1/tasks/${adopted[0].taskId}`));assert.equal(task.title,revision.title);assert.equal(task.owner.id,member.id);assert.equal(task.dueDate,'2026-11-03');assert.ok(task.description.includes(meeting.meeting.id));assert.deepEqual(task.meetingCitations,[{meetingId:meeting.meeting.id,segmentIndex:0}]);assert.ok(!task.description.includes('uncertain owner'))
+      assert.equal((await ok(admin.get(`/api/v1/projects/${projectId}`))).columns.flatMap(c=>c.tasks).filter(t=>t.id===task.id).length,1)
+      const decision=meeting.proposals[1]
+      meeting=await ok(admin.post(`/api/v1/meeting-proposals/${decision.id}/revise`,{version:decision.version,title:decision.title,ownerId:member.id,dueDate:'',dateResolved:true}))
+      const d=meeting.proposals[1],signoff=await ok(admin.post(`/api/v1/meeting-proposals/${d.id}/adopt`,{projectId,version:d.version,confirm:true}))
+      assert.equal((await ok(admin.get(`/api/v1/tasks/${signoff.taskId}/decision-preview`))).state,'pending')
+      const revoked=await ok(admin.post(`/api/v1/meetings/${meeting.meeting.id}/revoke`,{}));assert.deepEqual(revoked.meeting.segments,[]);assert.ok(revoked.proposals.every(p=>p.title===''&&p.owner_id===null))
+      assert.deepEqual((await ok(admin.get(`/api/v1/meetings/${meeting.meeting.id}/context`))).meeting.segments,[])
+      assert.equal((await admin.post(`/api/v1/meeting-proposals/${proposal.id}/adopt`,{projectId,version:proposal.version,confirm:true})).status,409)
+      assert.equal((await ok(admin.get(`/api/v1/tasks/${task.id}`))).title,revision.title);assert.deepEqual((await ok(admin.get(`/api/v1/tasks/${task.id}`))).meetingCitations,[])
+      assert.ok((await ok(admin.post('/api/v1/meetings',artifact(service)))).meeting.revoked_at)
+    }
+  })
+  it('reads all three official provider boundaries and clears revoked source context',async()=>{
+    for(const service of ['zoom','meet','teams']){
+      const sourceId=(service==='zoom'?['meetings','synthetic-pegboard-951','recordings','synthetic-pegboard-952']:service==='meet'?['conferenceRecords','synthetic-pegboard-951','transcripts','synthetic-pegboard-952']:['users','synthetic-pegboard-951','onlineMeetings','synthetic-pegboard-952','transcripts','synthetic-pegboard-953']).join('/')
+      const input={...artifact(service),sourceId,content:'',credential:'synthetic-pegboard-950'},m=await ok(admin.post('/api/v1/meetings',input))
+      assert.equal(m.meeting.segments.length,1);assert.equal(m.proposals.length,1)
+      const credential={credential:'synthetic-pegboard-950'}
+      await ok(admin.post(`/api/v1/meetings/${m.meeting.id}/refresh`,credential))
+      edge.state.refused.add(service)
+      const revoked=await ok(admin.post(`/api/v1/meetings/${m.meeting.id}/refresh`,credential));assert.ok(revoked.meeting.revoked_at);assert.deepEqual(revoked.meeting.segments,[])
+      assert.ok(!JSON.stringify(await ok(admin.get(`/api/v1/meetings/${m.meeting.id}/context`))).includes('Synthetic provider follow-up'))
+      assert.ok(!JSON.stringify(await ok(admin.get('/api/v1/admin/audit'))).includes(credential.credential))
+    }
+  })
+  it('requires capture consent and source authority, fences changed exports and keeps context private after restart',async()=>{
+    for(const flag of ['sourceAuthority','organizerConsent','participantConsent'])assert.equal((await admin.post('/api/v1/meetings',{...artifact('zoom'),[flag]:false})).status,400)
+    assert.equal((await member.post('/api/v1/meetings',artifact('zoom'))).status,403)
+    const input={...artifact('zoom'),sourceId:'synthetic-pegboard-906'},meeting=await ok(admin.post('/api/v1/meetings',input))
+    assert.equal((await member.get(`/api/v1/meetings/${meeting.meeting.id}`)).status,404)
+    assert.equal((await admin.post('/api/v1/meetings',{...input,content:vtt.replace('campaign','changed')})).status,409)
+    const prepared=await ok(admin.post(`/api/v1/meetings/${meeting.meeting.id}/proposals`,{segmentIndex:1,title:'Synthetic participant clarification',kind:'followup'}));assert.equal(prepared.proposals.length,3)
+    await runtime.restart();assert.equal((await ok(admin.get(`/api/v1/meetings/${meeting.meeting.id}`))).proposals.length,3)
+    await ok(admin.post(`/api/v1/meetings/${meeting.meeting.id}/revoke`,{}))
+    assert.equal((await admin.post(`/api/v1/meetings/${meeting.meeting.id}/proposals`,{segmentIndex:0,title:'Synthetic stale action'})).status,409)
+    assert.equal((await ok(admin.get(`/api/v1/meetings/${meeting.meeting.id}/context`))).meeting.segments.length,0)
   })
 })

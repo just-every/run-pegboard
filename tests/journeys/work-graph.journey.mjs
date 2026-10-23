@@ -761,6 +761,35 @@ try {
     await context.close();console.log(`Engineering handoff at ${size}px passed`)
   }
 
+  // Meeting import and human adoption use the product's own source and review pages.
+  if(!process.env.PEGBOARD_JOURNEY||process.env.PEGBOARD_JOURNEY==='meetings')for(const [size,viewport] of sizes){
+    const context=await browser.newContext({viewport});await context.addCookies(cookies(owner));const page=await context.newPage()
+    const proof=async name=>{
+      assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`meeting reflow ${name} ${size}`)
+      for(const control of await page.locator('button,a[href]').all())assert.ok((await control.innerText()).trim(),'all controls have visible words')
+      const focus=page.locator('main input:not([type=hidden]),main a,main button').first();await focus.focus();assert.ok(await focus.evaluate(el=>el===document.activeElement))
+      if(process.env.PEGBOARD_PROOF_DIR){await mkdir(process.env.PEGBOARD_PROOF_DIR,{recursive:true});await page.screenshot({path:join(process.env.PEGBOARD_PROOF_DIR,`meeting-${name}-${size}.png`),fullPage:true})}
+    }
+    const project=ok(await owner.post('/api/v1/projects',{name:`Meeting campaign ${size}`})),member=await w.person(`synthetic-pegboard-91${size}@example.com`,`Meeting participant ${size}`)
+    for(const service of ['zoom','meet','teams']){
+      const source=`synthetic-pegboard-${service==='zoom'?921:service==='meet'?922:923}${size}`,raw='Action: Synthetic follow-up with uncertain owner and date'
+      const content=service==='meet'?JSON.stringify({transcriptEntries:[{name:'synthetic-pegboard-924',participant:'synthetic-pegboard-925',startTime:'2026-10-23T12:00:01Z',endTime:'2026-10-23T12:00:05Z',text:raw}]}):'WEBVTT\n\n1\n00:00:01.000 --> 00:00:05.000\n'+raw+'\n'
+      await page.goto(`${w.origin}/app/meetings`);let form=page.getByRole('form',{name:'Import meeting transcript',exact:true})
+      await form.getByLabel('Meeting service',{exact:true}).selectOption(service);await form.getByLabel('Stable source transcript ID',{exact:false}).fill(source);await form.getByLabel('Complete transcript export').fill(content)
+      for(const checkbox of await form.getByRole('checkbox').all())await checkbox.check()
+      await proof(service+'-import');await form.getByRole('button',{name:'Import transcript',exact:true}).click()
+      await page.getByRole('link',{name:`${service} · ${source}`,exact:true}).click();await expect(page.getByText('Unresolved owner or date: adoption is blocked.',{exact:true})).toBeVisible();await proof(service+'-uncertain')
+      const reviewUrl=page.url();form=page.getByRole('form',{name:'Resolve meeting action',exact:true})
+      await form.getByLabel('Reviewed action title').fill(`Reviewed ${service} action ${size}`);await form.getByLabel('Accountable owner').selectOption(member.id);await form.getByLabel('Reviewed due date',{exact:false}).fill('2026-11-03');await form.getByRole('checkbox').check();await form.getByRole('button',{name:'Save resolved action'}).click()
+      await expect(page.getByText('Owner and date resolved. Review the current action before adoption.',{exact:true})).toBeVisible();await proof(service+'-resolved')
+      form=page.getByRole('form',{name:'Approve meeting action',exact:true});await form.getByLabel('Project receiving this action').selectOption(project.id);await form.getByRole('checkbox').check();await form.getByRole('button',{name:'Approve action once'}).click()
+      await expect(page.getByRole('link',{name:'Open adopted task',exact:true})).toBeVisible();await proof(service+'-adopted')
+      await page.getByRole('link',{name:'Open adopted task',exact:true}).click();await expect(page.getByRole('heading',{name:`Reviewed ${service} action ${size}`,exact:true})).toBeVisible();await expect(page.locator('main')).toContainText('Meeting citation:');await expect(page.getByRole('link',{name:'Meeting source segment 1',exact:true})).toBeVisible();await proof(service+'-task')
+      await page.goto(reviewUrl);await page.getByRole('button',{name:'Revoke source access',exact:true}).click();await expect(page.getByText('Source access revoked.',{exact:false})).toBeVisible();assert.ok(!(await page.locator('main').innerText()).includes(raw));await proof(service+'-revoked')
+    }
+    await context.close();console.log(`Meeting review at ${size}px passed`)
+  }
+
   // Data settings and permanent audit, through the same HTML forms as the owner uses.
   if(!process.env.PEGBOARD_JOURNEY||process.env.PEGBOARD_JOURNEY==='custody')for(const [size,viewport] of sizes){
     const context=await browser.newContext({viewport});await context.addCookies(cookies(owner));const page=await context.newPage()

@@ -1,3 +1,5 @@
+import {MeetingPage} from './meeting-review/page'
+import {meetings,meetingView} from '../meetings/review'
 import { EngineeringPage } from './engineering-handoff/page'
 import { engineeringView } from '../engineering-links/links'
 import { DataPage } from './pages/data'
@@ -91,6 +93,7 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
   const { viewer, workspace } = await context(db, actor, session.operator.role)
   const [, section, id, tail] = segments
   try {
+    if(section==='meetings'&&!tail)return page('Meeting review',h(MeetingPage,{viewer,items:await meetings(db,actor,workspace),view:id?await meetingView(db,actor,id):null,people:await peopleOptions(db,actor,workspace),projects:(await listProjects(db,actor,workspace)).map(p=>({value:p.id,label:p.name}))}))
     if(section==='engineering'&&id&&!tail)return page('Engineering handoff',h(EngineeringPage,{viewer,data:await engineeringView(db,actor,id)}))
     if(section==='audit'&&!id)return page('Permanent audit',h(AuditPage,{viewer,data:await searchAudit(db,actor,workspace,Object.fromEntries(url.searchParams)),input:Object.fromEntries(url.searchParams)}))
     if(section==='data'&&!id){
