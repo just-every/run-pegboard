@@ -66,7 +66,10 @@ export async function expiryPlan(db:D1Database,actor:Actor,workspace:string,inpu
     for(const key of files.keys){const row=await first<{task_id:string}>(db,'SELECT task_id FROM peg_attachments WHERE id=?',key.id);if(row)tasks.add(row.task_id)}
   }
   const outputs=selections.find(s=>s.table==='peg_agent_outputs')
-  if(outputs)selections.unshift(await selectKeys(db,'peg_agent_retrieval',`output_id IN (${placeholders(outputs.keys.map(k=>k.id))})`,outputs.keys.map(k=>k.id)))
+  if(outputs){
+    selections.unshift(await selectKeys(db,'peg_agent_retrieval',`output_id IN (${placeholders(outputs.keys.map(k=>k.id))})`,outputs.keys.map(k=>k.id)))
+    for(const key of outputs.keys){const row=await first<{task_id:string}>(db,'SELECT task_id FROM peg_agent_outputs WHERE id=?',key.id);if(row)tasks.add(row.task_id)}
+  }
   const reopenTasks=(await all<{id:string}>(db,`SELECT id FROM peg_tasks WHERE id IN (${placeholders([...tasks])}) AND status='done' AND EXISTS(SELECT 1 FROM peg_approval_tasks WHERE task_id=peg_tasks.id)`,...[...tasks])).map(t=>t.id)
   // Child decisions and versions must be removed before their proof and its bytes.
   const rank=(table:string)=>table==='peg_proof_decisions'?0:table==='peg_proof_versions'?1:table==='peg_proofs'?2:3

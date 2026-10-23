@@ -111,7 +111,17 @@ export async function authResponse(request: Request, original: Bindings): Promis
  const path=new URL(request.url).pathname,authPath=path.startsWith('/auth/')||path==='/signin'
  const before=authPath?await operatorAuth(runtimeBindings(original)).getSession(request):null
  const response = await handleAuthResponse(request, original)
- if(authPath&&response&&[400,401,403,429].includes(response.status))await batch(original.DB,[permanentEvent(original.DB,{workspace:null,actor:before?.operator.id??null,action:'authentication.refused',type:'authentication',id:'installation',result:'failure'})])
- if(path==='/auth/signout'&&response&&response.status<400)await batch(original.DB,[permanentEvent(original.DB,{workspace:null,actor:before?.operator.id??null,action:'authentication.signed_out',type:'authentication',id:'installation'})])
+ if(authPath&&response&&response.status>=400&&response.status!==404)await batch(original.DB,[permanentEvent(original.DB,{workspace:null,actor:before?.operator.id??null,action:'authentication.refused',type:'authentication',id:'installation',result:'failure'})])
+ const mutations:Record<string,string>={'/auth/operator/role':'role_changed','/auth/operator/status':'status_changed','/auth/session/revoke':'session_revoked','/auth/invite':'invited','/auth/invite/cancel':'invitation_cancelled','/auth/signout':'signed_out','/auth/display-name':'profile_changed','/auth/email':'identity_changed','/auth/policy/approve':'policy_approved','/auth/policy/revoke':'policy_revoked','/auth/domain-rules':'domain_policy_changed','/auth/providers/unlink':'provider_unlinked','/auth/providers/relink':'provider_relinked'}
+ if(request.method==='POST'&&mutations[path]&&response&&response.status<400){
+  let subject=before?.operator.id??'installation',metadata:Record<string,unknown>={}
+  // Only these bounded native operator responses supply a subject. No request, challenge or credential body is inspected.
+  if(['/auth/operator/role','/auth/operator/status','/auth/invite/cancel'].includes(path)&&response.headers.get('content-type')?.includes('application/json')){
+   const value=await response.clone().json().catch(()=>null) as {id?:unknown;role?:unknown}|null
+   if(typeof value?.id==='string'&&/^[a-f0-9-]{36}$/.test(value.id))subject=value.id
+   metadata={role:value?.role}
+  }
+  await batch(original.DB,[permanentEvent(original.DB,{workspace:null,actor:before?.operator.id??null,action:'authentication.'+mutations[path],type:subject==='installation'?'installation':'person',id:subject,metadata})])
+ }
  return response ? rejectedResponse(request, response) : null
 }

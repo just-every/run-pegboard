@@ -1162,6 +1162,9 @@ describe('Data custody', {concurrency:false},()=>{
     await pass(chief.post('/api/v1/my-tasks/rules',{group:'Later',sectionId:section.id}));await pass(chief.get('/api/v1/my-tasks'))
     assert.ok((await pass(chief.get('/api/v1/admin/audit?subject='+personal.id))).events.some(e=>e.action==='rule.personal_effect'))
     assert.ok(!(await pass(admin.get('/api/v1/admin/audit?subject='+personal.id))).events.length,'another administrator cannot read personal audit')
+    const native=await server.person('synthetic-pegboard-665@example.com','synthetic-pegboard-665')
+    await pass(chief.post('/auth/operator/role',{operatorId:native.id,role:'admin'}))
+    const nativeEvents=await pass(chief.get('/api/v1/admin/audit?action=authentication.role_changed'));assert.ok(nativeEvents.events.some(e=>e.target_id===native.id&&e.actor_id===chief.id&&e.metadata.role==='admin'))
     const anonymous=new chief.constructor(server.origin,'','anonymous')
     await pass(anonymous.post('/auth/confirm',{token:'synthetic-pegboard-660'}),400)
     const events=await allAudit(),raw=JSON.stringify(events)
@@ -1267,18 +1270,23 @@ describe('Data custody', {concurrency:false},()=>{
 
 
   it('pins actual proof bytes and accepts only a current independent human decision',async()=>{
-    const p=await makeProject(),q=await makeProject(),task=await makeTask(p.id,{ownerId:member.id})
+    const p=await makeProject(),q=await makeProject(),task=await makeTask(p.id,{ownerId:member.id,kind:'approval'})
     await pass(chief.post(`/api/v1/tasks/${task.id}/projects`,{projectId:q.id}))
     await pass(chief.post('/api/v1/grants',{objectType:'project',objectId:p.id,granteeId:member.id,level:'editor'}))
     const file=await pass(chief.post(`/api/v1/tasks/${task.id}/attachments?projectId=${p.id}&name=synthetic-pegboard-642.pdf`,proofDocument('synthetic-pegboard-643'),{'content-type':'application/pdf'}))
+    const approveWork=async()=>{const d=await pass(chief.get(`/api/v1/tasks/${task.id}/decision-preview`));await pass(chief.post(`/api/v1/tasks/${task.id}/decision`,{revision:d.token,action:'approve',reason:'synthetic-pegboard-666'}))}
+    await approveWork()
     const proof=await pass(chief.post(`/api/v1/tasks/${task.id}/proofs`,{attachmentId:file.id}))
+    const reopened=await pass(chief.get(`/api/v1/tasks/${task.id}`));assert.equal(reopened.status,'todo');assert.ok(reopened.history.some(e=>e.kind==='decision.reopened'&&e.detail.cause==='proof_version'&&e.actor==='Wes Holloway'))
     const expected=await import('node:crypto').then(c=>c.createHash('sha256').update(proofDocument('synthetic-pegboard-643')).digest('hex'));assert.equal(proof.digest,expected)
     let preview=await pass(chief.get(`/api/v1/proofs/${proof.id}/decision-preview`))
     assert.equal((await member.post(`/api/v1/proofs/${proof.id}/decisions`,{versionId:proof.versionId,token:preview.token,action:'approve',reason:'synthetic-pegboard-644'})).status,403)
     await pass(chief.post(`/api/v1/proofs/${proof.id}/decisions`,{versionId:proof.versionId,token:preview.token,action:'approve',reason:'planted-proof-reason@example.com'}))
     assert.equal((await pass(chief.get(`/api/v1/proofs/${proof.id}`))).state,'approve')
     const nextFile=await pass(chief.post(`/api/v1/tasks/${task.id}/attachments?projectId=${q.id}&name=synthetic-pegboard-645.pdf`,proofDocument('synthetic-pegboard-646'),{'content-type':'application/pdf'}))
+    await approveWork()
     const next=await pass(chief.post(`/api/v1/proofs/${proof.id}/versions`,{attachmentId:nextFile.id,currentVersion:proof.versionId}))
+    assert.equal((await pass(chief.get(`/api/v1/tasks/${task.id}`))).status,'todo')
     assert.equal((await pass(chief.get(`/api/v1/proofs/${proof.id}`))).state,'pending')
     assert.equal((await chief.post(`/api/v1/proofs/${proof.id}/decisions`,{versionId:proof.versionId,token:preview.token,action:'approve',reason:'stale'})).status,409)
     assert.equal((await chief.post(`/api/v1/proofs/${proof.id}/versions`,{attachmentId:file.id,currentVersion:next.versionId})).status,409)
@@ -1314,13 +1322,16 @@ describe('Data custody', {concurrency:false},()=>{
   })
 
   it('fences scoped agent output custody on processor revocation, retention holds and replay after expiry',async()=>{
-    const agent=await server.person('synthetic-pegboard-648@example.com','synthetic-pegboard-648','agent'),p=await makeProject(),task=await makeTask(p.id)
+    const agent=await server.person('synthetic-pegboard-648@example.com','synthetic-pegboard-648','agent'),p=await makeProject(),task=await makeTask(p.id,{kind:'approval',ownerId:member.id})
     await pass(chief.post('/api/v1/grants',{objectType:'project',objectId:p.id,granteeId:agent.id,level:'editor',scopes:['read','edit']}))
+    const approveWork=async()=>{const d=await pass(chief.get(`/api/v1/tasks/${task.id}/decision-preview`));await pass(chief.post(`/api/v1/tasks/${task.id}/decision`,{revision:d.token,action:'approve',reason:'synthetic-pegboard-667'}))};await approveWork()
     const input={projectId:p.id,processor:'synthetic-pegboard-649',body:'synthetic-pegboard-650',key:'synthetic-pegboard-651'}
     assert.equal((await agent.post(`/api/v1/tasks/${task.id}/agent-outputs`,input)).status,403)
+    assert.equal((await pass(chief.get(`/api/v1/tasks/${task.id}`))).status,'done')
     await pass(chief.post('/api/v1/data/processors',{processor:input.processor,approved:true,sharing:false,training:false,confirm:true}))
     assert.equal((await chief.post(`/api/v1/tasks/${task.id}/agent-outputs`,input)).status,403,'a human cannot plant an agent identity')
     const output=await pass(agent.post(`/api/v1/tasks/${task.id}/agent-outputs`,input));assert.equal((await pass(agent.post(`/api/v1/tasks/${task.id}/agent-outputs`,input))).id,output.id)
+    const work=await pass(chief.get(`/api/v1/tasks/${task.id}`));assert.equal(work.status,'todo');assert.ok(work.history.some(e=>e.kind==='decision.reopened'&&e.detail.cause==='agent_output'&&e.actor==='synthetic-pegboard-648'))
     assert.equal((await pass(chief.get(`/api/v1/agent-outputs/${output.id}`))).body,'synthetic-pegboard-650');assert.equal((await pass(agent.get(`/api/v1/agent-outputs/${output.id}/retrieval`))).body,'synthetic-pegboard-650')
     assert.equal((await member.get(`/api/v1/agent-outputs/${output.id}`)).status,404)
     await pass(chief.post('/api/v1/data/processors',{processor:input.processor,approved:false,confirm:true}))
@@ -1330,11 +1341,13 @@ describe('Data custody', {concurrency:false},()=>{
     const hold=await pass(chief.post('/api/v1/data/holds',{type:'task',id:task.id,authority:'synthetic-pegboard-652',expiresAt:Date.now()+86400000}))
     const expiry={class:'agent_prompts_outputs'},held=await pass(chief.post('/api/v1/data/expiry-preview',expiry));assert.equal(held.held,1);assert.ok(!held.counts.peg_agent_outputs)
     await pass(chief.post(`/api/v1/data/holds/${hold.id}/release`,{confirm:true}))
+    await approveWork()
     const preview=await pass(chief.post('/api/v1/data/expiry-preview',expiry));assert.equal(preview.counts.peg_agent_outputs,1);assert.equal(preview.counts.peg_agent_retrieval,1)
     const done=await pass(chief.post('/api/v1/data/expire',{...expiry,cutoff:preview.cutoff,token:preview.token,confirm:true}));assert.equal(done.counts.peg_agent_retrieval,1)
     assert.equal(done.processorRequests,1);const followups=await pass(chief.get('/api/v1/data'));assert.ok(followups.processorDeletions.some(r=>r.subject_id===output.id&&r.state==='needs_owner_action'));assert.ok(followups.receipts.some(r=>r.id===done.id&&r.outcome==='partial'))
     assert.equal((await chief.get(`/api/v1/agent-outputs/${output.id}`)).status,404);assert.equal((await chief.get(`/api/v1/agent-outputs/${output.id}/retrieval`)).status,404)
     assert.equal((await agent.post(`/api/v1/tasks/${task.id}/agent-outputs`,input)).status,409,'the original intake key cannot resurrect an expired output')
+    const expiredWork=await pass(chief.get(`/api/v1/tasks/${task.id}`));assert.equal(expiredWork.status,'todo');assert.ok(expiredWork.history.some(e=>e.kind==='decision.reopened'&&e.detail.cause==='retention_expiry'&&e.actor==='Wes Holloway'))
   })
 
   it('cleans expired local authentication separately from held work retention',async()=>{

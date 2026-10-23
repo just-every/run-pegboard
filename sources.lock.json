@@ -289,6 +289,10 @@
       "sha256": "9da62509698735af15b3f7e7fa6e79cf1a6e2f69b6325dbab10d0d2988db6e8b",
       "executable": false
     },
+    "migrations/core/0037_native_authority_epoch.sql": {
+      "sha256": "8f7b6d5b91f6f438fe4b4472b92adcf236e3da02a51ced3126511f1063d5aabd",
+      "executable": false
+    },
     "ONBOARDING.md": {
       "sha256": "24b685d6eddeae5480ce4dfbf44c0590e54bcfe83641373de5bba985765380bd",
       "executable": false
@@ -810,7 +814,7 @@
       "executable": false
     },
     "src/auth.server.ts": {
-      "sha256": "aff75f89ed5f063ba0321c361f9c5fad1c7c543b48dee26d3216ab4ae245490c",
+      "sha256": "7303fa90f0ac748ecd007bddd7170f11b1cb5a304e26e5887dfc470a40028fc5",
       "executable": false
     },
     "src/base/actor.ts": {
@@ -1914,7 +1918,7 @@
       "executable": false
     },
     "src/pegboard/data/expiry.ts": {
-      "sha256": "8210c35807be8087616053cd7ab283b0bfde2d31abbd2cf4b3b0812fe714744f",
+      "sha256": "94b98dbbc7d021230969b5c2f7401b91d22c0a602b27aebdb5089da71a48cace",
       "executable": false
     },
     "src/pegboard/data/processors.ts": {
@@ -2322,7 +2326,7 @@
       "executable": false
     },
     "tests/work-graph.test.mjs": {
-      "sha256": "41155579e6b35db2e56c7e31a53fed6299f60f01dc268b8b28c5839edbd71d57",
+      "sha256": "d912fe648b2c6b24feaaef5ec3dbafbabf934128499f6eee2805c392cb57a37f",
       "executable": false
     },
     "tsconfig.json": {
