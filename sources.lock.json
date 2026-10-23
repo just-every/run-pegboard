@@ -2034,7 +2034,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/data.tsx": {
-      "sha256": "922101cc285a8319cade005144e959f840e427099a58dea5936f6010cbd114ab",
+      "sha256": "1e44b2d3943005d1caf1078af1619f264c7205c7832e3c70ccb33ee63eb31610",
       "executable": false
     },
     "src/pegboard/ui/pages/decision.tsx": {
