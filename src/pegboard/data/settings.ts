@@ -21,9 +21,9 @@ export async function activeHolds(db:D1Database,workspace:string) {return (await
 export async function dataSettings(db:D1Database,actor:Actor,workspace:string) {
   await requireOwner(db,actor,workspace)
   const rows=await all<{class:string;days:number|null}>(db,'SELECT class,days FROM peg_retention_classes WHERE workspace_id=?',workspace)
-  const recordChoices=await all<{id:string;label:string;type:string}>(db,`SELECT id,name label,'project' type FROM peg_projects WHERE workspace_id=? UNION ALL SELECT id,title label,'task' type FROM peg_tasks WHERE workspace_id=? AND (owner_id=? OR EXISTS(SELECT 1 FROM peg_task_projects p WHERE p.task_id=peg_tasks.id)) UNION ALL SELECT a.id,a.name label,'attachment' type FROM peg_attachments a JOIN peg_tasks t ON t.id=a.task_id WHERE t.workspace_id=? AND (t.owner_id=? OR EXISTS(SELECT 1 FROM peg_task_projects p WHERE p.task_id=t.id)) UNION ALL SELECT o.id,o.display_name label,'person' type FROM oa_operators o WHERE o.role IN ('owner','admin') OR EXISTS(SELECT 1 FROM peg_workspace_members m WHERE m.operator_id=o.id AND m.workspace_id=?) ORDER BY type,label LIMIT 500`,workspace,workspace,actor.id,workspace,actor.id,workspace)
+  const recordChoices=await all<{id:string;label:string;type:string}>(db,`SELECT id,name label,'project' type FROM peg_projects WHERE workspace_id=? UNION ALL SELECT id,title label,'task' type FROM peg_tasks WHERE workspace_id=? AND (owner_id=? OR EXISTS(SELECT 1 FROM peg_task_projects p WHERE p.task_id=peg_tasks.id)) UNION ALL SELECT a.id,a.name label,'attachment' type FROM peg_attachments a JOIN peg_tasks t ON t.id=a.task_id WHERE t.workspace_id=? AND (t.owner_id=? OR EXISTS(SELECT 1 FROM peg_task_projects p WHERE p.task_id=t.id)) UNION ALL SELECT p.id,'Proof on '||t.title label,'proof' type FROM peg_proofs p JOIN peg_tasks t ON t.id=p.task_id WHERE t.workspace_id=? UNION ALL SELECT o.id,o.display_name label,'person' type FROM oa_operators o WHERE o.role IN ('owner','admin') OR EXISTS(SELECT 1 FROM peg_workspace_members m WHERE m.operator_id=o.id AND m.workspace_id=?) ORDER BY type,label LIMIT 500`,workspace,workspace,actor.id,workspace,actor.id,workspace,workspace)
   return {recordChoices,classes:retentionClasses.map(name=>({name,days:rows.find(r=>r.class===name)?.days??null})),holds:await holds(db,workspace),processors:await all(db,'SELECT processor,approved,training,sharing FROM peg_processor_policies WHERE workspace_id=?',workspace),receipts:await all(db,'SELECT * FROM peg_data_receipts WHERE workspace_id=? ORDER BY at DESC,id LIMIT 100',workspace),externalLimits,
-    custody:'Current task attachments are stored as database bytes. R2 proof-version, preview, search-index and agent retrieval stores are not implemented; their cleanup is not claimed.',
+    custody:'Current attachments, proof versions, task search and agent retrieval copies are stored in this installation’s database. R2 originals, derivatives and incomplete upload parts are not implemented; their cleanup is not claimed.',
     identityLimits:'Person erasure currently anonymizes the inactive profile and permanent-audit presentation. Version-fenced local authentication material and legacy access activity remain retained; the receipt is partial.',
     defaultPolicy:'Keep data until an owner explicitly reviews expiry or erasure. Active holds prevent removal. Processors are denied until explicitly approved; no training or sharing is enabled by default.'}
 }
@@ -47,13 +47,14 @@ export async function setRetention(db:D1Database,actor:Actor,workspace:string,in
 }
 export async function addHold(db:D1Database,actor:Actor,workspace:string,input:Record<string,any>) {
   await requireOwner(db,actor,workspace)
-  if(!['workspace','project','task','attachment','person'].includes(input.type))throw invalid('hold_scope')
+  if(!['workspace','project','task','attachment','proof','person'].includes(input.type))throw invalid('hold_scope')
   const id=String(input.id??''), authority=String(input.authority??'').trim(),expiresAt=typeof input.expiresAt==='number'?input.expiresAt:Date.parse(String(input.expiresAt??''))
   if(!authority||authority.length>500||!Number.isSafeInteger(expiresAt)||expiresAt<=now())throw invalid('hold_authority_and_expiry')
-  const table={workspace:'peg_workspaces',project:'peg_projects',task:'peg_tasks',attachment:'peg_attachments',person:'oa_operators'}[input.type as 'workspace']
+  const table={workspace:'peg_workspaces',project:'peg_projects',task:'peg_tasks',attachment:'peg_attachments',proof:'peg_proofs',person:'oa_operators'}[input.type as 'workspace']
   if(!await first(db,`SELECT 1 FROM ${table} WHERE id=?`,id))throw invalid('hold_scope')
   if(input.type==='workspace'&&id!==workspace)throw invalid('hold_scope')
   if(['project','task'].includes(input.type)&&!await first(db,`SELECT 1 FROM ${table} WHERE id=? AND workspace_id=?`,id,workspace))throw invalid('hold_scope')
+  if(input.type==='proof'&&!await first(db,'SELECT 1 FROM peg_proofs p JOIN peg_tasks t ON t.id=p.task_id WHERE p.id=? AND t.workspace_id=?',id,workspace))throw invalid('hold_scope')
   if(input.type==='attachment'&&!await first(db,'SELECT 1 FROM peg_attachments a JOIN peg_tasks t ON t.id=a.task_id WHERE a.id=? AND t.workspace_id=?',id,workspace))throw invalid('hold_scope')
   const holdId=newId('hold')
   await commitData(db,[dataGuard(db,actor,await dataRevision(db),now()+300000),bound(db,'INSERT INTO peg_data_holds VALUES(?,?,?,?,?,?,?,?,NULL)',[holdId,workspace,input.type,id,authority,expiresAt,actor.id,now()]),permanentEvent(db,{workspace,actor:actor.id,action:'retention.hold_applied',type:input.type,id})])

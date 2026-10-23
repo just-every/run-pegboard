@@ -1,3 +1,4 @@
+import { recordRoutes } from './record-routes'
 import { dataRoutes } from './data-routes'
 import {goalRoutes} from './goal-routes'
 import {recurrenceRoutes} from './recurrence-routes'
@@ -24,3 +25,5 @@ recurrenceRoutes(pegboardApi)
 goalRoutes(pegboardApi)
 
 dataRoutes(pegboardApi)
+
+recordRoutes(pegboardApi)
