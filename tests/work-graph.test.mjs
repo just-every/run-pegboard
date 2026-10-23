@@ -1,6 +1,10 @@
 // PEG-001, through the public doors (the JSON API and the forms that post to it): one task across projects, what a guest
 // never learns, references that outlive a prefix change, and the PEG-083 join and request journeys on the same graph.
 import assert from 'node:assert/strict'
+import {execFileSync,spawnSync} from 'node:child_process'
+import {mkdtemp,readFile,writeFile,mkdir,symlink,rm} from 'node:fs/promises'
+import {tmpdir} from 'node:os'
+import {join} from 'node:path'
 import { after, before, describe, it } from 'node:test'
 import { startWorker } from './support/worker.mjs'
 import { startTimeServices } from './support/time-services.mjs'
@@ -1223,6 +1227,48 @@ describe('Data custody', {concurrency:false},()=>{
     const updated=await pass(chief.get('/api/v1/data'));assert.equal(updated.processors.find(p=>p.processor==='synthetic-pegboard-621').training,0)
     assert.ok(updated.receipts.some(r=>r.id===done.id&&r.outcome==='partial'))
   })
+
+
+  it('preserves permanent audit through native archive restore and refuses an old archive with the later erasure journal',async()=>{
+    const archive=async()=>{
+      const created=await pass(chief.post('/api/portability/exports',{}),201)
+      for(let page=0;page<100;page++){
+        const status=await pass(chief.post(`/api/portability/exports/${created.id}/advance`,{maxParts:16}))
+        if(status.phase==='complete')return pass(chief.get(`/api/portability/exports/${created.id}/download`))
+      }
+      assert.fail('archive did not complete')
+    }
+    const p=await makeProject(),t=await makeTask(p.id)
+    await pass(chief.post(`/api/v1/tasks/${t.id}/comments`,{body:'synthetic-pegboard-624'}))
+    const old=await archive()
+    assert.equal((await member.post('/api/portability/exports',{})).status,403)
+    const before=(await allAudit()).filter(e=>e.target_id===p.id)
+    await pass(eraseReview(await review('project',p.id)))
+    const later=await archive(),records=later.trim().split('\n').map(line=>JSON.parse(line))
+    const archivedEvents=records.filter(r=>r.kind==='part').flatMap(r=>r.items).filter(r=>r.kind==='row'&&r.table==='peg_permanent_audit').map(r=>r.row)
+    for(const event of before)assert.ok(archivedEvents.some(row=>row.id===event.id&&row.action===event.action))
+    const scratch=await mkdtemp(join(tmpdir(),'pegboard-custody-archive-'))
+    try{
+      // Native public CLI restore into an empty installation of the exact committed product tree.
+      execFileSync('tar',['-xf','-','-C',scratch],{input:execFileSync('git',['archive','HEAD']),stdio:['pipe','pipe','pipe']})
+      await symlink(join(process.cwd(),'node_modules'),join(scratch,'node_modules'),'dir')
+      await mkdir(join(scratch,'exports'),{recursive:true})
+      await writeFile(join(scratch,'exports/old.rer'),old,{mode:0o600});await writeFile(join(scratch,'exports/later.rer'),later,{mode:0o600})
+      const rer=join(process.cwd(),'node_modules/@runeditrun/rer/global/rer.mjs')
+      const cli=(...args)=>spawnSync(process.execPath,[rer,...args],{cwd:scratch,encoding:'utf8',env:{...process.env,CI:'1',WRANGLER_SEND_METRICS:'false'}})
+      const refused=cli('import','--input','exports/old.rer','--journal','exports/later.rer','--yes')
+      assert.equal(refused.status,4,refused.stdout+refused.stderr);assert.match(refused.stdout+refused.stderr,/erasure_epoch|erased_row/)
+      const restored=cli('import','--input','exports/later.rer','--yes');assert.equal(restored.status,0,restored.stdout+restored.stderr)
+      const exported=cli('export','--output','exports/restored.rer');assert.equal(exported.status,0,exported.stdout+exported.stderr)
+      const result=(await readFile(join(scratch,'exports/restored.rer'),'utf8')).trim().split('\n').map(line=>JSON.parse(line)),items=result.filter(r=>r.kind==='part').flatMap(r=>r.items)
+      const audit=items.filter(r=>r.kind==='row'&&r.table==='peg_permanent_audit').map(r=>r.row)
+      for(const event of archivedEvents)assert.deepEqual(audit.find(row=>row.id===event.id),event)
+      assert.ok(!items.some(r=>r.kind==='row'&&r.table==='peg_tasks'&&r.row.id===t.id))
+      assert.ok(items.some(r=>r.kind==='row'&&r.table==='peg_data_receipts'&&r.row.target_id===p.id))
+      assert.ok(items.filter(r=>r.kind==='row'&&r.table==='peg_grants').every(r=>r.row.revoked_at!==null))
+      assert.ok(items.filter(r=>r.kind==='row'&&r.table==='peg_recurrences').every(r=>r.row.active===0))
+    }finally{await rm(scratch,{recursive:true,force:true})}
+  },{timeout:180000})
 
   it('anonymizes an erased inactive actor without losing the permanent audit chain',async()=>{
     const person=await server.person('synthetic-pegboard-622@example.com','Planted Actor synthetic-pegboard-622')

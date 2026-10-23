@@ -1814,11 +1814,11 @@
       "executable": false
     },
     "src/pegboard/api/data-routes.ts": {
-      "sha256": "8e2dd6e5067856baedd6b06d6d8f8456f5d9f27cabf11856078cd4c5b66a7596",
+      "sha256": "eaff3c12392cdc1dcf6e988bbafbbe1b567cc8333984cb0d1d58036b5d973c5d",
       "executable": false
     },
     "src/pegboard/api/door.ts": {
-      "sha256": "afbef8c742d979837940a4ee9af4e8b6f01f161ba3d09a23b9d9f05df0335c87",
+      "sha256": "7c4413ec4eecc7ab69a3ba2f449645e320c8293cc5ee53905c14fdd43061ef19",
       "executable": false
     },
     "src/pegboard/api/field-routes.ts": {
@@ -1886,7 +1886,7 @@
       "executable": false
     },
     "src/pegboard/data/erasure.ts": {
-      "sha256": "a492a4dcefad474676f3d07c8821c5491cf98a8551e453b6e6ee6a2032f75ef3",
+      "sha256": "3942c0957e26f065a6f3496d905866c32182153bbbd95d69b4e71ddc190ab486",
       "executable": false
     },
     "src/pegboard/data/expiry.ts": {
@@ -2290,7 +2290,7 @@
       "executable": false
     },
     "tests/work-graph.test.mjs": {
-      "sha256": "5ee2c7ed0d2d884f5001855b8d32461b79fb38d2eecbdeea283949605e055558",
+      "sha256": "13be15e21495be5eb402b79acc14c128d23d6e8071f3575d932e9ebf0771b593",
       "executable": false
     },
     "tsconfig.json": {

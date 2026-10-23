@@ -78,9 +78,21 @@ export async function erasurePlan(db:D1Database,actor:Actor,workspace:string,typ
     for(const table of ['peg_sections','peg_tag_projects','peg_project_completion','peg_ref_prefixes'])await take(table,projectScoped('project_id'),projects)
     await take('peg_projects',projectScoped('id'),projects)
   }
-  const active=await activeHolds(db,workspace)
+  const affectedTasks=new Set(tasks)
+  if(projects.length)for(const t of await all<{task_id:string}>(db,`SELECT task_id FROM peg_task_projects WHERE project_id IN (${placeholders(projects)})`,...projects))affectedTasks.add(t.task_id)
+  if(type==='attachment'){
+    const file=await first<{task_id:string}>(db,'SELECT task_id FROM peg_attachments WHERE id=?',id);if(file)affectedTasks.add(file.task_id)
+  }
+  if(type==='person'){
+    for(const t of await all<{task_id:string}>(db,'SELECT task_id FROM peg_comments WHERE author_id=? UNION SELECT task_id FROM peg_attachments WHERE created_by=?',id,id))affectedTasks.add(t.task_id)
+  }
+  const affected=[...affectedTasks], relatedProjects=new Set(projects), relatedPeople=new Set<string>()
+  for(const r of await all<{project_id:string}>(db,`SELECT project_id FROM peg_task_projects WHERE task_id IN (${placeholders(affected)})`,...affected))relatedProjects.add(r.project_id)
+  for(const r of await all<{person:string}>(db,`SELECT owner_id person FROM peg_tasks WHERE id IN (${placeholders(affected)}) UNION SELECT creator_id person FROM peg_tasks WHERE id IN (${placeholders(affected)}) UNION SELECT author_id person FROM peg_comments WHERE task_id IN (${placeholders(affected)}) UNION SELECT created_by person FROM peg_attachments WHERE task_id IN (${placeholders(affected)})`,...affected,...affected,...affected,...affected))relatedPeople.add(r.person)
+  // Person anonymization affects installation identity, so every workspace hold participates.
+  const active=type==='person'?(await all<Awaited<ReturnType<typeof activeHolds>>[number]>(db,'SELECT * FROM peg_data_holds WHERE released_at IS NULL AND expires_at>?',now())):await activeHolds(db,workspace)
   const affectedAttachments=selections.find(s=>s.table==='peg_attachments')?.keys.map(k=>k.id)??[]
-  const holds=active.filter(h=>h.target_type==='workspace'||h.target_type===type&&h.target_id===id||h.target_type==='task'&&tasks.includes(h.target_id)||h.target_type==='project'&&projects.includes(h.target_id)||h.target_type==='attachment'&&affectedAttachments.includes(h.target_id))
+  const holds=active.filter(h=>h.target_type==='workspace'||h.target_type===type&&h.target_id===id||h.target_type==='task'&&affectedTasks.has(h.target_id)||h.target_type==='project'&&relatedProjects.has(h.target_id)||h.target_type==='person'&&relatedPeople.has(h.target_id)||h.target_type==='attachment'&&affectedAttachments.includes(h.target_id))
   if(holds.length)blockers.push('active_legal_hold')
   const counts=Object.fromEntries(selections.map(s=>[s.table,s.keys.length]))
   const plan={type,id,name,tasks,projects,selections,counts,blockers:[...new Set(blockers)],holds:holds.map(h=>({id:h.id,authority:h.authority,expiresAt:h.expires_at})),retained,externalLimits}

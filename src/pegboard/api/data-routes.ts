@@ -9,7 +9,7 @@ import { permanentEvent, searchAudit, exportAudit } from '../audit/search'
 import { dataSettings, retentionPreview, setRetention, addHold, releaseHold, setProcessor, requireOwner } from '../data/settings'
 import { erasurePlan, erase } from '../data/erasure'
 import { expiryPlan, expire } from '../data/expiry'
-import { door } from './door'
+import { door, json } from './door'
 
 export function dataRoutes(app:Hono<{Bindings:Bindings}>) {
   app.get('/admin/audit',door(({db,actor,workspace,query})=>searchAudit(db,actor,workspace,Object.fromEntries(query))))
@@ -34,6 +34,8 @@ export function dataRoutes(app:Hono<{Bindings:Bindings}>) {
 export async function archiveResponse(request:Request,original:Bindings):Promise<Response|null> {
   if(!new URL(request.url).pathname.startsWith('/api/portability'))return null
   const env=runtimeBindings(original),session=await operatorAuth(env).getSession(request)
+  if(!session)return json({error:'unauthenticated'},401)
+  try{await requireOwner(env.DB,actorOf(session),'ws_main')}catch{return json({error:'owner_required'},403)}
   const handler=await createPortabilityHandler({db:env.DB,policy,appOrigin:env.AUTH_ORIGIN,authorize:async()=>{
     if(!session)return null
     try{await requireOwner(env.DB,actorOf(session),'ws_main');return session.operator.id}catch{return null}
