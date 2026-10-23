@@ -1396,6 +1396,9 @@ describe('Data custody', {concurrency:false},()=>{
     }
     const p=await makeProject(),t=await makeTask(p.id)
     await pass(chief.post(`/api/v1/tasks/${t.id}/comments`,{body:'synthetic-pegboard-624'}))
+    const kept=await makeProject(),keptTask=await makeTask(kept.id,{ownerId:member.id}),pdf=proofDocument('synthetic-pegboard-670'),keptFile=await pass(chief.post(`/api/v1/tasks/${keptTask.id}/attachments?name=synthetic-pegboard-670.pdf`,pdf,{'content-type':'application/pdf'})),keptProof=await pass(chief.post(`/api/v1/tasks/${keptTask.id}/proofs`,{attachmentId:keptFile.id})),keptDecision=await pass(chief.get(`/api/v1/proofs/${keptProof.id}/decision-preview`))
+    await pass(chief.post(`/api/v1/proofs/${keptProof.id}/decisions`,{versionId:keptProof.versionId,token:keptDecision.token,action:'approve',reason:'synthetic-pegboard-671'}))
+    const followups=(await pass(chief.get('/api/v1/data'))).processorDeletions
     const old=await archive()
     assert.equal((await member.post('/api/portability/exports',{})).status,403)
     const before=(await allAudit()).filter(e=>e.target_id===p.id)
@@ -1426,6 +1429,10 @@ describe('Data custody', {concurrency:false},()=>{
         const restoredActor=await pass(copy.owner.get('/api/v1/admin/audit?actor='+erasedActorId))
         assert.ok(restoredActor.events.length>0);assert.ok(restoredActor.events.every(e=>e.actor==='Erased actor'));assert.ok((await pass(copy.owner.get('/api/v1/admin/audit?action=archive.restored'))).events.length>0)
         assert.equal((await copy.owner.get('/api/v1/tasks/'+t.id)).status,404)
+        const pinned=await pass(copy.owner.get('/api/v1/proofs/'+keptProof.id));assert.equal(pinned.state,'approve');assert.equal(pinned.versions[0].digest,keptProof.digest)
+        assert.equal(await pass(copy.owner.get('/api/v1/attachments/'+keptFile.id)),Buffer.from(pdf).toString())
+        const restoredData=await pass(copy.owner.get('/api/v1/data'));for(const row of followups)assert.ok(restoredData.processorDeletions.some(r=>r.id===row.id&&r.state==='needs_owner_action'))
+
       }finally{await copy.stop()}
 
       assert.ok(items.filter(r=>r.kind==='row'&&r.table==='peg_grants').every(r=>r.row.revoked_at!==null))

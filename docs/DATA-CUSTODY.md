@@ -1,102 +1,118 @@
 # Data custody
 
-An installation owner opens **Data** to review retention, holds and irreversible
-removal. Owners and installation administrators open **Audit** to search and
-export permanent events. Workspace administrators see that workspace's events;
-only an owner sees installation-wide authentication/archive events. Each authorized administrator can also see their own personal audit. Personal task, goal and
-draft-time activity is not exposed by the workspace audit.
+Owners open Administration → Data settings to review retention, holds and
+irreversible removal. Owners and administrators open Administration → Permanent
+audit to search and export immutable events. Workspace administrators see that
+workspace’s events and their own personal audit. Installation-wide authentication
+and archive events are owner-only. Other people’s personal tasks, goals and draft
+timesheets do not become visible through the workspace audit.
 
 ## Permanent audit
 
-`peg_permanent_audit` is separate from work history and the older access-activity
-store. Database triggers reject updates and deletes. Existing access events are
-copied additively with their opaque identifiers and no free-text metadata; their
-original activity is preserved. Current work-history and access changes append
-redacted permanent events in the mutation transaction. Current signed-in API
-writes and CSV exports also record started and success/failure outcomes. A
-correlation identifier joins each API attempt to its outcome; a started event
-alone is not a completion receipt. Native authentication admission and
-configuration changes are recorded without challenge, session or credential
-values. Pagination uses event IDs and exact action, actor and subject filters.
+The permanent audit is separate from editable work history and older access
+activity. Database triggers reject updates and deletes. Historical access events
+are copied additively with opaque identifiers and no free-text metadata; their
+original activity is preserved. Current access, work-history, rule-effect,
+recurrence and provider outcomes append permanent records. API writes also record
+started and success/failure outcomes with an opaque correlation ID. A started
+record alone does not establish completion.
 
-Permanent metadata accepts a closed vocabulary of enumerated values, counts,
-booleans and generated identifiers. It never copies request bodies, comments,
-file names/bodies, provider responses, email addresses or credentials. Erased
-profiles are displayed as **Erased actor**, retaining the original opaque actor
-identifier and historical action chain. Authorized activity screens may still
-show work details according to their own permissions and retention.
+Native admission, refused challenges, account changes and sign-out are recorded
+without challenge, cookie, token or secret values. Native account role/status
+changes move the same authority epoch as Pegboard’s account doors. Proof
+versions/decisions and signed agent-output submissions use this audit too.
+Authorized search/export is paginated by event ID with exact action, actor and
+subject filters.
 
-This is coverage of current doors. PEG-011/036 proof decisions, PEG-012 rules,
-PEG-024/046–054 imports, PEG-027 API/MCP/webhooks, PEG-062/074/075 agent execution
-and PEG-086 recovery must append redacted permanent events when those doors are
-built. Their complete acceptance journeys remain required.
+Metadata accepts only a closed vocabulary of enums, numbers, booleans and opaque
+IDs. It does not copy request bodies, comments, file names or bodies, provider
+responses, addresses or credentials. An erased profile displays as **Erased
+actor** while preserving its opaque actor ID and historical action chain.
+
+PEG-011/036’s complete proof/guest journeys, PEG-012’s complete rules,
+PEG-024/046–054’s product imports, PEG-027’s API/MCP/webhooks, PEG-062/074/075’s
+agent execution and PEG-086 recovery must use the same permanent audit as their
+remaining doors are built. Current native record APIs are documented in
+`docs/DATA-RECORD-API.md`; they do not establish those clauses’ completion.
 
 ## Retention and holds
 
-The owner publishes separate periods for product history, trash, attachments and
-proofs, import originals, agent prompts and outputs, provider logs, and transient
-credentials/sessions. The conservative default keeps records until explicit
-reviewed removal. A retention change previews the old/new period and does not
-start an automatic destructive job. Expiry is a second exact-scope review with a
-frozen cutoff. Supported current stores are work history, database attachment
-bytes, time-provider delivery logs and expired local tokens/sessions. Missing
-trash/import/proof/agent stores are explicitly reported as unavailable, rather
-than reported successfully expired.
+Separate periods cover product history, trash, attachments/proofs, import
+originals, agent prompts/outputs, provider logs and transient credentials/sessions.
+The default keeps records until an owner reviews removal. Changing a period
+previews its old/new value, held records and current eligible-record impact; it
+starts no automatic destructive job. Expiry has its own exact-scope review with
+a frozen cutoff.
 
-A hold records scope, authority, creator and expiry. Active workspace, project,
-task, attachment and person holds prevent conflicting removal, including linked
-project/task custody. Release requires an explicit owner confirmation. Every
-retained or completed outcome has an immutable, redacted receipt. Existing time
-records, recurring source snapshots and shared field-authority dependencies
-require separate custody review and remain retained; they are not called deleted.
-Shared tasks in another project are disclosed and remain there when one project
-is erased. If erasure changes an approved shared task’s context, its retained
-sign-off reopens with the erasing owner and cause recorded, after the preview
-explicitly names that consequence.
+Current expiry covers work history, attachment/proof bytes and version/decision
+records, agent outputs/retrieval copies, provider delivery logs and expired local
+sessions/tokens. A proof expires as a coherent group after every version is
+eligible and unheld. Otherwise the preview discloses retained dependencies.
+Trash/import-original and agent-prompt stores are not built; no cleanup of those
+stores is claimed. PEG-024/054/064 and PEG-062/074/075 inherit the retention classes
+when they add that storage.
 
-Unlisted processors are denied. Approval, sharing and training each require an
-explicit owner choice. Saving a policy neither connects a processor nor sends
-content. Agent-processor enforcement, deletion requests and confirmed external
-deletion receipts remain unimplemented. PEG-062/074/075 must enforce the selected
-policy when they add execution; PEG-058/082 must extend cleanup to all registered
-object originals, versions, derivatives and incomplete transfers.
+Holds record scope, authority, creator and expiry. Workspace, project, task,
+attachment, proof and person holds prevent conflicting removal, including linked
+custody. Release needs explicit owner confirmation. Existing time records,
+recurring snapshots and shared field authority remain retained for separate
+custody review. Shared tasks remain in their other projects. When removal changes
+a retained human-approved task’s context, its sign-off reopens with the writer
+and cause recorded, after the preview names that consequence.
 
-## Erasure and archives
+Incoming signed agent outputs require current project edit scope and an approved
+declared processor. Policy revocation fences subsequent agent reads/submissions.
+The selected sharing/training choices are retained as provenance; no model is
+invoked or content sent to a processor by this storage door. Agent runtime
+execution must enforce those choices under PEG-062/074/075.
 
-The review lists dependent records before a project, task or attachment is
-removed. A revision/authority guard in the same database batch invalidates a
-stale review. Work rows, comments, inline attachment bytes, history, values,
-references, grants and current graph links are selected explicitly. Original
-identifiers are fenced so later writes cannot revive them. Holds return a
-retained receipt without deleting content. No R2 object versions, search-index
-copies or agent-held retrieval stores exist yet, and their cleanup is not
-claimed.
+Removing an output queues a redacted **needs owner action** follow-up for its
+declared processor copy. The preview, partial receipt and Data settings disclose
+it. No request is sent automatically and no external deletion is called
+confirmed. The unresolved ledger survives archives. Unlisted processors,
+sharing and training remain denied until separate owner consent.
 
-Member/guest profiles must first be deactivated and owned work transferred.
-Current person removal anonymizes the profile and permanent-audit presentation,
-removes its reviewed work dependents and fences the inactive identity. Local
-authentication material and legacy access activity remain retained; the receipt
-is **partial** and lists those stores. Scopes with retained legacy access metadata or attachment activity also receive
-partial receipts and disclose the retained history before removal. No claim of
-complete identity or historical erasure is made. The last owner requires an explicit installation reset or replacement.
+## Reviewed erasure
 
-The native `rer export` / `rer import` commands and `/api/portability` use one
-seed-owned Base portability policy. Restored recurrences remain inactive, grants
-revoked, numeric-source credentials absent and webhooks excluded. Restoration
-requires an eligible empty destination. Erasure invalidates active archive
-snapshots/staging, records Base tombstones for deleted keys and advances a
-redaction checkpoint. Supply a later archive using
-`rer import --input exports/old.rer --journal exports/later.rer --yes` to prevent
-an older offline copy from resurrecting erased material. The downloaded current
-journal identifies its source and epoch for inspection; the CLI's `--journal`
-argument takes the later complete archive, not that JSON endpoint response.
+Previews enumerate dependent rows before project, task, attachment or proof
+removal. Proof versions pin the actual uploaded PDF/file bytes by digest. Search
+rows and agent retrieval copies are real database records and are removed with
+their parent work. A revision/authority guard in the deletion transaction rejects
+stale reviews. Stable IDs and agent-operation keys are fenced against later writes
+or replay. Receipts are immutable and retrievable by ID.
 
-An offline copy without the later journal cannot know about subsequent erasure.
-Already downloaded files and messages held by external recipients need those
-systems' deletion processes. Pegboard does not claim to recall them or confirm a
-processor deletion it has not observed.
+Current attachment/proof originals and indexed/retrieval copies use the
+installation’s database. R2 originals, derivatives and incomplete upload parts
+remain PEG-058/082 work; their cleanup is not claimed. A shared proof needs its own
+explicit proof review before its project can be removed. Its all-version scope
+and any reopened task sign-off are disclosed.
 
-The owner-only destructive scope, explicit expiry, hold precedence, retained
-shared-work/time/recurrence custody and deny-by-default processor choices are
-conservative defaults pending CT disposition. PEG-057/059/065 remain partial;
-these defaults do not narrow or replace their acceptance obligations.
+Members/guests must be deactivated and owned work transferred first. Current
+person removal anonymizes the inactive profile and permanent-audit presentation
+and removes reviewed work dependents. Local authentication material and legacy
+access activity stay retained, so the identity receipt is partial. Other scopes
+with retained historical activity or unconfirmed processor copies also get
+partial receipts. The last owner requires installation reset or replacement.
+
+## Archives and external limits
+
+Native `rer export` / `rer import` and `/api/portability` share one seed-owned Base
+policy. An eligible empty destination is required. Restored recurrences stay
+inactive, grants revoked, metric credentials absent, webhooks excluded and
+processor policies denied pending fresh owner consent. Actual database bytes,
+proof links/decisions, audit, receipts and erasure/follow-up journals travel.
+
+Erasure invalidates archive snapshots/staging, records Base tombstones and moves
+a redaction checkpoint. Supply a later complete archive with
+`rer import --input exports/old.rer --journal exports/later.rer --yes` to fence an
+older offline copy. The current JSON journal endpoint is for inspection; the
+CLI’s `--journal` takes the later archive. An offline copy without the later
+journal cannot know about subsequent erasure.
+
+Downloaded files, outside messages and declared processor copies need those
+systems’ deletion process. No provider-confirmed deletion or recall is claimed
+without a real receipt. Whole-workspace erasure, complete identity cleanup,
+product intake/import replay, live R2 qualification and autonomous agent execution
+remain explicit acceptance gaps. PEG-057/059/065 stay partial while the adopted
+owner-only review, hold precedence, retained-history and processor defaults await
+CT disposition.

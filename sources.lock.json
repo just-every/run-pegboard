@@ -82,7 +82,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "3aa16283b3d996352b1ac137c2574400d5c184be1e7b6c25668e8f26acf3df9e",
+      "sha256": "9a3e9de0ef33a299f509128d4d69fb29a791da5e3f6f1c2cf6d908ec29affa68",
       "executable": false
     },
     "AGENTS.md": {
@@ -98,7 +98,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "f282820fe7c6044241fd1b80e3acd7dd1531e8830251dfdfb13b9be77d7ebd4b",
+      "sha256": "f34f504c3a68478c874d63218752eb527a807f8f13a5ffe08d90d0714170a0d5",
       "executable": false
     },
     "DEMO.md": {
@@ -118,7 +118,11 @@
       "executable": false
     },
     "docs/DATA-CUSTODY.md": {
-      "sha256": "45d328b3c4a1cb161e1c45414527a3ea248754e7a1feaf8112c11ee17b8ecff7",
+      "sha256": "4f82ba2356d7da14ac06f6c8bef5dfd9acb35f1641e0cd1e0fe0ae7839bb6e57",
+      "executable": false
+    },
+    "docs/DATA-RECORD-API.md": {
+      "sha256": "1aaf3d44df77cb33168ce75d695209a3dd0deed25bf3868be6c6d5a15e9edfdb",
       "executable": false
     },
     "docs/LOOK.md": {
@@ -2326,7 +2330,7 @@
       "executable": false
     },
     "tests/work-graph.test.mjs": {
-      "sha256": "0cf7674c2b71f04503d6e07909299fcb7296905ee77098125646dfc9da316cdc",
+      "sha256": "63405eb081bd729b2c9e18ab709433235d88fa9d628549a919d12e5837aeb194",
       "executable": false
     },
     "tsconfig.json": {
