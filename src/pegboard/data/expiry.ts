@@ -7,14 +7,15 @@ import { permanentEvent } from '../audit/search'
 import { deletion, selectKeys, type Selection } from './erasure'
 import { activeHolds, commitData, dataGuard, dataRevision, externalLimits, requireOwner, retentionClasses } from './settings'
 
-export async function expiryPlan(db:D1Database,actor:Actor,workspace:string,input:Record<string,any>) {
+export async function expiryPlan(db:D1Database,actor:Actor,workspace:string,input:Record<string,any>,proposedDays?:number) {
   await requireOwner(db,actor,workspace)
   if(!retentionClasses.includes(input.class))throw invalid('retention_class')
   const revision=await dataRevision(db),setting=await first<{days:number|null}>(db,'SELECT days FROM peg_retention_classes WHERE workspace_id=? AND class=?',workspace,input.class)
-  if(!setting?.days)throw conflict('retention_not_configured')
+  const days=proposedDays??setting?.days
+  if(!days)throw conflict('retention_not_configured')
   // The cutoff is frozen by the review. A later run never silently expands the selected records.
-  const cutoff=input.cutoff===undefined?now()-setting.days*86400000:Number(input.cutoff)
-  if(!Number.isSafeInteger(cutoff)||cutoff>now()-setting.days*86400000)throw invalid('retention_cutoff')
+  const cutoff=input.cutoff===undefined?now()-days*86400000:Number(input.cutoff)
+  if(!Number.isSafeInteger(cutoff)||cutoff>now()-days*86400000)throw invalid('retention_cutoff')
   const holds=await activeHolds(db,workspace),selections:Selection[]=[];let held=0
   const candidates:Array<{table:string;where:string;args:Param[];taskColumn?:string}>=[]
   if(input.class==='product_history')candidates.push({table:'peg_history',where:'at<=? AND task_id IN(SELECT id FROM peg_tasks WHERE workspace_id=?)',args:[cutoff,workspace],taskColumn:'task_id'})

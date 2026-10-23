@@ -50,7 +50,9 @@ retained or completed outcome has an immutable, redacted receipt. Existing time
 records, recurring source snapshots and shared field-authority dependencies
 require separate custody review and remain retained; they are not called deleted.
 Shared tasks in another project are disclosed and remain there when one project
-is erased.
+is erased. If erasure changes an approved shared task’s context, its retained
+sign-off reopens with the erasing owner and cause recorded, after the preview
+explicitly names that consequence.
 
 Unlisted processors are denied. Approval, sharing and training each require an
 explicit owner choice. Saving a policy neither connects a processor nor sends

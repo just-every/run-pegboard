@@ -4,6 +4,7 @@ import { all, bound, conflict, first, invalid, newId, now, placeholders, type Pa
 import { digest } from '../decisions/revision'
 import { permanentEvent } from '../audit/search'
 import { openTask } from '../tasks/access'
+import { reopenGuard } from '../tasks/history'
 import type { Actor } from '../workspace/people'
 import { activeHolds, commitData, dataGuard, dataRevision, externalLimits, requireOwner } from './settings'
 
@@ -81,7 +82,7 @@ export async function erasurePlan(db:D1Database,actor:Actor,workspace:string,typ
     await take('peg_projects',projectScoped('id'),projects)
   }
   const affectedTasks=new Set(tasks)
-  if(projects.length)for(const t of await all<{task_id:string}>(db,`SELECT task_id FROM peg_task_projects WHERE project_id IN (${placeholders(projects)})`,...projects))affectedTasks.add(t.task_id)
+  if(projects.length){const roots=(await all<{task_id:string}>(db,`SELECT task_id FROM peg_task_projects WHERE project_id IN (${placeholders(projects)})`,...projects)).map(t=>t.task_id);for(const t of await descendants(db,roots))affectedTasks.add(t.id)}
   if(type==='attachment'){
     const file=await first<{task_id:string}>(db,'SELECT task_id FROM peg_attachments WHERE id=?',id);if(file)affectedTasks.add(file.task_id)
   }
@@ -96,8 +97,11 @@ export async function erasurePlan(db:D1Database,actor:Actor,workspace:string,typ
   const affectedAttachments=selections.find(s=>s.table==='peg_attachments')?.keys.map(k=>k.id)??[]
   const holds=active.filter(h=>h.target_type==='workspace'||h.target_type===type&&h.target_id===id||h.target_type==='task'&&affectedTasks.has(h.target_id)||h.target_type==='project'&&relatedProjects.has(h.target_id)||h.target_type==='person'&&relatedPeople.has(h.target_id)||h.target_type==='attachment'&&affectedAttachments.includes(h.target_id))
   if(holds.length)blockers.push('active_legal_hold')
+  const remaining=affected.filter(task=>!tasks.includes(task))
+  const reopenTasks=(await all<{id:string}>(db,`SELECT id FROM peg_tasks WHERE id IN (${placeholders(remaining)}) AND status='done' AND EXISTS(SELECT 1 FROM peg_approval_tasks WHERE task_id=peg_tasks.id)`,...remaining)).map(t=>t.id)
+  if(reopenTasks.length)retained.reopened_signoffs=reopenTasks.length
   const counts=Object.fromEntries(selections.map(s=>[s.table,s.keys.length]))
-  const plan={type,id,name,tasks,projects,selections,counts,blockers:[...new Set(blockers)],holds:holds.map(h=>({id:h.id,authority:h.authority,expiresAt:h.expires_at})),retained,externalLimits}
+  const plan={type,id,name,tasks,projects,reopenTasks,selections,counts,blockers:[...new Set(blockers)],holds:holds.map(h=>({id:h.id,authority:h.authority,expiresAt:h.expires_at})),retained,externalLimits}
   return {...plan,revision,token:await digest([workspace,actor.id,revision,plan])}
 }
 export async function erase(db:D1Database,actor:Actor,workspace:string,input:Record<string,any>) {
@@ -110,6 +114,7 @@ export async function erase(db:D1Database,actor:Actor,workspace:string,input:Rec
   if(!blocked){
     const service=await createPortability({db,policy})
     statements.push(...await service.invalidateTransfersStatements())
+    for(const task of plan.reopenTasks)statements.push(reopenGuard(db,task,actor.id,'custody_erasure'),bound(db,"UPDATE peg_tasks SET status='todo',completed_at=NULL,updated_at=? WHERE id=?",[at,task]))
     for(const task of plan.tasks)statements.push(bound(db,'INSERT INTO peg_data_erasing_tasks VALUES(?)',[task]))
     for(const selection of plan.selections){
       for(const key of selection.keys)statements.push(...await service.erasureStatements(selection.table,key))

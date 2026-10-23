@@ -33,7 +33,9 @@ export async function retentionPreview(db:D1Database,actor:Actor,workspace:strin
   const days=input.days===null||input.days===''?null:Number(input.days)
   if(days!==null&&(!Number.isSafeInteger(days)||days<1||days>36500))throw invalid('retention_days')
   const revision=await dataRevision(db), current=await dataSettings(db,actor,workspace)
-  const plan={class:input.class as string,days,previousDays:current.classes.find(r=>r.name===input.class)!.days,
+  const cutoff=days===null?null:Math.floor(now()/86400000)*86400000-days*86400000
+  const impact=days===null?null:await (await import('./expiry')).expiryPlan(db,actor,workspace,{class:input.class,cutoff},days)
+  const plan={impact:impact?{counts:impact.counts,held:impact.held,supported:impact.supported,cutoff}:null,class:input.class as string,days,previousDays:current.classes.find(r=>r.name===input.class)!.days,
     consequence:days===null?'Keep until explicit erasure.':`Records become eligible after ${days} days. Nothing is automatically deleted; review eligible records before running expiry.`,held:current.holds.filter(h=>h.released_at===null&&h.expires_at>now()).length}
   return {...plan,revision,token:await digest([workspace,actor.id,revision,plan])}
 }

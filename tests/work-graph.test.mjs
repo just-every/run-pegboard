@@ -1131,7 +1131,7 @@ describe('Goal visibility and accountability', { concurrency: false }, () => {
 
 // Public-door custody behavior shares the existing work graph test budget.
 describe('Data custody', {concurrency:false},()=>{
-  let server,chief,member,admin
+  let server,chief,member,admin,erasedActorId
   const pass=async(p,status=200)=>{const r=await p;assert.equal(r.status,status,JSON.stringify(r.body));return r.body}
   const makeProject=()=>pass(chief.post('/api/v1/projects',{name:'synthetic-pegboard-601'}))
   const makeTask=(projectId,extra={})=>pass(chief.post('/api/v1/tasks',{projectId,title:'synthetic-pegboard-602',...extra}))
@@ -1212,6 +1212,17 @@ describe('Data custody', {concurrency:false},()=>{
     const data=await pass(chief.get('/api/v1/data'));assert.ok(data.receipts.some(r=>r.id===receipt.id&&r.outcome==='complete'))
     assert.equal((await chief.get(`/api/v1/tasks/${t.id}`)).status,404)
     const audit=await pass(chief.get('/api/v1/admin/audit?subject='+p.id));assert.ok(audit.events.some(e=>e.action==='data.erasure'&&e.result==='success'))
+    const home=await makeProject(),remaining=await makeProject(),signoff=await makeTask(home.id,{kind:'approval',ownerId:member.id})
+    await pass(chief.post(`/api/v1/tasks/${signoff.id}/projects`,{projectId:remaining.id}))
+    const decision=await pass(chief.get(`/api/v1/tasks/${signoff.id}/decision-preview`))
+    await pass(chief.post(`/api/v1/tasks/${signoff.id}/decision`,{revision:decision.token,action:'approve',reason:'synthetic-pegboard-627'}))
+    const otherHold=await pass(chief.post('/api/v1/data/holds',{type:'project',id:remaining.id,authority:'synthetic-pegboard-628',expiresAt:Date.now()+86400000}))
+    assert.ok((await review('task',signoff.id)).blockers.includes('active_legal_hold'),'a task cannot evade its other project hold')
+    await pass(chief.post(`/api/v1/data/holds/${otherHold.id}/release`,{confirm:true}))
+    const scope=await review('project',home.id);assert.deepEqual(scope.reopenTasks,[signoff.id])
+    await pass(eraseReview(scope))
+    const reopened=await pass(chief.get(`/api/v1/tasks/${signoff.id}`));assert.equal(reopened.status,'todo');assert.ok(reopened.history.some(e=>e.kind==='decision.reopened'&&e.actor==='Wes Holloway'&&e.detail.cause==='custody_erasure'))
+
   })
 
   it('expires only reviewed eligible stores while keeping held content and independent class policies',async()=>{
@@ -1222,6 +1233,7 @@ describe('Data custody', {concurrency:false},()=>{
     await pass(chief.post('/api/v1/data/holds',{type:'task',id:held.id,authority:'synthetic-pegboard-620',expiresAt:Date.now()+86400000}))
     // The only direct store operation moves the clock; selection and deletion use public review/commit doors.
     await server.sql(`UPDATE peg_attachments SET created_at=${Date.now()-3*86400000} WHERE task_id IN ('${held.id}','${eligible.id}')`)
+    const impact=await pass(chief.post('/api/v1/data/retention-preview',{class:'attachments_proofs',days:1}));assert.equal(impact.impact.counts.peg_attachments,1);assert.equal(impact.impact.held,1)
     const input={class:'attachments_proofs'},preview=await pass(chief.post('/api/v1/data/expiry-preview',input))
     assert.equal(preview.counts.peg_attachments,1);assert.equal(preview.held,1)
     const done=await pass(chief.post('/api/v1/data/expire',{...input,cutoff:preview.cutoff,token:preview.token,confirm:true}));assert.equal(done.held,1)
@@ -1237,7 +1249,7 @@ describe('Data custody', {concurrency:false},()=>{
 
 
   it('anonymizes an erased inactive actor without losing the permanent audit chain',async()=>{
-    const person=await server.person('synthetic-pegboard-622@example.com','Planted Actor synthetic-pegboard-622')
+    const person=await server.person('synthetic-pegboard-622@example.com','Planted Actor synthetic-pegboard-622');erasedActorId=person.id
     const p=await makeProject(),t=await makeTask(p.id)
     await pass(chief.post('/api/v1/grants',{objectType:'project',objectId:p.id,granteeId:person.id,level:'commenter'}))
     await pass(person.post(`/api/v1/tasks/${t.id}/comments`,{body:'synthetic-pegboard-623'}))
@@ -1287,6 +1299,13 @@ describe('Data custody', {concurrency:false},()=>{
       for(const event of archivedEvents)assert.deepEqual(audit.find(row=>row.id===event.id),event)
       assert.ok(!items.some(r=>r.kind==='row'&&r.table==='peg_tasks'&&r.row.id===t.id))
       assert.ok(items.some(r=>r.kind==='row'&&r.table==='peg_data_receipts'&&r.row.target_id===p.id))
+      const copy=await startWorker({restoredPersist:join(scratch,'.wrangler/state')})
+      try{
+        const restoredActor=await pass(copy.owner.get('/api/v1/admin/audit?actor='+erasedActorId))
+        assert.ok(restoredActor.events.length>0);assert.ok(restoredActor.events.every(e=>e.actor==='Erased actor'))
+        assert.equal((await copy.owner.get('/api/v1/tasks/'+t.id)).status,404)
+      }finally{await copy.stop()}
+
       assert.ok(items.filter(r=>r.kind==='row'&&r.table==='peg_grants').every(r=>r.row.revoked_at!==null))
       assert.ok(items.filter(r=>r.kind==='row'&&r.table==='peg_recurrences').every(r=>r.row.active===0))
     }finally{await rm(scratch,{recursive:true,force:true})}

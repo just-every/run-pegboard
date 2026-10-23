@@ -28,12 +28,12 @@ export class Client {
   form(path, fields) { return this.call('POST', path, new URLSearchParams(fields).toString(), { 'content-type': 'application/x-www-form-urlencoded' }) }
 }
 
-export async function startWorker({ settings = {} } = {}) {
+export async function startWorker({ settings = {}, restoredPersist } = {}) {
   const probe = createServer()
   await new Promise(resolve => probe.listen(0, '127.0.0.1', resolve))
   const port = probe.address().port
   await new Promise(resolve => probe.close(resolve))
-  const persist = await mkdtemp(join(tmpdir(), 'pegboard-graph-'))
+  const persist = restoredPersist ?? await mkdtemp(join(tmpdir(), 'pegboard-graph-'))
   execFileSync(process.execPath, [...wrangler, 'd1', 'migrations', 'apply', 'foundation', '--local', '--persist-to', persist, '--config', 'wrangler.jsonc'], { stdio: 'pipe', env: quiet })
   // Store edits run from a scratch folder: wrangler writes its temp files beside its config, and the dev server restarts when they appear in the checkout.
   const scratch = await mkdtemp(join(tmpdir(), 'pegboard-sql-'))
@@ -57,10 +57,12 @@ export async function startWorker({ settings = {} } = {}) {
   launch()
   await ready()
   const cookieOf = response => response.headers.getSetCookie().map(line => line.split(';')[0]).filter(pair => !pair.endsWith('=')).join('; ')
+  if (!restoredPersist) {
   const claim = await fetch(`${origin}/auth/bootstrap`, { method: 'POST', redirect: 'manual', headers: { origin, 'x-rer-dev-key': devKey, 'content-type': 'application/json' }, body: JSON.stringify({ token: setupToken, displayName: 'Wes Holloway' }) })
   if (claim.status !== 303) throw new Error(`owner claim ${claim.status} ${await claim.text()}`)
   const claimed = new Client(origin, cookieOf(claim), 'Wes Holloway')
   await fetch(`${origin}/setup`, { method: 'POST', redirect: 'manual', headers: { cookie: claimed.cookie, origin, 'content-type': 'application/x-www-form-urlencoded' }, body: 'displayName=Wes+Holloway&confirm=yes' })
+  }
   const enter = async (as, displayName, id) => {
     const entered = await fetch(`${origin}/auth/dev/enter?as=${encodeURIComponent(as)}&returnTo=/app`, { redirect: 'manual', headers: { origin, 'x-rer-dev-key': devKey } })
     if (entered.status !== 303) throw new Error(`sign-in ${as}: ${entered.status}`)
