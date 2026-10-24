@@ -41,8 +41,12 @@ administrator, and disappear after source revocation. Recheck source access with
 a new credential; a provider refusal clears the transcript and all proposal
 context. An administrator can also revoke an imported file source manually.
 Already reviewed task titles and dates remain independent native work. No agent
-has implicit access to this new source door. A provider outage never authorizes
-new work, and imported source copies cannot detect later provider revocation
+has implicit access to this new source door. When an explicit provider recheck finds changed transcript bytes, it ends the
+old source grant and clears its source and proposal context. Pending proposals
+from that revision cannot be adopted or revived by replay; import the separately
+authorized revision under a new stable source identity for fresh review. A
+provider outage does not itself revoke an authorized imported copy, and imported
+source copies cannot detect later provider revocation
 without an explicit recheck. No background source credential is held.
 
 Archives clear transcript and proposal context and restore sources revoked.

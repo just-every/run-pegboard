@@ -1534,6 +1534,18 @@ describe('Engineering handoff', {concurrency:false},()=>{
     let l=await ok(admin.post(`/api/v1/tasks/${another.id}/engineering`,{...input,consent:true}))
     edge.services.vector.change(vectorDone)
     assert.equal((await admin.post(`/api/v1/engineering/${l.id}/update`,{credential,confirm:true,version:l.version,sourceStatus:vectorDone})).status,409)
+    edge.services.vector.outage=true
+    assert.equal((await admin.post(`/api/v1/engineering/${l.id}/backlink`,{credential,confirm:true})).status,503)
+    let failed=(await ok(admin.get(`/api/v1/tasks/${another.id}/engineering`))).links[0]
+    assert.equal(failed.state,'stale');assert.equal(failed.source_status,null);assert.equal(failed.indicator,null)
+    edge.services.vector.outage=false
+    failed=await ok(admin.post(`/api/v1/engineering/${l.id}/refresh`,{credential}))
+    edge.services.vector.refused=true
+    const writes=edge.services.vector.writes
+    assert.equal((await admin.post(`/api/v1/engineering/${l.id}/update`,{credential,confirm:true,version:failed.version,sourceStatus:vectorTodo})).status,403)
+    failed=(await ok(admin.get(`/api/v1/tasks/${another.id}/engineering`))).links[0]
+    assert.ok(failed.revoked_at);assert.equal(failed.source_owner,null);assert.equal(failed.source_status,null);assert.equal(failed.mapped_owner,null);assert.equal(edge.services.vector.writes,writes)
+    edge.services.vector.refused=false
     const before=edge.services.vector.requests.length
     await ok(admin.post(`/api/v1/engineering/${l.id}/revoke`,{}))
     assert.equal((await admin.post(`/api/v1/engineering/${l.id}/refresh`,{credential})).status,409);assert.equal(edge.services.vector.requests.length,before)
@@ -1582,9 +1594,19 @@ describe('Meeting review',{concurrency:false},()=>{
       assert.equal(m.meeting.segments.length,1);assert.equal(m.proposals.length,1)
       const credential={credential:'synthetic-pegboard-950'}
       await ok(admin.post(`/api/v1/meetings/${m.meeting.id}/refresh`,credential))
+      edge.state.outage.add(service)
+      assert.equal((await admin.post(`/api/v1/meetings/${m.meeting.id}/refresh`,credential)).status,503)
+      edge.state.outage.delete(service)
+      edge.state.changed.add(service)
+      assert.equal((await admin.post(`/api/v1/meetings/${m.meeting.id}/refresh`,credential)).status,409)
+      assert.deepEqual((await ok(admin.get(`/api/v1/meetings/${m.meeting.id}/context`))).meeting.segments,[])
+      assert.equal((await admin.post(`/api/v1/meeting-proposals/${m.proposals[0].id}/adopt`,{projectId,version:1,confirm:true})).status,409)
+      edge.state.changed.delete(service)
+      assert.equal((await admin.post(`/api/v1/meetings/${m.meeting.id}/refresh`,credential)).status,409)
+      const fresh=await ok(admin.post('/api/v1/meetings',{...input,sourceId:sourceId.replace('synthetic-pegboard-951','synthetic-pegboard-956')}))
       edge.state.refused.add(service)
-      const revoked=await ok(admin.post(`/api/v1/meetings/${m.meeting.id}/refresh`,credential));assert.ok(revoked.meeting.revoked_at);assert.deepEqual(revoked.meeting.segments,[])
-      assert.ok(!JSON.stringify(await ok(admin.get(`/api/v1/meetings/${m.meeting.id}/context`))).includes('Synthetic provider follow-up'))
+      const revoked=await ok(admin.post(`/api/v1/meetings/${fresh.meeting.id}/refresh`,credential));assert.ok(revoked.meeting.revoked_at);assert.deepEqual(revoked.meeting.segments,[])
+      assert.ok(!JSON.stringify(await ok(admin.get(`/api/v1/meetings/${fresh.meeting.id}/context`))).includes('Synthetic provider follow-up'))
       assert.ok(!JSON.stringify(await ok(admin.get('/api/v1/admin/audit'))).includes(credential.credential))
     }
   })
@@ -1593,11 +1615,17 @@ describe('Meeting review',{concurrency:false},()=>{
     assert.equal((await member.post('/api/v1/meetings',artifact('zoom'))).status,403)
     const input={...artifact('zoom'),sourceId:'synthetic-pegboard-906'},meeting=await ok(admin.post('/api/v1/meetings',input))
     assert.equal((await member.get(`/api/v1/meetings/${meeting.meeting.id}`)).status,404)
+    const agent=await runtime.person('synthetic-pegboard-907@example.com','Synthetic scoped agent','agent')
+    await ok(admin.post('/api/v1/grants',{objectType:'project',objectId:projectId,granteeId:agent.id,level:'editor'}))
+    assert.equal((await agent.get(`/api/v1/meetings/${meeting.meeting.id}/context`)).status,404)
     assert.equal((await admin.post('/api/v1/meetings',{...input,content:vtt.replace('campaign','changed')})).status,409)
     const prepared=await ok(admin.post(`/api/v1/meetings/${meeting.meeting.id}/proposals`,{segmentIndex:1,title:'Synthetic participant clarification',kind:'followup'}));assert.equal(prepared.proposals.length,3)
     await runtime.restart();assert.equal((await ok(admin.get(`/api/v1/meetings/${meeting.meeting.id}`))).proposals.length,3)
     await ok(admin.post(`/api/v1/meetings/${meeting.meeting.id}/revoke`,{}))
     assert.equal((await admin.post(`/api/v1/meetings/${meeting.meeting.id}/proposals`,{segmentIndex:0,title:'Synthetic stale action'})).status,409)
+    assert.equal((await ok(admin.get(`/api/v1/meetings/${meeting.meeting.id}/context`))).meeting.segments.length,0)
+    await runtime.restart()
+    assert.equal((await agent.get(`/api/v1/meetings/${meeting.meeting.id}/context`)).status,404)
     assert.equal((await ok(admin.get(`/api/v1/meetings/${meeting.meeting.id}/context`))).meeting.segments.length,0)
   })
 })

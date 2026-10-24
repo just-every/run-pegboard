@@ -21,6 +21,7 @@ export async function ingestMeeting(db:D1Database,actor:Actor,workspace:string,i
   const source=String(input.sourceId??'').trim();if(!source||source.length>300)throw invalid('meeting_source_required')
   const capture=env&&input.credential?{...input,content:await meetingArtifact(env,String(input.service),source,input.credential)}:input
   const segments=transcript(String(input.service),capture),body=JSON.stringify(segments),digest=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(body)))).map(b=>b.toString(16).padStart(2,'0')).join('')
+  await admin(db,actor,workspace)
   const old=await first<Meeting>(db,'SELECT * FROM peg_meetings WHERE created_by=? AND service=? AND source_id=?',actor.id,input.service,source)
   if(old){if(old.digest!==digest)throw conflict('meeting_source_revision_changed');return meetingView(db,actor,old.id)}
   const id=newId('meeting'),statements=[bound(db,'INSERT INTO peg_meetings VALUES(?,?,?,?,?,?,?,?,NULL)',[id,workspace,actor.id,input.service,source,digest,body,now()])]
@@ -76,7 +77,11 @@ export async function refreshMeetingSource(db:D1Database,env:Bindings,actor:Acto
     const content=await meetingArtifact(env,m.service,m.source_id,input.credential)
     const body=JSON.stringify(transcript(m.service,{content})),digest=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(body)))).map(b=>b.toString(16).padStart(2,'0')).join('')
     await owned(db,actor,id)
-    if(digest!==m.digest)throw conflict('meeting_source_revision_changed')
+    if(digest!==m.digest){
+      // A reviewed proposal cannot continue using context superseded at its source.
+      await revokeMeeting(db,actor,id)
+      throw conflict('meeting_source_revision_changed')
+    }
   }catch(error){if(error instanceof PegError&&error.code==='meeting_source_refused')return revokeMeeting(db,actor,id);throw error}
   return meetingView(db,actor,id)
 }

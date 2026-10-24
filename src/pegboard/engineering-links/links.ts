@@ -46,6 +46,23 @@ export async function linkEngineering(db: D1Database, env: Bindings, actor: Acto
   await run(db,`INSERT INTO peg_engineering_links(id,task_id,created_by,service,origin,locator,external_id,source_url,source_status,source_owner,source_version,mappings,owner_mappings,mapped_owner,direction,indicator,state,cause,checked_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(task_id,created_by,service,origin,external_id) DO NOTHING`,id,task.id,actor.id,t.service,t.origin,t.locator,source.id,source.url,source.status,source.owner,source.version,map,JSON.stringify(owners),mapped(JSON.stringify(owners),source.owner),input.direction,indicator,indicator?'current':'stale',indicator?null:'unmapped_source_status',now())
   return view((await first<Link>(db,'SELECT * FROM peg_engineering_links WHERE task_id=? AND created_by=? AND service=? AND origin=? AND external_id=?',task.id,actor.id,t.service,t.origin,source.id))!)
 }
+async function invalidateSource(db: D1Database, actor: Actor, l: Link, error: unknown) {
+  if (!(error instanceof PegError) || !['engineering_source_refused','engineering_source_unavailable','engineering_source_incomplete','engineering_source_identity_changed'].includes(error.code)) return false
+  await owned(db,actor,l.id)
+  const refused=error.code==='engineering_source_refused'
+  await run(db,`UPDATE peg_engineering_links SET source_status=NULL,source_owner=NULL,source_version=NULL,mapped_owner=NULL,indicator=NULL,state='stale',cause=?,revoked_at=?,version=version+1 WHERE id=? AND version=? AND revoked_at IS NULL`,error.code,refused?now():null,l.id,l.version)
+  return true
+}
+async function readSource(db: D1Database, env: Bindings, actor: Actor, l: Link, credential: unknown) {
+  try {
+    const source=await provider(env,l,credential).read()
+    if(source.id!==l.external_id)throw conflict('engineering_source_identity_changed')
+    return source
+  } catch(error) {
+    await invalidateSource(db,actor,l,error)
+    throw error
+  }
+}
 export async function refreshEngineering(db: D1Database, env: Bindings, actor: Actor, id: string, input: Record<string,any>) {
   const l=await owned(db,actor,id)
   if (l.revoked_at) throw conflict('engineering_link_revoked')
@@ -56,11 +73,7 @@ export async function refreshEngineering(db: D1Database, env: Bindings, actor: A
     const indicator=mapped(l.mappings,source.status)
     await run(db,`UPDATE peg_engineering_links SET source_status=?,source_owner=?,source_version=?,mapped_owner=?,indicator=?,state=?,cause=?,checked_at=?,pending_status=NULL,version=version+1 WHERE id=? AND version=? AND revoked_at IS NULL`,source.status,source.owner,source.version,mapped(l.owner_mappings,source.owner),indicator,l.pending_status&&source.status!==l.pending_status?'stale':indicator?'current':'stale',l.pending_status&&source.status!==l.pending_status?'reviewed_update_not_confirmed':indicator?null:'unmapped_source_status',now(),id,l.version)
   } catch(error) {
-    if (error instanceof PegError && ['engineering_source_refused','engineering_source_unavailable','engineering_source_incomplete','engineering_source_identity_changed'].includes(error.code)) {
-      // Refusal removes all retained source context. Outages keep only an explicit stale indicator.
-      const refused=error.code==='engineering_source_refused'
-      await run(db,`UPDATE peg_engineering_links SET source_status=NULL,source_owner=NULL,source_version=NULL,mapped_owner=NULL,indicator=NULL,state='stale',cause=?,revoked_at=?,version=version+1 WHERE id=? AND version=? AND revoked_at IS NULL`,error.code,refused?now():null,id,l.version)
-    } else throw error
+    if (!await invalidateSource(db,actor,l,error)) throw error
   }
   return view(await owned(db,actor,id))
 }
@@ -76,7 +89,7 @@ export async function updateEngineering(db: D1Database, env: Bindings, actor: Ac
   if(input.confirm!==true && input.confirm!=='on')throw invalid('engineering_exact_review_required')
   const status=String(input.sourceStatus??'')
   if(!Object.hasOwn(JSON.parse(l.mappings),status))throw conflict('engineering_status_unmapped')
-  const edge=provider(env,l,input.credential), source=await edge.read()
+  const edge=provider(env,l,input.credential), source=await readSource(db,env,actor,l,input.credential)
   const current=await owned(db,actor,id)
   if(current.version!==l.version || current.revoked_at || source.id!==l.external_id || source.version!==l.source_version)throw conflict('engineering_review_stale')
   if(l.service==='github' && (!l.locator.includes('/issues/') || !['open','closed'].includes(status)))throw invalid('engineering_github_transition_invalid')
@@ -96,8 +109,7 @@ export async function backlinkEngineering(db: D1Database, env: Bindings, actor: 
   if(l.revoked_at || l.state!=='current')throw conflict('engineering_update_not_authorized')
   if(input.confirm!==true && input.confirm!=='on')throw invalid('engineering_exact_review_required')
   const edge=provider(env,l,input.credential),text=`[Pegboard:${l.id}] ${new URL(env.AUTH_ORIGIN).origin}/app/tasks/${l.task_id}`
-  const source=await edge.read()
-  if(source.id!==l.external_id)throw conflict('engineering_source_identity_changed')
+  await readSource(db,env,actor,l,input.credential)
   if(await edge.hasBacklink(text)){
     await owned(db,actor,id);await run(db,"UPDATE peg_engineering_links SET backlink_state='posted' WHERE id=? AND revoked_at IS NULL",id)
     return view(await owned(db,actor,id))
