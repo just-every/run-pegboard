@@ -161,6 +161,10 @@
     {
       "id": "0040_analytics_export.sql",
       "buyerSteps": "Apply to a new installation in filename order. Preserve these bytes once applied."
+    },
+    {
+      "id": "0041_dependency_keys_sealed.sql",
+      "buyerSteps": "Apply after the existing schema to retain encrypted dependency-key custody. Keep the generated installation key private and include it in recovery custody."
     }
   ],
   "breaking": false,

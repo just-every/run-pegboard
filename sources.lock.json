@@ -147,7 +147,7 @@
       "executable": false
     },
     "base-copies.json": {
-      "sha256": "fc21c3ca55038a6cb14c17d9a2798ce7af4293135fd234cb424a45cbb29b8448",
+      "sha256": "a11d6db159584f28b073681c50a1fab1dace809889e976d207dbd667d92c073e",
       "executable": false
     },
     "CLAUDE.md": {
@@ -376,6 +376,10 @@
     },
     "migrations/core/0040_analytics_export.sql": {
       "sha256": "f57fe6bdc6214963b0c3e5b0253826f8d82a5c5a5c7377c589d084e4cdda13ea",
+      "executable": false
+    },
+    "migrations/core/0041_dependency_keys_sealed.sql": {
+      "sha256": "9c8fa5f94c48a230f326cd4d666cbc2bd1e7d5a18327b89e65b339ac6a533d9a",
       "executable": false
     },
     "ONBOARDING.md": {
@@ -819,7 +823,7 @@
       "executable": false
     },
     "RELEASE.json": {
-      "sha256": "cf339429db3b06c3e2183348d813d6c5147f75ac96a268e990c10e1cf7eb9d82",
+      "sha256": "81683c09a2ab7b02e45e3958236a3bd9d6ad380d111257643fca57e997e63d41",
       "executable": false
     },
     "rer-setup.json": {
@@ -1292,6 +1296,10 @@
     },
     "src/modules/dependencies/schema/dependencies.sql": {
       "sha256": "3481d8aef870a9eda153a1617e99bb71a408e61a25dea92bb132efa7dd1c2526",
+      "executable": false
+    },
+    "src/modules/dependencies/schema/keys-sealed.sql": {
+      "sha256": "9c8fa5f94c48a230f326cd4d666cbc2bd1e7d5a18327b89e65b339ac6a533d9a",
       "executable": false
     },
     "src/modules/dependencies/sealing.mjs": {
