@@ -7,10 +7,11 @@ import { chromium, expect } from '@playwright/test'
 import { startWorker,proofDocument } from '../support/worker.mjs'
 import { startEngineeringServices,vectorTodo,vectorDone } from '../support/engineering-services.mjs'
 import { startTimeServices } from '../support/time-services.mjs'
+import { startMeetingServices } from '../support/meeting-services.mjs'
 
 // Harvest and QuickBooks Time schema fakes at the network edge; every Worker below reaches them through local origins.
-const engineering = await startEngineeringServices()
-const services = await startTimeServices(), settings = { PEGBOARD_LOCAL_TIME_SERVICE_ORIGINS: services.origins, PEGBOARD_VECTOR_ORIGIN:'https://vector.example.com',PEGBOARD_LOCAL_ENGINEERING_ORIGINS:engineering.origins }
+const engineering = await startEngineeringServices(), meetings = await startMeetingServices()
+const services = await startTimeServices(), settings = { PEGBOARD_LOCAL_TIME_SERVICE_ORIGINS: services.origins, PEGBOARD_VECTOR_ORIGIN:'https://vector.example.com',PEGBOARD_LOCAL_ENGINEERING_ORIGINS:engineering.origins, PEGBOARD_LOCAL_MEETING_ORIGINS:meetings.origins }
 let w = await startWorker({ settings })
 const browser = await chromium.launch({ headless: true, args: ['--use-mock-keychain', '--password-store=basic'] })
 const cookies = client => client.cookie.split('; ').map(pair => ({ name: pair.slice(0, pair.indexOf('=')), value: pair.slice(pair.indexOf('=') + 1), url: w.origin }))
@@ -757,7 +758,24 @@ try {
       await expect(card).toContainText('unmapped_source_status');await proof(service+'-unmapped')
       await card.getByRole('button',{name:'Revoke source grant',exact:true}).click();await expect(card).toContainText('source_grant_revoked');await expect(card).toContainText('Source owner ID: Unavailable');await proof(service+'-revoked')
     }
-    await page.getByRole('link',{name:'Return to task',exact:true}).click();await expect(page.getByText('Pending decision',{exact:false})).toBeVisible();await proof('human-decision')
+    // A reviewed write that discovers lost source access must clear cached context too.
+    const recovery=ok(await owner.post('/api/v1/tasks',{projectId:p.id,title:`Source authority review ${size}`}))
+    const link=ok(await owner.post(`/api/v1/tasks/${recovery.id}/engineering`,{service:'vector',locator:'SYN-1',mappings:{[vectorTodo]:'todo',[vectorDone]:'done','synthetic-pegboard-820':'doing'},direction:'both',consent:true,credential:'synthetic-pegboard-800'}))
+    await page.goto(`${w.origin}/app/engineering/${recovery.id}`)
+    engineering.services.vector.outage=true
+    let preflight=page.getByRole('form',{name:'Review source backlink',exact:true})
+    await preflight.getByLabel('Source credential',{exact:true}).fill('synthetic-pegboard-800');await preflight.getByRole('checkbox').check();await preflight.getByRole('button',{name:'Publish or reconcile backlink'}).click()
+    await expect(page.locator('main')).toContainText('engineering_source_unavailable')
+    await page.goto(`${w.origin}/app/engineering/${recovery.id}`);await expect(page.locator('main')).toContainText('Source stale or unavailable');await expect(page.locator('main')).toContainText('Source status: Unavailable');await proof('failed-backlink-preflight')
+    engineering.services.vector.outage=false;engineering.services.vector.change(vectorTodo)
+    ok(await owner.post(`/api/v1/engineering/${link.id}/refresh`,{credential:'synthetic-pegboard-800'}));await page.reload()
+    engineering.services.vector.refused=true
+    preflight=page.getByRole('form',{name:'Review source update',exact:true})
+    await preflight.getByLabel('Reviewed source status ID').selectOption(vectorDone);await preflight.getByLabel('Source credential',{exact:true}).fill('synthetic-pegboard-800');await preflight.getByRole('checkbox').check();await preflight.getByRole('button',{name:'Apply reviewed update',exact:true}).click()
+    await expect(page.locator('main')).toContainText('engineering_source_refused')
+    await page.goto(`${w.origin}/app/engineering/${recovery.id}`);await expect(page.locator('main')).toContainText('Source owner ID: Unavailable');assert.equal(await page.getByRole('button',{name:'Apply reviewed update',exact:true}).count(),0);await proof('refused-update-preflight')
+    engineering.services.vector.refused=false
+    await page.goto(`${w.origin}/app/tasks/${task.id}`);await expect(page.getByText('Pending decision',{exact:false})).toBeVisible();await proof('human-decision')
     await context.close();console.log(`Engineering handoff at ${size}px passed`)
   }
 
@@ -786,6 +804,21 @@ try {
       await expect(page.getByRole('link',{name:'Open adopted task',exact:true})).toBeVisible();await proof(service+'-adopted')
       await page.getByRole('link',{name:'Open adopted task',exact:true}).click();await expect(page.getByRole('heading',{name:`Reviewed ${service} action ${size}`,exact:true})).toBeVisible();await expect(page.locator('main')).toContainText('Meeting citation:');await expect(page.getByRole('link',{name:'Meeting source segment 1',exact:true})).toBeVisible();await proof(service+'-task')
       await page.goto(reviewUrl);await page.getByRole('button',{name:'Revoke source access',exact:true}).click();await expect(page.getByText('Source access revoked.',{exact:false})).toBeVisible();assert.ok(!(await page.locator('main').innerText()).includes(raw));await proof(service+'-revoked')
+      const resource=(service==='zoom'?['meetings','synthetic-pegboard-951','recordings','synthetic-pegboard-952']:service==='meet'?['conferenceRecords','synthetic-pegboard-951','transcripts','synthetic-pegboard-952']:['users','synthetic-pegboard-951','onlineMeetings','synthetic-pegboard-952','transcripts','synthetic-pegboard-953']).join('/')
+      await page.goto(`${w.origin}/app/meetings`);form=page.getByRole('form',{name:'Import meeting transcript',exact:true})
+      await form.getByLabel('Meeting service',{exact:true}).selectOption(service);await form.getByLabel('Stable source transcript ID',{exact:false}).fill(resource+size)
+      // The recording file ID is fixed by Zoom's official manifest.
+      if(service==='zoom')await form.getByLabel('Stable source transcript ID',{exact:false}).fill(resource.replace('synthetic-pegboard-951',`synthetic-pegboard-951${size}`))
+      await form.getByLabel('Source credential',{exact:false}).fill('synthetic-pegboard-950');for(const checkbox of await form.getByRole('checkbox').all())await checkbox.check()
+      await form.getByRole('button',{name:'Import transcript',exact:true}).click()
+      const directResource=service==='zoom'?resource.replace('synthetic-pegboard-951',`synthetic-pegboard-951${size}`):resource+size
+      await page.getByRole('link',{name:`${service} · ${directResource}`,exact:true}).click();const directUrl=page.url()
+      await expect(page.locator('main')).toContainText('Synthetic provider follow-up');await proof(service+'-provider-source')
+      meetings.state.changed.add(service)
+      form=page.getByRole('form',{name:'Recheck provider source',exact:true});await form.getByLabel('Source credential',{exact:true}).fill('synthetic-pegboard-950');await form.getByRole('button',{name:'Recheck source access',exact:true}).click()
+      await expect(page.locator('main')).toContainText('meeting_source_revision_changed')
+      await page.goto(directUrl);await expect(page.locator('main')).toContainText('Source access revoked.');assert.ok(!(await page.locator('main').innerText()).includes('Synthetic provider follow-up'));assert.equal(await page.getByRole('button',{name:'Approve action once',exact:true}).count(),0);await proof(service+'-superseded-source')
+      meetings.state.changed.delete(service)
     }
     await context.close();console.log(`Meeting review at ${size}px passed`)
   }
@@ -848,4 +881,5 @@ try {
   await w.stop()
   await services.stop()
   await engineering.stop()
+  await meetings.stop()
 }
