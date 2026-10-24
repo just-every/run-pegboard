@@ -199,7 +199,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "e02a2412edea91f2f6c769a22b6bcd13050547a20c0fa014f4ca5ead55bce949",
+      "sha256": "fed75a3c91876838da8b05b18248632904fa6fa4060f1b8fd5728fcef476e50a",
       "executable": false
     },
     "AGENTS.md": {
@@ -215,7 +215,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "7b8389b10f730434768f488fa712ab49db7554a159aa66b1a11f8945a2b3c004",
+      "sha256": "8e948ce838a82bd7bf78113eab71e8a7e45af01456674d17eeb2fc58aec74338",
       "executable": false
     },
     "DEMO.md": {
@@ -247,7 +247,7 @@
       "executable": false
     },
     "docs/ENGINEERING-HANDOFF.md": {
-      "sha256": "bbdba5ad539121c87eaee5406844757659f2b76364d06974d098975a9ee4017a",
+      "sha256": "9b97b530f762aef2ed1b9a3092300bcefd9c4665a265c29242c6559f9c64b7e5",
       "executable": false
     },
     "docs/LOOK.md": {
@@ -255,7 +255,7 @@
       "executable": false
     },
     "docs/MEETING-REVIEW.md": {
-      "sha256": "e0200cf28eebde9537fbbc8fd191c8954c04d1f2e0f3ab823987d459c181cf35",
+      "sha256": "96bafe19eabfe063a12d9207790b6fbebdad4bf28ba0f3a562bea64061a1a70a",
       "executable": false
     },
     "docs/TIME-SERVICE-PACKETS.md": {
@@ -2259,7 +2259,7 @@
       "executable": false
     },
     "src/pegboard/engineering-links/links.ts": {
-      "sha256": "2c64fd345c097ee3c1f0744408d7ecc7964e835d5855a367513324762413de38",
+      "sha256": "10aac264bcf6030e276f7199b754c1c84f9a0cf2e10bc15d4cb459d0d46a1b69",
       "executable": false
     },
     "src/pegboard/fields/definitions.ts": {
@@ -2287,7 +2287,7 @@
       "executable": false
     },
     "src/pegboard/meetings/review.ts": {
-      "sha256": "66a73422f0284eb6291aa041aea6c7c6f14b5822be4de1b09d88c1e26005570d",
+      "sha256": "22fa69762e6fa902d4fd67474bc2850182483c8466ea4f2740e9931a4defde1b",
       "executable": false
     },
     "src/pegboard/model.ts": {
@@ -2355,7 +2355,7 @@
       "executable": false
     },
     "src/pegboard/ui/error.tsx": {
-      "sha256": "e05ac2cedc134d1ff9b40032ec1a1e3883619d2f31d792a27b7ee925c36e63f8",
+      "sha256": "1ad111c2974f647442f76a8e7c7c93ce6bad04c5a4e6664d5a48dbe38afcd35c",
       "executable": false
     },
     "src/pegboard/ui/field-errors.ts": {
@@ -2639,7 +2639,7 @@
       "executable": false
     },
     "tests/journeys/work-graph.journey.mjs": {
-      "sha256": "2c814da02336c1524087fb99053f852ae3cf75e0a1d88612eae3227d9dc7cd66",
+      "sha256": "79c53b0bc653e0d58b84698e87692bf3a30ebfbe0ee6dcc4b2fbfc02d1cd0b78",
       "executable": false
     },
     "tests/runtime.mjs": {
@@ -2647,11 +2647,11 @@
       "executable": false
     },
     "tests/support/engineering-services.mjs": {
-      "sha256": "da1954b90358e6a1714caf1057ad0ea7661386263b25f4df690aa2a8b33daca8",
+      "sha256": "9e010b8c0666daf54f33dbca8d154a27f4c6dc181352118235906286ae49b993",
       "executable": false
     },
     "tests/support/meeting-services.mjs": {
-      "sha256": "e253fc2f9e315a6c42c0080187d5f277eb279e434d218da2f2d39fda0e99ce3d",
+      "sha256": "179e0b4ee0e81673482e23298c24bad1f867a713537a4b9087fb2c73afd223b1",
       "executable": false
     },
     "tests/support/time-services.mjs": {
@@ -2667,7 +2667,7 @@
       "executable": false
     },
     "tests/work-graph.test.mjs": {
-      "sha256": "09a759c072b5eac17719bb8417315d1e8d844d22a8c9ba10a5af658026806c75",
+      "sha256": "8277fa364337c2e53d308cbe9a8714de56c3aebb858d1927120f14ce410174c0",
       "executable": false
     },
     "tsconfig.json": {

@@ -52,8 +52,12 @@ without an explicit recheck. No background source credential is held.
 Archives clear transcript and proposal context and restore sources revoked.
 Future PEG-027, PEG-038, PEG-062, PEG-065 and PEG-074 doors inherit the current
 source authority, retention, consent, citation and exact-adoption obligations.
-Native source context retention beyond explicit revocation and reviewed provider
-connection custody remain unproved.
+PEG-039 is qualified through the authorized import and reviewed-adoption doors
+above using official-schema network edges. Shared connection custody and
+automatic discovery remain PEG-038 and PEG-080 work; expanded retention remains
+PEG-065 work. PEG-062 and PEG-074 must prove any future approved agent source
+reader. Today every agent caller is denied this private source context, including
+after revocation; no live tenant qualification is claimed.
 
 Protocol references:
 
@@ -64,5 +68,5 @@ Protocol references:
 CT-approved defaults (23 October 2026, 12:11Z): owner or administrator only, source context private
 to the importing person, explicit organizer and participant consent, no automatic
 recording, no implicit agent reads and separate exact approval of each internal
-project disclosure. PEG-039 stays partial pending the remaining connection,
-retention and live qualification work.
+project disclosure. These approved boundaries govern every current import,
+proposal, adoption, recheck and source-context door.

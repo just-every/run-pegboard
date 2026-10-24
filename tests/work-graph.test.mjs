@@ -1534,11 +1534,11 @@ describe('Engineering handoff', {concurrency:false},()=>{
     let l=await ok(admin.post(`/api/v1/tasks/${another.id}/engineering`,{...input,consent:true}))
     edge.services.vector.change(vectorDone)
     assert.equal((await admin.post(`/api/v1/engineering/${l.id}/update`,{credential,confirm:true,version:l.version,sourceStatus:vectorDone})).status,409)
-    edge.services.vector.outage=true
+    edge.services.vector.commentOutage=true
     assert.equal((await admin.post(`/api/v1/engineering/${l.id}/backlink`,{credential,confirm:true})).status,503)
     let failed=(await ok(admin.get(`/api/v1/tasks/${another.id}/engineering`))).links[0]
     assert.equal(failed.state,'stale');assert.equal(failed.source_status,null);assert.equal(failed.indicator,null)
-    edge.services.vector.outage=false
+    edge.services.vector.commentOutage=false
     failed=await ok(admin.post(`/api/v1/engineering/${l.id}/refresh`,{credential}))
     edge.services.vector.refused=true
     const writes=edge.services.vector.writes

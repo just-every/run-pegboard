@@ -4,7 +4,7 @@ export const vectorTodo='synthetic-pegboard-0000001',vectorDone='synthetic-pegbo
 export async function startEngineeringServices(){
   const services={},origins={}
   for(const service of ['vector','jira','github']){
-    const state={status:service==='vector'?vectorTodo:service==='jira'?'100':'open',version:1,refused:false,outage:false,lose:false,writes:0,comments:[],commentWrites:0,requests:[],owner:'synthetic-pegboard-801'}
+    const state={status:service==='vector'?vectorTodo:service==='jira'?'100':'open',version:1,refused:false,outage:false,commentOutage:false,lose:false,writes:0,comments:[],commentWrites:0,requests:[],owner:'synthetic-pegboard-801'}
     const record=(pr=false)=>service==='vector'?{id:'synthetic-pegboard-802',identifier:'SYN-1',version:state.version,status:{id:state.status,name:'Synthetic status',category:'started'},assignee:{id:state.owner,name:'Synthetic person'}}:service==='jira'?{id:'10001',key:'SYN-1',fields:{status:{id:state.status,name:'Synthetic status'},assignee:{accountId:state.owner},updated:`2026-10-23T12:00:${String(state.version).padStart(2,'0')}.000+0000`}}:{id:pr?10002:10001,number:1,merged_at:pr&&state.merged?'2026-10-23T12:00:01Z':null,state:state.status,assignee:{id:801},updated_at:`2026-10-23T12:00:${String(state.version).padStart(2,'0')}Z`}
     const server=createServer(async(req,res)=>{
       let raw='';for await(const chunk of req)raw+=chunk
@@ -16,7 +16,10 @@ export async function startEngineeringServices(){
       if(state.outage)return send(503,{message:'Unavailable'})
       const path=service==='vector'?'/api/v1/issues/SYN-1':service==='jira'?'/rest/api/3/issue/SYN-1':'/repos/'+['synthetic-pegboard-1','synthetic-pegboard-2','issues','1'].join('/')
       const commentPath=service==='vector'?'/api/v1/comments':service==='jira'?path+'/comment':path.replace('/pulls/','/issues/')+'/comments'
-      if(req.method==='GET'&&req.url.startsWith(commentPath+'?'))return send(200,service==='github'?state.comments:{comments:state.comments,startAt:0,total:state.comments.length,nextCursor:null})
+      if(req.method==='GET'&&req.url.startsWith(commentPath+'?')){
+        if(state.commentOutage)return send(503,{message:'Unavailable'})
+        return send(200,service==='github'?state.comments:{comments:state.comments,startAt:0,total:state.comments.length,nextCursor:null})
+      }
       if(req.method==='POST'&&req.url===(service==='vector'?path+'/comments':commentPath)){
         if(service==='jira'&&input?.body?.type!=='doc')return send(400,{errorMessages:['Invalid document']})
         state.comments.push({id:String(state.comments.length+1),body:input.body});state.commentWrites++

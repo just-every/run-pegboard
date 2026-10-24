@@ -53,15 +53,20 @@ async function invalidateSource(db: D1Database, actor: Actor, l: Link, error: un
   await run(db,`UPDATE peg_engineering_links SET source_status=NULL,source_owner=NULL,source_version=NULL,mapped_owner=NULL,indicator=NULL,state='stale',cause=?,revoked_at=?,version=version+1 WHERE id=? AND version=? AND revoked_at IS NULL`,error.code,refused?now():null,l.id,l.version)
   return true
 }
-async function readSource(db: D1Database, env: Bindings, actor: Actor, l: Link, credential: unknown) {
+async function checkedSourceRead<T>(db: D1Database, actor: Actor, l: Link, read: () => Promise<T>) {
   try {
-    const source=await provider(env,l,credential).read()
-    if(source.id!==l.external_id)throw conflict('engineering_source_identity_changed')
-    return source
+    return await read()
   } catch(error) {
     await invalidateSource(db,actor,l,error)
     throw error
   }
+}
+async function readSource(db: D1Database, env: Bindings, actor: Actor, l: Link, credential: unknown) {
+  return checkedSourceRead(db,actor,l,async()=>{
+    const source=await provider(env,l,credential).read()
+    if(source.id!==l.external_id)throw conflict('engineering_source_identity_changed')
+    return source
+  })
 }
 export async function refreshEngineering(db: D1Database, env: Bindings, actor: Actor, id: string, input: Record<string,any>) {
   const l=await owned(db,actor,id)
@@ -110,7 +115,7 @@ export async function backlinkEngineering(db: D1Database, env: Bindings, actor: 
   if(input.confirm!==true && input.confirm!=='on')throw invalid('engineering_exact_review_required')
   const edge=provider(env,l,input.credential),text=`[Pegboard:${l.id}] ${new URL(env.AUTH_ORIGIN).origin}/app/tasks/${l.task_id}`
   await readSource(db,env,actor,l,input.credential)
-  if(await edge.hasBacklink(text)){
+  if(await checkedSourceRead(db,actor,l,()=>edge.hasBacklink(text))){
     await owned(db,actor,id);await run(db,"UPDATE peg_engineering_links SET backlink_state='posted' WHERE id=? AND revoked_at IS NULL",id)
     return view(await owned(db,actor,id))
   }
@@ -121,6 +126,9 @@ export async function backlinkEngineering(db: D1Database, env: Bindings, actor: 
   const claim=await run(db,"UPDATE peg_engineering_links SET backlink_state='uncertain',version=version+1 WHERE id=? AND version=? AND revoked_at IS NULL AND backlink_state='not_sent'",id,l.version)
   if(!claim.meta.changes)throw conflict('engineering_review_stale')
   try{await edge.backlink(text)}catch{/* Read back before reporting a result; never replay an uncertain comment. */}
-  try{if(await edge.hasBacklink(text))await run(db,"UPDATE peg_engineering_links SET backlink_state='posted' WHERE id=? AND revoked_at IS NULL",id)}catch{/* Preserve the uncertain outcome for the next read-only reconciliation. */}
+  try{if(await edge.hasBacklink(text))await run(db,"UPDATE peg_engineering_links SET backlink_state='posted' WHERE id=? AND revoked_at IS NULL",id)}catch(error){
+    // Preserve the comment outcome, while removing context the provider can no longer verify.
+    await invalidateSource(db,actor,await owned(db,actor,id),error)
+  }
   return view(await owned(db,actor,id))
 }
