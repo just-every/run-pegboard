@@ -1066,6 +1066,10 @@
       "sha256": "54e7246025a618ed16ee042c22dc9a8dc27b06175c30f81c4c6568992ed04799",
       "executable": false
     },
+    "scripts/install-chromium-deps.py": {
+      "sha256": "5fdf0266ba333677288d3db15c053d48e5fc048f1de19c43006f26cf10b49a52",
+      "executable": false
+    },
     "scripts/install.mjs": {
       "sha256": "ce9c6eb4f127e88b32d538655a3fb3a2dc9fc3e83e48782fd56ffd3377da16fd",
       "executable": false
