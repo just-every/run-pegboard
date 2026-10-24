@@ -1510,7 +1510,8 @@ describe('Engineering handoff', {concurrency:false},()=>{
       state.change(done);await ok(admin.post(`/api/v1/engineering/${link.id}/refresh`,{credential}))
       state.outage=true;current=await ok(admin.post(`/api/v1/engineering/${link.id}/refresh`,{credential}));assert.equal(current.state,'stale');assert.equal(current.cause,'engineering_source_unavailable');state.outage=false
       current=await ok(admin.post(`/api/v1/engineering/${link.id}/refresh`,{credential}));assert.equal(current.state,'current')
-      state.refused=true;current=await ok(admin.post(`/api/v1/engineering/${link.id}/refresh`,{credential}));assert.ok(current.revoked_at);assert.equal(current.source_owner,null);assert.equal(current.source_status,null);assert.equal(current.mapped_owner,null)
+      state.refused=true;assert.equal((await admin.post(`/api/v1/tasks/${task.id}/engineering`,input)).status,403)
+      current=(await ok(admin.get(`/api/v1/tasks/${task.id}/engineering`))).links.find(row=>row.id===link.id);assert.ok(current.revoked_at);assert.equal(current.source_owner,null);assert.equal(current.source_status,null);assert.equal(current.mapped_owner,null)
       state.refused=false;assert.equal((await admin.post(`/api/v1/engineering/${link.id}/refresh`,{credential})).status,409)
       assert.equal((await ok(admin.post(`/api/v1/tasks/${task.id}/engineering`,input))).id,link.id)
       assert.equal((await ok(admin.get(`/api/v1/tasks/${task.id}`))).status,'todo')

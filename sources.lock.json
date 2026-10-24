@@ -247,7 +247,7 @@
       "executable": false
     },
     "docs/ENGINEERING-HANDOFF.md": {
-      "sha256": "9b97b530f762aef2ed1b9a3092300bcefd9c4665a265c29242c6559f9c64b7e5",
+      "sha256": "a6e91c7f3936ceb842d044b62ee886733413b8936532b3aa83cc33d16feb202a",
       "executable": false
     },
     "docs/LOOK.md": {
@@ -2259,7 +2259,7 @@
       "executable": false
     },
     "src/pegboard/engineering-links/links.ts": {
-      "sha256": "10aac264bcf6030e276f7199b754c1c84f9a0cf2e10bc15d4cb459d0d46a1b69",
+      "sha256": "011b2ce53bea84046e0d308663e6f329cc0fab2ff2e58a21387f83a6b08e2bb2",
       "executable": false
     },
     "src/pegboard/fields/definitions.ts": {
@@ -2667,7 +2667,7 @@
       "executable": false
     },
     "tests/work-graph.test.mjs": {
-      "sha256": "8277fa364337c2e53d308cbe9a8714de56c3aebb858d1927120f14ce410174c0",
+      "sha256": "a149e3e0c369daf34f5ed3024f6faede23fa490a9c977ab4b93887e5b8c59a9e",
       "executable": false
     },
     "tsconfig.json": {

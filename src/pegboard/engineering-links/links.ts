@@ -38,7 +38,8 @@ export async function linkEngineering(db: D1Database, env: Bindings, actor: Acto
   try { owners=typeof input.ownerMappings==='string'?JSON.parse(input.ownerMappings):input.ownerMappings??{} } catch {throw invalid('engineering_owner_mapping_invalid')}
   if(!owners || Array.isArray(owners) || typeof owners!=='object' || Object.keys(owners).length>30)throw invalid('engineering_owner_mapping_invalid')
   for(const [sourceOwner,person] of Object.entries(owners)){if(!sourceOwner || sourceOwner.length>256 || typeof person!=='string' || !await workspaceRole(db,person,task.workspace_id))throw invalid('engineering_owner_mapping_invalid')}
-  const source = await provider(env,t,input.credential).read()
+  const previous=await first<Link>(db,'SELECT * FROM peg_engineering_links WHERE task_id=? AND created_by=? AND service=? AND origin=? AND locator=?',task.id,actor.id,t.service,t.origin,t.locator)
+  const source = previous ? await readSource(db,env,actor,previous,input.credential) : await provider(env,t,input.credential).read()
   await authority(db,actor,task.id)
   const existing = await first<Link>(db,'SELECT * FROM peg_engineering_links WHERE task_id=? AND created_by=? AND service=? AND origin=? AND external_id=?',task.id,actor.id,t.service,t.origin,source.id)
   if (existing) return view(existing)

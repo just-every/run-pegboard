@@ -14,7 +14,8 @@ uses a credential for that request only. Source credentials and provider bodies
 are never persisted. A source refusal ends the link; revoked links cannot be
 reactivated by replay. An outage clears the indicator until a successful refresh. These same source
 refusal and stale-state rules apply to the preflight read for a reviewed return
-update or backlink; a failed write preflight cannot leave a current indicator.
+update or backlink, and to a repeated link request for an existing source. A
+failed preflight cannot leave a current indicator.
 
 Vector uses the operator-configured `PEGBOARD_VECTOR_ORIGIN`. Jira accepts an
 HTTPS Atlassian Cloud site origin. GitHub uses its official API origin. Local
