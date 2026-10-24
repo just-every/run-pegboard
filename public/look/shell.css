@@ -14,21 +14,37 @@ body:has(>.app){padding:0;background:var(--wall-ground)}
 /* the bar's surface, shared with Base's documents (frames.css draws their lockup-only bar as the body's ::before; sign-in
    settings carry this bar itself, so it sets its own type) */
 .bar,html.rer-themed body::before{background:var(--paper);box-shadow:0 1px 0 var(--bar-line)}
-.bar{position:relative;z-index:3;display:flex;align-items:center;gap:12px 30px;min-height:var(--bar-h);padding:0 28px;color:var(--ink);font:400 16px/1.45 var(--sans)}
-.lockup{display:inline-flex;align-items:center;gap:10px;flex:none;color:var(--ink);text-decoration:none;font:800 27px/1 var(--sans);letter-spacing:-.035em}
+/* one 70 px row (the lockup holds its height) with the breadcrumb on a line of its own under it; whatever cannot fit
+   wraps to a new line, never past the page's edge */
+.bar{position:relative;z-index:3;display:flex;flex-wrap:wrap;align-items:center;gap:0 30px;min-height:var(--bar-h);padding:0 28px;color:var(--ink);font:400 16px/1.45 var(--sans)}
+.lockup{display:inline-flex;align-items:center;gap:10px;flex:none;min-height:var(--bar-h);color:var(--ink);text-decoration:none;font:800 27px/1 var(--sans);letter-spacing:-.035em}
 .lockup img{display:block;width:44px;height:44px;margin:-6px -2px}
 .lockup span{padding-block:.1em}
-.crumbs{min-width:0;font-size:16px;color:var(--breadcrumb-ink)}
+.crumbs{order:3;width:100%;min-width:0;margin-top:-8px;padding-bottom:12px;font-size:16px;color:var(--breadcrumb-ink)}
 .crumbs ol{display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px}
 .crumbs a{display:inline-flex;align-items:center;min-height:24px;text-decoration:none}.crumbs a:hover{text-decoration:underline;text-underline-offset:3px}
 .crumbs li+li::before{content:"›";margin-right:10px;color:var(--breadcrumb-separator)}
 .tabs{display:flex;align-items:center;margin-left:auto;font-size:17px}
-.tabs a{display:inline-flex;align-items:center;min-height:44px;padding:0 2px;border-bottom:2px solid transparent;color:var(--azure-ink);text-decoration:none}
-.tabs a:hover{border-bottom-color:var(--azure-l)}
-.tabs a[aria-current=page]{font-weight:700;border-bottom-color:var(--azure)}
+.tabs>a{display:inline-flex;align-items:center;min-height:44px;padding:0 2px;border-bottom:2px solid transparent;color:var(--azure-ink);text-decoration:none}
+.tabs>a:hover{border-bottom-color:var(--azure-l)}
+.tabs>a[aria-current=page]{font-weight:700;border-bottom-color:var(--azure)}
 /* the dot between two views: drawn, outside both links, so neither's name or focus ring carries it */
 .tabs .sep{display:grid;place-items:center;flex:none;width:24px;align-self:stretch}
 .tabs .sep::before{content:"";width:4px;height:4px;border-radius:50%;background:var(--tab-separator)}
+/* More: the last view, shown while any view has folded. Its list of the folded views sits beside its <details>
+   (bar.tsx) and shows while that is open. */
+.tabs .tabs-more-sep,.tabs-more,.tabs-more li{display:none}
+.tabs-more{position:relative}
+.tabs-more summary{display:flex;align-items:center;gap:8px;min-height:44px;padding:0 2px;border-bottom:2px solid transparent;color:var(--azure-ink);cursor:pointer;list-style:none}
+.tabs-more summary::-webkit-details-marker{display:none}
+.tabs-more summary::after{content:"";display:inline-block;box-sizing:border-box;width:7px;height:7px;margin:-4px 2px 0 0;border:solid currentColor;border-width:0 2px 2px 0;transform:rotate(45deg)}
+.tabs-more details[open] summary::after{margin-top:4px;transform:rotate(-135deg)}
+.tabs-more summary:hover{border-bottom-color:var(--azure-l)}
+.tabs-more ul{display:none;position:absolute;top:100%;right:0;box-sizing:border-box;min-width:200px;margin:8px 0 0;padding:6px;list-style:none;border-radius:12px;background:var(--paper);box-shadow:var(--card-shadow)}
+.tabs-more details[open]+ul{display:block}
+.tabs-more li a{display:flex;align-items:center;min-height:44px;padding:0 14px;border-radius:8px;color:var(--azure-ink);text-decoration:none;white-space:nowrap}
+.tabs-more li a:hover{background:var(--pale)}
+.tabs-more li a[aria-current=page]{font-weight:700}
 .bar .person{display:flex;align-items:center;gap:12px;flex:none;margin:0;font:inherit;color:inherit}
 .person .avatar{width:42px;height:42px;font-size:16px}
 .person b{display:block;font-size:17px;font-weight:600;line-height:1.2}
@@ -41,19 +57,36 @@ body:has(>.app){padding:0;background:var(--wall-ground)}
 .head h1{font:900 54px/1.08 var(--sans);letter-spacing:-.042em;text-wrap:balance}
 .facts{margin-top:6px;font-size:19px;font-weight:500;color:var(--facts-ink)}
 
-@media (max-width:1023px){
-  .bar{flex-wrap:wrap;padding:10px 16px 0;gap:4px 16px}
-  .lockup{font-size:23px}.lockup img{width:38px;height:38px;margin:-4px -2px}
-  .crumbs{order:3;width:100%;font-size:15px}
+/* Views fold into More, fold 1 first, where the row has no room for every view and 170 px to spare (Base's demo exit
+   takes about 130 px beside the lockup): all ten views fit from 1720 px; below 1270 px the views take a row of their
+   own, and below 640 px that row keeps Home, Projects, My tasks and More. */
+@media (max-width:1719px){
+  .tabs>[data-fold="1"]{display:none}
+  .tabs .tabs-more-sep{display:grid}
+  .tabs-more,.tabs-more li[data-fold="1"]{display:block}
+  .tabs-more:has(li[data-fold="1"] [aria-current=page]) summary{font-weight:700;border-bottom-color:var(--azure)}
+}
+@media (max-width:1269px){
+  .bar{padding-top:10px;row-gap:4px}
+  .lockup{min-height:0}
+  .crumbs{margin-top:0;padding-bottom:0}
   .bar .person{margin-left:auto}
+  .tabs{order:4;width:100%;margin-left:0}
+}
+@media (max-width:1023px){
+  .bar{padding:10px 16px 0;gap:4px 16px}
+  .lockup{font-size:23px}.lockup img{width:38px;height:38px;margin:-4px -2px}
+  .crumbs{font-size:15px}
   .person .avatar{width:38px;height:38px;font-size:14px}
   .person b{font-size:15px}.person small{font-size:13px}
-  /* the views: one row that scrolls inside itself, never the page */
-  .tabs{order:4;width:calc(100% + 32px);margin:0 -16px;padding:0 16px;overflow-x:auto;scrollbar-width:none;white-space:nowrap}
-  .tabs::-webkit-scrollbar{display:none}
   .head{min-height:0;padding:22px 16px 20px}
   .head h1{font-size:40px}
   .facts{font-size:17px}
+}
+@media (max-width:639px){
+  .tabs>[data-fold="2"]{display:none}
+  .tabs-more li[data-fold="2"]{display:block}
+  .tabs-more:has([aria-current=page]) summary{font-weight:700;border-bottom-color:var(--azure)}
 }
 @media (max-width:599px){
   /* the breadcrumb keeps only where you are */
@@ -63,4 +96,7 @@ body:has(>.app){padding:0;background:var(--wall-ground)}
   .head h1{font-size:34px;letter-spacing:-.035em}
   .head-title{gap:10px 16px}
   .facts{font-size:16px}
+}
+@media (max-width:399px){
+  .tabs .sep{width:16px}
 }
