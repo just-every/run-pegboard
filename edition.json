@@ -49,6 +49,55 @@
           ]
         }
       }
+    },
+    {
+      "id": "runeditrun/delivery-producer",
+      "role": "module",
+      "source": {
+        "kind": "local",
+        "paths": [
+          "scripts/delivery/base"
+        ],
+        "origin": {
+          "repository": "https://github.com/runeditrun/base.git",
+          "revision": "4280971d7c0295b8a88c3e1179048efcbbe14f30",
+          "path": ".",
+          "paths": [
+            "modules/delivery-producer",
+            "schema"
+          ]
+        },
+        "mappings": [
+          {
+            "path": "scripts/delivery/base/setup-manifest.mjs",
+            "originPath": "modules/delivery-producer/setup-manifest.mjs"
+          }
+        ]
+      }
+    },
+    {
+      "id": "just-every/pegboard-mail",
+      "role": "module",
+      "source": {
+        "kind": "local",
+        "paths": [
+          "src/mail.server.mjs"
+        ],
+        "origin": {
+          "repository": "https://github.com/runeditrun/base.git",
+          "revision": "4280971d7c0295b8a88c3e1179048efcbbe14f30",
+          "path": ".",
+          "paths": [
+            "foundation/template/src/mail.server.mjs"
+          ]
+        },
+        "mappings": [
+          {
+            "path": "src/mail.server.mjs",
+            "originPath": "foundation/template/src/mail.server.mjs"
+          }
+        ]
+      }
     }
   ]
 }

@@ -30,6 +30,7 @@ with Ctrl-C before building or testing. For a real owner installation, use
 ## Run site and contract
 
 The public Run site is [run-pegboard.com](https://run-pegboard.com).
+[Run Pegboard](https://run-pegboard.com/run) explains installation.
 `rer build --site` writes the homepage, `/run`, `/contract` and 404 page from
 `src/site/pages.ts`. `/contract` renders the root CONTRACT.md through Base's
 parser; its status distinguishes targets from shipped work. Run site deployment
@@ -37,7 +38,7 @@ uses the guarded `.github/workflows/run-site.yml` independently of Verify.
 
 ## Development
 
-This checkout pins the published `@runeditrun/rer` package at 0.2.75, Node
+This checkout pins the published `@runeditrun/rer` package at 0.2.79, Node
 22.20.0 and pnpm 10.12.4. Run `rer check`, `pnpm run build`,
 `pnpm run typecheck`, `pnpm run test:typecheck` and `pnpm run test:runtime`.
 The foundation's verification workflow is the complete CI wall; no product tests

@@ -1,0 +1,171 @@
+{
+  "version": "0.1.0",
+  "publicReleaseNotes": "Prepare Pegboard for hosted installation with a deployment descriptor, provider configuration and retained source provenance. The release describes the current foundation and work graph; product targets remain identified in the contract.",
+  "migrations": [
+    {
+      "id": "0001_owner.sql",
+      "buyerSteps": "Apply to a new installation in filename order. Preserve these bytes once applied."
+    },
+    {
+      "id": "0002_outbox.sql",
+      "buyerSteps": "Apply to a new installation in filename order. Preserve these bytes once applied."
+    },
+    {
+      "id": "0003_portability.sql",
+      "buyerSteps": "Apply to a new installation in filename order. Preserve these bytes once applied."
+    },
+    {
+      "id": "0004_first_run.sql",
+      "buyerSteps": "Apply to a new installation in filename order. Preserve these bytes once applied."
+    },
+    {
+      "id": "0005_identity_providers.sql",
+      "buyerSteps": "Apply to a new installation in filename order. Preserve these bytes once applied."
+    },
+    {
+      "id": "0006_provider_control.sql",
+      "buyerSteps": "Apply to a new installation in filename order. Preserve these bytes once applied."
+    },
+    {
+      "id": "0007_dependencies.sql",
+      "buyerSteps": "Apply to a new installation in filename order. Preserve these bytes once applied."
+    },
+    {
+      "id": "0008_owner_claim.sql",
+      "buyerSteps": "Apply to a new installation in filename order. Preserve these bytes once applied."
+    },
+    {
+      "id": "0009_idp_owner.sql",
+      "buyerSteps": "Apply to a new installation in filename order. Preserve these bytes once applied."
+    },
+    {
+      "id": "0010_provider_pins.sql",
+      "buyerSteps": "Apply to a new installation in filename order. Preserve these bytes once applied."
+    },
+    {
+      "id": "0011_dependency_setup.sql",
+      "buyerSteps": "Apply to a new installation in filename order. Preserve these bytes once applied."
+    },
+    {
+      "id": "0012_dependency_approval.sql",
+      "buyerSteps": "Apply to a new installation in filename order. Preserve these bytes once applied."
+    },
+    {
+      "id": "0013_erasure.sql",
+      "buyerSteps": "Apply to a new installation in filename order. Preserve these bytes once applied."
+    },
+    {
+      "id": "0014_owner_signin.sql",
+      "buyerSteps": "Apply to a new installation in filename order. Preserve these bytes once applied."
+    },
+    {
+      "id": "0015_command_receipts.sql",
+      "buyerSteps": "Apply to a new installation in filename order. Preserve these bytes once applied."
+    },
+    {
+      "id": "0016_work_graph.sql",
+      "buyerSteps": "Apply to a new installation in filename order. Preserve these bytes once applied."
+    },
+    {
+      "id": "0017_access.sql",
+      "buyerSteps": "Apply to a new installation in filename order. Preserve these bytes once applied."
+    },
+    {
+      "id": "0018_personal_work.sql",
+      "buyerSteps": "Apply to a new installation in filename order. Preserve these bytes once applied."
+    },
+    {
+      "id": "0019_fields_tags.sql",
+      "buyerSteps": "Apply to a new installation in filename order. Preserve these bytes once applied."
+    },
+    {
+      "id": "0020_task_time.sql",
+      "buyerSteps": "Apply to a new installation in filename order. Preserve these bytes once applied."
+    },
+    {
+      "id": "0021_time_review.sql",
+      "buyerSteps": "Apply to a new installation in filename order. Preserve these bytes once applied."
+    },
+    {
+      "id": "0022_recurring_decisions.sql",
+      "buyerSteps": "Apply to a new installation in filename order. Preserve these bytes once applied."
+    },
+    {
+      "id": "0023_goals.sql",
+      "buyerSteps": "Apply to a new installation in filename order. Preserve these bytes once applied."
+    },
+    {
+      "id": "0024_approval_owner_history.sql",
+      "buyerSteps": "Apply to a new installation in filename order. Preserve these bytes once applied."
+    },
+    {
+      "id": "0025_recurring_audiences.sql",
+      "buyerSteps": "Apply to a new installation in filename order. Preserve these bytes once applied."
+    },
+    {
+      "id": "0026_goal_visibility.sql",
+      "buyerSteps": "Apply to a new installation in filename order. Preserve these bytes once applied."
+    },
+    {
+      "id": "0027_goal_numeric_sources.sql",
+      "buyerSteps": "Apply to a new installation in filename order. Preserve these bytes once applied."
+    },
+    {
+      "id": "0028_attributed_approval_reopens.sql",
+      "buyerSteps": "Apply to a new installation in filename order. Preserve these bytes once applied."
+    },
+    {
+      "id": "0029_goal_source_ending.sql",
+      "buyerSteps": "Apply to a new installation in filename order. Preserve these bytes once applied."
+    },
+    {
+      "id": "0030_time_deliveries.sql",
+      "buyerSteps": "Apply to a new installation in filename order. Preserve these bytes once applied."
+    },
+    {
+      "id": "0031_durable_audit.sql",
+      "buyerSteps": "Apply to a new installation in filename order. Preserve these bytes once applied."
+    },
+    {
+      "id": "0032_data_custody.sql",
+      "buyerSteps": "Apply to a new installation in filename order. Preserve these bytes once applied."
+    },
+    {
+      "id": "0033_audit_outcomes.sql",
+      "buyerSteps": "Apply to a new installation in filename order. Preserve these bytes once applied."
+    },
+    {
+      "id": "0034_delivery_revision_custody.sql",
+      "buyerSteps": "Apply to a new installation in filename order. Preserve these bytes once applied."
+    },
+    {
+      "id": "0035_record_custody.sql",
+      "buyerSteps": "Apply to a new installation in filename order. Preserve these bytes once applied."
+    },
+    {
+      "id": "0036_processor_deletion_followup.sql",
+      "buyerSteps": "Apply to a new installation in filename order. Preserve these bytes once applied."
+    },
+    {
+      "id": "0037_native_authority_epoch.sql",
+      "buyerSteps": "Apply to a new installation in filename order. Preserve these bytes once applied."
+    },
+    {
+      "id": "0038_engineering_links.sql",
+      "buyerSteps": "Apply to a new installation in filename order. Preserve these bytes once applied."
+    },
+    {
+      "id": "0039_meeting_review.sql",
+      "buyerSteps": "Apply to a new installation in filename order. Preserve these bytes once applied."
+    },
+    {
+      "id": "0040_analytics_export.sql",
+      "buyerSteps": "Apply to a new installation in filename order. Preserve these bytes once applied."
+    }
+  ],
+  "breaking": false,
+  "agentUpdateInstructions": "Install the locked dependencies, build Pegboard, and follow OPERATIONS.md for owner configuration and recovery. Preserve all applied migration names and bytes.",
+  "contractChanges": {},
+  "extensionPointChanges": [],
+  "date": "2026-10-24"
+}

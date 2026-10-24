@@ -17,3 +17,6 @@ playwright-report/
 
 .rer/demo/
 .rer/demo-host/
+
+rer-package/
+delivery-artifact/

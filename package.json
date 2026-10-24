@@ -33,7 +33,10 @@
     "check": "rer check",
     "deps": "rer install",
     "rer": "rer",
-    "source:lock": "node scripts/edition-authoring/cli.mjs lock"
+    "source:lock": "node scripts/edition-authoring/cli.mjs lock",
+    "delivery:spec": "node scripts/build-deployment-spec.mjs",
+    "check:deployment-spec": "node scripts/build-deployment-spec.mjs --check",
+    "delivery:artifact": "node scripts/delivery/base/cli.mjs artifact --config packaging.json"
   },
   "dependencies": {
     "@tanstack/react-router": "1.170.41",
@@ -46,7 +49,7 @@
     "@cloudflare/vite-plugin": "1.54.5",
     "@cloudflare/workers-types": "5.20260908.1",
     "@playwright/test": "1.63.0",
-    "@runeditrun/rer": "0.2.75",
+    "@runeditrun/rer": "0.2.79",
     "@types/node": "22.18.8",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.7",
