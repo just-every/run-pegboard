@@ -75,7 +75,10 @@ await withWorker('1', async ({ origin, manual, counts }) => {
  const session = await manual('/auth/session', { headers: { cookie } })
  assert.equal(session.status, 200)
  assert.equal((await session.json()).operator.role, 'owner')
- assert.equal((await manual('/app', { headers: { cookie } })).status, 200)
+ const app = await manual('/app', { headers: { cookie } })
+ assert.equal(app.status, 303)
+ assert.equal(app.headers.get('location'), '/app/projects')
+ assert.equal((await manual('/app/projects', { headers: { cookie } })).status, 200)
  console.log('OWNER-CLAIM demo:', JSON.stringify({ status, session: session.status, before, after: counts() }))
 })
 
