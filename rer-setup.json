@@ -85,8 +85,12 @@
       "label": "Mail provider",
       "kind": "select",
       "required": true,
-      "default": "resend",
+      "default": "development",
       "options": [
+        {
+          "value": "development",
+          "label": "Local development (no email)"
+        },
         {
           "value": "rer",
           "label": "RER managed mail"
@@ -104,7 +108,8 @@
           "label": "Cloudflare Email Sending"
         }
       ],
-      "group": "mail"
+      "group": "mail",
+      "help": "Local development suppresses mail. For a hosted install choose RER managed mail or configure a verified Resend, SendGrid or Cloudflare sender."
     },
     {
       "name": "MAIL_FROM",
