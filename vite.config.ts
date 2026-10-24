@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { seedIcons } from '@runeditrun/rer/seed-icons'
 import { cloudflare } from '@cloudflare/vite-plugin'
 import { tanstackStart } from '@tanstack/react-start/plugin/vite'
@@ -10,7 +11,9 @@ import { excludeLocalVariables } from '@runeditrun/rer/local-variables-output'
 // Only `vite dev` loads the local-only entry and the checkout's dev key; a build
 // keeps src/server.ts and never sees either (rer build checks its output).
 const local = (name: string) => process.env[name] ? { [name]: process.env[name] } : {}
-const serve = { main: './src/server.dev.ts', vars: { ...local('RER_DEV_ORIGIN'), ...local('RER_DEV_KEY'), ...local('RER_DEV_IDENTITY'), ...local('RER_MODELS_SERVICE'), ...local('RER_MODELS_KEY'), ...local('RER_DEMO'), ...local('RER_DEMO_EXPIRES') } }
+const publicVariables = Object.keys(JSON.parse(readFileSync(new URL('./wrangler.jsonc', import.meta.url), 'utf8')).vars ?? {})
+const localPublicVariables = Object.assign({}, ...publicVariables.map(local))
+const serve = { main: './src/server.dev.ts', vars: { ...localPublicVariables, ...local('RER_DEV_ORIGIN'), ...local('RER_DEV_KEY'), ...local('RER_DEV_IDENTITY'), ...local('RER_MODELS_SERVICE'), ...local('RER_MODELS_KEY'), ...local('RER_DEMO'), ...local('RER_DEMO_EXPIRES') } }
 
 // `vite dev` serves only the folders the app is built from (and what they
 // import, plus the public run site declaration its identity reads), never the rest of the checkout: not rer's private folders (the dev

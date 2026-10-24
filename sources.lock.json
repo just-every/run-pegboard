@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "parent": null,
   "edition": "just-every/pegboard",
-  "manifest": "ea6aed40be8f7085d887ebbb71401dbc600102c42db53c91b7dbb9bc71d8ba06",
+  "manifest": "42b2b9c125d72563ec5e37a8b9e96a2358980e62f2c68909354174d1639e8f0b",
   "toolchain": {
     "id": "runeditrun/edition-authoring",
     "version": "1.1.0",
@@ -139,6 +139,34 @@
         "digest": "aefa7c769b28782fc9b2fae1e0fa7aee4a858ec37e8fb20a1b45dea7cad9f81c",
         "sha256": "489349c833129ee3ff2c15cf0fc3fc2ecef3507557bb3ae7123b25b830edfe01"
       }
+    },
+    {
+      "id": "just-every/pegboard-build",
+      "source": {
+        "kind": "local",
+        "paths": [
+          "vite.config.ts"
+        ],
+        "origin": {
+          "repository": "https://github.com/runeditrun/base.git",
+          "revision": "4280971d7c0295b8a88c3e1179048efcbbe14f30",
+          "path": ".",
+          "paths": [
+            "default-seed/vite.config.ts"
+          ]
+        },
+        "mappings": [
+          {
+            "path": "vite.config.ts",
+            "originPath": "default-seed/vite.config.ts"
+          }
+        ]
+      },
+      "baseline": {
+        "key": "9260a2cfa06a4e2e2330d97bd6346d9fc389e00d85f199fdb55faee0ca77a62a",
+        "digest": "4364f8e01478da871124abfbc04e5611b3b82f1ef8dc520a3c1caafa3074be74",
+        "sha256": "7218535c130f2bfbb9c7c2c1f7f3c3bf480bf57bc7e63439d1ce4b4803823880"
+      }
     }
   ],
   "files": {
@@ -239,7 +267,7 @@
       "executable": false
     },
     "edition.json": {
-      "sha256": "ea6aed40be8f7085d887ebbb71401dbc600102c42db53c91b7dbb9bc71d8ba06",
+      "sha256": "42b2b9c125d72563ec5e37a8b9e96a2358980e62f2c68909354174d1639e8f0b",
       "executable": false
     },
     "HOMEPAGE-VARIANTS.md": {
@@ -2655,7 +2683,7 @@
       "executable": false
     },
     "vite.config.ts": {
-      "sha256": "8b3f37625fa5efb0c3c2a0782eacde84e040f72762b9eca174b6693604311f82",
+      "sha256": "2edbeddd9c7604baa625313aa99592e0641814371b3ca45d5812c344f905fe7d",
       "executable": false
     },
     "wrangler.jsonc": {

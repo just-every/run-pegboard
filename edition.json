@@ -122,6 +122,30 @@
           }
         ]
       }
+    },
+    {
+      "id": "just-every/pegboard-build",
+      "role": "module",
+      "source": {
+        "kind": "local",
+        "paths": [
+          "vite.config.ts"
+        ],
+        "origin": {
+          "repository": "https://github.com/runeditrun/base.git",
+          "revision": "4280971d7c0295b8a88c3e1179048efcbbe14f30",
+          "path": ".",
+          "paths": [
+            "default-seed/vite.config.ts"
+          ]
+        },
+        "mappings": [
+          {
+            "path": "vite.config.ts",
+            "originPath": "default-seed/vite.config.ts"
+          }
+        ]
+      }
     }
   ]
 }
