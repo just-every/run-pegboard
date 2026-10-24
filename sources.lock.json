@@ -114,6 +114,10 @@
     }
   ],
   "files": {
+    ".github/workflows/rer-managed.yml": {
+      "sha256": "272fc0a0722e4c60f99ef911340bfe5944b1afbb1730e2a6810f6262fdc5d656",
+      "executable": false
+    },
     ".github/workflows/run-demo.yml": {
       "sha256": "41365ec7c002e9451166313b085f9e64ed2e3ea002c27f3d5ead845bc9c302b2",
       "executable": false
@@ -216,6 +220,10 @@
     },
     "LICENSE": {
       "sha256": "2f5076ef027045b9e0e72df8aa61ca8551e54b1877d531656d6e7985b2c32324",
+      "executable": false
+    },
+    "management/integration/deployment-spec.json": {
+      "sha256": "5b8afc808df0421f5afe0aa097ceb5bfa2464475f39a48a2ca5403f57a391894",
       "executable": false
     },
     "migrations/core/0001_owner.sql": {
@@ -824,6 +832,10 @@
     },
     "RELEASE.json": {
       "sha256": "81683c09a2ab7b02e45e3958236a3bd9d6ad380d111257643fca57e997e63d41",
+      "executable": false
+    },
+    "rer-project.json": {
+      "sha256": "6a1078c44907df8e43c6eedf27352f59f27e29ac72036eef74bc06705a76f416",
       "executable": false
     },
     "rer-setup.json": {
