@@ -2,6 +2,10 @@ import { appDocument } from '../../ui/document.server'
 import { AppBar } from '../../ui/bar'
 
 const sayings: Record<string, string> = {
+  engineering_source_refused:'The engineering source refused access. Its cached context was cleared and this request sent no update.',
+  engineering_source_unavailable:'The engineering source is unavailable. Its indicator is stale. Refresh the source before reviewing another update.',
+  meeting_source_revision_changed:'The source transcript changed. Its old proposals are unavailable. Import the authorized new revision for fresh review.',
+
   task_revision_changed:'This approval or its access changed. Open the task again and review its current revision.',
   goal_owner_transfer_required:'An account change would leave owned work without an active human owner. Transfer company or team goals through a reviewed ownership change first.',
   goal_audience_preview_changed:'The goal, audience or access changed. Review the audience preview again.',

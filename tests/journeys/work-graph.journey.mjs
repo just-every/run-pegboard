@@ -765,14 +765,14 @@ try {
     engineering.services.vector.outage=true
     let preflight=page.getByRole('form',{name:'Review source backlink',exact:true})
     await preflight.getByLabel('Source credential',{exact:true}).fill('synthetic-pegboard-800');await preflight.getByRole('checkbox').check();await preflight.getByRole('button',{name:'Publish or reconcile backlink'}).click()
-    await expect(page.locator('main')).toContainText('engineering_source_unavailable')
+    await expect(page.locator('main')).toContainText('The engineering source is unavailable.');await proof('backlink-unavailable-error')
     await page.goto(`${w.origin}/app/engineering/${recovery.id}`);await expect(page.locator('main')).toContainText('Source stale or unavailable');await expect(page.locator('main')).toContainText('Source status: Unavailable');await proof('failed-backlink-preflight')
     engineering.services.vector.outage=false;engineering.services.vector.change(vectorTodo)
     ok(await owner.post(`/api/v1/engineering/${link.id}/refresh`,{credential:'synthetic-pegboard-800'}));await page.reload()
     engineering.services.vector.refused=true
     preflight=page.getByRole('form',{name:'Review source update',exact:true})
     await preflight.getByLabel('Reviewed source status ID').selectOption(vectorDone);await preflight.getByLabel('Source credential',{exact:true}).fill('synthetic-pegboard-800');await preflight.getByRole('checkbox').check();await preflight.getByRole('button',{name:'Apply reviewed update',exact:true}).click()
-    await expect(page.locator('main')).toContainText('engineering_source_refused')
+    await expect(page.locator('main')).toContainText('The engineering source refused access.');await proof('update-refused-error')
     await page.goto(`${w.origin}/app/engineering/${recovery.id}`);await expect(page.locator('main')).toContainText('Source owner ID: Unavailable');assert.equal(await page.getByRole('button',{name:'Apply reviewed update',exact:true}).count(),0);await proof('refused-update-preflight')
     engineering.services.vector.refused=false
     await page.goto(`${w.origin}/app/tasks/${task.id}`);await expect(page.getByText('Pending decision',{exact:false})).toBeVisible();await proof('human-decision')
@@ -816,7 +816,7 @@ try {
       await expect(page.locator('main')).toContainText('Synthetic provider follow-up');await proof(service+'-provider-source')
       meetings.state.changed.add(service)
       form=page.getByRole('form',{name:'Recheck provider source',exact:true});await form.getByLabel('Source credential',{exact:true}).fill('synthetic-pegboard-950');await form.getByRole('button',{name:'Recheck source access',exact:true}).click()
-      await expect(page.locator('main')).toContainText('meeting_source_revision_changed')
+      await expect(page.locator('main')).toContainText('The source transcript changed.');await proof(service+'-changed-source-error')
       await page.goto(directUrl);await expect(page.locator('main')).toContainText('Source access revoked.');assert.ok(!(await page.locator('main').innerText()).includes('Synthetic provider follow-up'));assert.equal(await page.getByRole('button',{name:'Approve action once',exact:true}).count(),0);await proof(service+'-superseded-source')
       meetings.state.changed.delete(service)
     }
