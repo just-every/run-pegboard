@@ -615,6 +615,17 @@
       }
     },
     {
+      "path": "scripts/install-chromium-deps.py",
+      "originPath": "export/install-chromium-deps.py",
+      "revision": "11f94fec479228d71ba6d7dd6ea7796c0d42c544",
+      "files": {
+        "scripts/install-chromium-deps.py": "5fdf0266ba333677288d3db15c053d48e5fc048f1de19c43006f26cf10b49a52"
+      },
+      "modes": {
+        "scripts/install-chromium-deps.py": "100644"
+      }
+    },
+    {
       "path": "scripts/installer/seed.mjs",
       "originPath": "foundation/template/scripts/installer/seed.mjs",
       "revision": "11f94fec479228d71ba6d7dd6ea7796c0d42c544",
