@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "parent": null,
   "edition": "just-every/pegboard",
-  "manifest": "21462fb2e3d0ecea83cf6ba47decaa5926d88d79073909eae22819c47247399a",
+  "manifest": "ea6aed40be8f7085d887ebbb71401dbc600102c42db53c91b7dbb9bc71d8ba06",
   "toolchain": {
     "id": "runeditrun/edition-authoring",
     "version": "1.1.0",
@@ -111,6 +111,34 @@
         "digest": "3e373b472db1ada73802cd29f27ab28013ae9f6e8faad79ab0cda5f68739a07a",
         "sha256": "902e2d951e04054c6b597b68f7e0a2a18f622e48322d540d4d8e5f9481a77e9c"
       }
+    },
+    {
+      "id": "just-every/pegboard-auth",
+      "source": {
+        "kind": "local",
+        "paths": [
+          "src/auth.server.ts"
+        ],
+        "origin": {
+          "repository": "https://github.com/runeditrun/base.git",
+          "revision": "4280971d7c0295b8a88c3e1179048efcbbe14f30",
+          "path": ".",
+          "paths": [
+            "foundation/template/src/auth.server.ts"
+          ]
+        },
+        "mappings": [
+          {
+            "path": "src/auth.server.ts",
+            "originPath": "foundation/template/src/auth.server.ts"
+          }
+        ]
+      },
+      "baseline": {
+        "key": "c9fedd3f70e4c3dcf556c791ecf54781490ef09bebeb87f6a6fb76fbe5dc4301",
+        "digest": "aefa7c769b28782fc9b2fae1e0fa7aee4a858ec37e8fb20a1b45dea7cad9f81c",
+        "sha256": "489349c833129ee3ff2c15cf0fc3fc2ecef3507557bb3ae7123b25b830edfe01"
+      }
     }
   ],
   "files": {
@@ -211,7 +239,7 @@
       "executable": false
     },
     "edition.json": {
-      "sha256": "21462fb2e3d0ecea83cf6ba47decaa5926d88d79073909eae22819c47247399a",
+      "sha256": "ea6aed40be8f7085d887ebbb71401dbc600102c42db53c91b7dbb9bc71d8ba06",
       "executable": false
     },
     "HOMEPAGE-VARIANTS.md": {
