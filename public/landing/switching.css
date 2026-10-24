@@ -25,6 +25,8 @@
 .term{margin:0;background:#15181C;color:#E7ECF1;border-radius:8px;padding:10px 14px;font:500 13px/1.6 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere;flex:1 1 380px;max-width:560px}
 .term code{font:inherit}
 .term .ready{color:var(--flap);font-weight:600}
+.term .nw{white-space:nowrap}
+.term .cm{color:#9AA4AE}
 /* five columns down to 1180 px: tighter padding, and under 1360 a narrower Client review column, so every card title
    keeps one line as page-12 sets it */
 @media (max-width:1559px) and (min-width:1180px){

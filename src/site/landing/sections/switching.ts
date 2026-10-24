@@ -16,6 +16,13 @@ const deps = [['c1', 'c3'], ['c2', 'c4'], ['c3', 'c5'], ['c4', 'c6'], ['c5', 'c7
 const cord = deps.map(([a, b]) => [`${a}r`, `${b}l`, 'sag', 26])
 const tc = ([id, name, done]: Card, i: number) => `<li class="tc" style="--row:${i}"><span class="peg pl" data-peg="${id}l"></span><span class="peg pr" data-peg="${id}r"></span>${t(name + (done ? ' ✓' : ''))}</li>`
 // data-clear: the cords that cross this callout dip below it (cords.js)
+// The one start line every Run Edit Run page shows (the installer, then rer dev), with the npx line as the alternative.
+const start = `curl -fsSL https://runeditrun.com/install.sh | sh -s -- ${run.clone.slice('npx -y @runeditrun/rer '.length)}`
+// Words stay whole on a phone and the installer's `install.sh | sh` stays together.
+const words = (line: string) => line.split(/(\S*install\.sh \| sh|\S+)/).map(part => {
+  const pipe = /^(.*\/)(install\.sh \| sh)$/.exec(part)
+  return pipe ? `<span class="nw">${pipe[1]}</span><wbr><span class="nw">${pipe[2]}</span>` : part.trim() ? `<span class="nw">${part}</span>` : part
+}).join('')
 const callout = (text: string, cls: string, clear = false) => `<p class="co ${cls}"${clear ? ' data-clear' : ''}>${dots(text.split(' · ').map(t))}</p>`
 
 export const switchingSection = (): string => `<section class="sec" id="switching"><div class="wrap">
@@ -29,6 +36,7 @@ export const switchingSection = (): string => `<section class="sec" id="switchin
     <p class="card">${dots([`<b>${t('Kettle & Crumb from monday.com')}</b>`, t('Sat Sep 26'), t('11 boards became projects'), t('1,904 items')])}</p>
     <p class="card">${dots([`<b>${t('High Desert from ClickUp')}</b>`, t('Sat Sep 19'), t('4 spaces'), t('3,120 tasks'), t('212 dependencies')])}</p>
   </div>
-  <div class="card sw-term"><p class="b">${t('Also from Trello, Wrike, Smartsheet and CSV.')}</p><pre class="term"><code>${run.clone}</code>
+  <div class="card sw-term"><p class="b">${t('Also from Trello, Wrike, Smartsheet and CSV.')}</p><pre class="term"><code>${words(start)}
+<span class="cm"># ${words(`Already have Node 22 or later? ${run.clone}`)}</span></code>
 <span class="ready">✓ Pegboard is ready</span></pre></div>
 </div></section>`

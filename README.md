@@ -12,15 +12,15 @@ It contains no sample projects or product features.
 ## Run locally
 
 ```sh
-curl -fsSL https://runeditrun.com/install.sh | sh
-rer dev just-every/run-pegboard
+curl -fsSL https://runeditrun.com/install.sh | sh -s -- dev just-every/run-pegboard
 ```
 
-The installer brings its own Node when needed and prints any PATH command to run
-before the second line. rer gets Pegboard, installs its locked dependencies,
-claims a local owner and prints a link that opens it signed in. To start it again:
-`cd run-pegboard && rer dev`. With Node 22 or later, the one-line alternative is
-`npx -y @runeditrun/rer dev just-every/run-pegboard`.
+Git is required; rer brings Node and pnpm. Already have Node 22 or later?
+`npx -y @runeditrun/rer dev just-every/run-pegboard` does the same. rer gets
+Pegboard into `run-pegboard`, installs its locked dependencies, claims a local
+owner and prints a link that opens it signed in. If the installer prints a line
+that puts `rer` on your PATH, run that line too. To start it again later, run the
+same line from the same folder, or `cd run-pegboard && rer dev`.
 
 The installed `/` is Base's Lobby. The signed-in owner's first-run form is at
 `/setup`. Development mail is silently suppressed. Stop a foreground launch

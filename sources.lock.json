@@ -698,7 +698,7 @@
       "executable": false
     },
     "public/landing/switching.css": {
-      "sha256": "a30f4c998913971271cfc0bbdc6aab2e092d71e90ecd0096adf7b4e8a13d8dc4",
+      "sha256": "1ddf455c3ed61d265cd402f165e1140277de96ae1bab8171bfe9db7306218ef3",
       "executable": false
     },
     "public/landing/workload.css": {
@@ -754,7 +754,7 @@
       "executable": false
     },
     "README.md": {
-      "sha256": "0c31eb0155cd86ad0d94affaaef31c26019e9cd2807c4f04067a743759717795",
+      "sha256": "a48afdac600cefeb1fb263fa51d91018a589a0c2c798539266fcadd7a2d5604b",
       "executable": false
     },
     "rer-setup.json": {
@@ -2314,7 +2314,7 @@
       "executable": false
     },
     "src/site/landing/sections/switching.ts": {
-      "sha256": "e0dc7bcdf91984f243c11cb0b2237187af93f1711e0637e1bb18d3b01a286b62",
+      "sha256": "aef1e418a3d59b6a92cd4cfb375ad896935056ff845c56c9ea2f5a240cbc2edb",
       "executable": false
     },
     "src/site/landing/sections/workload.ts": {
