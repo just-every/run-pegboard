@@ -1,3 +1,6 @@
+import {bulkPreview,undoBulkPreview,listBulk} from '../recovery/bulk'
+import {bulkInput} from '../api/bulk-routes'
+import {BulkPage} from './pages/bulk'
 import {briefView} from '../revisions/briefs'
 import {BriefPage} from './pages/brief'
 import { recoveryList,recoveryPreview } from '../recovery'
@@ -115,6 +118,7 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
   const { viewer, workspace } = await context(db, actor, session.operator.role)
   const [, section, id, tail] = segments
   try {
+    if(section==='recovery'&&id==='bulk'&&!tail){const input=bulkInput({...Object.fromEntries(url.searchParams),taskIds:url.searchParams.getAll('taskIds[]')});return page('Bulk changes',h(BulkPage,{viewer,input,tasks:(await recoveryList(db,actor,workspace)).choices.filter(c=>c.value.startsWith('task.')).map(c=>({value:c.value.slice(5),label:c.label.slice(7)})),people:await peopleOptions(db,actor,workspace),listing:await listBulk(db,actor,workspace),preview:input.taskIds.length?await bulkPreview(db,actor,workspace,input):null,undo:url.searchParams.get('operationId')?await undoBulkPreview(db,actor,workspace,url.searchParams.get('operationId')!):null}))}
     if(section==='projects'&&id&&tail==='brief')return page('Project brief',h(BriefPage,{viewer,view:await briefView(db,actor,id,Object.fromEntries(url.searchParams))}))
     if(section==='recovery'&&!id)return page('Archive and trash',h(RecoveryPage,{viewer,listing:await recoveryList(db,actor,workspace),preview:url.searchParams.has('id')?await recoveryPreview(db,actor,workspace,Object.fromEntries(url.searchParams)):url.searchParams.get('target')?await recoveryPreview(db,actor,workspace,(()=>{const [type,id]=url.searchParams.get('target')!.split('.');return {type,id,action:type==='project'?'archive':'trash'}})()):null}))
     if(section==='workflow-bundles'&&!tail){return page('Workflow bundles',h(BundlesPage,{viewer,bundles:id?[]:await listBundles(db,actor,workspace),view:id?await bundleView(db,actor,id):null,projects:(await listProjects(db,actor,workspace)).filter(p=>p.level==='admin').map(p=>({value:p.id,label:p.name})),fields:(await catalogue(db,actor,workspace)).map(f=>({value:f.id,label:f.label})),people:await peopleOptions(db,actor,workspace),preview:id&&url.searchParams.getAll('projectIds[]').length?await previewBundle(db,actor,id,{projectIds:url.searchParams.getAll('projectIds[]')}):null}))}

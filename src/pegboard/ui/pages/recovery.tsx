@@ -10,7 +10,7 @@ export function RecoveryPage({viewer,listing,preview}:{viewer:Viewer;listing:Lis
     {Object.entries({type:preview.type,id:preview.id,action:preview.action,token:preview.token}).map(([key,value])=><input key={key} type="hidden" name={key} value={value}/>)}<Submit>{preview.action==='restore'?'Restore reviewed work':preview.action==='archive'?'Archive reviewed project':'Trash reviewed work'}</Submit>
    </Form>}
   </Card>}
-  <Card title="Archive or trash"><form method="get" action="/app/recovery" className="stack" aria-label="Choose recovery work"><Pick label="Work to review" name="target" options={listing.choices} blank="Choose retained work"/><Submit quiet>Preview removal</Submit></form></Card>
+  <Card title="Archive or trash"><p><a className="button quiet" href="/app/recovery/bulk">Bulk changes and undo</a></p><form method="get" action="/app/recovery" className="stack" aria-label="Choose recovery work"><Pick label="Work to review" name="target" options={listing.choices} blank="Choose retained work"/><Submit quiet>Preview removal</Submit></form></Card>
   <Card title="Retained work"><p>{listing.retentionDays===null?'Kept until the owner reviews erasure.':`Eligible for owner-reviewed expiry after ${listing.retentionDays} days.`} <a href="/app/data">Published retention policy</a></p>
    <ul className="rows" aria-label="Retained work">{listing.records.map(r=><li key={r.object_type+r.object_id}><span className="grow"><strong>{r.label}</strong><br/>{r.object_type.replaceAll('_',' ')} · {when(r.removed_at)}</span>{r.canRestore&&<a className="button quiet" href={`/app/recovery?type=${r.object_type}&id=${r.object_id}&action=restore`}>Review restore</a>}</li>)}</ul>
    {!listing.records.length&&<p>No retained work is available to you.</p>}

@@ -1,3 +1,4 @@
+import {bulkRoutes} from './bulk-routes'
 import {briefRoutes} from './brief-routes'
 import { recoveryRoutes } from './recovery-routes'
 import {bundleRoutes} from './bundle-routes'
@@ -57,3 +58,5 @@ bundleRoutes(pegboardApi)
 recoveryRoutes(pegboardApi)
 
 briefRoutes(pegboardApi)
+
+bulkRoutes(pegboardApi)

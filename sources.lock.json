@@ -482,6 +482,10 @@
       "sha256": "350721865fe26cca71a24ebf7da421c3eaa0280eb6a0b9d664d0260c6e2f3a98",
       "executable": false
     },
+    "migrations/core/0049_brief_revisions.sql": {
+      "sha256": "9baaebf3d6ccf6b16b42795efefa544116347d1bd12e1251d2bdb37d5c286ba8",
+      "executable": false
+    },
     "ONBOARDING.md": {
       "sha256": "24b685d6eddeae5480ce4dfbf44c0590e54bcfe83641373de5bba985765380bd",
       "executable": false
@@ -2186,6 +2190,10 @@
       "sha256": "8634b433044336ab8fbccbcd1bd8102a1ffaef95a5844d348faddd0bea698bec",
       "executable": false
     },
+    "src/pegboard/api/brief-routes.ts": {
+      "sha256": "448fa0b8f7f5916712e597259612d781017af0c686608c6d38c5d6605f64a574",
+      "executable": false
+    },
     "src/pegboard/api/bundle-routes.ts": {
       "sha256": "275a84dbe695d5a7f228eacf8dda2acced8fa7d5066f3b913e98198eb1f3d1d6",
       "executable": false
@@ -2215,7 +2223,7 @@
       "executable": false
     },
     "src/pegboard/api/index.ts": {
-      "sha256": "8ffc459e8ec448d494d67d8f040d7e8cd6f54e9fa57fb5b131fdaae6ff54df5b",
+      "sha256": "8cfc05c234157dbeefe0d6398c95e3e0680a6f4c84431f5fb10261769f6c26a6",
       "executable": false
     },
     "src/pegboard/api/meeting-routes.ts": {
@@ -2454,6 +2462,10 @@
       "sha256": "7f156db1666330d41781beacb259bc519313ec471c9ca43c46060d0d60e729bd",
       "executable": false
     },
+    "src/pegboard/revisions/briefs.ts": {
+      "sha256": "f28e7e4faa1a97722d4e289e5a6d4a6487451eeb1852c38163b26aacf01f4a3c",
+      "executable": false
+    },
     "src/pegboard/schedule/calendar.ts": {
       "sha256": "dfaaa78b54731b8cc8e504ac0096955ed384c371f03c241083d91799adf9665e",
       "executable": false
@@ -2542,6 +2554,10 @@
       "sha256": "c40ab10fc1912486d02c11b60da74472c10b47611043fdb0eb41315fb74ef632",
       "executable": false
     },
+    "src/pegboard/ui/pages/brief.tsx": {
+      "sha256": "583d40bdb4c7d14ba88d971672c5a2b0f77b6c9111869cfa4fa0865e8c641319",
+      "executable": false
+    },
     "src/pegboard/ui/pages/bundles.tsx": {
       "sha256": "2a85ea8e338bc7b7f56cc6fd5a5da60d357e65d8e0e84bc92e7e2334044c20ce",
       "executable": false
@@ -2599,7 +2615,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/recovery.tsx": {
-      "sha256": "5faf4efe0c8579bc94c097134325acb586c5f0eeb1d3b276fcbc9984aa50d32e",
+      "sha256": "fe19269e2be30139c1bbdeaeac1bcf24e3deee02ffe5a706fb40d2e37b79aada",
       "executable": false
     },
     "src/pegboard/ui/pages/recurrences.tsx": {
@@ -2647,7 +2663,7 @@
       "executable": false
     },
     "src/pegboard/ui/routes.ts": {
-      "sha256": "8d3cc4a76bf925837c21acbc2d7e42f49bc01b2efb2e4afff7b91a012c2b8938",
+      "sha256": "bd2d46e33d35f460503f8fadb8087a12b4cddd28565dc14d011125fa7415703b",
       "executable": false
     },
     "src/pegboard/ui/shell.tsx": {
