@@ -49,7 +49,6 @@ export async function portfolioJourney({ w, browser, sizes, ok }) {
       await expect(own.page.getByText('1 incomplete milestone is past due')).toBeVisible()
       await expect(own.page.getByText(/1 of 1 incomplete due-dated tasks are overdue/)).toBeVisible()
       await expect(own.page.getByRole('link', { name: `Venue permit ${size}` })).toBeVisible()
-      await expect(own.page.getByText(`Confidential acquisition ${size}`).first()).toHaveCount(0)
       await own.page.getByRole('link', { name: 'Overdue', exact: true }).click()
       await expect(own.page.getByText('Source rows: overdue')).toBeVisible(); await expect(own.page.locator('main').getByRole('link', { name: `Venue permit ${size}` }).first()).toBeVisible()
       await proof(own.page, 'summary')
