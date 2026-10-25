@@ -4,6 +4,7 @@ import { Card, Check, Form, Pick, Shell, Submit } from '../shell'
 type Review = Awaited<ReturnType<typeof removalPreview>>
 export function MemberRemovalPage({viewer,review,workspace,receipt}:{viewer:Viewer;review:Review;workspace:string;receipt?:boolean}) {
  const here=`/app/admin/removal/${review.person.id}`
+ receipt=!!receipt&&review.completed&&review.person.status==='inactive'
  return <Shell viewer={viewer} current="/app/admin" title={receipt?'Member removed':`Remove ${review.person.name}`} chip={review.person.status.toUpperCase()} facts={['Installation-wide responsibility review']}>
   <Card title={receipt?'Revocation complete':'Review every affected set'}>
    {receipt?<p>Access is inactive. Sessions and keys are revoked, queued authority is canceled and historical authorship remains preserved. <a href={`/app/audit?action=person.departure&subject=${review.person.id}`}>Inspect permanent audit</a></p>:<>

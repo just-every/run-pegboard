@@ -23,7 +23,7 @@ export async function removalPreview(db: D1Database, actor: Actor, person: strin
     (SELECT count(*) FROM oa_tokens WHERE (operator_id=? OR issuer_id=?) AND consumed_at IS NULL AND revoked_at IS NULL) links`, person,person,person,person,person,person)
   const replacements = await all<{ id: string; name: string }>(db,"SELECT id,display_name name FROM oa_operators WHERE status='active' AND role IN ('owner','admin') AND id<>? ORDER BY display_name",person)
   const token = await digest({ person, actor: actor.id, revision, affected, credentials })
-  return { person: { id: person, name: subject.display_name, status: subject.status }, revision, affected, credentials: credentials!, replacements, token }
+  return { completed:!!await first(db,"SELECT 1 FROM peg_permanent_audit WHERE action='person.departure' AND target_type='person' AND target_id=? LIMIT 1",person), person: { id: person, name: subject.display_name, status: subject.status }, revision, affected, credentials: credentials!, replacements, token }
 }
 export async function removeReviewedPerson(db: D1Database, actor: Actor, person: string, input: Record<string, any>) {
   const preview = await removalPreview(db, actor, person)

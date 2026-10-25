@@ -199,7 +199,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "4f517a2be10b8763ec4cc6e424371ecc307f68c0a4b7ba99c71e7a39327cb228",
+      "sha256": "214b973eba79ccb701408bbc524682b257370429f95f498b577657b5adabe975",
       "executable": false
     },
     "AGENTS.md": {
@@ -215,7 +215,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "76f65e46645a88f71864da2020c6c37bfbde1f33e366d2b421affc94b47e2d71",
+      "sha256": "724d7ac7cec0fdd01649b1420d03db0c1800b9c78123818aa32cb799aa0163d0",
       "executable": false
     },
     "DEMO.md": {
@@ -2155,7 +2155,7 @@
       "executable": false
     },
     "src/pegboard/admin/departure/removal.ts": {
-      "sha256": "2c81794734636c8c79e09ea3bbcefb5874864c452aeab2f89a8451d1bb612b41",
+      "sha256": "19ccd1f61a2ac681c42cb1212cf6a1a37a289c088610506f151c8258be988413",
       "executable": false
     },
     "src/pegboard/admin/departure/sets.ts": {
@@ -2599,7 +2599,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/member-removal.tsx": {
-      "sha256": "32da697bdd026d435d8052adf256e539a0cf3fceec56c67ec3c6a6767ececce2",
+      "sha256": "ddf7a7b798d1e6e72d0a01c1b8c3a5c80daf6d69e74262f163e770ef6555cc4a",
       "executable": false
     },
     "src/pegboard/ui/pages/my-tasks.tsx": {
@@ -2859,7 +2859,7 @@
       "executable": false
     },
     "tests/access-control.test.mjs": {
-      "sha256": "7950f727e5ed425d52fa1586252aefaa22404322cff6c05464930996c71f9732",
+      "sha256": "fa7be92ea774ec71f20607aa34078a3c8b8ed9f56b48542d9b0853fca21fb7d9",
       "executable": false
     },
     "tests/journeys/delivery-register.mjs": {
@@ -2867,7 +2867,7 @@
       "executable": false
     },
     "tests/journeys/member-removal.mjs": {
-      "sha256": "353274f06b900a6cc874904038b929277cc0815b6428fddd14f32de0a0e92fcb",
+      "sha256": "dedd89f762b8356b94f6a8158876ba32824e71bff7aa2e418be972ab578c6e09",
       "executable": false
     },
     "tests/journeys/planning-canvas.mjs": {

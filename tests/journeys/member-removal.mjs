@@ -19,6 +19,7 @@ export async function memberRemovalJourney({w,browser,sizes,ok}) {
    await page.goto(`${w.origin}/app/admin`);await proof('admin')
    await page.locator(`a[href="/app/admin/removal/${f.departing.id}"]`).click()
    await expect(page.getByRole('heading',{name:'Review every affected set'})).toBeVisible()
+   await page.goto(`${url}?removed=1`);await expect(page.getByRole('form',{name:'Review member removal'})).toBeVisible()
    assert.ok(!(await page.locator('main').innerText()).includes('Private departure work'),'private titles stay redacted')
    await proof('review')
    let review=await pass(f.owner.get(f.removalPath+'/removal-preview'))
