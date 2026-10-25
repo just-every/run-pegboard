@@ -21,12 +21,13 @@ export async function portfolioJourney({ w, browser, sizes, ok }) {
       await own.page.goto(`${w.origin}/app/portfolios`)
       await own.page.getByRole('form', { name: 'Start a portfolio' }).getByLabel('Portfolio name').fill(`Spring programs ${size}`)
       await own.page.getByRole('button', { name: 'Create portfolio' }).click()
-      await own.page.waitForURL(/\/app\/portfolios\/pf_/)
+      await own.page.getByRole('link', { name: `Spring programs ${size}`, exact: true }).click(); await own.page.waitForURL(/\/app\/portfolios\/pf_/)
       const rootId = own.page.url().split('/').pop().split('?')[0]
       await own.page.goto(`${w.origin}/app/portfolios`)
       const start = own.page.getByRole('form', { name: 'Start a portfolio' })
       await start.getByLabel('Portfolio name').fill(`Retail launches ${size}`); await start.getByLabel('Inside portfolio').selectOption(rootId)
-      await own.page.getByRole('button', { name: 'Create portfolio' }).click(); await own.page.waitForURL(/\/app\/portfolios\/pf_/)
+      await own.page.getByRole('button', { name: 'Create portfolio' }).click()
+      await own.page.getByRole('link', { name: `Retail launches ${size}`, exact: true }).click(); await own.page.waitForURL(/\/app\/portfolios\/pf_/)
       const childId = own.page.url().split('/').pop().split('?')[0]
       await proof(own.page, 'empty')
       const projects = []
