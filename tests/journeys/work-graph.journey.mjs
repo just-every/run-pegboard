@@ -9,6 +9,7 @@ import { startEngineeringServices,vectorTodo,vectorDone } from '../support/engin
 import { startTimeServices } from '../support/time-services.mjs'
 import { startMeetingServices } from '../support/meeting-services.mjs'
 import { planningCanvasJourney } from './planning-canvas.mjs'
+import { portfolioJourney } from './portfolios.mjs'
 
 // Harvest and QuickBooks Time schema fakes at the network edge; every Worker below reaches them through local origins.
 const engineering = await startEngineeringServices(), meetings = await startMeetingServices()
@@ -878,6 +879,7 @@ try {
     await context.close();console.log(`Data custody at ${size}px passed`)
   }
   if(!process.env.PEGBOARD_JOURNEY||process.env.PEGBOARD_JOURNEY==='canvas')await planningCanvasJourney({w,browser,sizes,ok})
+  if(!process.env.PEGBOARD_JOURNEY||process.env.PEGBOARD_JOURNEY==='portfolio')await portfolioJourney({w,browser,sizes,ok})
 } finally {
   await browser.close()
   await w.stop()
