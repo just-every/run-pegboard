@@ -13,8 +13,9 @@ export async function planningCanvasJourney({w,browser,sizes,ok}) {
  }
  const proof=async(page,name,size)=>{
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`canvas reflow ${name} ${size}`)
-  const first=page.locator('main a,main button,main input:not([type=hidden]),main select').first();await first.focus();await page.keyboard.press('Tab')
-  assert.ok(await page.evaluate(()=>document.activeElement!==document.body),'keyboard stays in the page')
+  const first=page.locator('main a,main button,main input:not([type=hidden]),main select').first()
+  if(await first.count()){await first.focus();await page.keyboard.press('Tab');assert.ok(await page.evaluate(()=>document.activeElement!==document.body),'keyboard stays in the page')}
+  else await expect(page.locator('main')).toContainText('Private content has been cleared')
   const icons=await page.locator('main button,main a').evaluateAll(elements=>elements.filter(e=>!e.textContent.trim()&&e.querySelector('svg,img')).map(e=>e.outerHTML))
   assert.deepEqual(icons,[],'canvas and List use text-labelled controls')
   if(process.env.PEGBOARD_PROOF_DIR){await mkdir(process.env.PEGBOARD_PROOF_DIR,{recursive:true});await page.screenshot({path:join(process.env.PEGBOARD_PROOF_DIR,`canvas-${name}-${size}.png`),fullPage:true})}

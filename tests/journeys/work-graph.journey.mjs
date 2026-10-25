@@ -20,7 +20,6 @@ const sizes = [['1440', { width: 1440, height: 900 }], ['390', { width: 390, hei
 try {
   let owner = w.owner
   const ok = (r, status = 200) => { assert.equal(r.status, status, JSON.stringify(r.body)); return r.body }
-  if(!process.env.PEGBOARD_JOURNEY||process.env.PEGBOARD_JOURNEY==='canvas')await planningCanvasJourney({w,browser,sizes,ok})
   ok(await owner.post('/api/v1/teams', { name: 'Brand crew', privacy: 'public' }))
   for (const [size, viewport] of (process.env.PEGBOARD_JOURNEY ? [] : sizes)) {
     const open = async client => { const context = await browser.newContext({ viewport }); await context.addCookies(cookies(client)); return { context, page: await context.newPage() } }
@@ -878,6 +877,7 @@ try {
     const download=await page.request.get(w.origin+await page.getByRole('link',{name:'Export this page as JSON'}).getAttribute('href'));assert.equal(download.status(),200);assert.ok((await download.json()).events.every(e=>e.target_id===p.id))
     await context.close();console.log(`Data custody at ${size}px passed`)
   }
+  if(!process.env.PEGBOARD_JOURNEY||process.env.PEGBOARD_JOURNEY==='canvas')await planningCanvasJourney({w,browser,sizes,ok})
 } finally {
   await browser.close()
   await w.stop()

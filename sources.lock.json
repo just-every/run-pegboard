@@ -2667,11 +2667,11 @@
       "executable": false
     },
     "tests/journeys/planning-canvas.mjs": {
-      "sha256": "f082553ed72dc93804749abb916926bf9c7da2a973c71f9d10753c23be912eec",
+      "sha256": "db50e812687fc512f7c99ce07e9dafb2b94f4153ffd3516cde8581b2bb151965",
       "executable": false
     },
     "tests/journeys/work-graph.journey.mjs": {
-      "sha256": "a3b745e5b03e34783ae35fa880395d624b11c249bdbf5c5e0bbdcbbc12f921fc",
+      "sha256": "ba2f7704747f2c0bbe42e45f2d3e31925b5448ff0ecfce10e7a9ce06074bffae",
       "executable": false
     },
     "tests/runtime.mjs": {
