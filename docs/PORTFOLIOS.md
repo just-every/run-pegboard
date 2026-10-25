@@ -37,3 +37,12 @@ or a portfolio they administer. It is immutable and never inferred. Manual healt
 `POST /api/v1/dependencies` links a predecessor to a dependant (`fs`, `ss`, `ff` or `sf`, with a lag or lead in working days) across projects.
 It needs edit rights on the dependant and read rights on the predecessor; a cycle is refused whole. Dates are working days: weekends
 and observed US federal holidays are skipped.
+
+## Schedule changes
+
+`POST /api/v1/schedule/preview` returns the knock-on set for proposed dates, each shift with its reason, any holiday it skips and any
+daylight-saving change, and a revision. `POST /api/v1/schedule/apply` with that revision executes it once as the confirming editor;
+an agent's set, or one reaching work the editor cannot edit or read, becomes a pending set for an approver. Pending sets are decided at
+`/api/v1/schedule/sets/:id/approve` or `.../reject`, and an applied set is undone at `.../undo` while its dates are untouched.
+`GET /api/v1/projects/:id/schedule` returns slack, the critical path, links and baseline variance; `POST /api/v1/projects/:id/baselines`
+saves a baseline.

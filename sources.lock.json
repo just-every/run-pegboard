@@ -199,7 +199,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "d76b62230fb34681953aa9de238387f53212166c3bc69732a58d969ab8f8187e",
+      "sha256": "3e6414d8af716d654a385be629ac21155bcd14896ae60300f7ac4df12e713ea1",
       "executable": false
     },
     "AGENTS.md": {
@@ -215,7 +215,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "7168b93eea8bbabfcd66f1466be7e79dc4f028ad764672f44b17f8eca5075e2e",
+      "sha256": "c334a1c5c58c0b49a2e84910567161e3113a633efa698a6ab172e2b9fda3f4ab",
       "executable": false
     },
     "DEMO.md": {
@@ -260,6 +260,10 @@
     },
     "docs/PLANNING-CANVAS.md": {
       "sha256": "c8a72c623df353e7f8010bd6ec1c857c122da139e5919f268ae17f4d94a87cba",
+      "executable": false
+    },
+    "docs/PORTFOLIOS.md": {
+      "sha256": "8df2e3627055027aec6f0d7230320791fa11b9e4dec2a2244c6115347fb92737",
       "executable": false
     },
     "docs/TIME-SERVICE-PACKETS.md": {
@@ -458,6 +462,10 @@
       "sha256": "83afac8d44054bb6490699b7985341d2f5b77f2ee98ca31d1bec1060f2b344fc",
       "executable": false
     },
+    "migrations/core/0044_schedule_changes.sql": {
+      "sha256": "80f95a3e56b455e3d2fcb45f3f73b1de35d91fdc2bf5d38507390a9917ada143",
+      "executable": false
+    },
     "ONBOARDING.md": {
       "sha256": "24b685d6eddeae5480ce4dfbf44c0590e54bcfe83641373de5bba985765380bd",
       "executable": false
@@ -471,7 +479,7 @@
       "executable": false
     },
     "package.json": {
-      "sha256": "6e4b4b0377d41c38e8f15c2b253dccda81254ff09761bb0d874030d9a495a6c3",
+      "sha256": "fa6656b731c8271513b57900a940fbd30ec56f171b52ec271448888c9805ec4b",
       "executable": false
     },
     "packaging.json": {
@@ -871,7 +879,7 @@
       "executable": false
     },
     "public/look/pages.css": {
-      "sha256": "a10a4255ca3d01ddcf1ea3a3401eaa5494951ee0a24127a25d88e74073f5aaee",
+      "sha256": "6ab0e301b80d1e95aeddf04cd134a7f8042cc904d418540a6194673efa4df324",
       "executable": false
     },
     "public/look/parts.css": {
@@ -2179,7 +2187,7 @@
       "executable": false
     },
     "src/pegboard/api/index.ts": {
-      "sha256": "0a08e20720ba74ac26ce895d90418ecaa570c10be230f7e49ee1026114dbaf66",
+      "sha256": "6219d8cbd10caf1822307ffd22ba456c2fbeca86c5ef62724ec99665bf3f6e9c",
       "executable": false
     },
     "src/pegboard/api/meeting-routes.ts": {
@@ -2196,6 +2204,10 @@
     },
     "src/pegboard/api/recurrence-routes.ts": {
       "sha256": "f87afb396d19fe3ee43d1b497c52c0d4eae776810f715d9c17ae2882887faa83",
+      "executable": false
+    },
+    "src/pegboard/api/schedule-routes.ts": {
+      "sha256": "cc5516fc9709c14d92736ffaeac2e618ea2dc2901bdafe6cc6834c329d0dc30a",
       "executable": false
     },
     "src/pegboard/api/task-routes.ts": {
@@ -2363,7 +2375,11 @@
       "executable": false
     },
     "src/pegboard/schedule/calendar.ts": {
-      "sha256": "f60c20ee2b06d66c4839b321dc86a2adf35b3a5f10347fe626478d474cf3bc19",
+      "sha256": "dfaaa78b54731b8cc8e504ac0096955ed384c371f03c241083d91799adf9665e",
+      "executable": false
+    },
+    "src/pegboard/schedule/changes.ts": {
+      "sha256": "ff0cedd10a7bdf71c8fe05e4df5185c5361fd7b94c8a444acca41f2314a6e473",
       "executable": false
     },
     "src/pegboard/schedule/dependencies.ts": {
@@ -2372,6 +2388,14 @@
     },
     "src/pegboard/schedule/graph.ts": {
       "sha256": "fa3823fe1c255d67a795653a855698ec65a7f3b09bbc1d4016271f06b1ade824",
+      "executable": false
+    },
+    "src/pegboard/schedule/plan.ts": {
+      "sha256": "0cc89f55a972116ce2c8b3c28d166439a06f08e13b5cdc631bc8217618c27109",
+      "executable": false
+    },
+    "src/pegboard/schedule/timeline.ts": {
+      "sha256": "ce67d38ba1c8f2d236ab2d18a87f652358ec2443984966510a6b2a9f8e69728a",
       "executable": false
     },
     "src/pegboard/tags/tags.ts": {
@@ -2463,7 +2487,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/portfolio.tsx": {
-      "sha256": "d2c1abc2444522433fb36e07f26d3df4f0f885f0fb79480002c96d89113e2b79",
+      "sha256": "47eb8dbfa931b22fe32ff03e2f9871cb199bd5cfd0a8c233f24f9ea18c0e9479",
       "executable": false
     },
     "src/pegboard/ui/pages/portfolios.tsx": {
@@ -2479,7 +2503,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/project.tsx": {
-      "sha256": "6ae5792ce1c70998f5744111a3acc0b39e0efbb68223f17db169ac4f8a568e1b",
+      "sha256": "133147196a264f9eb9a116611f6aec6c1256699a612065810b45875ab7f4ce06",
       "executable": false
     },
     "src/pegboard/ui/pages/projects.tsx": {
@@ -2522,8 +2546,12 @@
       "sha256": "5f51636ffb623a6ed1e9893bce93c4a819f2631f229ddfff2ab93338a5a504a3",
       "executable": false
     },
+    "src/pegboard/ui/pages/timeline.tsx": {
+      "sha256": "20a966868cc7a54fb0efc1a69ae21e5842e5086093ed48d7c7528d55bc2effce",
+      "executable": false
+    },
     "src/pegboard/ui/routes.ts": {
-      "sha256": "3c8f61a3c99aa59ea91c2d566f5048e29754ed3752ea825d690153bc5c6d9e67",
+      "sha256": "3b33649af06556ea2de3a06baa46fc27e94ab8355506e54606e2b71c62a9d6f4",
       "executable": false
     },
     "src/pegboard/ui/shell.tsx": {
@@ -2714,8 +2742,12 @@
       "sha256": "669eeb9c38d305e1e9dd6c38b176d0a2eb858bf51a494318ee0b6052f195b0c1",
       "executable": false
     },
+    "tests/journeys/timeline.mjs": {
+      "sha256": "41b73c7595680bf915a13e065251dd1cc21d2ed09602885c59f74f64f6ef80ca",
+      "executable": false
+    },
     "tests/journeys/work-graph.journey.mjs": {
-      "sha256": "97bcbdde85385b7f93b364e60b8d2e430e307d90bf0ac48de3a15b6200d23f1b",
+      "sha256": "53f428e89e209f8a5a76847c49275e61774ff18d9b5c19237697c468fda53a72",
       "executable": false
     },
     "tests/portfolios.test.mjs": {
@@ -2724,6 +2756,10 @@
     },
     "tests/runtime.mjs": {
       "sha256": "5c95e10cbda103227663a077e6713e3aa092246f7391d68a16d008c1e2741c4e",
+      "executable": false
+    },
+    "tests/schedule.test.mjs": {
+      "sha256": "df6c016e0dfb1ee3c4d8e195f901cdda34d8c8b86e76e14f755a8bd8a8b5d09f",
       "executable": false
     },
     "tests/support/canvas-restore.mjs": {

@@ -20,6 +20,7 @@ export async function timelineJourney({ w, browser, sizes, ok }) {
     const copy = ok(await owner.post('/api/v1/tasks', { title: `Final copy ${size}`, projectId: project.id, startDate: '2026-06-29', dueDate: '2026-07-01' }))
     const run = ok(await owner.post('/api/v1/tasks', { title: `Print run ${size}`, projectId: project.id, startDate: '2026-07-02', dueDate: '2026-07-02' }))
     const ship = ok(await owner.post('/api/v1/tasks', { title: `Ship to stores ${size}`, projectId: project.id, startDate: '2026-07-07', dueDate: '2026-07-08' }))
+    const titles = { [copy.id]: `Final copy ${size}`, [run.id]: `Print run ${size}`, [ship.id]: `Ship to stores ${size}` }
     const own = await open(owner), eli = await open(editor), vic = await open(viewer), url = `${w.origin}/app/projects/${project.id}/timeline`
     try {
       await own.page.goto(`${w.origin}/app/projects/${project.id}`); await own.page.getByRole('link', { name: 'Timeline', exact: true }).click()
@@ -27,7 +28,7 @@ export async function timelineJourney({ w, browser, sizes, ok }) {
       // Link the chain through the screen, then save the plan as a baseline.
       for (const [from, to] of [[copy, run], [run, ship]]) {
         const form = own.page.getByRole('form', { name: 'Link tasks', exact: true })
-        await form.getByLabel('Predecessor').selectOption({ label: from.title }); await form.getByLabel('Dependant').selectOption({ label: to.title }); await form.getByLabel('Link type').selectOption('fs')
+        await form.getByLabel('Predecessor').selectOption({ label: titles[from.id] }); await form.getByLabel('Dependant').selectOption({ label: titles[to.id] }); await form.getByLabel('Link type').selectOption('fs')
         await form.getByRole('button', { name: 'Link tasks' }).click()
       }
       await expect(own.page.getByText('finish to start').first()).toBeVisible()
@@ -39,7 +40,7 @@ export async function timelineJourney({ w, browser, sizes, ok }) {
       // The editor previews the whole knock-on set before confirming it.
       await eli.page.goto(url)
       const move = eli.page.getByRole('form', { name: 'Preview a date change' })
-      await move.getByLabel('Task to move').selectOption({ label: copy.title }); await move.getByLabel('New due').fill('2026-07-02'); await move.getByRole('button', { name: 'Preview knock-on changes' }).click()
+      await move.getByLabel('Task to move').selectOption({ label: titles[copy.id] }); await move.getByLabel('New due').fill('2026-07-02'); await move.getByRole('button', { name: 'Preview knock-on changes' }).click()
       await expect(eli.page.getByRole('heading', { name: 'Knock-on preview' })).toBeVisible()
       await expect(eli.page.getByText(/skips Independence Day/).first()).toBeVisible(); await expect(eli.page.getByText(/finish to start/).first()).toBeVisible()
       assert.deepEqual(ok(await owner.get(`/api/v1/tasks/${run.id}`)).dueDate ?? ok(await owner.get(`/api/v1/tasks/${run.id}`)).due_date, '2026-07-02', 'previewing moves nothing')

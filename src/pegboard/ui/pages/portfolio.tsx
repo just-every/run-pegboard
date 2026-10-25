@@ -8,7 +8,7 @@ export const tabs = ['summary', 'timeline', 'workload', 'dashboard'] as const
 const label = (code: string) => ({ milestone_past_due: 'Milestone past due', negative_slack: 'Negative slack on the critical path', overdue_share: 'Overdue share', status_stale: 'Status out of date' } as Record<string, string>)[code] ?? code
 const health = (value: string | undefined) => value === 'on_track' ? 'On track' : value === 'at_risk' ? 'At risk' : value === 'off_track' ? 'Off track' : 'Not published'
 const computedLabel = (state: string) => state === 'at_risk' ? 'At risk' : state === 'unknown' ? 'Unknown: no published status' : 'No computed flags'
-const bar = (part: number, whole: number) => <span className="track" aria-hidden="true"><span className="fill" style={{ width: `${whole ? Math.min(100, Math.round(part * 100 / whole)) : 0}%` }} /></span>
+const bar = (part: number, whole: number) => <span className="track" aria-hidden="true"><span className={`fill pct-${whole ? Math.min(20, Math.round(part * 20 / whole)) * 5 : 0}`} /></span>
 
 export function PortfolioPage({ viewer, view, tab, drill, atInput, projectOptions, people }: { viewer: Viewer; view: View; tab: string; drill: { metric: string; tasks: View['tasks'] } | null; atInput: string | null; projectOptions: Option[]; people: Option[] }) {
   const here = `/app/portfolios/${view.portfolio.id}`, admin = view.portfolio.level === 'admin', keep = `${atInput ? `&at=${encodeURIComponent(atInput)}` : ''}${view.filter ? `&filter=${view.filter.id}` : ''}`
