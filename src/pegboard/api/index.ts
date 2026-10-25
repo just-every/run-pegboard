@@ -1,4 +1,5 @@
 import { canvasRoutes } from './canvas-routes'
+import { portfolioRoutes } from './portfolio-routes'
 import { analyticsRoutes } from './analytics-routes'
 import {meetingRoutes} from './meeting-routes'
 import { engineeringRoutes } from './engineering-routes'
@@ -39,3 +40,5 @@ meetingRoutes(pegboardApi)
 analyticsRoutes(pegboardApi)
 
 canvasRoutes(pegboardApi)
+
+portfolioRoutes(pegboardApi)

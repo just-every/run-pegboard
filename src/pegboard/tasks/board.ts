@@ -9,9 +9,9 @@ import { currentRef } from '../references/refs'
 import { fieldLibrary, fieldReadable, listSections, openProject } from '../workspace/projects'
 import { displayNames, workspaceSettings, type Actor } from '../workspace/people'
 
-interface Placed extends TaskRow { project_id: string; section_id: string | null; fields: string }
+export interface Placed extends TaskRow { project_id: string; section_id: string | null; fields: string }
 /** The tasks of a project that this person may read: private-to-guest and assignee-scoped tasks drop out here. */
-async function readableTasks(db: D1Database, actor: Actor, projectId: string): Promise<Placed[]> {
+export async function readableTasks(db: D1Database, actor: Actor, projectId: string): Promise<Placed[]> {
   // The project's own tasks and, under each, the subtasks that hang wherever it does.
   const rows = await all<Placed>(db, `WITH RECURSIVE tree(id,project_id,section_id,fields,position) AS (
       SELECT task_id,project_id,section_id,fields,position FROM peg_task_projects WHERE project_id=?
