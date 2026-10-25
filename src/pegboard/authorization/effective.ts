@@ -1,3 +1,4 @@
+import { isRecoveryHidden } from '../recovery/visibility'
 // The effective capability of a person on a team, a project or a task: the union of every current grant path,
 // each path capped by what that kind of person may hold. Every read and write door asks here, never the UI.
 import { all, first, now, placeholders, type Param } from '../db'
@@ -88,7 +89,8 @@ export interface TaskAccess {
 }
 const noTask = (role: WorkspaceRole | null): TaskAccess => ({ capabilities: new Set(), level: null, contexts: new Map(), personal: false, role })
 
-export async function taskAccess(db: D1Database, actor: Actor, task: TaskRow): Promise<TaskAccess> {
+export async function taskAccess(db: D1Database, actor: Actor, task: TaskRow, includeRemoved = false): Promise<TaskAccess> {
+  if (!includeRemoved && await isRecoveryHidden(db,'task',task.id)) return noTask(null)
   const role = await workspaceRole(db, actor.id, task.workspace_id)
   if (!role) return noTask(null)
   // A subtask hangs wherever its root task hangs.

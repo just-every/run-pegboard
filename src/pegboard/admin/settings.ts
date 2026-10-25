@@ -1,7 +1,6 @@
 // The admin console's workspace settings and people: invitation policy, sharing, exports, retention, memberships.
 import { all, batch, bound, conflict, first, forbidden, invalid, notFound, now, PegError } from '../db'
 import { auditStatement, bumpEpoch } from '../authorization/audit'
-import { revokeAllFor } from '../authorization/grants'
 import { isAdministrator, levels, memberRoles, type WorkspaceRole } from '../authorization/levels'
 import { defaultSettings, operatorRow, settingBounds, workspaceRole, workspaceSettings, type Actor, type WorkspaceSettings } from '../workspace/people'
 
@@ -83,17 +82,6 @@ export async function setPersonRole(db: D1Database, actor: Actor, workspaceId: s
   await batch(db, [bound(db, 'UPDATE peg_workspace_members SET role=? WHERE workspace_id=? AND operator_id=?', [kind as string, workspaceId, operatorId]),
     auditStatement(db, { workspaceId, actorId: actor.id, action: 'person.role_changed', targetType: 'workspace', targetId: workspaceId, subjectId: operatorId, detail: { from: before.role, to: kind } }), bumpEpoch(db)])
   return { id: operatorId, role: kind }
-}
-
-export async function removePerson(db: D1Database, actor: Actor, workspaceId: string, operatorId: string) {
-  await requireAdministrator(db, actor, workspaceId)
-  if (!(await first(db, 'SELECT 1 FROM peg_workspace_members WHERE workspace_id=? AND operator_id=?', workspaceId, operatorId))) throw notFound()
-  const owns = await first(db, 'SELECT 1 FROM peg_projects WHERE workspace_id=? AND owner_id=?', workspaceId, operatorId)
-  if (owns) throw conflict('last_owner')
-  await keepGoalOwner(db,operatorId,{workspace:workspaceId,remove:true})
-  await revokeAllFor(db, actor, workspaceId, operatorId)
-  await batch(db, [bound(db, 'DELETE FROM peg_workspace_members WHERE workspace_id=? AND operator_id=?', [workspaceId, operatorId]),
-    auditStatement(db, { workspaceId, actorId: actor.id, action: 'person.removed', targetType: 'workspace', targetId: workspaceId, subjectId: operatorId }), bumpEpoch(db)])
 }
 
 /** Base's account changes (role, active or not) run through Base's own policy and its last-owner guard; Pegboard adds the audit row and the new epoch. */

@@ -1,3 +1,4 @@
+import { recoveryRoutes } from './recovery-routes'
 import {bundleRoutes} from './bundle-routes'
 import { registerRoutes } from './register-routes'
 import { canvasRoutes } from './canvas-routes'
@@ -51,3 +52,5 @@ scheduleRoutes(pegboardApi)
 registerRoutes(pegboardApi)
 
 bundleRoutes(pegboardApi)
+
+recoveryRoutes(pegboardApi)

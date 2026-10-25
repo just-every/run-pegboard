@@ -1,3 +1,4 @@
+import { isRecoveryHidden } from '../recovery/visibility'
 // Real native records, authorized by the same current task grants as work itself. No provider or model is emulated.
 import { all, bound, conflict, first, forbidden, invalid, newId, notFound, now } from '../db'
 import { openTask, require as need } from '../tasks/access'
@@ -31,7 +32,7 @@ export async function proofView(db:D1Database,actor:Actor,id:string) {
   const proof=await first<Proof>(db,'SELECT * FROM peg_proofs WHERE id=?',id);if(!proof)throw notFound()
   const {task,access}=await openTask(db,actor,proof.task_id)
   const versions=await all<Version>(db,'SELECT * FROM peg_proof_versions WHERE proof_id=? ORDER BY version',id),visible:Version[]=[]
-  for(const v of versions){const file=await first<{project_id:string|null;created_by:string}>(db,'SELECT project_id,created_by FROM peg_attachments WHERE id=?',v.attachment_id);if(file&&(file.project_id===null?task.owner_id===actor.id:access.contexts.has(file.project_id)))visible.push(v)}
+  for(const v of versions){if(await isRecoveryHidden(db,'proof_version',v.id))continue;const file=await first<{project_id:string|null;created_by:string}>(db,'SELECT project_id,created_by FROM peg_attachments WHERE id=?',v.attachment_id);if(file&&(file.project_id===null?task.owner_id===actor.id:access.contexts.has(file.project_id)))visible.push(v)}
   if(!visible.some(v=>v.id===proof.current_version))throw notFound()
   const allowed=new Set(visible.map(v=>v.id)),decisions=(await all<{id:string;version_id:string;actor_id:string;action:string;at:number;reason:string}>(db,'SELECT * FROM peg_proof_decisions WHERE proof_id=? ORDER BY at,id',id)).filter(d=>allowed.has(d.version_id))
   const latest=decisions.filter(d=>d.version_id===proof.current_version).at(-1)

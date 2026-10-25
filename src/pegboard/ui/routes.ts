@@ -1,3 +1,7 @@
+import { recoveryList,recoveryPreview } from '../recovery'
+import { RecoveryPage } from './pages/recovery'
+import { removalPreview } from '../admin/departure/removal'
+import { MemberRemovalPage } from './pages/member-removal'
 import {BundlesPage} from './pages/bundles'
 import {bundleView,listBundles} from '../bundles/definitions'
 import {previewBundle} from '../bundles/adoption'
@@ -109,6 +113,7 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
   const { viewer, workspace } = await context(db, actor, session.operator.role)
   const [, section, id, tail] = segments
   try {
+    if(section==='recovery'&&!id)return page('Archive and trash',h(RecoveryPage,{viewer,listing:await recoveryList(db,actor,workspace),preview:url.searchParams.has('id')?await recoveryPreview(db,actor,workspace,Object.fromEntries(url.searchParams)):null}))
     if(section==='workflow-bundles'&&!tail){return page('Workflow bundles',h(BundlesPage,{viewer,bundles:id?[]:await listBundles(db,actor,workspace),view:id?await bundleView(db,actor,id):null,projects:(await listProjects(db,actor,workspace)).filter(p=>p.level==='admin').map(p=>({value:p.id,label:p.name})),fields:(await catalogue(db,actor,workspace)).map(f=>({value:f.id,label:f.label})),people:await peopleOptions(db,actor,workspace),preview:id&&url.searchParams.getAll('projectIds[]').length?await previewBundle(db,actor,id,{projectIds:url.searchParams.getAll('projectIds[]')}):null}))}
     if(section==='portfolios'&&!id){const role=await workspaceRole(db,actor.id,workspace);return page('Portfolios',h(PortfoliosPage,{viewer,workspace,query:url.searchParams.get('q')??'',portfolios:await listPortfolios(db,actor,workspace,url.searchParams.get('q')??''),canCreate:['owner','admin','manager','member'].includes(role??'')}))}
     if(section==='portfolios'&&id&&!tail){
@@ -216,6 +221,7 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
       }
       return refuse(db, actor, viewer, target)
     }
+    if(section==='admin'&&id==='removal'&&tail) return page('Member removal',h(MemberRemovalPage,{viewer,workspace,review:await removalPreview(db,actor,tail),receipt:url.searchParams.has('removed')}))
     if (section === 'access-review' || section === 'admin') {
       if (!isAdministrator(await workspaceRole(db, actor.id, workspace))) return refuse(db, actor, viewer, section)
       if (section === 'access-review') return page('Access review', h(AccessReviewPage, { viewer, review: await accessReview(db, actor, workspace, { action: url.searchParams.get('action') ?? undefined }) }))

@@ -1,3 +1,4 @@
+import { removalPreview, removeReviewedPerson } from '../admin/departure/removal'
 import {readableDefinitions} from '../fields/definitions'
 // /api/v1: workspaces, people, teams, projects and their settings.
 import type { Hono } from 'hono'
@@ -6,7 +7,7 @@ import { operatorAuth } from '../../auth.server'
 import { all, batch, bound, forbidden, invalid, newId, notFound, now } from '../db'
 import { auditStatement } from '../authorization/audit'
 import { isAdministrator } from '../authorization/levels'
-import { addPerson, changeBaseAccount, listPeople, removePerson, setPersonRole, updateSettings } from '../admin/settings'
+import { addPerson, changeBaseAccount, listPeople, setPersonRole, updateSettings } from '../admin/settings'
 import { teamEffective } from '../authorization/effective'
 import { loadTeam } from '../authorization/grants'
 import { addField, addSection, createProject, fieldLibrary, listProjects, mapSection, previewShare, updateProject } from '../workspace/projects'
@@ -48,8 +49,9 @@ export function workspaceRoutes(app: App) {
   app.post('/workspaces/:id/people', door(({ actor, db, params, input, invite }) => addPerson(db, actor, params.id, input, invite), { next: () => '/app/admin' }))
   app.patch('/workspaces/:id/people/:operator', door(({ actor, db, params, input }) => setPersonRole(db, actor, params.id, params.operator, input.role)))
   app.post('/workspaces/:id/people/:operator/role', door(({ actor, db, params, input }) => setPersonRole(db, actor, params.id, params.operator, input.role), { next: () => '/app/admin' }))
-  app.delete('/workspaces/:id/people/:operator', door(async ({ actor, db, params }) => { await removePerson(db, actor, params.id, params.operator) }))
-  app.post('/workspaces/:id/people/:operator/remove', door(async ({ actor, db, params }) => { await removePerson(db, actor, params.id, params.operator) }, { next: () => '/app/admin' }))
+  app.get('/workspaces/:id/people/:operator/removal-preview', door(({ actor, db, params }) => removalPreview(db, actor, params.operator)))
+  app.delete('/workspaces/:id/people/:operator', door(({ actor, db, params, input }) => removeReviewedPerson(db, actor, params.operator, input)))
+  app.post('/workspaces/:id/people/:operator/remove', door(({ actor, db, params, input }) => removeReviewedPerson(db, actor, params.operator, input), { next: () => '/app/admin' }))
   app.post('/workspaces/:id/people/:operator/account', door(({ actor, db, params, input, request, env }) => {
     const auth = operatorAuth(env)
     return changeBaseAccount(db, actor, params.id, params.operator, { role: input.role, status: input.status }, () => input.status ? auth.setOperatorStatus(request, params.operator, input.status) : auth.setRole(request, params.operator, input.role))

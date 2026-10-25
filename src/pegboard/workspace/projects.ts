@@ -1,3 +1,4 @@
+import { isRecoveryHidden } from '../recovery/visibility'
 import {define,definitions} from '../fields/definitions'
 // Projects: settings, sections, the field library, sharing with a preview, and the discovery of what a person can open.
 import { all, batch, bound, conflict, first, forbidden, invalid, newId, notFound, now } from '../db'
@@ -154,6 +155,7 @@ export async function listProjects(db: D1Database, actor: Actor, workspaceId: st
   const rows = await all<ProjectRow>(db, 'SELECT * FROM peg_projects WHERE workspace_id=? ORDER BY name', workspaceId)
   const out: ProjectListing[] = []
   for (const project of rows) {
+    if(await isRecoveryHidden(db,'project',project.id))continue
     const effective = await projectEffective(db, actor, project)
     if (effective.capabilities.has('read')) out.push({ id: project.id, name: project.name, description: project.description, level: effective.level, visibility: project.visibility, ownerId: project.owner_id })
   }

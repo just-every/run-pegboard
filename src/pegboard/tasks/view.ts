@@ -1,3 +1,4 @@
+import { isRecoveryHidden } from '../recovery/visibility'
 import {registerView} from '../register/records'
 import {taskFields} from '../fields/values'
 import {taskTags} from '../tags/tags'
@@ -28,7 +29,7 @@ export async function viewTask(db: D1Database, actor: Actor, idOrRef: string) {
   }
   const history = await historyOf(db, task.id, readable)
   const comments = await all<{ id: string; author_id: string; body: string; created_at: number }>(db, 'SELECT id,author_id,body,created_at FROM peg_comments WHERE task_id=? ORDER BY created_at', task.id)
-  const files = await all<{ id: string; project_id: string | null; name: string; content_type: string; size: number; created_by: string; created_at: number }>(db, 'SELECT id,project_id,name,content_type,size,created_by,created_at FROM peg_attachments WHERE task_id=? ORDER BY created_at', task.id)
+  const files = await all<{ id: string; project_id: string | null; name: string; content_type: string; size: number; created_by: string; created_at: number }>(db, `SELECT id,project_id,name,content_type,size,created_by,created_at FROM peg_attachments WHERE task_id=? AND NOT EXISTS(SELECT 1 FROM peg_proof_versions v JOIN peg_recovery r ON r.object_type='proof_version' AND r.object_id=v.id AND r.restored_at IS NULL WHERE v.attachment_id=peg_attachments.id) ORDER BY created_at`, task.id)
   const collaborators = (await all<{ operator_id: string }>(db, 'SELECT operator_id FROM peg_task_collaborators WHERE task_id=?', task.id)).map(row => row.operator_id)
   const subtasks = []
   for (const child of await all<TaskRow>(db, 'SELECT * FROM peg_tasks WHERE parent_id=? ORDER BY created_at', task.id)) {
@@ -91,6 +92,8 @@ export async function addAttachment(db: D1Database, actor: Actor, idOrRef: strin
 export async function readAttachment(db: D1Database, actor: Actor, id: string) {
   const file = await first<{ id: string; task_id: string; project_id: string | null; name: string; content_type: string; data: ArrayBuffer | number[] }>(db, 'SELECT * FROM peg_attachments WHERE id=?', id)
   if (!file) throw notFound()
+  const version=await first<{id:string}>(db,'SELECT id FROM peg_proof_versions WHERE attachment_id=?',id)
+  if(version&&await isRecoveryHidden(db,'proof_version',version.id))throw notFound()
   const { task, access } = await openTask(db, actor, file.task_id)
   if (file.project_id === null ? task.owner_id !== actor.id : !access.contexts.has(file.project_id)) throw notFound()
   return { name: file.name, contentType: file.content_type, bytes: file.data instanceof ArrayBuffer ? file.data : new Uint8Array(file.data).buffer }
