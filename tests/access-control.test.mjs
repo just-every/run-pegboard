@@ -329,7 +329,7 @@ describe('PEG-032 reviewed departure preserves work and revokes authority', {con
     assert.deepEqual(afterReview.credentials,{sessions:0,keys:0,links:0})
     assert.equal((await f.agent.get(`/api/v1/tasks/${f.task.id}`)).status,404,'delegated agent authority is revoked')
     assert.equal((await f.owner.get(`/api/v1/goals/${f.privateGoal.id}`)).status,404,'private goals remain private after explicit unassignment')
-    for(const id of [f.task.id,later.id,f.approval.id,f.stage.taskId])assert.equal((await ok(f.owner.get(`/api/v1/tasks/${id}`))).owner.id,f.owner.id)
+    for(const id of [f.task.id,f.child.id,later.id,f.approval.id,f.stage.taskId])assert.equal((await ok(f.owner.get(`/api/v1/tasks/${id}`))).owner.id,f.owner.id)
     assert.equal((await ok(f.owner.get(`/api/v1/goals/${f.goal.id}`))).goal.owner_id,f.owner.id)
     assert.equal((await ok(f.owner.get(`/api/v1/portfolios/${f.portfolio.id}`))).portfolio.owner,f.owner.name)
     const projects=await ok(f.owner.get('/api/v1/projects'))

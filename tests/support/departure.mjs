@@ -16,6 +16,7 @@ export async function createDepartureFixture({w,ok,suffix}) {
   const project=await ok(departing.post('/api/v1/projects',{name:`Departure project ${suffix}`}))
   await ok(departing.post('/api/v1/grants',{objectType:'project',objectId:project.id,granteeId:editor.id,level:'editor'}))
   const task=await ok(departing.post('/api/v1/tasks',{projectId:project.id,title:'Retain assigned work',ownerId:departing.id}))
+  const child=await ok(departing.post('/api/v1/tasks',{parentId:task.id,title:'Inherited shared production work'}))
   await ok(departing.post(`/api/v1/tasks/${task.id}/comments`,{body:'Original handover context'}))
   const approval=await ok(owner.post('/api/v1/tasks',{projectId:project.id,title:'Pending independent review',kind:'approval',ownerId:departing.id}))
   const decided=await ok(owner.post('/api/v1/tasks',{projectId:project.id,title:'Already reviewed work',kind:'approval',ownerId:editor.id}))
@@ -61,6 +62,6 @@ export async function createDepartureFixture({w,ok,suffix}) {
   const credential=await departing.post('/api/v1/analytics/keys',{name:'Departure analyst access',projects:[project.id],fields:{Tasks:['id','status']},expiresAt:Date.now()+86400000,consent:true})
   assert.equal(credential.status,200,'create departure analyst access')
   const readAnalytics=()=>owner.call('GET',credential.body.servicePath+'/Tasks',undefined,{authorization:'Bearer '+credential.body.secret,cookie:''})
-  return {owner,departing,editor,agent,privateGoal,team,engineering,meeting,risk,schedule,project,task,approval,decided,decidedBefore,personal,portfolio,goal,tag,recurrence,webhook,bundle,bundlePath,stage,queuedTask,readAnalytics,
+  return {owner,departing,editor,agent,privateGoal,team,engineering,meeting,risk,schedule,project,task,child,approval,decided,decidedBefore,personal,portfolio,goal,tag,recurrence,webhook,bundle,bundlePath,stage,queuedTask,readAnalytics,
     removalPath:`/api/v1/workspaces/ws_main/people/${departing.id}`}
 }
