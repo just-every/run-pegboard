@@ -2891,7 +2891,7 @@
       "executable": false
     },
     "tests/journeys/workflow-bundles.mjs": {
-      "sha256": "0098013f11307636cc9f4b26ad044cd3d460ead0ddddb9a4a081be3765c56fec",
+      "sha256": "45f512ec12f2eaf5542e94735fa00724f987a734b4a7709282261b894f217e2e",
       "executable": false
     },
     "tests/portfolios.test.mjs": {
