@@ -54,7 +54,7 @@ export const administers = async (db: D1Database, actor: Actor, workspaceId: str
 
 export async function displayNames(db: D1Database, ids: string[]): Promise<Map<string, string>> {
   const unique = [...new Set(ids.filter(Boolean))]
-  if (!unique.length) return new Map()
+  if (!unique.length) return new Map([['','Unassigned']])
   const rows = await all<{ id: string; display_name: string }>(db, `SELECT id,display_name FROM oa_operators WHERE id IN (${placeholders(unique)})`, ...(unique as Param[]))
-  return new Map(rows.map(row => [row.id, row.display_name]))
+  return new Map([['','Unassigned'], ...rows.map(row => [row.id, row.display_name] as [string,string])])
 }

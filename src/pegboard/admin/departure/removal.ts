@@ -20,7 +20,7 @@ export async function removalPreview(db: D1Database, actor: Actor, person: strin
   const credentials = await first<{ sessions: number; keys: number; links: number }>(db, `SELECT
     (SELECT count(*) FROM oa_sessions WHERE operator_id=? AND revoked_at IS NULL) sessions,
     (SELECT count(*) FROM oa_credentials WHERE operator_id=? AND revoked_at IS NULL)+(SELECT count(*) FROM peg_analytics_keys WHERE owner_id=? AND revoked_at IS NULL)+(SELECT count(*) FROM peg_goal_sources WHERE owner_id=? AND ended_at IS NULL) keys,
-    (SELECT count(*) FROM oa_tokens WHERE operator_id=? AND consumed_at IS NULL AND revoked_at IS NULL) links`, person,person,person,person,person)
+    (SELECT count(*) FROM oa_tokens WHERE (operator_id=? OR issuer_id=?) AND consumed_at IS NULL AND revoked_at IS NULL) links`, person,person,person,person,person,person)
   const replacements = await all<{ id: string; name: string }>(db,"SELECT id,display_name name FROM oa_operators WHERE status='active' AND role IN ('owner','admin') AND id<>? ORDER BY display_name",person)
   const token = await digest({ person, actor: actor.id, revision, affected, credentials })
   return { person: { id: person, name: subject.display_name, status: subject.status }, revision, affected, credentials: credentials!, replacements, token }
@@ -63,6 +63,10 @@ export async function removeReviewedPerson(db: D1Database, actor: Actor, person:
       bound(db,'UPDATE peg_meetings SET revoked_at=COALESCE(revoked_at,?) WHERE created_by=?',[at,person]),
       bound(db,'UPDATE peg_webhooks SET revoked_at=COALESCE(revoked_at,?) WHERE created_by=?',[at,person]),
       bound(db,"UPDATE peg_grants SET revoked_at=?,revoked_by=? WHERE revoked_at IS NULL AND (grantee_type='person' AND grantee_id=? OR created_by=? AND grantee_id IN(SELECT operator_id FROM peg_workspace_members WHERE role='agent'))",[at,actor.id,person,person]),
+      bound(db,"UPDATE oa_policy_approvals SET revoked_at=COALESCE(revoked_at,?),revoke_reason='member_departure' WHERE owner_id=?",[at,person]),
+      bound(db,"DELETE FROM peg_goal_audience WHERE grantee_type='person' AND grantee_id=?",[person]),
+      bound(db,'DELETE FROM peg_task_collaborators WHERE operator_id=?',[person]),
+      bound(db,'DELETE FROM oa_setup_links WHERE owner_id=? AND completed=0',[person]),
       bound(db,'DELETE FROM peg_portfolio_members WHERE operator_id=?',[person]),
       bound(db,'UPDATE peg_analytics_keys SET revoked_at=COALESCE(revoked_at,?) WHERE owner_id=?',[at,person]),
       bound(db,"UPDATE peg_goal_sources SET ended_at=COALESCE(ended_at,?),ended_cause=COALESCE(ended_cause,'member_departure') WHERE owner_id=?",[at,person]),

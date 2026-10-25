@@ -92,3 +92,9 @@ CREATE TRIGGER peg_departure_peg_personal_rules_delete AFTER DELETE ON peg_perso
 CREATE TRIGGER peg_departure_rer_dependency_pending_insert AFTER INSERT ON rer_dependency_pending BEGIN UPDATE peg_departure_revision SET value=value+1 WHERE id=1; END;
 CREATE TRIGGER peg_departure_rer_dependency_pending_update AFTER UPDATE ON rer_dependency_pending BEGIN UPDATE peg_departure_revision SET value=value+1 WHERE id=1; END;
 CREATE TRIGGER peg_departure_rer_dependency_pending_delete AFTER DELETE ON rer_dependency_pending BEGIN UPDATE peg_departure_revision SET value=value+1 WHERE id=1; END;
+CREATE TRIGGER peg_departure_oa_policy_approvals_insert AFTER INSERT ON oa_policy_approvals BEGIN UPDATE peg_departure_revision SET value=value+1 WHERE id=1; END;
+CREATE TRIGGER peg_departure_oa_policy_approvals_update AFTER UPDATE ON oa_policy_approvals BEGIN UPDATE peg_departure_revision SET value=value+1 WHERE id=1; END;
+CREATE TRIGGER peg_departure_oa_policy_approvals_delete AFTER DELETE ON oa_policy_approvals BEGIN UPDATE peg_departure_revision SET value=value+1 WHERE id=1; END;
+CREATE TRIGGER peg_departure_oa_setup_links_insert AFTER INSERT ON oa_setup_links BEGIN UPDATE peg_departure_revision SET value=value+1 WHERE id=1; END;
+CREATE TRIGGER peg_departure_oa_setup_links_update AFTER UPDATE ON oa_setup_links BEGIN UPDATE peg_departure_revision SET value=value+1 WHERE id=1; END;
+CREATE TRIGGER peg_departure_oa_setup_links_delete AFTER DELETE ON oa_setup_links BEGIN UPDATE peg_departure_revision SET value=value+1 WHERE id=1; END;

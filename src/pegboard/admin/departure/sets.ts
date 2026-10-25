@@ -24,6 +24,8 @@ export const sets = [
   { key: 'engineering', label: 'Engineering connector custody', table: 'peg_engineering_links', column: 'created_by', where: 'created_by=? AND revoked_at IS NULL', title: "'Engineering connection'", mode: 'stop' },
   { key: 'meetings', label: 'Meeting source custody', table: 'peg_meetings', column: 'created_by', where: 'created_by=? AND revoked_at IS NULL', title: "'Meeting source'", mode: 'stop' },
   { key: 'webhooks', label: 'Outbound webhook custody', table: 'peg_webhooks', column: 'created_by', where: 'created_by=? AND revoked_at IS NULL', title: "'Webhook'", mode: 'stop' },
+  { key: 'policyApprovals', label: 'Delegated policy authority', table: 'oa_policy_approvals', column: 'owner_id', where: 'owner_id=? AND revoked_at IS NULL', title: "'Approved native policy'", mode: 'stop' },
+  { key: 'setup', label: 'Pending connector consent', table: 'rer_dependency_pending', column: 'approved_by', where: 'approved_by=?', title: "'Pending connector setup'", mode: 'stop' },
   { key: 'agents', label: 'Delegated agent grants', table: 'peg_grants', column: 'created_by', where: "created_by=? AND revoked_at IS NULL AND grantee_id IN(SELECT operator_id FROM peg_workspace_members WHERE role='agent')", title: "'Delegated agent grant'", mode: 'stop' },
 ] as const
 export async function affectedSets(db: D1Database, person: string) {

@@ -13,7 +13,7 @@ export async function memberRemovalJourney({w,browser,sizes,ok}) {
   const proof=async name=>{
    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`${name} reflows at ${size}`)
    assert.equal(await page.locator('button,a').evaluateAll(els=>els.filter(e=>!e.textContent.trim()&&e.querySelector('svg,img')).length),0,'all controls have text labels')
-   if(process.env.PEGBOARD_PROOF_DIR){await mkdir(process.env.PEGBOARD_PROOF_DIR,{recursive:true});await page.screenshot({path:join(process.env.PEGBOARD_PROOF_DIR,`departure-${name}-${size}.png`),fullPage:true})}
+   if(process.env.PEGBOARD_PROOF_DIR){await mkdir(process.env.PEGBOARD_PROOF_DIR,{recursive:true});await page.screenshot({path:join(process.env.PEGBOARD_PROOF_DIR,`departure-${name}-${size}.jpg`),type:'jpeg',quality:65,fullPage:true})}
   }
   try {
    await page.goto(`${w.origin}/app/admin`);await proof('admin')
@@ -37,7 +37,7 @@ export async function memberRemovalJourney({w,browser,sizes,ok}) {
    await page.goto(`${w.origin}/app/tasks/${f.task.id}`);await expect(page.locator('main')).toContainText('Original handover context');await proof('transferred-task')
    await page.goto(`${w.origin}/app/projects/${f.project.id}`);await proof('transferred-project')
    await page.goto(`${w.origin}/app/tasks/${f.approval.id}`);await expect(page.locator('main')).toContainText('PENDING');await proof('pending-approval')
-   await page.goto(`${w.origin}/app/audit`);await proof('audit')
+   await page.goto(`${w.origin}/app/audit?action=person.departure&subject=${f.departing.id}`);await proof('audit')
   } finally {await context.close()}
   console.log(`Member removal at ${size}px passed`)
  }
