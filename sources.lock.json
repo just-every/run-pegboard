@@ -1223,7 +1223,7 @@
       "executable": false
     },
     "src/mail.server.mjs": {
-      "sha256": "09cd0230c5217bc2f71321db177173b88ba7b5d1c4047e8e265d3ff33900ccfe",
+      "sha256": "22bce70efb1ffd4ca49ce44ddd6818db8a0afbc8cf431032ba4e5b70827856bb",
       "executable": false
     },
     "src/modules/ai/client.mjs": {
