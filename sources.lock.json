@@ -2667,7 +2667,7 @@
       "executable": false
     },
     "tests/journeys/planning-canvas.mjs": {
-      "sha256": "db50e812687fc512f7c99ce07e9dafb2b94f4153ffd3516cde8581b2bb151965",
+      "sha256": "c900e0678d45fbe270447d607cd2ad27fcd8eaf2353b8cc8cb3723eee48f3364",
       "executable": false
     },
     "tests/journeys/work-graph.journey.mjs": {
@@ -2699,7 +2699,7 @@
       "executable": false
     },
     "tests/work-graph.test.mjs": {
-      "sha256": "002dabd9f089853c720aee1af36146bc8f86c957959f315a461c24b5ae58a12f",
+      "sha256": "2b9526f15476598bc394cccdb7e0a7959db94eee2a64e4bda63c152c6369fbcb",
       "executable": false
     },
     "tsconfig.json": {

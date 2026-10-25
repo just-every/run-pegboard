@@ -58,6 +58,12 @@ export async function planningCanvasJourney({w,browser,sizes,ok}) {
  }
  const restored=await restoreCanvasInstallation(w.owner)
  try{
+  const setup=await open(restored.worker.owner,sizes[0][1])
+  try{
+   await setup.page.goto(`${restored.worker.origin}/setup`)
+   await expect(setup.page.getByRole('heading',{name:'Finish setup',exact:true})).toBeVisible()
+   await setup.page.getByRole('checkbox').check();await setup.page.getByRole('button',{name:'Finish setup',exact:true}).click()
+  }finally{await setup.context.close()}
   for(const {project,phase,note,taskId,size,viewport} of saved){
    const own=await open(restored.worker.owner,viewport)
    try{

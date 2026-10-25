@@ -1787,6 +1787,9 @@ describe('Project planning canvas', {concurrency:false},()=>{
   assert.equal((await guestEditor.post(path()+`/nodes/${privateNote}/update`,{version:1,title:'Cannot overwrite'})).status,404)
   assert.equal((await guestEditor.post(path()+'/nodes',{title:'Internal injection',internalOnly:true})).status,403)
   const guestExport=await pass(guestEditor.get(path()+'/export'));assert.ok(!JSON.stringify(guestExport).includes(privateNote));assert.ok(guestExport.nodes.some(n=>n.id===visible.id))
+  await pass(chief.patch('/api/v1/workspaces/ws_main/settings',{exportMinLevel:'admin'}))
+  assert.equal((await guestEditor.get(path()+'/export')).status,403)
+  assert.equal((await pass(guestEditor.get(path()))).canExport,false)
   const stranger=await server.person('synthetic-pegboard-1103@example.com','Unshared member');assert.equal((await stranger.get(path())).status,404)
  },{timeout:120000})
  it('restores exported canvas relationships and native task identity through the installation archive',async()=>{
