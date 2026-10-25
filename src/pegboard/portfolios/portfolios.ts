@@ -1,3 +1,4 @@
+import {citationStatements} from '../register/citations'
 // Portfolios: nested groups of projects. A portfolio gives its members a view of rollups, never a way into a project: what a
 // person sees through it is exactly what their own project and task access already lets them read.
 import { all, batch, bound, conflict, first, forbidden, invalid, newId, notFound, now } from '../db'
@@ -129,7 +130,7 @@ export async function setPolicy(db: D1Database, actor: Actor, id: string, input:
 
 export const healths = ['on_track', 'at_risk', 'off_track'] as const
 /** A person publishes a status for a project they administer or a portfolio they administer; agents never do. */
-export async function publishStatus(db: D1Database, actor: Actor, input: { subjectType: string; subjectId: string; health: string; summary: string }) {
+export async function publishStatus(db: D1Database, actor: Actor, input: { subjectType: string; subjectId: string; health: string; summary: string; recordIds?: unknown }) {
   if (!healths.includes(input.health as typeof healths[number])) throw invalid('health')
   const summary = text(input.summary, 4000, 'summary')
   let workspaceId: string
@@ -143,9 +144,9 @@ export async function publishStatus(db: D1Database, actor: Actor, input: { subje
   } else if (input.subjectType === 'portfolio') workspaceId = (await manage(db, actor, input.subjectId)).workspace_id
   else throw invalid('subject')
   if (await workspaceRole(db, actor.id, workspaceId) === 'agent') throw forbidden('human_publisher')
-  const id = newId('status'), at = now()
+  const id = newId('status'), at = now(), citations=await citationStatements(db,actor,id,input.subjectType,input.subjectId,input.recordIds)
   await batch(db, [bound(db, 'INSERT INTO peg_status_updates(id,workspace_id,subject_type,subject_id,health,summary,author_id,published_at) VALUES (?,?,?,?,?,?,?,?)', [id, workspaceId, input.subjectType, input.subjectId, input.health, summary, actor.id, at]),
-    auditStatement(db, { workspaceId, actorId: actor.id, action: 'status.published', targetType: input.subjectType, targetId: input.subjectId, detail: { health: input.health } })])
+    ...citations, auditStatement(db, { workspaceId, actorId: actor.id, action: 'status.published', targetType: input.subjectType, targetId: input.subjectId, detail: { health: input.health } })])
   return { id, subjectType: input.subjectType, subjectId: input.subjectId, health: input.health, publishedAt: at }
 }
 

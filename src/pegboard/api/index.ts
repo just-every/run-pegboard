@@ -1,3 +1,4 @@
+import { registerRoutes } from './register-routes'
 import { canvasRoutes } from './canvas-routes'
 import { portfolioRoutes } from './portfolio-routes'
 import { scheduleRoutes } from './schedule-routes'
@@ -45,3 +46,5 @@ canvasRoutes(pegboardApi)
 portfolioRoutes(pegboardApi)
 
 scheduleRoutes(pegboardApi)
+
+registerRoutes(pegboardApi)

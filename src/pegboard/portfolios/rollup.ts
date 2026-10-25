@@ -1,3 +1,5 @@
+import {recordCitations} from '../register/citations'
+import {registerView} from '../register/records'
 // A portfolio read as one person may read it. Every figure is computed from the projects and tasks that person can already
 // open, so totals never include hidden work and a hidden project leaves no name, count or gap. A task hung in several
 // projects is counted once in every total above them.
@@ -122,7 +124,7 @@ export async function portfolioRollup(db: D1Database, actor: Actor, id: string, 
     id: p.id, name: p.name, summary: summarize(projectIdsOf(p, portfolios)), manual: await manual('portfolio', p.id),
     children: await Promise.all(portfolios.filter(q => q.parent_id === p.id).map(tree)),
   })
-  const manual = async (type: string, subject: string) => { const s = await latestStatus(db, type, subject, evaluatedAt); return s ? { id: s.id, health: s.health, summary: s.summary, author: (await displayNames(db, [s.author_id])).get(s.author_id) ?? 'Former member', publishedAt: s.published_at } : null }
+  const manual = async (type: string, subject: string) => { const s = await latestStatus(db, type, subject, evaluatedAt); return s ? { id: s.id, citations:await recordCitations(db,actor,s.id), health: s.health, summary: s.summary, author: (await displayNames(db, [s.author_id])).get(s.author_id) ?? 'Former member', publishedAt: s.published_at } : null }
 
   const names = new Map(portfolios.map(p => [p.id, p.name]))
   const projectRows = await Promise.all([...projects.keys()].map(async projectId => {
@@ -159,6 +161,7 @@ export async function portfolioRollup(db: D1Database, actor: Actor, id: string, 
     portfolio: { id: portfolio.id, name: portfolio.name, description: portfolio.description, owner: owners.get(portfolio.owner_id) ?? (await displayNames(db, [portfolio.owner_id])).get(portfolio.owner_id) ?? 'Former member', level, ancestors },
     evaluatedAt, policy: { version: policyVersion.version, ...policy, changedAt: policyVersion.changedAt }, history: level === 'admin' ? await policyHistory(db, portfolio.id) : [],
     manual: await manual('portfolio', portfolio.id), summary: summarize(projectIdsOf(portfolio, portfolios)), nested: await tree(portfolio), projects: projectRows,
+    deliveryRecords:(await Promise.all([...projects.keys()].map(async id=>(await registerView(db,actor,id)).records.map(r=>({id:r.id,title:r.title}))))).flat(),
     tabs, filters: saved, filter: chosen ?? null, tasks: [...info.values()].sort((a, b) => a.title.localeCompare(b.title)).map(t => taskRow(t, nameOf)),
   }
 }

@@ -1,3 +1,4 @@
+import {registerView} from '../register/records'
 import {taskFields} from '../fields/values'
 import {taskTags} from '../tags/tags'
 // What a person sees of a task: its own shared record, and of each project it hangs in only the ones they may read,
@@ -41,6 +42,7 @@ export async function viewTask(db: D1Database, actor: Actor, idOrRef: string) {
     status: task.status, priority: task.priority, startDate: task.start_date, dueDate: task.due_date, estimateHours: task.estimate_hours,
     owner: { id: task.owner_id, name: name(task.owner_id) }, collaborators: collaborators.map(id => ({ id, name: name(id) })), personal: access.personal,
     ...(internal ? { internalOnly: !!task.internal_only, internalNotes: task.internal_notes } : {}),
+    deliveryRecords:(await Promise.all(projects.map(async p=>(await registerView(db,actor,p.id)).records.filter(r=>r.task_id===task.id).map(r=>({id:r.id,title:r.title,link:`/app/projects/${p.id}/register#${r.id}`}))))).flat(),
     tags:await taskTags(db,actor,task.id), capabilities: [...access.capabilities], level: access.level, projects, subtasks,
     meetingCitations: await all<{meetingId:string;segmentIndex:number}>(db,`SELECT m.id AS meetingId,p.segment_index AS segmentIndex FROM peg_meeting_proposals p JOIN peg_meetings m ON m.id=p.meeting_id JOIN oa_operators o ON o.id=m.created_by WHERE p.task_id=? AND m.created_by=? AND m.revoked_at IS NULL AND o.status='active' AND o.role IN ('owner','admin')`,task.id,actor.id),
     history: history.filter(entry => internal || entry.kind !== 'internal.changed').map(entry => ({ id: entry.id, at: entry.at, actor: name(entry.actor_id), kind: entry.kind, projectId: entry.project_id, detail: entry.kind==='fields.changed'?{}:shareHistory(entry.detail, readable) })),
