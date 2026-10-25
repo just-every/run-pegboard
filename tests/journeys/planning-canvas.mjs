@@ -48,7 +48,7 @@ export async function planningCanvasJourney({w,browser,sizes,ok}) {
    const card=own.page.locator(`[data-canvas-node="${note.id}"]`).first();await expect(card.locator('[data-canvas-select]').first()).toHaveText('Launch brief ready for review');await expect(card.locator('[data-canvas-detail]').first()).toContainText('doing');await expect(card.locator('[data-canvas-detail]').first()).toContainText('Mia Alvarez');await proof(own.page,'live-task',size)
    assert.equal(ok(await owner.get(`/api/v1/projects/${project.id}`)).columns.flatMap(c=>c.tasks).filter(t=>t.id===taskId).length,1)
    await client.page.goto(here);await expect(client.page.locator('[data-canvas-map]')).toContainText('Launch brief ready for review');assert.ok(!(await client.page.content()).includes('Internal supplier margin'));assert.ok(!(await client.page.content()).includes(secret.id));await proof(client.page,'guest',size)
-   const guestView=ok(await guest.get(api));assert.ok(!JSON.stringify(guestView).includes(secret.id));assert.equal((await guest.get(api+'/export')).status,403)
+   const guestView=ok(await guest.get(api));assert.ok(!JSON.stringify(guestView).includes(secret.id));const guestExport=ok(await guest.get(api+'/export'));assert.ok(!JSON.stringify(guestExport).includes(secret.id));assert.ok(guestExport.nodes.some(n=>n.id===note.id))
    await own.page.goto(here+`?node=${note.id}`);await proof(own.page,'task-placement',size)
    ok(await owner.delete(`/api/v1/grants/${grant.id}`));await expect(client.page.locator('[data-canvas-project]')).toContainText('Private content has been cleared');await expect(client.page.locator('[data-canvas-map]')).toHaveCount(0);await proof(client.page,'revoked',size)
    saved.push({project,phase,note,taskId,size,viewport})
