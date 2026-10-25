@@ -18,7 +18,7 @@
     "setup": "rer setup",
     "deploy": "rer deploy",
     "test:runtime": "rer queue test:runtime -- sh -c \"node tests/runtime.mjs\"",
-    "test:graph": "rer queue test:graph -- sh -c \"node --test tests/work-graph.test.mjs tests/access-control.test.mjs tests/portfolios.test.mjs\"",
+    "test:graph": "rer queue test:graph -- sh -c \"node --test tests/work-graph.test.mjs tests/access-control.test.mjs tests/portfolios.test.mjs tests/schedule.test.mjs\"",
     "test:journeys": "rer queue test:journeys -- sh -c \"node tests/journeys/work-graph.journey.mjs\"",
     "onboard": "node scripts/install.mjs",
     "build:app": "rer queue build:app -- sh -c \"vite build\"",

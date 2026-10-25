@@ -1,5 +1,8 @@
 import {CanvasPage} from './canvas/page'
 import {PortfoliosPage} from './pages/portfolios'
+import {TimelinePage} from './pages/timeline'
+import {scheduleView} from '../schedule/timeline'
+import {moveInput,planChange} from '../schedule/plan'
 import {PortfolioPage} from './pages/portfolio'
 import {listPortfolios} from '../portfolios/portfolios'
 import {portfolioRollup,portfolioDrill} from '../portfolios/rollup'
@@ -107,6 +110,17 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
       try{view=await portfolioRollup(db,actor,id,{at,filterId})}catch(error){if(error instanceof PegError&&error.status===404)return refuse(db,actor,viewer,id);throw error}
       const admin=view.portfolio.level==='admin',tab=url.searchParams.get('tab')??'summary'
       return page('Portfolio',h(PortfolioPage,{viewer,view,tab:['summary','timeline','workload','dashboard'].includes(tab)?tab:'summary',atInput,projectOptions:admin?(await listProjects(db,actor,workspace)).map(p=>({value:p.id,label:p.name})):[],people:admin?await peopleOptions(db,actor,workspace):[],drill:drillMetric?await portfolioDrill(db,actor,id,{metric:drillMetric,at}):null}))
+    }
+    if(section==='projects'&&id&&tail==='timeline'&&segments.length===4){
+      const input=Object.fromEntries(url.searchParams) as Record<string,string>
+      let view
+      try{view=await scheduleView(db,actor,id,{baselineId:input.baseline||undefined})}catch(error){if(error instanceof PegError&&error.status===404)return refuse(db,actor,viewer,id);throw error}
+      let preview=null
+      if(input.taskId&&(input.start||input.due)){
+        const move={taskId:input.taskId,...(input.start?{start:input.start}:{}),...(input.due?{due:input.due}:{})}
+        try{const{all:_,...plan}=await planChange(db,actor,moveInput([move]));preview={plan,move}}catch(error){if(error instanceof PegError)preview={error:error.code};else throw error}
+      }
+      return page('Timeline',h(TimelinePage,{viewer,view,preview,input,people:await peopleOptions(db,actor,workspace)}))
     }
     if(section==='projects'&&id&&tail==='canvas'&&segments.length===4){
       const response=await page('Planning canvas',h(CanvasPage,{viewer,data:await canvasView(db,actor,id),selected:url.searchParams.get('node')}))

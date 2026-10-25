@@ -25,7 +25,7 @@ export function ProjectPage({ viewer, data, id }: { viewer: Viewer; data: Board;
     <AppBar viewer={viewer} tabs={homeTabs(viewer, '/app/projects')} crumbs={[{ label: 'Projects', href: '/app/projects' }, { label: data.project.name, href: `/app/projects/${id}`, current: true }]} />
     <main className="board" id="main">
       <Heading title={data.project.name} chip={<Flap text={data.counts.tasks && data.counts.done === data.counts.tasks ? 'DONE' : `${data.counts.tasks} TASKS`} tone={data.counts.tasks && data.counts.done === data.counts.tasks ? 'landed' : 'quiet'} />} facts={[`${data.counts.tasks} tasks`, `${data.counts.done} done`, `Owner ${data.project.owner.name}`, `Your access ${levelLabel(data.level)}`, ...(data.project.prefix ? [`References ${data.project.prefix}-n`] : [])]} />
-      <nav className="page" aria-label="Project planning"><p><a href={`/app/projects/${id}?view=list`}>List</a> · <a href={`/app/projects/${id}/canvas`}>Planning canvas</a></p></nav>
+      <nav className="page" aria-label="Project planning"><p><a href={`/app/projects/${id}?view=list`}>List</a> · <a href={`/app/projects/${id}/canvas`}>Planning canvas</a> · <a href={`/app/projects/${id}/timeline`}>Timeline</a></p></nav>
       <PathWall label={`${data.project.name}, by section`} rows={chunk(stations, 4)}>
         {(can('edit') || can('manage_settings')) && <div className="page projectbar">
           {can('edit') && <Card title="Add a task">
