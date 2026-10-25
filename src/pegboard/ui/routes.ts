@@ -1,4 +1,8 @@
 import {CanvasPage} from './canvas/page'
+import {PortfoliosPage} from './pages/portfolios'
+import {PortfolioPage} from './pages/portfolio'
+import {listPortfolios} from '../portfolios/portfolios'
+import {portfolioRollup,portfolioDrill} from '../portfolios/rollup'
 import {canvasView} from '../canvas/nodes'
 import {ProjectListPage} from './pages/project-list'
 import {MeetingPage} from './meeting-review/page'
@@ -96,6 +100,14 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
   const { viewer, workspace } = await context(db, actor, session.operator.role)
   const [, section, id, tail] = segments
   try {
+    if(section==='portfolios'&&!id){const role=await workspaceRole(db,actor.id,workspace);return page('Portfolios',h(PortfoliosPage,{viewer,workspace,query:url.searchParams.get('q')??'',portfolios:await listPortfolios(db,actor,workspace,url.searchParams.get('q')??''),canCreate:['owner','admin','manager','member'].includes(role??'')}))}
+    if(section==='portfolios'&&id&&!tail){
+      const atInput=url.searchParams.get('at'),at=atInput?Date.parse(atInput.length===16?atInput+':00Z':atInput):undefined,filterId=url.searchParams.get('filter')||undefined,drillMetric=url.searchParams.get('drill')
+      let view
+      try{view=await portfolioRollup(db,actor,id,{at,filterId})}catch(error){if(error instanceof PegError&&error.status===404)return refuse(db,actor,viewer,id);throw error}
+      const admin=view.portfolio.level==='admin',tab=url.searchParams.get('tab')??'summary'
+      return page('Portfolio',h(PortfolioPage,{viewer,view,tab:['summary','timeline','workload','dashboard'].includes(tab)?tab:'summary',atInput,projectOptions:admin?(await listProjects(db,actor,workspace)).map(p=>({value:p.id,label:p.name})):[],people:admin?await peopleOptions(db,actor,workspace):[],drill:drillMetric?await portfolioDrill(db,actor,id,{metric:drillMetric,at}):null}))
+    }
     if(section==='projects'&&id&&tail==='canvas'&&segments.length===4){
       const response=await page('Planning canvas',h(CanvasPage,{viewer,data:await canvasView(db,actor,id),selected:url.searchParams.get('node')}))
       const headers=new Headers(response.headers)

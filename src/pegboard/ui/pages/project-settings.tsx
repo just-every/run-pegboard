@@ -23,6 +23,11 @@ export function ProjectSettingsPage({ viewer, id, data, grants, people, teams, p
     <Card title="How you have access">
       <ul className="rows">{data.paths.length ? data.paths.map((path, i) => <li key={i}><span className="grow">{path.via}</span><span className="tagline">{levelLabel(path.level)}</span>{path.scope !== 'full' && <span className="tagline">{path.scope === 'approve' ? 'Approve only' : 'Assigned tasks'}</span>}</li>) : <li>No grant gives you access.</li>}</ul>
     </Card>
+    {can('manage_settings') && <Card title="Publish a status">
+      <Form action="/api/v1/status-updates" next={back} label="Publish project status"><input type="hidden" name="subjectType" value="project" /><input type="hidden" name="subjectId" value={id} />
+        <Pick label="Health" name="health" options={[{ value: 'on_track', label: 'On track' }, { value: 'at_risk', label: 'At risk' }, { value: 'off_track', label: 'Off track' }]} /><Area label="Status summary" name="summary" />
+        <p className="muted">A published status is your own statement; portfolios show it beside what the work computes and never replace one with the other.</p><Submit>Publish status</Submit></Form>
+    </Card>}
     {can('manage_settings') && <Card title="Details">
       <Form action={`/api/v1/projects/${id}/settings`} next={back} label="Project details">
         <Field label="Name" name="name" value={project.name} required /><Area label="Description" name="description" value={project.description} />

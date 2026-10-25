@@ -25,6 +25,7 @@ export const homeTabs = (viewer: Viewer, current = '/app'): Tab[] => [
   { label: 'Home', href: '/app' },
   { label: 'Projects', href: '/app/projects' },
   { label: 'My tasks', href: '/app/my-tasks' },
+  { label: 'Portfolios', href: '/app/portfolios' },
   { label: 'Goals', href: '/app/goals' },
   { label: 'Recurring work', href: '/app/recurrences' },
   { label: 'Teams', href: '/app/teams' },

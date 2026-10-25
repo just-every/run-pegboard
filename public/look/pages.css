@@ -29,6 +29,9 @@
 .page code{font:500 14px/1.3 ui-monospace,Menlo,monospace;word-break:break-all}
 .page .history li{font-size:15px}
 .page .notice{border-left:6px solid var(--tomato);padding-left:18px}
+ul.plain{margin:6px 0 0;padding-left:18px}
+.track{display:block;flex:1 1 140px;min-width:90px;height:10px;border-radius:5px;background:var(--azure-l);overflow:hidden}
+.track .fill{display:block;height:100%;background:var(--azure)}
 @media (max-width:1023px){
   .page{padding:22px 16px 56px}
   .panel{padding:20px 18px 18px}
