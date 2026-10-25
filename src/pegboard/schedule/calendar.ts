@@ -85,3 +85,15 @@ export function writeStamp(stamp: Stamp, zone = workspaceZone): string {
   if (stamp.wallMs === null) return dayString(stamp.day)
   return new Date(instantOf(dayString(stamp.day), stamp.wallMs, zone)).toISOString().replace('.000Z', 'Z')
 }
+/** The federal holidays that fall on days a shift crossed, between two day numbers (exclusive of the start). */
+export function holidaysBetween(from: number, to: number): { date: string; name: string }[] {
+  const out: { date: string; name: string }[] = []
+  for (let day = Math.min(from, to) + 1; day <= Math.max(from, to); day++) { const name = holidayName(dayString(day)); if (name) out.push({ date: dayString(day), name }) }
+  return out
+}
+/** Whether the zone's UTC offset differs between two timed stamps: the shift crossed a daylight-saving change. */
+export function dstChange(a: Stamp, b: Stamp, zone = workspaceZone): boolean {
+  if (a.wallMs === null || b.wallMs === null) return false
+  const offset = (s: Stamp) => instantOf(dayString(s.day), s.wallMs!, zone) - (s.day * DAY + s.wallMs!)
+  return offset(a) !== offset(b)
+}
