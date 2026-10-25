@@ -1,3 +1,5 @@
+import {briefView} from '../revisions/briefs'
+import {BriefPage} from './pages/brief'
 import { recoveryList,recoveryPreview } from '../recovery'
 import { RecoveryPage } from './pages/recovery'
 import { removalPreview } from '../admin/departure/removal'
@@ -113,6 +115,7 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
   const { viewer, workspace } = await context(db, actor, session.operator.role)
   const [, section, id, tail] = segments
   try {
+    if(section==='projects'&&id&&tail==='brief')return page('Project brief',h(BriefPage,{viewer,view:await briefView(db,actor,id,Object.fromEntries(url.searchParams))}))
     if(section==='recovery'&&!id)return page('Archive and trash',h(RecoveryPage,{viewer,listing:await recoveryList(db,actor,workspace),preview:url.searchParams.has('id')?await recoveryPreview(db,actor,workspace,Object.fromEntries(url.searchParams)):url.searchParams.get('target')?await recoveryPreview(db,actor,workspace,(()=>{const [type,id]=url.searchParams.get('target')!.split('.');return {type,id,action:type==='project'?'archive':'trash'}})()):null}))
     if(section==='workflow-bundles'&&!tail){return page('Workflow bundles',h(BundlesPage,{viewer,bundles:id?[]:await listBundles(db,actor,workspace),view:id?await bundleView(db,actor,id):null,projects:(await listProjects(db,actor,workspace)).filter(p=>p.level==='admin').map(p=>({value:p.id,label:p.name})),fields:(await catalogue(db,actor,workspace)).map(f=>({value:f.id,label:f.label})),people:await peopleOptions(db,actor,workspace),preview:id&&url.searchParams.getAll('projectIds[]').length?await previewBundle(db,actor,id,{projectIds:url.searchParams.getAll('projectIds[]')}):null}))}
     if(section==='portfolios'&&!id){const role=await workspaceRole(db,actor.id,workspace);return page('Portfolios',h(PortfoliosPage,{viewer,workspace,query:url.searchParams.get('q')??'',portfolios:await listPortfolios(db,actor,workspace,url.searchParams.get('q')??''),canCreate:['owner','admin','manager','member'].includes(role??'')}))}

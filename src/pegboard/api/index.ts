@@ -1,3 +1,4 @@
+import {briefRoutes} from './brief-routes'
 import { recoveryRoutes } from './recovery-routes'
 import {bundleRoutes} from './bundle-routes'
 import { registerRoutes } from './register-routes'
@@ -54,3 +55,5 @@ registerRoutes(pegboardApi)
 bundleRoutes(pegboardApi)
 
 recoveryRoutes(pegboardApi)
+
+briefRoutes(pegboardApi)

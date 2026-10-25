@@ -2215,7 +2215,7 @@
       "executable": false
     },
     "src/pegboard/api/index.ts": {
-      "sha256": "fe286d2c65dfe60462e975ceb22c6da2f828b9a601c0ed596d89b51df110ebde",
+      "sha256": "8ffc459e8ec448d494d67d8f040d7e8cd6f54e9fa57fb5b131fdaae6ff54df5b",
       "executable": false
     },
     "src/pegboard/api/meeting-routes.ts": {
@@ -2587,7 +2587,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/project-settings.tsx": {
-      "sha256": "02fd4596fb7aaf657a87aef28ca6f1067a3962fd62b81cd25cf94a391dcfb2b0",
+      "sha256": "f3674034970081ff88ec3206d4f294d2d48a6c0ec82386214adc3c22721d73d6",
       "executable": false
     },
     "src/pegboard/ui/pages/project.tsx": {
@@ -2647,7 +2647,7 @@
       "executable": false
     },
     "src/pegboard/ui/routes.ts": {
-      "sha256": "955af9e2c2b36759d964555f0071113c23d743927c7ff4cccac510e5d47a8fbc",
+      "sha256": "8d3cc4a76bf925837c21acbc2d7e42f49bc01b2efb2e4afff7b91a012c2b8938",
       "executable": false
     },
     "src/pegboard/ui/shell.tsx": {
@@ -2847,7 +2847,7 @@
       "executable": false
     },
     "tests/journeys/recovery.mjs": {
-      "sha256": "aa8c5e56d83cd95a1697d47c96acdfcf63fbab86f1ecae46df9c93dcc046f6c4",
+      "sha256": "bdf70811425f38a7c1ca82f59802addccc41b1e1b49f8e2c878c6522f461985c",
       "executable": false
     },
     "tests/journeys/timeline.mjs": {
@@ -2899,7 +2899,7 @@
       "executable": false
     },
     "tests/work-graph.test.mjs": {
-      "sha256": "8525c3d73c19c8b57cd15e93099e744333a31040a855864e58d70ea50d24e4f9",
+      "sha256": "44df91831d00820e8abfe381c286486914176f6b0c26da8ec450766d5f024b87",
       "executable": false
     },
     "tsconfig.json": {

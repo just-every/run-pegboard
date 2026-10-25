@@ -20,7 +20,7 @@ export function ProjectSettingsPage({ viewer, id, data, grants, people, teams, p
   const project = data.project
   return <Shell viewer={viewer} current="/app/projects" title={`${project.name}: settings`} chip={levelLabel(data.level).toUpperCase()} facts={[`Your access ${levelLabel(data.level)}`, visibilityLabel(project.visibility)]}
     crumbs={[{ label: 'Projects', href: '/app/projects' }, { label: project.name, href: `/app/projects/${id}` }, { label: 'Settings', href: back, current: true }]}>
-    {can('manage_settings')&&<Card title="Recovery"><a className="button quiet" href={`/app/recovery?type=project&id=${project.id}&action=archive`}>Review archive</a></Card>}
+    {can('manage_settings')&&<Card title="Recovery"><a className="button quiet" href={`/app/recovery?type=project&id=${project.id}&action=archive`}>Review archive</a> <a className="button quiet" href={`/app/projects/${project.id}/brief`}>Project brief</a></Card>}
     {['owner','admin'].includes(viewer.role)&&<Card title="Workflow configuration"><a href="/app/workflow-bundles">Reusable workflow bundles</a></Card>}
     <Card title="How you have access">
       <ul className="rows">{data.paths.length ? data.paths.map((path, i) => <li key={i}><span className="grow">{path.via}</span><span className="tagline">{levelLabel(path.level)}</span>{path.scope !== 'full' && <span className="tagline">{path.scope === 'approve' ? 'Approve only' : 'Assigned tasks'}</span>}</li>) : <li>No grant gives you access.</li>}</ul>

@@ -1863,6 +1863,20 @@ describe('PEG-064 retained graph recovery', {concurrency:false},()=>{
   assert.equal(restoredProof.versions.find(version=>version.id===proof.versionId).digest,proof.digest)
   assert.equal(await pass(chief.get(`/api/v1/attachments/${file.id}`)),byteBefore)
 
+  const firstBrief=await pass(chief.post(`/api/v1/projects/${p.id}/brief`,{version:0,text:'Original production brief'}))
+  await pass(member.post(`/api/v1/projects/${p.id}/brief`,{version:firstBrief.version,text:'Revised production brief'}))
+  const comparison=await pass(chief.get(`/api/v1/projects/${p.id}/brief?fromVersion=1&toVersion=2`))
+  assert.equal(comparison.comparison.from.text,'Original production brief');assert.equal(comparison.comparison.to.text,'Revised production brief')
+  assert.equal((await outsider.post(`/api/v1/projects/${p.id}/brief/restore`,{version:2,fromVersion:1})).status,404)
+  assert.equal((await chief.post(`/api/v1/projects/${p.id}/brief/restore`,{version:1,fromVersion:1})).status,409)
+  const restoredBrief=await pass(chief.post(`/api/v1/projects/${p.id}/brief/restore`,{version:2,fromVersion:1}))
+  assert.equal(restoredBrief.text,'Original production brief');assert.equal((await pass(chief.get(`/api/v1/projects/${p.id}/brief`))).versions.length,3)
+  assert.equal((await pass(chief.get(`/api/v1/tasks/${independent.id}`))).description,'Later independent human edit')
+  const erasedProject=await pass(chief.post('/api/v1/projects',{name:'Brief erasure project'}))
+  await pass(chief.post(`/api/v1/projects/${erasedProject.id}/brief`,{version:0,text:'synthetic-pegboard-brief-erasure-1'}))
+  const eraseProject=await pass(chief.post('/api/v1/data/erasure-preview',{type:'project',id:erasedProject.id}))
+  await pass(chief.post('/api/v1/data/erase',{type:'project',id:erasedProject.id,token:eraseProject.token,confirm:true}))
+  assert.equal((await chief.get(`/api/v1/projects/${erasedProject.id}/brief`)).status,404)
   const marker='Recovery erased payload must never travel in metadata'
   const erased=await pass(chief.post('/api/v1/tasks',{projectId:p.id,title:'Reviewed irreversible removal',description:marker}))
   await apply({type:'task',id:erased.id,action:'trash'})
@@ -1880,5 +1894,6 @@ describe('PEG-064 retained graph recovery', {concurrency:false},()=>{
   }
   assert.equal(typeof archive,'string','the public archive export completes')
   assert.ok(!archive.includes(marker),'recovery metadata cannot retain an erased content snapshot')
+  assert.ok(!archive.includes('synthetic-pegboard-brief-erasure-1'),'project erasure removes every brief revision from archives')
  })
 })
