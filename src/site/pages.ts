@@ -18,6 +18,11 @@ export function sitePages({ contract }: Partial<SiteContext> = {}): SiteBuild {
       ...(contract ? [{ path: '/contract', html: contractPageHtml(identity, data, contract) }] : []),
       { path: '/404', html: siteNotFoundHtml(identity, data, contract) },
     ],
-    assets: ['rer-theme.css', 'fonts', 'brand', 'look', 'landing', 'favicon.ico', 'docs.css', 'docs.js'],
+    assets: [
+      'rer-theme.css', 'fonts', 'brand',
+      'look/tokens.css', 'look/parts.css', 'look/cords.js',
+      'look/lobby.css', 'look/controls.css', 'look/frames.css',
+      'landing', 'favicon.ico', 'docs.css', 'docs.js',
+    ],
   }
 }
