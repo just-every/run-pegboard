@@ -843,7 +843,7 @@
       "executable": false
     },
     "public/look/canvas.css": {
-      "sha256": "6829655630d8cd8888a26a3e94075a264a96603fa33bc0f04d75499d6202defa",
+      "sha256": "80cebaa43bb55cb93c1fb597214cd54927901e568416db355ec7945354af3576",
       "executable": false
     },
     "public/look/canvas.js": {
@@ -2375,7 +2375,7 @@
       "executable": false
     },
     "src/pegboard/ui/canvas/page.tsx": {
-      "sha256": "26755b7c74037e32c73f0437069be6c51878f24de1f6d2ede52b2734635468b4",
+      "sha256": "ae434f517f8051aae4dd54e564fdc89d909a513b478fc848e804443080ee8457",
       "executable": false
     },
     "src/pegboard/ui/engineering-handoff/page.tsx": {

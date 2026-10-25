@@ -19,7 +19,6 @@
 .canvas-node a:focus-visible{outline:3px solid var(--azure);outline-offset:4px;border-radius:2px}
 .canvas-node-detail{margin:10px 0 0;color:var(--grey);font:400 14px/1.5 var(--sans);overflow-wrap:anywhere}
 .canvas-node[data-kind=phase] .canvas-node-detail{color:var(--phase-ink)}
-.canvas-node[data-kind=phase]{border-top:4px solid var(--pink)}
 .canvas-task-link{display:inline-block;margin-top:12px;font-size:14px;color:var(--azure-ink);min-height:24px;overflow-wrap:anywhere;max-width:100%}
 .canvas-workspace [hidden]{display:none!important}
 .canvas-form-fields{display:grid;gap:14px;border:0;padding:0;margin:0;min-width:0}

@@ -109,7 +109,7 @@ export function CanvasPage({ viewer, data, selected }: { viewer: Viewer; data: C
           </Form>
         </Card>
       </div>}
-      <details><summary>Export and restore</summary><p>Canvas JSON is a portable planning export. Restore a complete installation through the native installation archive workflow.</p></details>
+      <details><summary>Export and restore</summary><p>Canvas JSON is a snapshot for inspection. Restore the saved canvas through the native installation archive workflow.</p></details>
     </div>
   </Shell>
 }
