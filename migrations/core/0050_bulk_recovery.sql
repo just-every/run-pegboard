@@ -22,6 +22,9 @@ CREATE TRIGGER peg_bulk_history_delete_revision AFTER DELETE ON peg_history BEGI
 CREATE TRIGGER peg_bulk_operations_immutable BEFORE UPDATE ON peg_bulk_operations BEGIN SELECT RAISE(ABORT,'immutable_bulk_operation'); END;
 CREATE TRIGGER peg_bulk_operations_no_delete BEFORE DELETE ON peg_bulk_operations BEGIN SELECT RAISE(ABORT,'immutable_bulk_operation'); END;
 CREATE TRIGGER peg_bulk_effects_immutable BEFORE UPDATE ON peg_bulk_effects BEGIN SELECT RAISE(ABORT,'immutable_bulk_effect'); END;
+CREATE TRIGGER peg_bulk_effects_erased_fence BEFORE INSERT ON peg_bulk_effects
+WHEN EXISTS(SELECT 1 FROM peg_data_erased_objects WHERE object_type='task' AND object_id=NEW.task_id)
+BEGIN SELECT RAISE(ABORT,'erased_object'); END;
 CREATE TRIGGER peg_bulk_effects_no_delete BEFORE DELETE ON peg_bulk_effects
 WHEN EXISTS(SELECT 1 FROM peg_tasks WHERE id=OLD.task_id) AND NOT EXISTS(SELECT 1 FROM peg_data_erased_objects WHERE object_type='task' AND object_id=OLD.task_id)
 BEGIN SELECT RAISE(ABORT,'reviewed_bulk_effect_erasure_required'); END;

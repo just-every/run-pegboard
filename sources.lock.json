@@ -486,6 +486,10 @@
       "sha256": "9baaebf3d6ccf6b16b42795efefa544116347d1bd12e1251d2bdb37d5c286ba8",
       "executable": false
     },
+    "migrations/core/0050_bulk_recovery.sql": {
+      "sha256": "8a85976d59ad098df94cfcf7350c392670347827bfc29cdd2852f8fa43394761",
+      "executable": false
+    },
     "ONBOARDING.md": {
       "sha256": "24b685d6eddeae5480ce4dfbf44c0590e54bcfe83641373de5bba985765380bd",
       "executable": false
@@ -2194,6 +2198,10 @@
       "sha256": "448fa0b8f7f5916712e597259612d781017af0c686608c6d38c5d6605f64a574",
       "executable": false
     },
+    "src/pegboard/api/bulk-routes.ts": {
+      "sha256": "712f7f78790c6f48e1fab3bfef3a5774e98840479b0b4889078a01dd51de0081",
+      "executable": false
+    },
     "src/pegboard/api/bundle-routes.ts": {
       "sha256": "275a84dbe695d5a7f228eacf8dda2acced8fa7d5066f3b913e98198eb1f3d1d6",
       "executable": false
@@ -2426,6 +2434,10 @@
       "sha256": "1f89fd992ff6fa8238169abb9cf49c6275fdc333660216e22eb6ebe93104552f",
       "executable": false
     },
+    "src/pegboard/recovery/bulk.ts": {
+      "sha256": "6cc2c1871956b1e120e6ab5f74bbf9c0be225632e3420ca2e0a7e7ae713a9f6a",
+      "executable": false
+    },
     "src/pegboard/recovery/choices.ts": {
       "sha256": "f55ef69ff761d1f6b3d7d3903f55c47da8af87b266ae1ab0f7f9e3d75b693c73",
       "executable": false
@@ -2556,6 +2568,10 @@
     },
     "src/pegboard/ui/pages/brief.tsx": {
       "sha256": "583d40bdb4c7d14ba88d971672c5a2b0f77b6c9111869cfa4fa0865e8c641319",
+      "executable": false
+    },
+    "src/pegboard/ui/pages/bulk.tsx": {
+      "sha256": "e74d8d957c3ecf08cf1073ca67f741770634a4e22b8d6d1332121c196171403d",
       "executable": false
     },
     "src/pegboard/ui/pages/bundles.tsx": {
@@ -2863,7 +2879,7 @@
       "executable": false
     },
     "tests/journeys/recovery.mjs": {
-      "sha256": "bdf70811425f38a7c1ca82f59802addccc41b1e1b49f8e2c878c6522f461985c",
+      "sha256": "e164eafffe80bd858d81a19cc1f17b6af5751107aff0043746feacbf9d1fcd85",
       "executable": false
     },
     "tests/journeys/timeline.mjs": {
@@ -2915,7 +2931,7 @@
       "executable": false
     },
     "tests/work-graph.test.mjs": {
-      "sha256": "44df91831d00820e8abfe381c286486914176f6b0c26da8ec450766d5f024b87",
+      "sha256": "17f381ca8a31a498c82bc2d8e9ceb77a48f5b456afce91dd15a43634ce7b5432",
       "executable": false
     },
     "tsconfig.json": {
