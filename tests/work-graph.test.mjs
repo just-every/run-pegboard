@@ -10,6 +10,7 @@ import { startWorker,proofDocument } from './support/worker.mjs'
 import {startMeetingServices} from './support/meeting-services.mjs'
 import { startEngineeringServices, vectorTodo, vectorDone } from './support/engineering-services.mjs'
 import { startTimeServices } from './support/time-services.mjs'
+import { restoreCanvasInstallation } from './support/canvas-restore.mjs'
 
 let w, owner, mia, gus, nina
 const ok = async (promise, status = 200) => { const r = await promise; assert.equal(r.status, status, JSON.stringify(r.body)); return r.body }
@@ -1741,4 +1742,56 @@ describe('Analyst exports', {concurrency:false}, () => {
     assert.ok(!rows.some(item=>item.table.startsWith('peg_analytics_')),'neither credential hashes nor temporary material travel')
   })
 
+})
+
+// Native planning uses the same task records as List, and the same archive as the installation.
+describe('Project planning canvas', {concurrency:false},()=>{
+ let server,chief,member,guest,projectId,phase,note,taskId,privateNote
+ const pass=async call=>{const r=await call;assert.equal(r.status,200,JSON.stringify(r.body));return r.body}
+ const path=()=>`/api/v1/projects/${projectId}/canvas`
+ before(async()=>{
+  server=await startWorker();chief=server.owner
+  member=await server.person('synthetic-pegboard-1101@example.com','Mia Alvarez')
+  guest=await server.person('synthetic-pegboard-1102@example.com','Casey Client','guest')
+  projectId=(await pass(chief.post('/api/v1/projects',{name:'Spring product launch'}))).id
+  for(const [person,level] of [[member,'editor'],[guest,'viewer']])await pass(chief.post('/api/v1/grants',{objectType:'project',objectId:projectId,granteeId:person.id,level}))
+ },{timeout:120000})
+ after(()=>server?.stop())
+ it('collaborates on a planning canvas and promotes a reviewed note once into the native List task',async()=>{
+  phase=(await pass(chief.post(path()+'/nodes',{title:'Launch preparation',kind:'phase'}))).id
+  note=(await pass(member.post(path()+'/nodes',{title:'Prepare the launch brief',parentId:phase,position:1}))).id
+  privateNote=(await pass(chief.post(path()+'/nodes',{title:'Internal pricing negotiation',internalOnly:true,parentId:phase,position:2}))).id
+  const child=(await pass(chief.post(path()+'/nodes',{title:'Channel checklist',parentId:note}))).id
+  await pass(member.post(path()+`/nodes/${note}/update`,{version:1,parentId:null,position:3}))
+  assert.equal((await chief.post(path()+`/nodes/${note}/update`,{version:1,parentId:phase})).status,409)
+  assert.equal((await chief.post(path()+`/nodes/${note}/update`,{version:2,parentId:child})).status,409)
+  assert.equal((await member.post(path()+`/nodes/${note}/promote`,{version:2,ownerId:member.id})).status,400)
+  const results=await Promise.all([chief,member].map(person=>person.post(path()+`/nodes/${note}/promote`,{version:2,ownerId:member.id,confirm:true})))
+  for(const result of results)assert.equal(result.status,200,JSON.stringify(result.body))
+  taskId=results[0].body.taskId;assert.equal(results[1].body.taskId,taskId)
+  await pass(member.patch(`/api/v1/tasks/${taskId}`,{title:'Reviewed launch brief',status:'doing',ownerId:chief.id,dueDate:'2027-03-08'}))
+  const task=await pass(chief.get(`/api/v1/tasks/${taskId}`));assert.equal(task.history.filter(h=>h.kind==='created').length,1)
+  await pass(member.post(path()+`/nodes/${note}/update`,{version:3,parentId:phase,position:0}))
+  assert.equal((await pass(chief.get(`/api/v1/tasks/${taskId}`))).dueDate,'2027-03-08','moving a representation never changes the date')
+  let view=await pass(chief.get(path())),linked=view.nodes.find(n=>n.id===note)
+  assert.equal(linked.task.id,taskId);assert.equal(linked.task.status,'doing');assert.equal(linked.task.owner.id,chief.id);assert.equal(linked.title,'Reviewed launch brief');assert.equal(linked.parentId,phase)
+  const list=await pass(member.get(`/app/projects/${projectId}?view=list`));assert.ok(list.includes('Reviewed launch brief')&&list.includes(taskId))
+  await server.restart();view=await pass(member.get(path()));assert.equal(view.nodes.find(n=>n.id===note).task.id,taskId)
+  const guestView=await pass(guest.get(path()));assert.ok(!JSON.stringify(guestView).includes(privateNote));assert.ok(!JSON.stringify(guestView).includes('Internal pricing negotiation'));assert.deepEqual(guestView.people,[])
+  assert.ok(!(await pass(guest.get(`/app/projects/${projectId}/canvas`))).includes('Internal pricing negotiation'))
+  assert.equal((await guest.post(path()+'/nodes',{title:'Cannot edit'})).status,403)
+  const stranger=await server.person('synthetic-pegboard-1103@example.com','Unshared member');assert.equal((await stranger.get(path())).status,404)
+ },{timeout:120000})
+ it('restores exported canvas relationships and native task identity through the installation archive',async()=>{
+  const before=await pass(chief.get(path())),download=await pass(chief.get(path()+'/export'))
+  assert.deepEqual(download.nodes,before.nodes)
+  const restored=await restoreCanvasInstallation(chief)
+  try{
+   const after=await pass(restored.worker.owner.get(path()))
+   assert.deepEqual(after.nodes,before.nodes)
+   assert.equal((await pass(restored.worker.owner.get(`/api/v1/tasks/${taskId}`))).title,'Reviewed launch brief')
+   const inactiveGuest=await restored.worker.signIn(guest.email,guest.name,guest.id)
+   assert.equal((await inactiveGuest.get(path())).status,404,'archives do not reactivate old project grants')
+  }finally{await restored.stop()}
+ },{timeout:240000})
 })

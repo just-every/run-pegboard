@@ -85,6 +85,7 @@ export async function erasurePlan(db:D1Database,actor:Actor,workspace:string,typ
     if(await first(db,`SELECT 1 FROM peg_work_templates WHERE source_id IN (${placeholders(sourceIds)}) OR ${sourceIds.map(()=>"instr(snapshot,?)>0").join(' OR ')}`,...sourceIds,...sourceIds))blockers.push('review_recurring_snapshot_custody_before_erasure')
     if(projects.length&&await first(db,`SELECT 1 FROM peg_field_definitions f WHERE authority_project IN (${placeholders(projects)}) AND EXISTS(SELECT 1 FROM peg_project_fields p WHERE p.field_id=f.id AND p.project_id NOT IN (${placeholders(projects)}))`,...projects,...projects))blockers.push('transfer_shared_field_authority_before_erasure')
     const scoped=(column:string)=>`${column} IN (${placeholders(tasks)})`, projectScoped=(column:string)=>`${column} IN (${placeholders(projects)})`
+    await take('peg_canvas_nodes',`${scoped('task_id')} OR ${projectScoped('project_id')}`,[...tasks,...projects])
     await take('peg_agent_retrieval',`${scoped('task_id')} OR output_id IN(SELECT id FROM peg_agent_outputs WHERE ${projectScoped('project_id')})`,[...tasks,...projects])
     await take('peg_agent_outputs',`${scoped('task_id')} OR ${projectScoped('project_id')}`,[...tasks,...projects])
     await take('peg_search_records',scoped('task_id'),tasks)

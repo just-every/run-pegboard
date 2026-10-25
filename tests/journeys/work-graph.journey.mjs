@@ -8,6 +8,7 @@ import { startWorker,proofDocument } from '../support/worker.mjs'
 import { startEngineeringServices,vectorTodo,vectorDone } from '../support/engineering-services.mjs'
 import { startTimeServices } from '../support/time-services.mjs'
 import { startMeetingServices } from '../support/meeting-services.mjs'
+import { planningCanvasJourney } from './planning-canvas.mjs'
 
 // Harvest and QuickBooks Time schema fakes at the network edge; every Worker below reaches them through local origins.
 const engineering = await startEngineeringServices(), meetings = await startMeetingServices()
@@ -19,6 +20,7 @@ const sizes = [['1440', { width: 1440, height: 900 }], ['390', { width: 390, hei
 try {
   let owner = w.owner
   const ok = (r, status = 200) => { assert.equal(r.status, status, JSON.stringify(r.body)); return r.body }
+  if(!process.env.PEGBOARD_JOURNEY||process.env.PEGBOARD_JOURNEY==='canvas')await planningCanvasJourney({w,browser,sizes,ok})
   ok(await owner.post('/api/v1/teams', { name: 'Brand crew', privacy: 'public' }))
   for (const [size, viewport] of (process.env.PEGBOARD_JOURNEY ? [] : sizes)) {
     const open = async client => { const context = await browser.newContext({ viewport }); await context.addCookies(cookies(client)); return { context, page: await context.newPage() } }

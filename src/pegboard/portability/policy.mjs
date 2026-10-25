@@ -4,10 +4,18 @@ const importSafety={peg_meetings:{revoked_at:[revoked],segments:['[]']},peg_meet
 export default {
  product:'runeditrun/foundation',
  includeTables:['oa_operators','oa_bootstrap','oa_external_identities','oa_invitation_cancellations','oa_tokens','oa_auth_settings','oa_auth_audit','oa_domain_rules','oa_logout_events','oc_owner_claims','oc_idp_grants'],
- excludeTables:['peg_analytics_keys','peg_analytics_snapshots','peg_analytics_rows','peg_analytics_guards','peg_meeting_guards','rer_dependency_keys','rer_dependency_pending','rer_dependency_codes','peg_webhooks','peg_data_guards','peg_data_erasing_tasks','peg_data_erasing_proofs'],
+ excludeTables:['peg_canvas_guards','peg_analytics_keys','peg_analytics_snapshots','peg_analytics_rows','peg_analytics_guards','peg_meeting_guards','rer_dependency_keys','rer_dependency_pending','rer_dependency_codes','peg_webhooks','peg_data_guards','peg_data_erasing_tasks','peg_data_erasing_proofs'],
  requiredConfiguration:['OWNER_EMAIL','SESSION_SECRET','SETUP_TOKEN','AUTH_ORIGIN','MAIL_PROVIDER','MAIL_FROM'],
  async validateStaged({db,tables}){
   const search=tables.peg_search_records,tasks=tables.peg_tasks
+  const canvas=tables.peg_canvas_nodes,projects=tables.peg_projects
+  if(canvas){
+   if(!projects||!tasks)return false
+   const invalid=await db.prepare(`SELECT 1 FROM "${canvas}" n LEFT JOIN "${projects}" p ON p.id=n.project_id LEFT JOIN "${tasks}" t ON t.id=n.task_id LEFT JOIN "${canvas}" parent ON parent.id=n.parent_id WHERE p.id IS NULL OR (n.task_id IS NOT NULL AND t.id IS NULL) OR (n.parent_id IS NOT NULL AND (parent.id IS NULL OR parent.project_id<>n.project_id)) LIMIT 1`).first()
+   if(invalid)return false
+   const cycle=await db.prepare(`WITH RECURSIVE ancestry(start,id) AS (SELECT id,parent_id FROM "${canvas}" WHERE parent_id IS NOT NULL UNION SELECT a.start,n.parent_id FROM ancestry a JOIN "${canvas}" n ON n.id=a.id WHERE n.parent_id IS NOT NULL) SELECT 1 FROM ancestry WHERE start=id LIMIT 1`).first()
+   if(cycle)return false
+  }
   if(search&&tasks){
    const mismatch=await db.prepare(`SELECT 1 FROM "${search}" s LEFT JOIN "${tasks}" t ON t.id=s.task_id WHERE t.id IS NULL OR s.body<>t.title||char(10)||t.description LIMIT 1`).first()
    if(mismatch)return false

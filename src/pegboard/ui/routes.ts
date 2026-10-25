@@ -1,3 +1,6 @@
+import {CanvasPage} from './canvas/page'
+import {canvasView} from '../canvas/nodes'
+import {ProjectListPage} from './pages/project-list'
 import {MeetingPage} from './meeting-review/page'
 import {meetings,meetingView} from '../meetings/review'
 import { EngineeringPage } from './engineering-handoff/page'
@@ -93,6 +96,13 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
   const { viewer, workspace } = await context(db, actor, session.operator.role)
   const [, section, id, tail] = segments
   try {
+    if(section==='projects'&&id&&tail==='canvas'&&segments.length===4){
+      const response=await page('Planning canvas',h(CanvasPage,{viewer,data:await canvasView(db,actor,id),selected:url.searchParams.get('node')}))
+      const headers=new Headers(response.headers)
+      headers.set('content-security-policy',headers.get('content-security-policy')+"; connect-src 'self'")
+      return new Response((await response.text()).replace('</head>','<link rel="stylesheet" href="/look/canvas.css"></head>').replace('</body>','<script src="/look/canvas.js" defer></script></body>'),{status:response.status,headers})
+    }
+    if(section==='projects'&&id&&!tail&&url.searchParams.get('view')==='list')return page('Project list',h(ProjectListPage,{viewer,data:await board(db,actor,id)}))
     if(section==='meetings'&&!tail)return page('Meeting review',h(MeetingPage,{viewer,items:await meetings(db,actor,workspace),view:id?await meetingView(db,actor,id):null,people:await peopleOptions(db,actor,workspace),projects:(await listProjects(db,actor,workspace)).map(p=>({value:p.id,label:p.name}))}))
     if(section==='engineering'&&id&&!tail)return page('Engineering handoff',h(EngineeringPage,{viewer,data:await engineeringView(db,actor,id)}))
     if(section==='audit'&&!id)return page('Permanent audit',h(AuditPage,{viewer,data:await searchAudit(db,actor,workspace,Object.fromEntries(url.searchParams)),input:Object.fromEntries(url.searchParams)}))
