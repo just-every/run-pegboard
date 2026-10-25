@@ -5,7 +5,7 @@ phases, notes and task links. Internal notes are omitted from guest pages,
 API responses and canvas downloads. Unreadable task nodes and their relationships
 are omitted; a visible child of a hidden node appears at the project root.
 
-Human project editors who are workspace members can add notes and phases,
+Human project editors can add permitted notes and phases,
 change a title, or rearrange a branch with **Parent branch** and **Position**.
 The controls are keyboard accessible. Each edit names the saved node revision;
 a stale edit refuses rather than overwriting another person's work. The live

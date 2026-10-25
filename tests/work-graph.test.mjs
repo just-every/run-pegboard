@@ -1780,6 +1780,13 @@ describe('Project planning canvas', {concurrency:false},()=>{
   const guestView=await pass(guest.get(path()));assert.ok(!JSON.stringify(guestView).includes(privateNote));assert.ok(!JSON.stringify(guestView).includes('Internal pricing negotiation'));assert.deepEqual(guestView.people,[])
   assert.ok(!(await pass(guest.get(`/app/projects/${projectId}/canvas`))).includes('Internal pricing negotiation'))
   assert.equal((await guest.post(path()+'/nodes',{title:'Cannot edit'})).status,403)
+  const guestEditor=await server.person('synthetic-pegboard-1104@example.com','Scoped client editor','guest')
+  await pass(chief.post('/api/v1/grants',{objectType:'project',objectId:projectId,granteeId:guestEditor.id,level:'editor'}))
+  const visible=await pass(guestEditor.post(path()+'/nodes',{title:'Client launch checklist',parentId:phase}))
+  assert.equal((await guestEditor.post(path()+'/nodes',{title:'Hidden child',parentId:privateNote})).status,404)
+  assert.equal((await guestEditor.post(path()+`/nodes/${privateNote}/update`,{version:1,title:'Cannot overwrite'})).status,404)
+  assert.equal((await guestEditor.post(path()+'/nodes',{title:'Internal injection',internalOnly:true})).status,403)
+  const guestExport=await pass(guestEditor.get(path()+'/export'));assert.ok(!JSON.stringify(guestExport).includes(privateNote));assert.ok(guestExport.nodes.some(n=>n.id===visible.id))
   const stranger=await server.person('synthetic-pegboard-1103@example.com','Unshared member');assert.equal((await stranger.get(path())).status,404)
  },{timeout:120000})
  it('restores exported canvas relationships and native task identity through the installation archive',async()=>{

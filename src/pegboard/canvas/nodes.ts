@@ -1,6 +1,6 @@
 import { all, bound, conflict, first, forbidden, invalid, newId, notFound, type Param } from '../db'
 import { guarded, revision } from '../decisions/revision'
-import { taskAccess } from '../authorization/effective'
+import { projectEffective, taskAccess } from '../authorization/effective'
 import { rank, type Level } from '../authorization/levels'
 import type { TaskRow } from '../model'
 import { prepareTask } from '../tasks/tasks'
@@ -15,8 +15,13 @@ const node = async(db:D1Database,project:string,id:string) => {const n=await fir
 
 async function editable(db:D1Database,actor:Actor,project:string) {
  const context=await openProject(db,actor,project);need(context.effective,'edit')
- if(context.effective.role==='guest'||context.effective.role==='agent')throw forbidden('member_canvas_edit')
+ if(context.effective.role==='agent')throw forbidden('human_canvas_edit')
  return context
+}
+
+async function readableNode(db:D1Database,actor:Actor,project:string,id:string) {
+ if(!(await canvasView(db,actor,project)).nodes.some(n=>n.id===id))throw notFound()
+ return node(db,project,id)
 }
 
 /** A tree relationship is placement only; no task dates or approval state are written. */
@@ -43,15 +48,20 @@ export async function canvasView(db:D1Database,actor:Actor,projectId:string) {
   visible.push({row:n,task})
  }
  const ids=new Set(visible.map(n=>n.row.id)),names=await displayNames(db,visible.flatMap(n=>n.task?[n.task.owner_id]:[]))
- const canEdit=effective.capabilities.has('edit')&&!['guest','agent'].includes(effective.role??'')
- const people=canEdit?(await all<{id:string;display_name:string}>(db,`SELECT o.id,o.display_name FROM oa_operators o LEFT JOIN peg_workspace_members m ON m.operator_id=o.id AND m.workspace_id=? WHERE o.status='active' AND (o.role IN ('owner','admin') OR m.role IN ('manager','member')) ORDER BY o.display_name`,project.workspace_id)).map(p=>({value:p.id,label:p.display_name})):[]
+ const canEdit=effective.capabilities.has('edit')&&effective.role!=='agent'
+ const people:{value:string;label:string}[]=[]
+ if(canEdit)for(const p of await all<{id:string;display_name:string}>(db,`SELECT o.id,o.display_name FROM oa_operators o LEFT JOIN peg_workspace_members m ON m.operator_id=o.id AND m.workspace_id=? WHERE o.status='active' AND (o.role IN ('owner','admin') OR m.role IN ('manager','member')) ORDER BY o.display_name`,project.workspace_id)){
+  if((await projectEffective(db,{...actor,id:p.id},project)).capabilities.has('read'))people.push({value:p.id,label:p.display_name})
+ }
  const settings=await workspaceSettings(db,project.workspace_id)
  return {project:{id:project.id,name:project.name},canEdit,canExport:effective.capabilities.has('export')&&rank(effective.level as Level)>=rank(settings.exportMinLevel),people,
   nodes:visible.map(({row:n,task})=>({id:n.id,parentId:n.parent_id&&ids.has(n.parent_id)?n.parent_id:null,title:task?.title??n.title,kind:n.kind,internalOnly:!!n.internal_only,version:n.version,position:n.position,task:task?{id:task.id,title:task.title,status:task.status,owner:{id:task.owner_id,name:names.get(task.owner_id)??'Former member'}}:null}))}
 }
 
 export async function addCanvasNode(db:D1Database,actor:Actor,project:string,input:Record<string,any>) {
- const rev=await revision(db);await editable(db,actor,project)
+ const rev=await revision(db);const context=await editable(db,actor,project)
+ if(context.effective.role==='guest'&&input.internalOnly)throw forbidden('internal')
+ if(input.parentId)await readableNode(db,actor,project,String(input.parentId))
  const nodes=await rows(db,project),parent=parentIn(nodes,input.parentId),kind=input.kind??'note'
  if(!['note','phase'].includes(kind))throw invalid('canvas_kind')
  const id=newId('node')
@@ -61,7 +71,8 @@ export async function addCanvasNode(db:D1Database,actor:Actor,project:string,inp
 
 export async function updateCanvasNode(db:D1Database,actor:Actor,project:string,id:string,input:Record<string,any>) {
  const rev=await revision(db);await editable(db,actor,project)
- const n=await node(db,project,id);if(n.version!==Number(input.version))throw conflict('canvas_review_stale')
+ const n=await readableNode(db,actor,project,id);if(n.version!==Number(input.version))throw conflict('canvas_review_stale')
+ if(input.parentId)await readableNode(db,actor,project,String(input.parentId))
  const nodes=await rows(db,project),parent=parentIn(nodes,input.parentId===undefined?n.parent_id:input.parentId,id)
  const assignments=['parent_id=?','position=?','version=version+1'],args:Param[]=[parent,input.position===undefined?n.position:position(input.position)]
  if(input.title!==undefined&&n.kind!=='task'){assignments.push('title=?');args.push(title(input.title))}
@@ -71,11 +82,12 @@ export async function updateCanvasNode(db:D1Database,actor:Actor,project:string,
 
 export async function promoteCanvasNode(db:D1Database,actor:Actor,project:string,id:string,input:Record<string,any>) {
  const rev=await revision(db);const context=await editable(db,actor,project)
- const n=await node(db,project,id)
+ const n=await readableNode(db,actor,project,id)
  if(!input.confirm)throw invalid('canvas_exact_review_required')
  if(n.task_id){const view=await canvasView(db,actor,project);if(!view.nodes.some(x=>x.id===id))throw notFound();return {taskId:n.task_id}}
  if(n.kind!=='note'||n.version!==Number(input.version))throw conflict('canvas_review_stale')
  if(!['owner','admin','manager','member'].includes(await workspaceRole(db,String(input.ownerId),context.project.workspace_id)??''))throw invalid('canvas_task_owner')
+ if(!(await canvasView(db,actor,project)).people.some(p=>p.value===input.ownerId))throw invalid('canvas_task_owner')
  const task=await prepareTask(db,actor,{projectId:project,title:n.title,ownerId:String(input.ownerId),internalOnly:!!n.internal_only})
  try{
   await guarded(db,rev,[bound(db,'INSERT INTO peg_canvas_guards SELECT CASE WHEN EXISTS(SELECT 1 FROM peg_canvas_nodes WHERE id=? AND version=? AND task_id IS NULL) THEN 1 ELSE 0 END',[id,n.version]),...task.statements,bound(db,"UPDATE peg_canvas_nodes SET kind='task',title='',task_id=?,version=version+1 WHERE id=?",[task.id,id]),bound(db,'DELETE FROM peg_canvas_guards',[])])

@@ -259,7 +259,7 @@
       "executable": false
     },
     "docs/PLANNING-CANVAS.md": {
-      "sha256": "cbce85d9104490571ff8289c62f0b3ed1efdca3d1cbbc9d7ecf2778293e8a83f",
+      "sha256": "c8a72c623df353e7f8010bd6ec1c857c122da139e5919f268ae17f4d94a87cba",
       "executable": false
     },
     "docs/TIME-SERVICE-PACKETS.md": {
@@ -2227,7 +2227,7 @@
       "executable": false
     },
     "src/pegboard/canvas/nodes.ts": {
-      "sha256": "2c5bda9577103e1c36da4edda87d989ee4dff53982e0f3e347c9af0e61504df5",
+      "sha256": "4a4b9b3c40fff4301405c4265d0cbc233a4b51e69ce0ba600e3e2235c07a3a86",
       "executable": false
     },
     "src/pegboard/connectors/engineering/edge.ts": {
@@ -2699,7 +2699,7 @@
       "executable": false
     },
     "tests/work-graph.test.mjs": {
-      "sha256": "af82bbd87d0e611e6c51f24fe51b3095a9b761351916f5604f33fd95474024ef",
+      "sha256": "002dabd9f089853c720aee1af36146bc8f86c957959f315a461c24b5ae58a12f",
       "executable": false
     },
     "tsconfig.json": {
