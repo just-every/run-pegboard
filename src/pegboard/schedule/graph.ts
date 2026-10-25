@@ -107,13 +107,19 @@ export function slack(nodes: Node[], edges: Edge[], end: string | null): Slack[]
   const usable = edges.filter(e => live.has(e.predecessor) && live.has(e.successor))
   const { sorted } = order([...live], usable)
   const finish = (id: string) => d.get(id)!.due!.day
-  const lastDay = end ? readStamp(end).day : Math.max(...[...live].map(finish), 0)
+  // A chain ends at the project's due date, or with no date at the latest finish within the chain itself.
+  const parent = new Map<string, string>(), find = (x: string): string => { let r = x; while (parent.get(r) !== r) r = parent.get(r)!; return r }
+  for (const id of live) parent.set(id, id)
+  for (const e of usable) parent.set(find(e.predecessor), find(e.successor))
+  const chainEnd = new Map<string, number>()
+  for (const id of live) chainEnd.set(find(id), Math.max(chainEnd.get(find(id)) ?? 0, finish(id)))
+  const lastOf = (id: string) => end ? readStamp(end).day : chainEnd.get(find(id))!
   const lf = new Map<string, number>(), ls = new Map<string, number>()
   for (const id of [...sorted].reverse()) {
     const own = d.get(id)!, length = duration(own)
     let limit = Infinity
     const outgoing = usable.filter(e => e.predecessor === id)
-    if (!outgoing.length) limit = lastDay
+    if (!outgoing.length) limit = lastOf(id)
     for (const e of outgoing) {
       if (!lf.has(e.successor)) continue
       const sLF = lf.get(e.successor)!, sLS = ls.get(e.successor)!
@@ -121,14 +127,11 @@ export function slack(nodes: Node[], edges: Edge[], end: string | null): Slack[]
       else if (e.type === 'ff') limit = Math.min(limit, addWorking(sLF, -e.lag))
       else { const latestStart = addWorking(e.type === 'ss' ? sLS : sLF, -e.lag); limit = Math.min(limit, addWorking(latestStart, length)) }
     }
-    if (!Number.isFinite(limit)) limit = lastDay
+    if (!Number.isFinite(limit)) limit = lastOf(id)
     lf.set(id, limit); ls.set(id, addWorking(limit, -length))
   }
   const out = nodes.map(node => ({ id: node.id, slack: live.has(node.id) && lf.has(node.id) ? workingBetween(finish(node.id), lf.get(node.id)!) : null as number | null, critical: false }))
-  // A chain's critical tasks are those with its least slack; components are the chains edges join.
-  const parent = new Map<string, string>(), find = (x: string): string => { let r = x; while (parent.get(r) !== r) r = parent.get(r)!; return r }
-  for (const id of live) parent.set(id, id)
-  for (const e of usable) parent.set(find(e.predecessor), find(e.successor))
+  // A chain's critical tasks are those with its least slack.
   const least = new Map<string, number>()
   for (const row of out) if (row.slack !== null && !nodes.find(n => n.id === row.id)!.done) { const r = find(row.id); least.set(r, Math.min(least.get(r) ?? Infinity, row.slack)) }
   for (const row of out) if (row.slack !== null && !nodes.find(n => n.id === row.id)!.done && usable.some(e => e.predecessor === row.id || e.successor === row.id)) row.critical = row.slack === least.get(find(row.id))

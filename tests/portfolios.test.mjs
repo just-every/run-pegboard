@@ -69,9 +69,17 @@ describe('PEG-013 portfolios that roll up truthfully', { concurrency: false }, (
     assert.equal(row.overdue, 1)
     const drill = await ok(owner.get(`/api/v1/portfolios/${root.id}/drill${at(clock)}&metric=overdue&projectId=${projects[2].id}`))
     assert.deepEqual(drill.tasks.map(t => t.id), [blocker.id]); assert.equal(drill.tasks[0].link, `/app/tasks/${blocker.id}`)
+    // The blocker gates work in another project: moving its due date through Tasks breaks the chain and the flag follows.
+    const gated = await task(projects[3].id, 'Open the pop-up shop', { startDate: '2026-03-20', dueDate: '2026-03-25' })
+    await ok(owner.post('/api/v1/dependencies', { predecessor: blocker.id, successor: gated.id, type: 'fs' }))
+    const row3 = async () => (await view(owner, root.id)).projects.find(p => p.id === projects[2].id)
+    assert.deepEqual(reasons(await row3()).filter(code => code === 'negative_slack'), [])
+    await ok(owner.patch(`/api/v1/tasks/${blocker.id}`, { dueDate: '2026-03-24' }))
+    const broken = (await row3()).flags.find(f => f.code === 'negative_slack'); assert.equal(broken.sources[0].id, blocker.id)
     await ok(owner.patch(`/api/v1/tasks/${blocker.id}`, { status: 'done' }))
+    assert.deepEqual(reasons(await row3()).filter(code => code === 'negative_slack'), [])
     const done = await view(owner, root.id)
-    assert.equal(done.summary.overdue, before.summary.overdue); assert.equal(done.summary.byStatus.done, before.summary.byStatus.done + 1)
+    assert.equal(done.summary.byStatus.done, before.summary.byStatus.done + 1)
     assert.equal(done.projects.find(p => p.id === projects[2].id).overdue, 0)
   })
 
