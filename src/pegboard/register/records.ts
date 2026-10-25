@@ -1,4 +1,4 @@
-import { all, bound, conflict, first, forbidden, invalid, newId, notFound, now } from '../db'
+import { PegError, all, bound, conflict, first, forbidden, invalid, newId, notFound, now } from '../db'
 import { openProject, need } from '../workspace/projects'
 import { displayNames, workspaceRole, type Actor } from '../workspace/people'
 import { openTask } from '../tasks/access'
@@ -21,11 +21,11 @@ export async function registerView(db:D1Database,actor:Actor,projectId:string) {
  const names=await displayNames(db,rows.flatMap(r=>[r.owner_id,r.approver_id,r.decided_by??'',r.created_by]))
  for(const row of rows){
   let task=null
-  if(row.task_id){try{task=(await linked(db,actor,projectId,row.task_id)).task}catch{continue}}
+  if(row.task_id){try{task=(await linked(db,actor,projectId,row.task_id)).task}catch(error){if(error instanceof PegError&&[400,403,404].includes(error.status))continue;throw error}}
   const proposal=JSON.parse(row.proposal), baseline=JSON.parse(row.baseline)
   // A baseline may contain other affected projects: never disclose an unreadable task through this register.
   let readable=true
-  for(const t of baseline.tasks??[])try{await openTask(db,actor,t.id)}catch{readable=false}
+  for(const t of baseline.tasks??[])try{await openTask(db,actor,t.id)}catch(error){if(error instanceof PegError&&[403,404].includes(error.status))readable=false;else throw error}
   if(!readable)continue
   records.push({...row,proposal,baseline,owner:names.get(row.owner_id)??'Former member',approver:names.get(row.approver_id)??'Former member',decider:row.decided_by?names.get(row.decided_by)??'Former member':null,task:task?{id:task.id,title:task.title}:null,token:await digest(row),canDecide:row.status==='pending'&&row.approver_id===actor.id&&effective.capabilities.has('manage_settings')&&await workspaceRole(db,actor.id,project.workspace_id)!=='agent'})
  }

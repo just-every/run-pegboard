@@ -1,3 +1,4 @@
+import {workflowBundleJourney} from './workflow-bundles.mjs'
 import {deliveryRegisterJourney} from './delivery-register.mjs'
 // The PEG-001 and PEG-020 screens, driven in a browser at 1440 and 390 px: build and share work through Projects, what a
 // guest is never shown, a refused link turned into a request that an admin approves, and a stale tab refused.
@@ -884,6 +885,7 @@ try {
   if(!process.env.PEGBOARD_JOURNEY||process.env.PEGBOARD_JOURNEY==='portfolio')await portfolioJourney({w,browser,sizes,ok})
   if(!process.env.PEGBOARD_JOURNEY||process.env.PEGBOARD_JOURNEY==='timeline')await timelineJourney({w,browser,sizes,ok})
   if(!process.env.PEGBOARD_JOURNEY||process.env.PEGBOARD_JOURNEY==='register')await deliveryRegisterJourney({w,browser,sizes,ok})
+  if(!process.env.PEGBOARD_JOURNEY||process.env.PEGBOARD_JOURNEY==='bundles')await workflowBundleJourney({w,browser,sizes,ok})
 } finally {
   await browser.close()
   await w.stop()

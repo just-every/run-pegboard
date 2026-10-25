@@ -188,3 +188,57 @@ describe('Delivery register', {concurrency:false},()=>{
   await server.restart();assert.ok((await records()).records.some(r=>r.id===risk.id))
  })
 })
+
+describe('Reusable workflow bundles',{concurrency:false},()=>{
+ let server,owner,member,source,projects,bundle,field,kept,stageRun
+ const root=()=>`/api/v1/workflow-bundles/${bundle.id}`
+ const view=()=>ok(owner.get(root()))
+ const version=async(key,component)=>{const v=await view();return ok(owner.post(root()+'/versions',{version:v.current.version,key,...component}))}
+ const preview=()=>ok(owner.post(root()+'/preview',{projectIds:projects.map(p=>p.id)}))
+ const adopt=async(keys)=>{const p=await preview();return ok(owner.post(root()+'/adopt',{projectIds:projects.map(p=>p.id),keys,revision:p.token}))}
+ before(async()=>{
+  server=await startWorker();owner=server.owner;member=await server.person('synthetic-pegboard-3401@example.com','Maya Campaign')
+  source=await ok(owner.post('/api/v1/projects',{name:'Campaign definitions',visibility:'workspace'}))
+  field=await ok(owner.post(`/api/v1/projects/${source.id}/fields`,{key:'campaign_code',label:'Campaign code',type:'text'}))
+  projects=[];for(const name of ['Austin launch','Dallas launch','Denver launch'])projects.push(await ok(owner.post('/api/v1/projects',{name,visibility:'workspace'})))
+  bundle=await ok(owner.post('/api/v1/workflow-bundles',{name:'Retail campaign workflow'}))
+  for(const [key,c] of Object.entries({code:{kind:'field',name:'Campaign code',fieldId:field.id},open:{kind:'view',name:'Open campaign work',status:'todo'},route:{kind:'rule',name:'Campaign priority',priority:'high'},brief:{kind:'template',name:'Creative brief',title:'Draft the campaign brief',taskKind:'task'},review:{kind:'stages',name:'Campaign sign-off',titles:['Legal sign-off','Brand sign-off']}}))await version(key,c)
+ },{timeout:120000})
+ after(()=>server?.stop())
+ it('applies all five bundle component types to three projects and runs their real fields, saved view, task template, rule and human approval stages',async()=>{
+  const adopted=await adopt(['code','open','route','brief','review']);assert.equal(adopted.adoptions.length,3);assert.equal(adopted.items.length,15)
+  const p=projects[0],task=await ok(owner.post('/api/v1/tasks',{projectId:p.id,title:'Existing launch plan'}))
+  await ok(owner.post(`/api/v1/tasks/${task.id}/fields`,{projectId:p.id,values:{campaign_code:'AUS-26'}}))
+  assert.equal((await ok(owner.get(`/api/v1/projects/${p.id}`))).fields.find(f=>f.key==='campaign_code').id,field.id)
+  const rule=await ok(owner.post(root()+'/jobs/process',{}));assert.equal(rule.applied,1);assert.equal((await ok(owner.get(`/api/v1/tasks/${task.id}`))).priority,'high')
+  const made=await ok(owner.post(root()+`/projects/${p.id}/start`,{key:'brief',ownerId:member.id}));assert.equal((await ok(owner.get(`/api/v1/tasks/${made.taskId}`))).title,'Draft the campaign brief')
+  const firstStage=await ok(owner.post(root()+`/projects/${p.id}/start`,{key:'review',ownerId:member.id}));stageRun=firstStage.runId
+  await ok(owner.post(root()+`/projects/${p.id}/start`,{key:'review',runId:stageRun}),409)
+  const decision=await ok(owner.get(`/api/v1/tasks/${firstStage.taskId}/decision-preview`));await ok(owner.post(`/api/v1/tasks/${firstStage.taskId}/decision`,{revision:decision.token,action:'approve',reason:'Legal approved current work'}))
+  const next=await ok(owner.post(root()+`/projects/${p.id}/start`,{key:'review',runId:stageRun}));assert.equal((await ok(owner.get(`/api/v1/tasks/${next.taskId}`))).title,'Brand sign-off');assert.equal((await ok(owner.get(`/api/v1/tasks/${next.taskId}/decision-preview`))).state,'pending')
+  kept={taskId:task.id,approval:firstStage.taskId,before:await ok(owner.get(`/api/v1/tasks/${firstStage.taskId}/decision-preview`)),taskBefore:await ok(owner.get(`/api/v1/tasks/${task.id}`))}
+  const done=await ok(owner.post('/api/v1/tasks',{projectId:p.id,title:'Already complete',status:'done'}))
+  const response=await owner.get(`/app/projects/${p.id}?view=list&savedView=${bundle.id}:open`);assert.equal(response.status,200);assert.ok(response.body.includes('Existing launch plan'));assert.ok(!response.body.includes(done.id))
+ })
+ it('previews upgrades, preserves local overrides and unchosen changes, refuses incompatible and stale adoption, and cancels obsolete queued actions on disable',async()=>{
+  const p=projects[0],other=projects[1]
+  await ok(owner.post(root()+`/projects/${p.id}/override`,{key:'route',priority:'low'}))
+  await version('route',{kind:'rule',name:'Campaign priority',priority:'urgent'})
+  await version('open',{kind:'view',name:'Completed campaign work',status:'done'})
+  const source2=await ok(owner.post('/api/v1/projects',{name:'Other definitions',visibility:'workspace'})),conflicting=await ok(owner.post(`/api/v1/projects/${source2.id}/fields`,{key:'campaign_code',label:'Different campaign field',type:'number'}))
+  await version('code',{kind:'field',name:'Incompatible field',fieldId:conflicting.id})
+  let plan=await preview();assert.equal(plan.projects[0].rows.find(r=>r.key==='route').state,'override');assert.equal(plan.projects[1].rows.find(r=>r.key==='code').state,'incompatible')
+  await ok(owner.post(root()+'/adopt',{projectIds:projects.map(p=>p.id),keys:['code'],revision:plan.token}),409)
+  const stale=plan.token;await ok(owner.post('/api/v1/tasks',{projectId:other.id,title:'Concurrent campaign task'}));await ok(owner.post(root()+'/adopt',{projectIds:projects.map(p=>p.id),keys:['route'],revision:stale}),409)
+  const upgraded=await adopt(['route']);assert.equal(upgraded.items.find(i=>i.project_id===p.id&&i.item_key==='route').config.priority,'low');assert.equal(upgraded.items.find(i=>i.project_id===other.id&&i.item_key==='route').config.priority,'urgent');assert.equal(upgraded.items.find(i=>i.project_id===other.id&&i.item_key==='open').config.status,'todo')
+  assert.deepEqual((await ok(owner.get(`/api/v1/tasks/${kept.approval}/decision-preview`))).decisions,kept.before.decisions)
+  assert.deepEqual((await ok(owner.get(`/api/v1/tasks/${kept.taskId}`))).history,kept.taskBefore.history)
+  const live=await ok(owner.post('/api/v1/tasks',{projectId:other.id,title:'Live campaign rule'}));await ok(owner.post(root()+'/jobs/process',{}));assert.equal((await ok(owner.get(`/api/v1/tasks/${live.id}`))).priority,'urgent')
+  const obsolete=await ok(owner.post('/api/v1/tasks',{projectId:other.id,title:'Queued before disabling'}));assert.ok((await view()).jobs.some(j=>j.task_id===obsolete.id&&j.status==='queued'))
+  await ok(owner.post(root()+`/projects/${other.id}/disable`,{}));await ok(owner.post(root()+'/jobs/process',{}));assert.equal((await ok(owner.get(`/api/v1/tasks/${obsolete.id}`))).priority,'normal');assert.equal((await view()).jobs.find(j=>j.task_id===obsolete.id).status,'cancelled')
+  await ok(owner.post(root()+`/projects/${other.id}/start`,{key:'brief'}),409)
+  assert.ok((await view()).history.some(h=>h.action==='disabled'));await server.restart();assert.ok((await view()).versions.some(v=>v.components.route?.priority==='high'))
+  const current=await view();await ok(member.post(root()+'/versions',{version:current.current.version,key:'route',kind:'rule',name:'Unauthorized',priority:'high'}),403)
+  const limited=await ok(member.get(`/api/v1/projects/${projects[2].id}/bundle-configuration`));assert.ok(limited.every(i=>i.kind==='view'||i.kind==='field'))
+ })
+})

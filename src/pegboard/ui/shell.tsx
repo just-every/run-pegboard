@@ -30,7 +30,7 @@ export const Area = ({ label, name, value }: { label: string; name: string; valu
 export function Pick({ label, name, options, value, blank }: { label: string; name: string; options: { value: string; label: string }[]; value?: string | null; blank?: string }) {
   return <label className="field">{label}<select className="select" aria-label={label} name={name} defaultValue={value ?? ''}>{blank !== undefined && <option value="">{blank}</option>}{options.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
 }
-export const Check = ({ label, name, checked }: { label: string; name: string; checked?: boolean }) => <label className="checkbox"><input type="checkbox" name={name} defaultChecked={checked} />{label}</label>
+export const Check = ({ label, name, checked, value }: { label: string; name: string; checked?: boolean; value?:string }) => <label className="checkbox"><input type="checkbox" name={name} value={value} defaultChecked={checked} />{label}</label>
 export const Submit = ({ children, quiet }: { children: ReactNode; quiet?: boolean }) => <button type="submit" className={quiet ? 'button quiet' : 'button primary'}>{children}</button>
 
 export const when = (at: number | null | undefined) => at ? new Date(at).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'UTC' }) + ' UTC' : '—'

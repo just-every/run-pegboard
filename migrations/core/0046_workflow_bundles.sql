@@ -1,0 +1,14 @@
+CREATE TABLE peg_bundles(id TEXT PRIMARY KEY,workspace_id TEXT NOT NULL,name TEXT NOT NULL,created_by TEXT NOT NULL,created_at INTEGER NOT NULL);
+CREATE TABLE peg_bundle_versions(bundle_id TEXT NOT NULL,version INTEGER NOT NULL,components TEXT NOT NULL,created_by TEXT NOT NULL,created_at INTEGER NOT NULL,PRIMARY KEY(bundle_id,version));
+CREATE TRIGGER peg_bundle_version_immutable BEFORE UPDATE ON peg_bundle_versions BEGIN SELECT RAISE(ABORT,'immutable_bundle_version'); END;
+CREATE TABLE peg_bundle_adoptions(bundle_id TEXT NOT NULL,project_id TEXT NOT NULL,enabled INTEGER NOT NULL,epoch INTEGER NOT NULL,activated_by TEXT NOT NULL,PRIMARY KEY(bundle_id,project_id));
+CREATE TABLE peg_bundle_items(bundle_id TEXT NOT NULL,project_id TEXT NOT NULL,item_key TEXT NOT NULL,kind TEXT NOT NULL,base TEXT NOT NULL,config TEXT NOT NULL,version INTEGER NOT NULL,PRIMARY KEY(bundle_id,project_id,item_key));
+CREATE TABLE peg_bundle_history(id TEXT PRIMARY KEY,bundle_id TEXT NOT NULL,project_id TEXT NOT NULL,actor_id TEXT NOT NULL,action TEXT NOT NULL,detail TEXT NOT NULL,at INTEGER NOT NULL);
+CREATE TABLE peg_bundle_jobs(id TEXT PRIMARY KEY,bundle_id TEXT NOT NULL,project_id TEXT NOT NULL,item_key TEXT NOT NULL,task_id TEXT NOT NULL,epoch INTEGER NOT NULL,config TEXT NOT NULL,actor_id TEXT NOT NULL,status TEXT NOT NULL CHECK(status IN ('queued','applied','cancelled')),created_at INTEGER NOT NULL,finished_at INTEGER);
+CREATE TABLE peg_bundle_runs(id TEXT PRIMARY KEY,bundle_id TEXT NOT NULL,project_id TEXT NOT NULL,item_key TEXT NOT NULL,config TEXT NOT NULL,owner_id TEXT NOT NULL,created_by TEXT NOT NULL,created_at INTEGER NOT NULL);
+CREATE TABLE peg_bundle_run_tasks(run_id TEXT NOT NULL,step INTEGER NOT NULL,task_id TEXT NOT NULL,PRIMARY KEY(run_id,step));
+CREATE TRIGGER peg_bundle_rev_version AFTER INSERT ON peg_bundle_versions BEGIN UPDATE peg_personal_revision SET value=value+1 WHERE id=1; END;
+CREATE TRIGGER peg_bundle_rev_adoption_insert AFTER INSERT ON peg_bundle_adoptions BEGIN UPDATE peg_personal_revision SET value=value+1 WHERE id=1; END;
+CREATE TRIGGER peg_bundle_rev_adoption_update AFTER UPDATE ON peg_bundle_adoptions BEGIN UPDATE peg_personal_revision SET value=value+1 WHERE id=1; END;
+CREATE TRIGGER peg_bundle_rev_item_insert AFTER INSERT ON peg_bundle_items BEGIN UPDATE peg_personal_revision SET value=value+1 WHERE id=1; END;
+CREATE TRIGGER peg_bundle_rev_item_update AFTER UPDATE ON peg_bundle_items BEGIN UPDATE peg_personal_revision SET value=value+1 WHERE id=1; END;

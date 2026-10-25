@@ -1,3 +1,7 @@
+import {BundlesPage} from './pages/bundles'
+import {bundleView,listBundles} from '../bundles/definitions'
+import {previewBundle} from '../bundles/adoption'
+import {bundleSavedView} from '../bundles/execution'
 import {RegisterPage} from './pages/register'
 import {registerView} from '../register/records'
 import {CanvasPage} from './canvas/page'
@@ -105,6 +109,7 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
   const { viewer, workspace } = await context(db, actor, session.operator.role)
   const [, section, id, tail] = segments
   try {
+    if(section==='workflow-bundles'&&!tail){return page('Workflow bundles',h(BundlesPage,{viewer,bundles:id?[]:await listBundles(db,actor,workspace),view:id?await bundleView(db,actor,id):null,projects:(await listProjects(db,actor,workspace)).filter(p=>p.level==='admin').map(p=>({value:p.id,label:p.name})),fields:(await catalogue(db,actor,workspace)).map(f=>({value:f.id,label:f.label})),people:await peopleOptions(db,actor,workspace),preview:id&&url.searchParams.getAll('projectIds[]').length?await previewBundle(db,actor,id,{projectIds:url.searchParams.getAll('projectIds[]')}):null}))}
     if(section==='portfolios'&&!id){const role=await workspaceRole(db,actor.id,workspace);return page('Portfolios',h(PortfoliosPage,{viewer,workspace,query:url.searchParams.get('q')??'',portfolios:await listPortfolios(db,actor,workspace,url.searchParams.get('q')??''),canCreate:['owner','admin','manager','member'].includes(role??'')}))}
     if(section==='portfolios'&&id&&!tail){
       const atInput=url.searchParams.get('at'),at=atInput?Date.parse(atInput.length===16?atInput+':00Z':atInput):undefined,filterId=url.searchParams.get('filter')||undefined,drillMetric=url.searchParams.get('drill')
@@ -131,7 +136,7 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
       headers.set('content-security-policy',headers.get('content-security-policy')+"; connect-src 'self'")
       return new Response((await response.text()).replace('</head>','<link rel="stylesheet" href="/look/canvas.css"></head>').replace('</body>','<script src="/look/canvas.js" defer></script></body>'),{status:response.status,headers})
     }
-    if(section==='projects'&&id&&!tail&&url.searchParams.get('view')==='list')return page('Project list',h(ProjectListPage,{viewer,data:await board(db,actor,id)}))
+    if(section==='projects'&&id&&!tail&&url.searchParams.get('view')==='list'){const saved=url.searchParams.get('savedView'),filter=saved?await bundleSavedView(db,actor,id,saved):undefined;return page('Project list',h(ProjectListPage,{viewer,data:await board(db,actor,id,filter),viewName:filter?.name,savedView:saved??undefined}))}
     if(section==='meetings'&&!tail)return page('Meeting review',h(MeetingPage,{viewer,items:await meetings(db,actor,workspace),view:id?await meetingView(db,actor,id):null,people:await peopleOptions(db,actor,workspace),projects:(await listProjects(db,actor,workspace)).map(p=>({value:p.id,label:p.name}))}))
     if(section==='engineering'&&id&&!tail)return page('Engineering handoff',h(EngineeringPage,{viewer,data:await engineeringView(db,actor,id)}))
     if(section==='audit'&&!id)return page('Permanent audit',h(AuditPage,{viewer,data:await searchAudit(db,actor,workspace,Object.fromEntries(url.searchParams)),input:Object.fromEntries(url.searchParams)}))

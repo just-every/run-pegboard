@@ -1,3 +1,4 @@
+import {bundleRoutes} from './bundle-routes'
 import { registerRoutes } from './register-routes'
 import { canvasRoutes } from './canvas-routes'
 import { portfolioRoutes } from './portfolio-routes'
@@ -48,3 +49,5 @@ portfolioRoutes(pegboardApi)
 scheduleRoutes(pegboardApi)
 
 registerRoutes(pegboardApi)
+
+bundleRoutes(pegboardApi)

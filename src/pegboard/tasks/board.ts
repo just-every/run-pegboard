@@ -22,9 +22,9 @@ export async function readableTasks(db: D1Database, actor: Actor, projectId: str
   return out
 }
 
-export async function board(db: D1Database, actor: Actor, projectId: string) {
+export async function board(db: D1Database, actor: Actor, projectId: string, filter?: {status:string}) {
   const { project, effective } = await openProject(db, actor, projectId)
-  const tasks = await readableTasks(db, actor, projectId)
+  const tasks = (await readableTasks(db, actor, projectId)).filter(t=>!filter||filter.status==='all'||t.status===filter.status)
   const names = await displayNames(db, [project.owner_id, ...tasks.map(task => task.owner_id)])
   const subtasks = new Map<string, { done: number; total: number }>()
   for (const task of tasks) if (task.parent_id) { const n = subtasks.get(task.parent_id) ?? { done: 0, total: 0 }; n.total++; if (task.status === 'done') n.done++; subtasks.set(task.parent_id, n) }
