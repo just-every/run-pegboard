@@ -6,7 +6,7 @@ export function MemberRemovalPage({viewer,review,workspace,receipt}:{viewer:View
  const here=`/app/admin/removal/${review.person.id}`
  return <Shell viewer={viewer} current="/app/admin" title={receipt?'Member removed':`Remove ${review.person.name}`} chip={review.person.status.toUpperCase()} facts={['Installation-wide responsibility review']}>
   <Card title={receipt?'Revocation complete':'Review every affected set'}>
-   {receipt?<p>Access is inactive. Sessions and keys are revoked, queued authority is canceled and historical authorship remains preserved. <a href="/app/audit">Inspect permanent audit</a></p>:<>
+   {receipt?<p>Access is inactive. Sessions and keys are revoked, queued authority is canceled and historical authorship remains preserved. <a href={`/app/audit?action=person.departure&subject=${review.person.id}`}>Inspect permanent audit</a></p>:<>
     <p>This removes access across this installation. Existing outside messages stay sent. Replacements receive responsibility, never the departed person’s approval or credentials.</p>
     <p>{review.credentials.sessions} sessions · {review.credentials.keys} keys · {review.credentials.links} sign-in links to revoke</p>
     <Form action={`/api/v1/workspaces/${workspace}/people/${review.person.id}/remove`} next={`${here}?removed=1`} label="Review member removal">

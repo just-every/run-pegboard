@@ -37,7 +37,7 @@ export async function memberRemovalJourney({w,browser,sizes,ok}) {
    await page.goto(`${w.origin}/app/tasks/${f.task.id}`);await expect(page.locator('main')).toContainText('Original handover context');await proof('transferred-task')
    await page.goto(`${w.origin}/app/projects/${f.project.id}`);await proof('transferred-project')
    await page.goto(`${w.origin}/app/tasks/${f.approval.id}`);await expect(page.locator('main')).toContainText('PENDING');await proof('pending-approval')
-   await page.goto(`${w.origin}/app/audit?action=person.departure&subject=${f.departing.id}`);await proof('audit')
+   await page.goto(`${url}?removed=1`);await page.getByRole('link',{name:'Inspect permanent audit'}).click();await expect(page.getByRole('list',{name:'Permanent audit events'})).toContainText('person.departure');await proof('audit')
   } finally {await context.close()}
   console.log(`Member removal at ${size}px passed`)
  }

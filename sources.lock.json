@@ -2571,7 +2571,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/bulk.tsx": {
-      "sha256": "e74d8d957c3ecf08cf1073ca67f741770634a4e22b8d6d1332121c196171403d",
+      "sha256": "87f90c1d0106b1e467100614eda5d59596d0237c5cc14add204c5e3e4aa47bdf",
       "executable": false
     },
     "src/pegboard/ui/pages/bundles.tsx": {
@@ -2599,7 +2599,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/member-removal.tsx": {
-      "sha256": "efd2eedcae5753085d368d2e68174a6c40dfe7e606af619095c2a05d15284c93",
+      "sha256": "32da697bdd026d435d8052adf256e539a0cf3fceec56c67ec3c6a6767ececce2",
       "executable": false
     },
     "src/pegboard/ui/pages/my-tasks.tsx": {
@@ -2867,7 +2867,7 @@
       "executable": false
     },
     "tests/journeys/member-removal.mjs": {
-      "sha256": "409544f886f4edfc50aa8608b5ff06c5f6203b64e63e9a899b54ac53850961df",
+      "sha256": "353274f06b900a6cc874904038b929277cc0815b6428fddd14f32de0a0e92fcb",
       "executable": false
     },
     "tests/journeys/planning-canvas.mjs": {
