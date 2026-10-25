@@ -47,7 +47,7 @@ export async function portfolioJourney({ w, browser, sizes, ok }) {
       await expect(own.page.getByText('Risk policy · version 1')).toBeVisible()
       await expect(own.page.getByText('Computed from the work')).toBeVisible(); await expect(own.page.getByText('Manual health (published by a person)')).toBeVisible()
       await expect(own.page.getByText('1 incomplete milestone is past due')).toBeVisible()
-      await expect(own.page.getByText(/1 of 1 incomplete due-dated tasks are overdue/)).toBeVisible()
+      await expect(own.page.getByText(/1 of 2 incomplete due-dated tasks are overdue/)).toBeVisible()
       await expect(own.page.getByRole('link', { name: `Venue permit ${size}` })).toBeVisible()
       await own.page.getByRole('link', { name: 'Overdue', exact: true }).click()
       await expect(own.page.getByText('Source rows: overdue')).toBeVisible(); await expect(own.page.locator('main').getByRole('link', { name: `Venue permit ${size}` }).first()).toBeVisible()
@@ -56,7 +56,7 @@ export async function portfolioJourney({ w, browser, sizes, ok }) {
       await expect(own.page.getByRole('link', { name: `Retail launches ${size}` }).first()).toBeVisible()
       // Complete the late task through Tasks and the rollup moves.
       ok(await owner.patch(`/api/v1/tasks/${late.id}`, { status: 'done' }))
-      await own.page.goto(url); await expect(own.page.getByText(/1 of 1 incomplete due-dated tasks are overdue/)).toHaveCount(0)
+      await own.page.goto(url); await expect(own.page.getByText(/1 of 2 incomplete due-dated tasks are overdue/)).toHaveCount(0)
       // Change the policy through the screen: a new version, recalculated.
       const policy = own.page.getByRole('form', { name: 'Change risk policy' })
       await policy.getByLabel('Overdue share percent').fill('50'); await policy.getByRole('button', { name: 'Save policy version' }).click()
