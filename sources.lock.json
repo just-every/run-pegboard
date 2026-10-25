@@ -2735,7 +2735,7 @@
       "executable": false
     },
     "tests/journeys/planning-canvas.mjs": {
-      "sha256": "c900e0678d45fbe270447d607cd2ad27fcd8eaf2353b8cc8cb3723eee48f3364",
+      "sha256": "4d96dc7615a6c60e1a959562dda4c3d130722d3d9de6161a1cecc5fd04b83e01",
       "executable": false
     },
     "tests/journeys/portfolios.mjs": {

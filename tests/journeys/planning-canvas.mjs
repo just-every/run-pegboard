@@ -42,6 +42,8 @@ export async function planningCanvasJourney({w,browser,sizes,ok}) {
    await expect(own.page.locator(`[data-canvas-node="${phase.id}"] [data-canvas-node="${note.id}"]`)).toBeVisible()
    await mia.page.locator(`[data-canvas-node="${note.id}"] [data-canvas-select]`).first().click();await proof(mia.page,'note-review',size)
    form=mia.page.getByRole('form',{name:'Promote note to task',exact:true});await form.getByLabel('Accountable owner').selectOption(member.id);await form.getByRole('checkbox').check();await form.getByRole('button',{name:'Promote note to task',exact:true}).click()
+   // The promotion is a form post: wait for it to land before reading the result.
+   await expect.poll(async()=>(ok(await owner.get(api)).nodes.find(n=>n.id===note.id)??{}).task?.id).toBeTruthy()
    let view=ok(await owner.get(api)),linked=view.nodes.find(n=>n.id===note.id),taskId=linked.task.id
    const replay=ok(await member.post(api+`/nodes/${note.id}/promote`,{version:3,ownerId:member.id,confirm:true}));assert.equal(replay.taskId,taskId)
    await mia.page.getByRole('link',{name:'Task List',exact:true}).click()
