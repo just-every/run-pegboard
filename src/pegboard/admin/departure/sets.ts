@@ -2,9 +2,9 @@ import { all } from '../../db'
 
 // Only responsibility moves are listed here; historical authors and completed decisions never move.
 export const sets = [
-  { key: 'tasks', label: 'Assigned work', table: 'peg_tasks', column: 'owner_id', where: 'owner_id=? AND EXISTS(SELECT 1 FROM peg_task_projects p WHERE p.task_id=peg_tasks.id) AND NOT EXISTS(SELECT 1 FROM peg_approval_tasks a WHERE a.task_id=peg_tasks.id)', title: 'title', mode: 'transfer' },
-  { key: 'taskApprovals', label: 'Pending task approvals', table: 'peg_tasks', column: 'owner_id', where: "owner_id=? AND EXISTS(SELECT 1 FROM peg_approval_tasks a WHERE a.task_id=peg_tasks.id) AND EXISTS(SELECT 1 FROM peg_task_projects p WHERE p.task_id=peg_tasks.id)", title: 'title', mode: 'transfer' },
-  { key: 'personal', label: 'Private personal work', table: 'peg_tasks', column: 'owner_id', where: 'owner_id=? AND NOT EXISTS(SELECT 1 FROM peg_task_projects p WHERE p.task_id=peg_tasks.id)', title: "'Private personal work'", mode: 'unassign' },
+  { key: 'tasks', label: 'Assigned work', table: 'peg_tasks', column: 'owner_id', where: 'owner_id=? AND EXISTS(WITH RECURSIVE lineage(id,parent_id) AS (SELECT id,parent_id FROM peg_tasks t WHERE t.id=peg_tasks.id UNION SELECT t.id,t.parent_id FROM peg_tasks t JOIN lineage l ON t.id=l.parent_id) SELECT 1 FROM peg_task_projects p JOIN lineage l ON l.id=p.task_id) AND NOT EXISTS(SELECT 1 FROM peg_approval_tasks a WHERE a.task_id=peg_tasks.id)', title: 'title', mode: 'transfer' },
+  { key: 'taskApprovals', label: 'Pending task approvals', table: 'peg_tasks', column: 'owner_id', where: "owner_id=? AND EXISTS(SELECT 1 FROM peg_approval_tasks a WHERE a.task_id=peg_tasks.id) AND EXISTS(WITH RECURSIVE lineage(id,parent_id) AS (SELECT id,parent_id FROM peg_tasks t WHERE t.id=peg_tasks.id UNION SELECT t.id,t.parent_id FROM peg_tasks t JOIN lineage l ON t.id=l.parent_id) SELECT 1 FROM peg_task_projects p JOIN lineage l ON l.id=p.task_id)", title: 'title', mode: 'transfer' },
+  { key: 'personal', label: 'Private personal work', table: 'peg_tasks', column: 'owner_id', where: 'owner_id=? AND NOT EXISTS(WITH RECURSIVE lineage(id,parent_id) AS (SELECT id,parent_id FROM peg_tasks t WHERE t.id=peg_tasks.id UNION SELECT t.id,t.parent_id FROM peg_tasks t JOIN lineage l ON t.id=l.parent_id) SELECT 1 FROM peg_task_projects p JOIN lineage l ON l.id=p.task_id)', title: "'Private personal work'", mode: 'unassign' },
   { key: 'projects', label: 'Projects', table: 'peg_projects', column: 'owner_id', where: 'owner_id=?', title: 'name', mode: 'transfer' },
   { key: 'portfolios', label: 'Portfolios', table: 'peg_portfolios', column: 'owner_id', where: 'owner_id=?', title: 'name', mode: 'transfer' },
   { key: 'goals', label: 'Shared goals', table: 'peg_goals', column: 'owner_id', where: "owner_id=? AND scope<>'personal'", title: 'title', mode: 'transfer' },
@@ -20,7 +20,7 @@ export const sets = [
   { key: 'queued', label: 'Queued workflow actions', table: 'peg_bundle_jobs', column: 'actor_id', where: "actor_id=? AND status='queued'", title: "'Queued workflow action'", mode: 'stop' },
   { key: 'stages', label: 'Ongoing approval stages', table: 'peg_bundle_runs', column: 'owner_id', where: 'owner_id=?', title: "'Approval stage run'", mode: 'transfer' },
   { key: 'proposals', label: 'Unadopted meeting assignments', table: 'peg_meeting_proposals', column: 'owner_id', where: 'owner_id=? AND task_id IS NULL', title: "'Unadopted meeting assignment'", mode: 'unassign' },
-  { key: 'tags', label: 'Tag stewardship', table: 'peg_tags', column: 'owner_id', where: 'owner_id=?', title: 'name', mode: 'transfer' },
+  { key: 'tags', label: 'Tag stewardship', table: 'peg_tags', column: 'owner_id', where: 'owner_id=?', title: "'Private tag'", mode: 'unassign' },
   { key: 'engineering', label: 'Engineering connector custody', table: 'peg_engineering_links', column: 'created_by', where: 'created_by=? AND revoked_at IS NULL', title: "'Engineering connection'", mode: 'stop' },
   { key: 'meetings', label: 'Meeting source custody', table: 'peg_meetings', column: 'created_by', where: 'created_by=? AND revoked_at IS NULL', title: "'Meeting source'", mode: 'stop' },
   { key: 'webhooks', label: 'Outbound webhook custody', table: 'peg_webhooks', column: 'created_by', where: 'created_by=? AND revoked_at IS NULL', title: "'Webhook'", mode: 'stop' },

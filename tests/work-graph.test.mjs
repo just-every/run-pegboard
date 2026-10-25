@@ -1805,3 +1805,80 @@ describe('Project planning canvas', {concurrency:false},()=>{
   }finally{await restored.stop()}
  },{timeout:240000})
 })
+
+describe('PEG-064 retained graph recovery', {concurrency:false},()=>{
+ let worker,chief,member,outsider
+ const pass=async promise=>{const response=await promise;assert.ok(response.status>=200&&response.status<300,JSON.stringify(response.body));return response.body}
+ const preview=input=>pass(chief.post('/api/v1/recovery/preview',input))
+ const apply=async input=>{const reviewed=await preview(input);return pass(chief.post('/api/v1/recovery/apply',{...input,token:reviewed.token}))}
+ before(async()=>{
+  worker=await startWorker();chief=worker.owner
+  member=await worker.person('recovery-member@example.com','Recovery collaborator')
+  outsider=await worker.person('recovery-outsider@example.com','Recovery outsider')
+ },{timeout:120000})
+ after(()=>worker?.stop())
+
+ it('restores retained project, task and proof graphs while fencing stale review and erased content',async()=>{
+  const p=await pass(chief.post('/api/v1/projects',{name:'Retained recovery project'})),q=await pass(chief.post('/api/v1/projects',{name:'Other task home'}))
+  for(const project of [p,q])await pass(chief.post('/api/v1/grants',{objectType:'project',objectId:project.id,granteeId:member.id,level:'editor'}))
+  const root=await pass(chief.post('/api/v1/tasks',{projectId:p.id,title:'One shared recovery task'}))
+  await pass(chief.post(`/api/v1/tasks/${root.id}/projects`,{projectId:q.id}))
+  const child=await pass(chief.post('/api/v1/tasks',{parentId:root.id,title:'Retained nested work'}))
+  await pass(member.post(`/api/v1/tasks/${root.id}/comments`,{body:'Keep the original collaborator context'}))
+  await pass(member.patch(`/api/v1/tasks/${root.id}`,{description:'Current human instructions',priority:'high'}))
+  const independent=await pass(chief.post('/api/v1/tasks',{projectId:q.id,title:'Independent later work'}))
+  const before=await pass(chief.get(`/api/v1/tasks/${root.id}`))
+  await apply({type:'project',id:p.id,action:'archive'})
+  assert.ok(!(await pass(chief.get('/api/v1/projects'))).projects.some(project=>project.id===p.id))
+  assert.equal((await chief.get(`/api/v1/projects/${p.id}`)).status,200,'an archived project retains its direct authorized graph')
+  await apply({type:'project',id:p.id,action:'restore'})
+  assert.ok((await pass(chief.get('/api/v1/projects'))).projects.some(project=>project.id===p.id))
+
+  await apply({type:'task',id:root.id,action:'trash'})
+  for(const client of [chief,member])for(const id of [root.id,child.id])assert.equal((await client.get(`/api/v1/tasks/${id}`)).status,404)
+  assert.ok(!(await pass(outsider.get('/api/v1/recovery'))).records.some(row=>row.object_id===root.id))
+  const restoring={type:'task',id:root.id,action:'restore'},stale=await preview(restoring)
+  assert.equal((await outsider.post('/api/v1/recovery/apply',{...restoring,token:stale.token})).status,404)
+  await pass(member.patch(`/api/v1/tasks/${independent.id}`,{description:'Later independent human edit'}))
+  assert.equal((await chief.post('/api/v1/recovery/apply',{...restoring,token:stale.token})).status,409)
+  assert.equal((await chief.get(`/api/v1/tasks/${root.id}`)).status,404)
+  await apply(restoring)
+  const after=await pass(chief.get(`/api/v1/tasks/${root.id}`))
+  assert.deepEqual(after.projects,before.projects)
+  assert.deepEqual(after.comments,before.comments)
+  assert.deepEqual(after.history,before.history)
+  assert.equal(after.description,'Current human instructions');assert.equal(after.priority,'high')
+  assert.equal((await pass(chief.get(`/api/v1/tasks/${child.id}`))).parentId,root.id)
+  assert.equal((await pass(chief.get(`/api/v1/tasks/${independent.id}`))).description,'Later independent human edit')
+
+  const bytes=proofDocument('Recovery retains the exact current proof bytes')
+  const file=await pass(chief.post(`/api/v1/tasks/${root.id}/attachments?projectId=${p.id}&name=recovery.pdf`,bytes,{'content-type':'application/pdf'}))
+  const proof=await pass(chief.post(`/api/v1/tasks/${root.id}/proofs`,{attachmentId:file.id}))
+  const byteBefore=await pass(chief.get(`/api/v1/attachments/${file.id}`))
+  await apply({type:'proof_version',id:proof.versionId,action:'trash'})
+  assert.equal((await chief.get(`/api/v1/proofs/${proof.id}`)).status,404)
+  assert.equal((await chief.get(`/api/v1/attachments/${file.id}`)).status,404)
+  await apply({type:'proof_version',id:proof.versionId,action:'restore'})
+  const restoredProof=await pass(chief.get(`/api/v1/proofs/${proof.id}`))
+  assert.equal(restoredProof.versions.find(version=>version.id===proof.versionId).digest,proof.digest)
+  assert.equal(await pass(chief.get(`/api/v1/attachments/${file.id}`)),byteBefore)
+
+  const marker='Recovery erased payload must never travel in metadata'
+  const erased=await pass(chief.post('/api/v1/tasks',{projectId:p.id,title:'Reviewed irreversible removal',description:marker}))
+  await apply({type:'task',id:erased.id,action:'trash'})
+  const oldRestore=await preview({type:'task',id:erased.id,action:'restore'})
+  await apply({type:'task',id:erased.id,action:'restore'})
+  const erasure=await pass(chief.post('/api/v1/data/erasure-preview',{type:'task',id:erased.id}))
+  await pass(chief.post('/api/v1/data/erase',{type:'task',id:erased.id,token:erasure.token,confirm:true}))
+  assert.equal((await chief.post('/api/v1/recovery/apply',{type:'task',id:erased.id,action:'restore',token:oldRestore.token})).status,404)
+  assert.equal((await chief.get(`/api/v1/tasks/${erased.id}`)).status,404)
+  assert.ok(!(await pass(chief.get('/api/v1/recovery'))).records.some(row=>row.object_id===erased.id))
+  const job=await pass(chief.post('/api/portability/exports',{}));let archive
+  for(let count=0;count<100;count++){
+   const progress=await pass(chief.post(`/api/portability/exports/${job.id}/advance`,{maxParts:16}))
+   if(progress.phase==='complete'){archive=await pass(chief.get(`/api/portability/exports/${job.id}/download`));break}
+  }
+  assert.equal(typeof archive,'string','the public archive export completes')
+  assert.ok(!archive.includes(marker),'recovery metadata cannot retain an erased content snapshot')
+ })
+})

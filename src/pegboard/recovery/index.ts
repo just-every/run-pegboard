@@ -1,3 +1,4 @@
+import { recoveryChoices } from './choices'
 import { all, bound, conflict, first, invalid, now, PegError } from '../db'
 import { digest, guarded, revision } from '../decisions/revision'
 import { permanentEvent } from '../audit/search'
@@ -27,7 +28,7 @@ export async function recoveryList(db:D1Database,actor:Actor,workspace:string) {
     }catch(error){if(!(error instanceof PegError&&[403,404].includes(error.status)))throw error}
   }
   const retention=await first<{days:number|null}>(db,"SELECT days FROM peg_retention_classes WHERE workspace_id=? AND class='trash'",workspace)
-  return {records,retentionDays:retention?.days??null,retentionClass:'trash',expiry:'Retention eligibility does not automatically erase retained work.'}
+  return {choices:await recoveryChoices(db,actor,workspace),records,retentionDays:retention?.days??null,retentionClass:'trash',expiry:'Retention eligibility does not automatically erase retained work.'}
 }
 
 export async function recoveryPreview(db:D1Database,actor:Actor,workspace:string,input:RecoveryInput) {

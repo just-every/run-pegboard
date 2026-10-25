@@ -1,3 +1,5 @@
+import { recoveryJourney } from './recovery.mjs'
+import { memberRemovalJourney } from './member-removal.mjs'
 import {workflowBundleJourney} from './workflow-bundles.mjs'
 import {deliveryRegisterJourney} from './delivery-register.mjs'
 // The PEG-001 and PEG-020 screens, driven in a browser at 1440 and 390 px: build and share work through Projects, what a
@@ -881,6 +883,8 @@ try {
     const download=await page.request.get(w.origin+await page.getByRole('link',{name:'Export this page as JSON'}).getAttribute('href'));assert.equal(download.status(),200);assert.ok((await download.json()).events.every(e=>e.target_id===p.id))
     await context.close();console.log(`Data custody at ${size}px passed`)
   }
+  if(!process.env.PEGBOARD_JOURNEY||process.env.PEGBOARD_JOURNEY==='recovery')await recoveryJourney({w,browser,sizes,ok})
+  if(!process.env.PEGBOARD_JOURNEY||process.env.PEGBOARD_JOURNEY==='departure')await memberRemovalJourney({w,browser,sizes,ok})
   if(!process.env.PEGBOARD_JOURNEY||process.env.PEGBOARD_JOURNEY==='canvas')await planningCanvasJourney({w,browser,sizes,ok})
   if(!process.env.PEGBOARD_JOURNEY||process.env.PEGBOARD_JOURNEY==='portfolio')await portfolioJourney({w,browser,sizes,ok})
   if(!process.env.PEGBOARD_JOURNEY||process.env.PEGBOARD_JOURNEY==='timeline')await timelineJourney({w,browser,sizes,ok})

@@ -1,8 +1,10 @@
+import {startEngineeringServices} from './support/engineering-services.mjs'
 // PEG-020 and PEG-083's decision lifecycle, through real sign-in and the public doors: a role matrix over the project,
 // task, export, webhook and admin doors; capability changes seen at once; and every way an access request can fail to grant.
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
 import { startWorker } from './support/worker.mjs'
+import { createDepartureFixture, choicesFor } from './support/departure.mjs'
 
 let w, owner, P, T, who = {}
 const ok = async (promise, status = 200) => { const r = await promise; assert.equal(r.status, status, JSON.stringify(r.body)); return r.body }
@@ -288,5 +290,71 @@ describe('PEG-020 roles, grants and the decision lifecycle', { concurrency: fals
     for (const door of [c => c.get(`/api/v1/projects?workspace=${other.id}`), c => c.get(`/api/v1/teams?workspace=${other.id}`), c => c.get(`/api/v1/projects/${hidden.id}`), c => c.post('/api/v1/projects', { name: 'Intruder', workspaceId: other.id })])
       assert.equal((await door(who.member)).status, 404)
     assert.ok(!(await ok(who.member.get('/api/v1/projects'))).projects.some(project => project.name === 'Skunk project'))
+  })
+})
+
+describe('PEG-032 reviewed departure preserves work and revokes authority', {concurrency:false},()=>{
+  let worker,fixture,edge
+  before(async()=>{
+    edge=await startEngineeringServices()
+    worker=await startWorker({settings:{PEGBOARD_VECTOR_ORIGIN:'https://vector.example.com',PEGBOARD_LOCAL_ENGINEERING_ORIGINS:edge.origins}})
+    fixture=await createDepartureFixture({w:worker,ok,suffix:'access'})
+  },{timeout:120000})
+  after(async()=>{await worker?.stop();await edge?.stop()})
+
+  it('requires a current complete review, transfers responsibilities, stops delegated work and preserves human authorship',async()=>{
+    const f=fixture,path=f.removalPath
+    assert.equal((await f.editor.get(path+'/removal-preview')).status,403)
+    assert.equal((await f.editor.post(path+'/remove',{confirm:true,choices:{}})).status,403)
+    assert.equal((await f.readAnalytics()).status,200,'the departing administrator key initially works')
+    let review=await ok(f.owner.get(path+'/removal-preview'))
+    const active=new Set(review.affected.filter(set=>set.rows.length).map(set=>set.key))
+    for(const key of ['tasks','taskApprovals','personal','projects','portfolios','goals','recurrences','rules','queued','stages','tags','webhooks','personalGoals','approvers','personalRules','engineering','meetings','proposals','register','deliveryApprovals','scheduleApprovals','agents'])assert.ok(active.has(key),`${key} needs an explicit disposition`)
+    assert.ok(review.credentials.sessions>0)
+    assert.ok(review.credentials.keys>0)
+    assert.equal((await f.owner.post(path+'/remove',{token:review.token,confirm:true,choices:{}})).status,400)
+    assert.equal((await f.departing.get(`/api/v1/tasks/${f.task.id}`)).status,200,'an incomplete review has no partial effect')
+
+    const later=await ok(f.owner.post('/api/v1/tasks',{projectId:f.project.id,title:'Assigned after removal review',ownerId:f.departing.id}))
+    assert.equal((await f.owner.post(path+'/remove',{token:review.token,confirm:true,choices:choicesFor(review,f.owner.id)})).status,409)
+    assert.equal((await ok(f.owner.get(`/api/v1/tasks/${later.id}`))).owner.id,f.departing.id)
+    review=await ok(f.owner.get(path+'/removal-preview'))
+    const beforeTask=await ok(f.owner.get(`/api/v1/tasks/${f.task.id}`))
+    const removed=await ok(f.owner.post(path+'/remove',{token:review.token,confirm:true,choices:choicesFor(review,f.owner.id)}))
+    assert.equal(removed.status,'inactive')
+    const afterReview=await ok(f.owner.get(path+'/removal-preview'))
+    assert.ok(afterReview.affected.every(set=>set.rows.length===0),'every reviewed set leaves departed authority')
+    assert.deepEqual(afterReview.credentials,{sessions:0,keys:0,links:0})
+    assert.equal((await f.agent.get(`/api/v1/tasks/${f.task.id}`)).status,404,'delegated agent authority is revoked')
+    assert.equal((await f.owner.get(`/api/v1/goals/${f.privateGoal.id}`)).status,404,'private goals remain private after explicit unassignment')
+    for(const id of [f.task.id,later.id,f.approval.id,f.stage.taskId])assert.equal((await ok(f.owner.get(`/api/v1/tasks/${id}`))).owner.id,f.owner.id)
+    assert.equal((await ok(f.owner.get(`/api/v1/goals/${f.goal.id}`))).goal.owner_id,f.owner.id)
+    assert.equal((await ok(f.owner.get(`/api/v1/portfolios/${f.portfolio.id}`))).portfolio.owner,f.owner.name)
+    const projects=await ok(f.owner.get('/api/v1/projects'))
+    assert.equal(projects.projects.find(project=>project.id===f.project.id).ownerId,f.owner.id)
+    assert.equal((await f.owner.get(`/api/v1/tasks/${f.personal.id}`)).status,404,'private work is not silently disclosed by departure')
+    const currentTask=await ok(f.owner.get(`/api/v1/tasks/${f.task.id}`))
+    assert.deepEqual(currentTask.comments,beforeTask.comments)
+    for(const entry of beforeTask.history)assert.deepEqual(currentTask.history.find(row=>row.id===entry.id),entry)
+    const transferred=currentTask.history.filter(row=>row.kind==='owner.transferred')
+    assert.ok(transferred.some(row=>row.actor===f.owner.name&&row.detail.from===f.departing.id&&row.detail.to===f.owner.id))
+    const decided=await ok(f.owner.get(`/api/v1/tasks/${f.decided.id}/decision-preview`))
+    assert.equal(decided.state,'approved')
+    assert.deepEqual(decided.decisions,f.decidedBefore.decisions,'removal neither replaces nor impersonates the historical human decision')
+    assert.equal((await ok(f.owner.get(`/api/v1/tasks/${f.approval.id}/decision-preview`))).state,'pending')
+
+    assert.equal((await f.departing.get(`/api/v1/tasks/${f.task.id}`)).status,401,'the existing session is revoked')
+    assert.equal((await f.departing.patch(`/api/v1/tasks/${f.task.id}`,{priority:'urgent'})).status,401)
+    assert.equal((await f.readAnalytics()).status,401,'the existing analyst key is revoked')
+    const recurrence=await ok(f.owner.get(`/api/v1/recurrences/${f.recurrence.id}`))
+    assert.equal(recurrence.schedule.active,0)
+    const bundle=await ok(f.owner.get(f.bundlePath))
+    assert.ok(bundle.adoptions.every(row=>row.activated_by!==f.departing.id||!row.enabled))
+    assert.ok(bundle.jobs.some(job=>job.task_id===f.queuedTask.id&&job.status==='cancelled'))
+    assert.equal(bundle.runs.find(run=>run.id===f.stage.runId).owner_id,f.owner.id)
+    await ok(f.owner.post(f.bundlePath+'/jobs/process',{}))
+    assert.equal((await ok(f.owner.get(`/api/v1/tasks/${f.queuedTask.id}`))).priority,'normal','cancelled queued work never executes')
+    const replay=await f.owner.post(path+'/remove',{token:review.token,confirm:true,choices:choicesFor(review,f.owner.id)})
+    assert.equal(replay.status,409)
   })
 })
