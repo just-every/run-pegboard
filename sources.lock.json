@@ -207,7 +207,7 @@
       "executable": false
     },
     "base-copies.json": {
-      "sha256": "a11d6db159584f28b073681c50a1fab1dace809889e976d207dbd667d92c073e",
+      "sha256": "7c93c28f55478793e76620041ff50318411db3a7ab88108a53f530f1a47d9786",
       "executable": false
     },
     "CLAUDE.md": {
@@ -459,7 +459,7 @@
       "executable": false
     },
     "package.json": {
-      "sha256": "0bed9fa4528fbc80db8d339097b86d23f767d92c973afec63cd8112790b4ff98",
+      "sha256": "6cc69a0cda30ed2bc4fbd8bba7d984ed991ff597ff10f6e738cd28e130801420",
       "executable": false
     },
     "packaging.json": {
@@ -883,7 +883,7 @@
       "executable": false
     },
     "README.md": {
-      "sha256": "be46f4080c77fed8bb2b786f6d14474ce3413e7c5df66d3ce20208e9c7aac530",
+      "sha256": "aa3f639f40b0b51c73e5e48801af74f1a63f62c3b27ccde42dbcd21d0b4e8227",
       "executable": false
     },
     "RELEASE.json": {
@@ -2634,10 +2634,6 @@
       "sha256": "a35b0eff9d560e818b8aa145912b86d88ce3bc7f5c09d5eee09f6ed5219f7c2d",
       "executable": false
     },
-    "tests/incremental-typecheck.test.mjs": {
-      "sha256": "a11d6b89e7219137540c7052683c5f4d9ba7ddf16f66d34c1f56ae34029c0a95",
-      "executable": false
-    },
     "tests/journeys/work-graph.journey.mjs": {
       "sha256": "79c53b0bc653e0d58b84698e87692bf3a30ebfbe0ee6dcc4b2fbfc02d1cd0b78",
       "executable": false
@@ -2662,10 +2658,6 @@
       "sha256": "cb39adf72b838a2d95b74fb4ce3008b3843e2a63c4bb856f45fc5158e11289f8",
       "executable": false
     },
-    "tests/typecheck-checks.mjs": {
-      "sha256": "8bb5355750d1743fd97860ebe6a2b0f47a2b9f695bc6fb122289a09d28b17ba1",
-      "executable": false
-    },
     "tests/work-graph.test.mjs": {
       "sha256": "a149e3e0c369daf34f5ed3024f6faede23fa490a9c977ab4b93887e5b8c59a9e",
       "executable": false
@@ -2675,7 +2667,7 @@
       "executable": false
     },
     "verification.json": {
-      "sha256": "b7079544b998d132d8b11b21da887621946291816bfe72f217a8c6d5ea3c92cb",
+      "sha256": "75436f01f8115eecc1ed9a70586ef79dfa25feea01706cd8b8e11d2cf8ce7b3c",
       "executable": false
     },
     "VERIFY-WORKFLOW.md": {

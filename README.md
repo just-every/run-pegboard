@@ -40,7 +40,7 @@ uses the guarded `.github/workflows/run-site.yml` independently of Verify.
 
 This checkout pins the published `@runeditrun/rer` package at 0.2.79, Node
 22.20.0 and pnpm 10.12.4. Run `rer check`, `pnpm run build`,
-`pnpm run typecheck`, `pnpm run test:typecheck` and `pnpm run test:runtime`.
+`pnpm run typecheck` and `pnpm run test:runtime`.
 The foundation's verification workflow is the complete CI wall; no product tests
 or product behavior have been added. Base source and copy custody are recorded
 in edition.json, sources.lock.json and base-copies.json.
