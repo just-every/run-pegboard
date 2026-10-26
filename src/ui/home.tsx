@@ -21,18 +21,23 @@ const rows: Station[][] = [
 
 /** Base's sign-in settings, the owner's alone (Base answers anyone else 403). */
 export const settingsPath = '/auth/settings/identity'
-export const homeTabs = (viewer: Viewer, current = '/app'): Tab[] => [
-  { label: 'Home', href: '/app' },
-  { label: 'Projects', href: '/app/projects' },
-  { label: 'My tasks', href: '/app/my-tasks' },
-  { label: 'Portfolios', href: '/app/portfolios' },
-  { label: 'Goals', href: '/app/goals' },
-  { label: 'Recurring work', href: '/app/recurrences' },
-  { label: 'Teams', href: '/app/teams' },
-  { label: 'Inbox', href: '/app/inbox' },
-  ...(viewer.role === 'member' ? [] : [{ label: 'Access', href: '/app/access-review' }, { label: 'Admin', href: '/app/admin' }]),
-  ...(viewer.role === 'owner' ? [{ label: 'Settings', href: settingsPath }] : []),
-].map(tab => ({ ...tab, current: tab.href === current }))
+/** The views, in order. On a narrow bar the occasional ones fold into More first (fold 1), then the planning views and
+ *  Inbox (fold 2); Home, Projects and My tasks always stay tabs. */
+export const homeTabs = (viewer: Viewer, current = '/app'): Tab[] => {
+  const views: Tab[] = [
+    { label: 'Home', href: '/app' },
+    { label: 'Projects', href: '/app/projects' },
+    { label: 'My tasks', href: '/app/my-tasks' },
+    { label: 'Portfolios', href: '/app/portfolios', fold: 1 },
+    { label: 'Goals', href: '/app/goals', fold: 2 },
+    { label: 'Recurring work', href: '/app/recurrences', fold: 1 },
+    { label: 'Teams', href: '/app/teams', fold: 2 },
+    { label: 'Inbox', href: '/app/inbox', fold: 2 },
+    ...(viewer.role === 'member' ? [] : [{ label: 'Access', href: '/app/access-review', fold: 1 }, { label: 'Admin', href: '/app/admin', fold: 1 }] satisfies Tab[]),
+    ...(viewer.role === 'owner' ? [{ label: 'Settings', href: settingsPath, fold: 1 }] satisfies Tab[] : []),
+  ]
+  return views.map(tab => ({ ...tab, current: tab.href === current }))
+}
 
 export function AppHome({ viewer }: { viewer: Viewer }) {
   return <>
