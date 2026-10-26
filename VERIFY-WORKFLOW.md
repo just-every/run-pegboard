@@ -16,6 +16,9 @@ The two workflows use the same declared shards:
 
 Release tags use Nightly journeys' full coverage. The nightly workflow calls Verify with the full tier. Verify plans its matrix
 from `verification.json`, then runs the shards in parallel on Ubuntu 24.04.
+Seed workflow images are pinned to `ubuntu-24.04` because the Ubuntu 26.04 default
+changed the free-volume floor, Playwright's Chromium set and Android SDK paths;
+moving to 26.04 requires deliberate qualification, not a default-image upgrade.
 Push shards have a 12-minute timeout; the nightly workflow allows longer for the
 full installation journeys. The final `verify` aggregate remains the stable
 required check as shard names change. It succeeds only when planning and every
@@ -448,7 +451,7 @@ the helper requires to have succeeded, already ran it on that SHA's lanes:
   verify:
     if: always()
     needs: [main-verify, checks, runtime, browser, admission, hosted, journeys]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - name: Require every verification lane or the authorized main skip
@@ -543,13 +546,14 @@ seconds (queue time remains). An unverified main SHA, or one whose newest push
 run failed, must run every shard.
 
 For release adoption, update the installed CLI with `rer update --version
-0.2.80` once that release exists; package-mode seeds update their exact pin with
-`pnpm add -D -E @runeditrun/rer@0.2.80`. This checkout has **no bare `rer refresh`
+0.2.82` once that release exists; package-mode seeds update their exact pin with
+`pnpm add -D -E @runeditrun/rer@0.2.82`. This checkout has **no bare `rer refresh`
 command**, and an npm update alone does not copy seed-owned workflow files.
-For files already tracked in `base-copies.json`, the supported source refresh is:
+For files already tracked in `base-copies.json`, use the updated installed
+package's source refresh, including when the seed's copied CLI predates 0.2.82:
 
 ```sh
-node scripts/edition-authoring/cli.mjs refresh-base <release-commit> --base <base-checkout>
+rer refresh-base --ref <release-commit> --base <base-checkout>
 ```
 
 Copy or merge the workflows and helper above in that same adoption commit,

@@ -1,7 +1,7 @@
 // 12 · Switching (page-12): Oxbow's Cedar Valley board on Mon Oct 5, the day after 18 projects came over from Asana, with
 // six dependency cords between card pegs and three callouts; the Asana mapping in the widest card, the monday.com and
 // ClickUp moves beside it, and "Also from…" with the one-line start on a row of its own (BUILD-NOTES, 12 foot row).
-import run from '../../run.json'
+import run from '../../run'
 import { dots, head, t } from '../parts'
 
 type Card = [string, string, boolean?]
