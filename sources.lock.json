@@ -3063,7 +3063,7 @@
       "executable": false
     },
     "tests/portfolios.test.mjs": {
-      "sha256": "e7c11929178035019557188939d01e708d874bcfb1a579b7f16ebcab21850dd3",
+      "sha256": "b86c4af6dd05f7fde9dd3f53561bdb6244c1b5d04818dbcc05078a279c5afe42",
       "executable": false
     },
     "tests/runtime.mjs": {

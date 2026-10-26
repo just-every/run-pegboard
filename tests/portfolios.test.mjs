@@ -368,7 +368,7 @@ describe('Reusable templates through reviewed public doors', { concurrency: fals
       const applications = (await call(human.get(`/api/v1/projects/${applied.projectId}/template-applications`))).applications
       assert.ok(applications.some(a => a.id === applied.applicationId))
       const staged = (await call(human.get(`/api/v1/template-applications/${applied.applicationId}/rules`))).rules
-      assert.deepEqual(staged.map(r => r.definition), entry.definition.rules); assert.ok(staged.every(r => !r.active))
+      assert.deepEqual(staged.map(r => r.definition), entry.definition.rules.map(r => ({ ...r, active: false }))); assert.ok(staged.every(r => !r.active))
       await call(outsider.get(`/api/v1/projects/${applied.projectId}`), 404)
       if (entry.template.family === 'marketing') { application = applied; baseDefinition = structuredClone(entry.definition) }
     }
@@ -486,6 +486,17 @@ describe('Pinned template rules through current Admin review', { concurrency: fa
     const after = await state(); assert.deepEqual(after.runs.map(r => [r.id, r.result.taskIds]).sort(), before.runs.map(r => [r.id, r.result.taskIds]).sort())
     const tasks = (await call(human.get(`/api/v1/projects/${project.id}`))).columns.flatMap(c => c.tasks)
     assert.equal(tasks.length, 4, 'two initiating tasks plus one generated root per run')
+    const exported = await call(human.post('/api/portability/exports', {}), 201)
+    let archive
+    for (let part = 0; part < 100; part++) {
+      const progress = await call(human.post(`/api/portability/exports/${exported.id}/advance`, { maxParts: 16 }))
+      if (progress.phase === 'complete') { archive = await call(human.get(`/api/portability/exports/${exported.id}/download`)); break }
+    }
+    assert.ok(archive, 'native archive completes with template configuration')
+    const archivedRows = archive.trim().split('\n').map(line => JSON.parse(line)).filter(part => part.kind === 'part').flatMap(part => part.items).filter(item => item.kind === 'row')
+    const archivedRule = archivedRows.find(item => item.table === 'peg_template_rules' && item.row.id === rule.id)
+    assert.equal(archivedRule.row.enabled, 0); assert.equal(archivedRule.row.activation_id, null)
+    assert.ok(!archivedRows.some(item => item.table === 'peg_template_rule_execution_guards'))
   })
 
   it('holds a changed template or mapping until exact reactivation and rechecks the activating administrator before execution', async () => {
@@ -515,5 +526,15 @@ describe('Pinned template rules through current Admin review', { concurrency: fa
     const latest = await call(human.post('/api/v1/tasks', { projectId: project.id, title: 'Request after Admin revocation' }))
     const refused = (await state()).runs.find(r => r.rule_id === delegated.id && r.task_id === latest.id)
     assert.equal(refused.status, 'pending'); assert.equal(refused.result, null); assert.equal(refused.outcome, 'activation_scope_changed')
+    const dynamic = await call(human.post(`/api/v1/projects/${project.id}/template-rules`, { ...mapping, name: 'Reviewed request-date mapping', date: { source: 'task_start', offsetDays: 0 }, sampleSourceDate: '2026-07-09' }))
+    let exact = await call(human.post(`/api/v1/template-rules/${dynamic.id}/preview`, { sampleSourceDate: '2026-07-09' }))
+    await call(human.post(`/api/v1/template-rules/${dynamic.id}/activate`, { sampleSourceDate: '2026-07-09', token: exact.token }))
+    const proposed = await call(ai.post('/api/v1/tasks', { projectId: project.id, title: 'Agent-selected request date', startDate: '2026-07-13' }))
+    const heldByAi = (await state()).runs.find(r => r.rule_id === dynamic.id && r.task_id === proposed.id)
+    assert.equal(heldByAi.status, 'pending'); assert.equal(heldByAi.outcome, 'ai_source_requires_exact_review'); assert.equal(heldByAi.result, null)
+    exact = await call(human.post(`/api/v1/template-rules/${dynamic.id}/preview`, { runIds: [heldByAi.id] }))
+    assert.equal(exact.selectedRuns[0].startDate, '2026-07-13')
+    await call(human.post(`/api/v1/template-rules/${dynamic.id}/activate`, { runIds: [heldByAi.id], token: exact.token }))
+    assert.equal((await state()).runs.find(r => r.id === heldByAi.id).status, 'applied')
   })
 })
