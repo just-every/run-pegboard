@@ -2707,7 +2707,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/task.tsx": {
-      "sha256": "3bbc4888375b3113fff63e953eb5e5356422192298a400d999a1099c3fcb180b",
+      "sha256": "d4e589fcddb99a645dfa9ee39415cdf4d50a4032951b5881561b939fe5f771d8",
       "executable": false
     },
     "src/pegboard/ui/pages/team-gate.tsx": {
