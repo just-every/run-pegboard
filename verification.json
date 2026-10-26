@@ -35,6 +35,22 @@
       ]
     },
     {
+      "name": "work-graph-custody",
+      "browser": false,
+      "hosted": false,
+      "commands": [
+        "pnpm run test:graph:custody"
+      ]
+    },
+    {
+      "name": "work-graph-services",
+      "browser": false,
+      "hosted": false,
+      "commands": [
+        "pnpm run test:graph:services"
+      ]
+    },
+    {
       "name": "access-control",
       "browser": false,
       "hosted": false,
@@ -59,11 +75,27 @@
       ]
     },
     {
-      "name": "journeys",
+      "name": "journeys-core",
       "browser": true,
       "hosted": false,
       "commands": [
-        "pnpm run test:journeys"
+        "pnpm run test:journeys:core"
+      ]
+    },
+    {
+      "name": "journeys-services",
+      "browser": true,
+      "hosted": false,
+      "commands": [
+        "pnpm run test:journeys:services"
+      ]
+    },
+    {
+      "name": "journeys-planning",
+      "browser": true,
+      "hosted": false,
+      "commands": [
+        "pnpm run test:journeys:planning"
       ]
     },
     {

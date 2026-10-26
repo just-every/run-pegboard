@@ -535,7 +535,7 @@
       "executable": false
     },
     "package.json": {
-      "sha256": "79567e84c1b86b9d77a35165413bab5e8508289bf9e01d0cd34fc6ba5fb87717",
+      "sha256": "8ab2a474e10bd9e0719f20b15b10dfa336a4c168f92386e257f5f33814de7a31",
       "executable": false
     },
     "packaging.json": {
@@ -3059,7 +3059,7 @@
       "executable": false
     },
     "tests/journeys/work-graph.journey.mjs": {
-      "sha256": "0c41aa5acc16992836d546fb1787dfc85878effd4fc2c134aaaf92acbceebe07",
+      "sha256": "5eff50ced6bc9b23d163863c8a485b380107048e71bef84ab9b5b0aa1fca3236",
       "executable": false
     },
     "tests/journeys/workflow-bundles.mjs": {
@@ -3111,7 +3111,7 @@
       "executable": false
     },
     "verification.json": {
-      "sha256": "443ab622dcbea8842ae86fe1e5f7a83251250d24fe2359fc9397d88b5cab6d36",
+      "sha256": "dd681c22c3c72528c5ccfd40a462e9dc48c362e6cedc446a55a86df1f345e044",
       "executable": false
     },
     "VERIFY-WORKFLOW.md": {
