@@ -2771,7 +2771,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/conversion-evidence.tsx": {
-      "sha256": "908d5c9867ecbd13cbea71dc252c1c873f75cc2d71fb67a31138f81eb9a52a3a",
+      "sha256": "7b3100f93807e255ace347410dbc2611453ddfd92eb1a0bbcfaff0b21fe20da6",
       "executable": false
     },
     "src/pegboard/ui/pages/conversions.tsx": {
@@ -3091,7 +3091,7 @@
       "executable": false
     },
     "tests/journeys/conversions.mjs": {
-      "sha256": "00ad31448f8bf575683e592daf358628b9349ee40b55a93346c3f4bd402f1da9",
+      "sha256": "680aad422c7f1fa21fa58a5fbe36c4c0d1561acadb907e825060c9531674584e",
       "executable": false
     },
     "tests/journeys/delivery-register.mjs": {

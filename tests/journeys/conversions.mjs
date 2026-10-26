@@ -15,7 +15,8 @@ try{
   const page=await context.newPage(),errors=[];page.on('pageerror',error=>errors.push(error.message))
   const proof=async name=>{
    await page.evaluate(()=>document.fonts.ready)
-   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`${name} reflows at ${size}`)
+   const overflow=await page.evaluate(()=>[...document.querySelectorAll('main *')].filter(e=>e.getBoundingClientRect().right>innerWidth+1).map(e=>({tag:e.tagName,classes:e.className,text:e.textContent.slice(0,100),right:e.getBoundingClientRect().right})))
+   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`${name} reflows at ${size}: ${JSON.stringify(overflow)}`)
    assert.deepEqual(await page.locator('main button,main a,header a').evaluateAll(elements=>elements.filter(e=>!e.textContent.trim()&&e.querySelector('svg,img')&&!e.getAttribute('aria-describedby')).map(e=>e.outerHTML)),[],`${name} icon controls have tooltips`)
    assert.deepEqual(errors,[],`${name} has no browser error`)
    if(process.env.PEGBOARD_PROOF_DIR){await mkdir(process.env.PEGBOARD_PROOF_DIR,{recursive:true});await page.screenshot({path:join(process.env.PEGBOARD_PROOF_DIR,`conversions-${name}-${size}.jpg`),type:'jpeg',quality:75,fullPage:true})}
