@@ -2,7 +2,7 @@
 // (src/base/run-site.ts) with the same mark at /brand/mark.svg.
 import { escape } from '../base/run-site'
 import { iconHead } from '../base/icon-head'
-import run from './run.json'
+import run from './run'
 
 // The face (/rer-theme.css), the tokens and the parts the homepage and the docs share with the app (docs/LOOK.md).
 export const sharedLook = ['/rer-theme.css', '/look/tokens.css', '/look/parts.css'].map(href => `<link rel="stylesheet" href="${href}">`).join('')

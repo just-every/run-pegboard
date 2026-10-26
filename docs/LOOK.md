@@ -21,7 +21,7 @@ and parts below; do not write a second copy of any of them.
 | `public/look/tokens.css` | Every other token; names that equal a `--rer-*` value alias it, so each value is written once. |
 | `public/look/parts.css` | Parts the homepage shares with the app: `.card`, `.peg`, `.dl` (a "·" line), `.flap` (split-flap tiles). |
 | `public/look/controls.css` | Buttons, fields, checkboxes, avatars, the small flap chip. Each rule names the app's class and Base's element together. |
-| `public/look/shell.css` | The bar, breadcrumb, tabs, person, the board and its heading band. |
+| `public/look/shell.css` | The bar, breadcrumb, tabs and More, person, the board and its heading band. |
 | `public/look/wall.css` | The peg wall, the switchback path, task cards and blank ghosts, tassels, the exception note, the agent's tag (and its corner place on a wall with no proposal), the not-found card, and the column plan below 1024 px. |
 | `public/look/pages.css` | The screens beyond the Path wall (projects, tasks, teams, inbox, access review, admin): a page of cards on the same wall, rows inside a card instead of a table, inline forms. |
 | `public/look/frames.css` | Base's documents (sign-in, confirmation, `/setup`, settings, hand-off, the Lobby) placed in the bar + wall + hung card; sign-in settings under the app's own bar. |
@@ -58,7 +58,7 @@ the peg's (`--peg-*`), the avatar's (`--avatar-*`) and the buttons' (`--button-*
 
 | Part | Props | Notes |
 | --- | --- | --- |
-| `AppBar` | `viewer?`, `crumbs?`, `tabs?`, `home?` | Mark 9 at 44 px and the wordmark (`data-rer-name`, so Dev/Demo labels show) at a 28 px inset (16 px below 1024 px), the breadcrumb (workspace › team › project), the views as azure tabs with a drawn dot between them (outside the links: never in a link's name or focus ring), the person (initials, name, second line). A project's tabs are its views; Path is a project's home. Every signed-in screen carries it, sign-in settings included (`settingsDocument`, Settings current). |
+| `AppBar` | `viewer?`, `crumbs?`, `tabs?`, `home?` | Mark 9 at 44 px and the wordmark (`data-rer-name`, so Dev/Demo labels show) at a 28 px inset (16 px below 1024 px), the views as azure tabs with a drawn dot between them (outside the links: never in a link's name or focus ring), the person (initials, name, second line), and the breadcrumb (workspace › team › project) on a line of its own under them. From 1024 px it keeps a 70 px first row, with a second grid row for breadcrumbs (98 px total), and room beside the lockup for Base's demo exit; below 1024 px the views take a row of their own. Views that do not fit fold into **More**, the last view: a disclosure listing them, read as current when the current view is in it. A tab's `fold` orders them (1 first, then 2; Home, Projects and My tasks never fold): all eleven fit from 1720 px, fold 1 goes below that and fold 2 below 1440 px. Nothing in the bar scrolls or passes the page's edge. A project's tabs are its views; Path is a project's home. Every signed-in screen carries it, sign-in settings included (`settingsDocument`, Settings current). |
 | `Heading` | `title`, `chip?`, `facts` | The heavy title, its one chip, its facts as one "·" line ("57 tasks · 9 owners · critical path 12 tasks · Launch Tue Feb 16, 2027"). |
 | `Flap` | `text`, `tone: moved \| landed \| quiet` | The one split-flap chip on a screen ("MOVED +1" is `moved`). |
 | `Tag` | `label`, `say`, `actions`, `tells?` | The agent's tag: what it says (clauses joined by " · ", to the person reading it), one tomato primary and quiet secondaries, who it tells. **Where it hangs (APP.md):** on a populated Path it clips to the cord at the review card: hang it by its peg from the cord beside the card its proposal moves (in that station, after the card), never covering that card or another. Only a wall with no proposal (the empty home) puts it in the board's corner, as the board's own child: from 1024 px it shares the heading band's row and the band grows to hold it, so it never reaches the wall; below 1024 px it leads the wall. |
@@ -86,8 +86,8 @@ Controls: `.button.primary` (tomato, 19 px bold: white on tomato is AA only as l
 - **Wall** (its own tab): phase rails, working days across, card width = duration, today marked; the same cards and pegs.
 - **Timeline, Workload, List, Calendar** (PEG-003, PEG-025): the same records in the same parts; no table chrome.
 - Below 1024 px (tablet and phone, 390 px): one vertical cord with the cards in a column, tassels indented, the tag above
-  the cord with 44 px buttons, the views as one row that scrolls inside itself, never a sideways page scroll, nothing
-  under 13 px.
+  the cord with 44 px buttons, the views as one row of what fits with the rest in More, never a sideways scroll,
+  nothing under 13 px.
 - Data is US: USD, US dates with weekdays that match the calendar, the business's time zone on every time shown.
 - Phases: Positioning, Pricing & packaging, Content & photography, Retail sell-in, Launch PR, Support readiness.
 

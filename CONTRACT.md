@@ -386,11 +386,11 @@ its state in code. Integration names (Slack, Teams, Outlook, Google Calendar, Ji
 
 | Section | Claim on the page | Clauses | Status | Code path |
 | --- | --- | --- | --- | --- |
-| 01 Hero | 100% free, open source alternative to established work-management products | PEG-061, PEG-024 | code (licence); contract, not yet in code (replacement scope) | `LICENSE` (MIT), `src/site/run.json` |
+| 01 Hero | 100% free, open source alternative to established work-management products | PEG-061, PEG-024 | code (licence); contract, not yet in code (replacement scope) | `LICENSE` (MIT), `src/site/run.ts` |
 | 01 Hero | Turns briefs and requests into plans that fit everyone's week | PEG-029, PEG-007, PEG-016 | contract, not yet in code | — |
 | 01 Hero | Gets client sign-off on proofs | PEG-011, PEG-019, PEG-036 | contract, not yet in code | — |
 | 01 Hero | Writes the weekly status from real work | PEG-015, PEG-030 | contract, not yet in code | — |
-| 01 Hero | Run Pegboard on your own computer with one command | PEG-055 | partly (Base foundation runs; no product screens) | `/run` (`src/base/run-site.ts`), `src/site/run.json` |
+| 01 Hero | Run Pegboard on your own computer with one command | PEG-055 | partly (Base foundation runs; no product screens) | `/run` (`src/base/run-site.ts`), `src/site/run.ts` |
 | 02 October | Six teams' work with owners, dates and due/done counts per week | PEG-001, PEG-003, PEG-018 | contract, not yet in code | — |
 | 02 October | Work moved to the next working day is shown as moved, not hidden | PEG-004 | contract, not yet in code | — |
 | 03 Intake | Requests from a form, email and Slack land in one triage queue | PEG-007, PEG-008, PEG-071 | contract, not yet in code | — |
@@ -415,5 +415,5 @@ its state in code. Integration names (Slack, Teams, Outlook, Google Calendar, Ji
 | 11 Next week | Time off from calendars, task work blocked into free hours, every week fitting capacity | PEG-025, PEG-016, PEG-073 | contract, not yet in code | — |
 | 12 Switching | 18 projects moved from one project-management source with guests, comments, history, fields and every dependency | PEG-024, PEG-046, PEG-081 | contract, not yet in code | — |
 | 12 Switching | Moves from supported board, workspace, creative-work and spreadsheet sources, including CSV | PEG-047, PEG-048, PEG-049, PEG-053 | contract, not yet in code | — |
-| 12 Switching | `npx -y @runeditrun/rer dev just-every/run-pegboard` starts Pegboard | PEG-055 | partly (starts the Base foundation) | `src/site/run.json`, `/run` |
+| 12 Switching | `npx -y @runeditrun/rer dev just-every/run-pegboard` starts Pegboard | PEG-055 | partly (starts the Base foundation) | `src/site/run.ts`, `/run` |
 | 13 Closing | 100% free and open source | PEG-061 | code | `LICENSE` (MIT) |

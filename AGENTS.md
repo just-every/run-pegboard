@@ -22,7 +22,7 @@ behavior. The app wears the owner-approved look (app pick A, the Path view): bui
 every screen from the tokens and parts named in docs/LOOK.md, and keep
 public/rer-theme.css within Base's theme grammar (the installer reads it).
 
-Use the exact published @runeditrun/rer 0.2.79 pin. Public commands use bare rer
+Use the exact published @runeditrun/rer 0.2.83 pin. Public commands use bare rer
 verbs; do not restore a vendored CLI. Base runtime copies and their origins live
 in edition.json, sources.lock.json and base-copies.json. Keep recorded copies
 verbatim and preserve migrations already applied by an owner. Refresh source

@@ -1,6 +1,6 @@
 import { escape } from '../../base/run-site'
 import { sharedLook, siteDocument, siteHeader } from '../frame'
-import run from '../run.json'
+import run from '../run'
 import { groups, readDocs, type Doc } from './sources'
 import { docsText, renderDoc, validateDocLinks, type Body } from './render'
 

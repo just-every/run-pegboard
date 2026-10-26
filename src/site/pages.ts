@@ -1,12 +1,12 @@
 // The run site `rer build --site` writes: the approved homepage (src/site/landing.ts), /run, /contract when the seed
 // has a CONTRACT.md, the not-found page and the public files they use. Every Run page string and command is in
-// run.json; nothing here reads installation data.
+// run; nothing here reads installation data.
 import { contractPageHtml } from '../base/contract-page'
 import { runPageHtml, siteNotFoundHtml, type RunData, type SiteBuild, type SiteContext } from '../base/run-site'
 import { identity } from '../identity'
 import { landingHtml } from './landing'
 import { docsSitePages } from './docs/pages'
-import run from './run.json'
+import run from './run'
 
 export function sitePages({ contract }: Partial<SiteContext> = {}): SiteBuild {
   const data: RunData = run

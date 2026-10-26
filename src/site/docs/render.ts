@@ -2,7 +2,7 @@ import { Marked } from 'marked'
 import { posix } from 'node:path'
 import { existsSync, statSync } from 'node:fs'
 import { escape } from '../../base/run-site'
-import run from '../run.json'
+import run from '../run'
 import type { Doc } from './sources'
 
 export type Contents = { id: string; text: string }

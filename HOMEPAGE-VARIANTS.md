@@ -131,7 +131,7 @@ export default defineConfig({ plugins: [docsSite(), react()] })
 and add `deploy-site.json` (`{"version": 1, "domain": "run-<seed>.com"}`); list
 it in `vite.config.ts` `server.fs.allow` when the Worker imports it. Keep every
 Run page string and command in one `RunData` value (`src/site/run.ts` or
-`run.json`):
+`run.ts`):
 
 | Field | Cradle | Uptime |
 | --- | --- | --- |
