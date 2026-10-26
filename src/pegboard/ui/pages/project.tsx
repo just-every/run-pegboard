@@ -7,13 +7,15 @@ import { Flap } from '../../../ui/flap'
 import { Heading } from '../../../ui/heading'
 import { homeTabs } from '../../../ui/home'
 import { Card, Field, Form, Pick, Submit, levelLabel } from '../shell'
+import {ConversionLinks} from '../conversion-links'
+import type {ConversionView} from '../../conversion/operations'
 
 type Board = Awaited<ReturnType<typeof board>>
 const chunk = <T,>(list: T[], size: number) => Array.from({ length: Math.ceil(list.length / size) }, (_, i) => list.slice(i * size, (i + 1) * size))
 const when = (date: string | null) => !date ? undefined : date.includes('T') ? new Date(date).toLocaleString('en-US',{dateStyle:'medium',timeStyle:'short',timeZone:'UTC'})+' UTC' : new Date(`${date}T12:00:00Z`).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
 
 /** A project's wall: each section hangs as a card on the cord, its tasks as tassels beneath it. */
-export function ProjectPage({ viewer, data, id }: { viewer: Viewer; data: Board; id: string }) {
+export function ProjectPage({ viewer, data, id,conversionLinks=[] }: { viewer: Viewer; data: Board; id: string;conversionLinks?:ConversionView[] }) {
   const can = (capability: string) => (data.capabilities as string[]).includes(capability)
   const stations: Station[] = data.columns.map((column, index) => ({
     id: `s${index}`,
@@ -26,6 +28,7 @@ export function ProjectPage({ viewer, data, id }: { viewer: Viewer; data: Board;
     <main className="board" id="main">
       <Heading title={data.project.name} chip={<Flap text={data.counts.tasks && data.counts.done === data.counts.tasks ? 'DONE' : `${data.counts.tasks} TASKS`} tone={data.counts.tasks && data.counts.done === data.counts.tasks ? 'landed' : 'quiet'} />} facts={[`${data.counts.tasks} tasks`, `${data.counts.done} done`, `Owner ${data.project.owner.name}`, `Your access ${levelLabel(data.level)}`, ...(data.project.prefix ? [`References ${data.project.prefix}-n`] : [])]} />
       <nav className="page" aria-label="Project planning"><p><a href={`/app/projects/${id}?view=list`}>List</a> · <a href={`/app/projects/${id}/canvas`}>Planning canvas</a> · <a href={`/app/projects/${id}/timeline`}>Timeline</a> · <a href={`/app/projects/${id}/register`}>Delivery register</a></p></nav>
+      {(conversionLinks.length>0||can('manage_settings'))&&<section className="page"><ConversionLinks links={conversionLinks}/>{can('manage_settings')&&<Card title="Convert work"><a href={`/app/conversions?kind=project_to_task&sourceId=${id}`}>Convert to linked parent task</a></Card>}</section>}
       <PathWall label={`${data.project.name}, by section`} rows={chunk(stations, 4)}>
         {(can('edit') || can('manage_settings')) && <div className="page projectbar">
           {can('edit') && <Card title="Add a task">

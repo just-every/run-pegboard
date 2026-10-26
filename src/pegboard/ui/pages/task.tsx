@@ -4,12 +4,14 @@ import type { visibilityPreview } from '../../tasks/personal'
 import type { viewTask } from '../../tasks/view'
 import type { Viewer } from '../../../ui/viewer'
 import { Area, Card, Field, Form, Pick, Shell, Submit, levelLabel, when } from '../shell'
+import {ConversionLinks} from '../conversion-links'
+import type {ConversionView} from '../../conversion/operations'
 
 type View = Awaited<ReturnType<typeof viewTask>>
 const kindLabel: Record<string, string> = { 'bundle.rule_applied':'applied the activated rule','rule.action_applied':'applied a reviewed work action','rule.action_undone':'undid an unchanged rule effect','bulk.applied':'applied reviewed bulk changes','bulk.undone':'undid unchanged bulk changes','recovery.links_repaired':'repaired missing dependency links','dependency.added':'added a dependency','dependency.removed':'removed a dependency', 'decision.reopened':'reopened sign-off after a work change','decision.approve':'approved this revision','decision.changes':'requested changes','decision.reject':'rejected this revision', created: 'created the task', 'status.changed': 'changed the status', updated: 'edited the task', 'project.added': 'hung it in a project', 'project.removed': 'took it out of a project', 'section.changed': 'moved it to a section', 'fields.changed': 'changed project fields', 'comment.added': 'commented', 'attachment.added': 'attached a file', 'collaborators.changed': 'changed collaborators', 'internal.changed': 'changed internal notes' }
 const statusLabel: Record<string, string> = { todo: 'To do', doing: 'Doing', done: 'Done' }
 
-export function TaskPage({ viewer, task, addable, sections, preview, tagOptions,decision }: { viewer: Viewer; task: View; decision:Awaited<ReturnType<typeof decisionPreview>>|null; addable: { value: string; label: string }[]; sections: Record<string, { value: string; label: string }[]>; preview: Awaited<ReturnType<typeof visibilityPreview>> | null; tagOptions: {value:string;label:string}[] }) {
+export function TaskPage({ viewer, task, addable, sections, preview, tagOptions,decision,conversionLinks=[] }: { viewer: Viewer; task: View; conversionLinks?:ConversionView[]; decision:Awaited<ReturnType<typeof decisionPreview>>|null; addable: { value: string; label: string }[]; sections: Record<string, { value: string; label: string }[]>; preview: Awaited<ReturnType<typeof visibilityPreview>> | null; tagOptions: {value:string;label:string}[] }) {
   const can = (capability: string) => (task.capabilities as string[]).includes(capability)
   const approval=!!decision
   const stateLabels:Record<string,string>={approved:'Approved',reopened:'Reopened — new decision required',rejected:'Rejected',changes_requested:'Changes requested',pending:'Pending decision'}
@@ -19,6 +21,8 @@ export function TaskPage({ viewer, task, addable, sections, preview, tagOptions,
   return <Shell viewer={viewer} current="/app/projects" title={task.title} chip={decision?({approved:'APPROVED',reopened:'REOPENED',rejected:'REJECTED',changes_requested:'CHANGES',pending:'PENDING'}[decision.state]):statusLabel[task.status].toUpperCase()} facts={[task.ref ?? 'No reference', `Owner ${task.owner.name}`, `Priority ${task.priority}`, task.dueDate ? `Due ${task.dueDate}` : 'No due date', task.personal ? 'Personal task, only you see it' : `Your access ${levelLabel(task.level)}`]}
     crumbs={[...(first ? [{ label: first.name, href: `/app/projects/${first.id}` }] : [{ label: 'My tasks', href: '/app/my-tasks' }]), { label: task.ref ?? 'Task', href: here, current: true }]}>
     {task.deliveryRecords.length>0&&<Card title="Delivery register"><ul className="rows">{task.deliveryRecords.map(r=><li key={r.id}><a href={r.link}>{r.title}</a></li>)}</ul></Card>}
+    <ConversionLinks links={conversionLinks}/>
+    {can('edit')&&<Card title="Convert work"><p>{task.parentId?<a href={`/app/conversions?kind=promote&sourceId=${task.id}`}>Promote to top-level work</a>:<><a href={`/app/conversions?kind=task_to_project&sourceId=${task.id}`}>Convert to linked project</a> · <a href={`/app/conversions?kind=demote&sourceId=${task.id}`}>Make a subtask</a></>}</p></Card>}
     {can('edit')&&<Card title="Recovery"><a className="button quiet" href={`/app/recovery?type=task&id=${task.id}&action=trash`}>Review trash</a></Card>}
     <Card title="Task">
       {can('edit')&&['owner','admin'].includes(viewer.role)&&<p><a href={`/app/engineering/${task.id}`}>Engineering handoff</a></p>}

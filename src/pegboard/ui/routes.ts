@@ -1,4 +1,8 @@
 import {TemplatesPage} from './pages/templates'
+import {ConversionsPage} from './pages/conversions'
+import {conversionPageData} from '../conversion/page-data'
+import {conversionView,listConversionLinks} from '../conversion/operations'
+import {undoConversionPreview} from '../conversion/undo'
 import {templatePageData} from '../templates/page-data'
 import {DuplicatePage} from './pages/duplicate'
 import {sourceDuplication} from '../duplication/source'
@@ -131,6 +135,11 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
   const { viewer, workspace } = await context(db, actor, session.operator.role)
   const [, section, id, tail] = segments
   try {
+    if(section==='conversions'&&!tail){
+      const names=Object.fromEntries((await peopleOptions(db,actor,workspace)).map(person=>[person.value,person.label]))
+      if(id)return page('Linked conversion',h(ConversionsPage,{viewer,input:{},tasks:[],projects:[],constituents:[],names,preview:null,result:await conversionView(db,actor,id),undo:url.searchParams.has('undo')?await undoConversionPreview(db,actor,workspace,id):null}))
+      return page('Convert work',h(ConversionsPage,{viewer,...await conversionPageData(db,actor,workspace,url.searchParams),names,result:null,undo:null}))
+    }
     if(section==='templates'&&!id)return page('Templates',h(TemplatesPage,{viewer,...await templatePageData(db,actor,workspace,url.searchParams)}))
     if(section==='projects'&&id&&tail==='duplicate'&&segments.length===4){
       const input:Record<string,any>=Object.fromEntries(url.searchParams)
@@ -196,7 +205,7 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
     if(section==='time' &&!tail){const prefs=await settings(db,actor);return page('Timesheets',h(TimePage,{viewer,sheets:await listSheets(db,actor,workspace),view:id?await sheetView(db,actor,id):null,deliveries:id?await timeDeliveries(db,actor,id):null,tasks:await timeTaskOptions(db,actor,workspace),day:localDay(Date.now(),prefs.timezone)}))}
     if (section === 'projects' && !id) return page('Projects', h(ProjectsPage, { viewer, projects: await listProjects(db, actor, workspace), teams: (await listTeams(db, actor, workspace)).teams, canCreate: !!(await workspaceRole(db, actor.id, workspace)) && !['guest', 'analyst', 'agent'].includes((await workspaceRole(db, actor.id, workspace)) as string), workspace }))
     if (section === 'projects' && id && !tail) {
-      try { return await page('Project', h(ProjectPage, { viewer, data: await board(db, actor, id), id })) } catch (error) { if (error instanceof PegError && error.status === 404) return refuse(db, actor, viewer, id); throw error }
+      try { return await page('Project', h(ProjectPage, { viewer, data: await board(db, actor, id), id, conversionLinks:await listConversionLinks(db,actor,'project',id) })) } catch (error) { if (error instanceof PegError && error.status === 404) return refuse(db, actor, viewer, id); throw error }
     }
     if(section==='projects'&&id&&tail==='field-report'&&segments.length===4)return page('Field report',h(FieldReportPage,{viewer,data:await fieldReport(db,actor,id,url.searchParams.get('tag')??undefined)}))
     if(section==='tags'&&!id)return page('Tags',h(TagsPage,{viewer,tags:await tagCatalogue(db,actor,workspace),filtered:url.searchParams.get('tag')?await tagFilter(db,actor,url.searchParams.get('tag')!):null,projects:(await listProjects(db,actor,workspace)).filter(p=>p.level&&['editor','admin'].includes(p.level)).map(p=>({value:p.id,label:p.name}))}))
@@ -220,7 +229,7 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
       try { task = await viewTask(db, actor, decodeURIComponent(id)) } catch (error) { if (error instanceof PegError && error.status === 404) return refuse(db, actor, viewer, decodeURIComponent(id)); throw error }
       const open = (await listProjects(db, actor, workspace)).filter(project => project.level && ['editor', 'admin'].includes(project.level) && !task.projects.some(own => own.id === project.id))
       const sections = Object.fromEntries(await Promise.all(task.projects.map(async project => [project.id, (await listSections(db, project.id)).map(entry => ({ value: entry.id, label: entry.name }))])))
-      return page('Task', h(TaskPage, { viewer, task, decision:task.kind==='approval'?await decisionPreview(db,actor,task.id):null, addable: open.map(project => ({ value: project.id, label: project.name })), sections, tagOptions:(await tagCatalogue(db,actor,workspace)).filter(t=>!t.archived).map(t=>({value:t.id,label:t.name})), preview: task.personal && url.searchParams.get('projectId') ? await visibilityPreview(db,actor,task.id,url.searchParams.get('projectId')!) : null }))
+      return page('Task', h(TaskPage, { viewer, task, conversionLinks:await listConversionLinks(db,actor,'task',task.id), decision:task.kind==='approval'?await decisionPreview(db,actor,task.id):null, addable: open.map(project => ({ value: project.id, label: project.name })), sections, tagOptions:(await tagCatalogue(db,actor,workspace)).filter(t=>!t.archived).map(t=>({value:t.id,label:t.name})), preview: task.personal && url.searchParams.get('projectId') ? await visibilityPreview(db,actor,task.id,url.searchParams.get('projectId')!) : null }))
     }
     if (section === 'my-tasks') { const prefs=await settings(db,actor), on=url.searchParams.get('on')??undefined; const tasks=await myTasks(db,actor,on); return page('My tasks',h(MyTasksPage,{viewer,tasks,workspace,meta:await personalMeta(db,actor),day:on??localDay(Date.now(),prefs.timezone),on})) }
     if (section === 'teams' && !id) return page('Teams', h(TeamsPage, { viewer, teams: (await listTeams(db, actor, workspace, url.searchParams.get('q') ?? '')).teams, query: url.searchParams.get('q') ?? '', workspace, canCreate: ['owner', 'admin', 'manager'].includes((await workspaceRole(db, actor.id, workspace)) as string) }))
