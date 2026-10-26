@@ -2,6 +2,16 @@ import { appDocument } from '../../ui/document.server'
 import { AppBar } from '../../ui/bar'
 
 const sayings: Record<string, string> = {
+  conversion_preview_changed:'This work or its audience changed. Open a fresh conversion preview before applying it.',
+  conversion_review_changed:'This work or its audience changed. Open a fresh conversion preview before applying it.',
+  conversion_undo_preview_changed:'The work changed after this undo preview. Review undo again to preserve the latest human edits.',
+  conversion_hierarchy_cycle:'That parent would create a cycle. Choose work outside the source task and its nested work.',
+  conversion_hierarchy_depth:'That change would exceed the supported nesting depth. Choose a shallower parent.',
+  conversion_personal_scope:'This personal work needs a separate reviewed project share before it can become a project.',
+  conversion_personal_share_required:'This personal work needs a separate reviewed project share before it can become shared nested work.',
+  conversion_original_context_required:'That parent would remove an original project context. Choose a parent that retains every original project.',
+  conversion_incompatible_scope:'The destination has different access paths. Choose a project with the same audience and restrictions.',
+  conversion_audience_expansion:'That conversion would broaden access. Choose a destination that preserves the current audience.',
   engineering_source_refused:'The engineering source refused access. Its cached context was cleared and this request sent no update.',
   engineering_source_unavailable:'The engineering source is unavailable. Its indicator is stale. Refresh the source before reviewing another update.',
   meeting_source_revision_changed:'The source transcript changed. Its old proposals are unavailable. Import the authorized new revision for fresh review.',

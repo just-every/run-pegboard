@@ -11,6 +11,7 @@ import {startMeetingServices} from './support/meeting-services.mjs'
 import { startEngineeringServices, vectorTodo, vectorDone } from './support/engineering-services.mjs'
 import { startTimeServices } from './support/time-services.mjs'
 import { restoreCanvasInstallation } from './support/canvas-restore.mjs'
+import {registerConversionTests} from './scenarios/conversions.mjs'
 
 let w, owner, mia, gus, nina
 const ok = async (promise, status = 200) => { const r = await promise; assert.equal(r.status, status, JSON.stringify(r.body)); return r.body }
@@ -29,6 +30,13 @@ function csvRecords(text) {
   return rows.filter(row=>row.some(value=>value.length))
 }
 let campaign, launch, shared, mkt
+
+describe('Work conversions through reviewed public doors',{concurrency:false},()=>{
+ let worker,root,peer,guest
+ before(async()=>{worker=await startWorker();root=worker.owner;peer=await worker.person('conversion-member@example.com','Mia Studio');guest=await worker.person('conversion-guest@example.com','Gus Client','guest')},{timeout:120000})
+ after(()=>worker?.stop())
+ registerConversionTests({test:it,api:()=>({root,peer,guest})})
+})
 
 describe('PEG-001 one work graph', { concurrency: false }, () => {
   before(async () => {
