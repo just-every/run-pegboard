@@ -1,5 +1,6 @@
 import {TemplatesPage} from './pages/templates'
 import {ConversionsPage} from './pages/conversions'
+import {errorDocument} from './error'
 import {conversionPageData} from '../conversion/page-data'
 import {conversionView,listConversionLinks} from '../conversion/operations'
 import {undoConversionPreview} from '../conversion/undo'
@@ -269,6 +270,7 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
       return page('Administration', h(AdminPage, { viewer, workspace, settings: await workspaceSettings(db, workspace), people: await listPeople(db, actor, workspace) }))
     }
   } catch (error) {
+    if(section==='conversions'&&error instanceof PegError&&![403,404].includes(error.status))return errorDocument(error.status,error.code)
     if (error instanceof PegError) return page('Not available', h(RefusalPage, { viewer, target: '', canAsk: false, asked: false }), error.status)
     throw error
   }

@@ -539,7 +539,7 @@
       "executable": false
     },
     "package.json": {
-      "sha256": "1383c53ed5d689a78dcc03dfb39c9b62cc1cb5752b5da256be0523c611155568",
+      "sha256": "c904db7c32f1d4fe64dbd0f0bac0fac13fea0e84bf081fcdecc853efe790958d",
       "executable": false
     },
     "packaging.json": {
@@ -2895,7 +2895,7 @@
       "executable": false
     },
     "src/pegboard/ui/routes.ts": {
-      "sha256": "39067e428a12bbacc17aed7cd48aaccfeeb2b9962669666c8626904b615114f3",
+      "sha256": "a94e8fba2674bd496df32d14793e2e9a69bc9bd189e01461f32e760ca32f3986",
       "executable": false
     },
     "src/pegboard/ui/shell.tsx": {
