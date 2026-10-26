@@ -2735,7 +2735,7 @@
       "executable": false
     },
     "src/pegboard/ui/error.tsx": {
-      "sha256": "1ad111c2974f647442f76a8e7c7c93ce6bad04c5a4e6664d5a48dbe38afcd35c",
+      "sha256": "4c5b64953cfc8744e23f425fc88170f544b06a1892e721e1033eaab393ecf9c6",
       "executable": false
     },
     "src/pegboard/ui/field-errors.ts": {
@@ -3083,7 +3083,7 @@
       "executable": false
     },
     "tests/journeys/conversion-hierarchy.mjs": {
-      "sha256": "c4403b195bb4d0b264b01423f15d94a3b46c5b37c8938e2808b6170d9deb0080",
+      "sha256": "966cdca729cfaec12cf4d25257b10557379411d44e73e35c4282ba700ece8876",
       "executable": false
     },
     "tests/journeys/conversion-projects.mjs": {
