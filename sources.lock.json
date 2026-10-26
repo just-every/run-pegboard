@@ -251,7 +251,7 @@
       "executable": false
     },
     "docs/LOOK.md": {
-      "sha256": "aaf9eb99b87dd93a3c50866fbd82b5451cdf324ce292da4e965871348f9a6223",
+      "sha256": "1ae6e3eec5e5bd30b5001aa588e0cb791ac786651da20708c23e6b7cf6cf69f4",
       "executable": false
     },
     "docs/MEETING-REVIEW.md": {
@@ -935,7 +935,7 @@
       "executable": false
     },
     "public/look/shell.css": {
-      "sha256": "dd402e9a2fb526fec307947326e37760d97d5bcf4a02704a14f595b6367621b5",
+      "sha256": "3e9ad82d43073432c43000aed7bedf91f7173576f5dbd6b558e15ed2328511e7",
       "executable": false
     },
     "public/look/tokens.css": {

@@ -69,6 +69,7 @@ body:has(>.app){padding:0;background:var(--wall-ground)}
 /* Preserve the landed 70 px first row plus 28 px breadcrumb row from 1024 px. */
 @media (min-width:1024px){
   .bar:has(>.crumbs){display:grid;grid-template:var(--bar-h) auto/max-content minmax(0,1fr) max-content;row-gap:0}
+  .bar:has(>.crumbs):has(>[data-rer-demo-exit]){grid-template-columns:max-content max-content minmax(0,1fr) max-content}
   .bar>.crumbs{grid-area:2/1/3/-1;margin-top:-8px;padding-bottom:12px}
 }
 /* Keep the demo exit and owner beside the compact views at intermediate desktop widths. */
