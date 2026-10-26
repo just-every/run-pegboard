@@ -42,7 +42,7 @@ export async function reconcileConversion(db:D1Database,actor:Actor,taskIds:stri
    const field=await first<FieldRow>(db,'SELECT * FROM peg_field_definitions WHERE id=?',row.field_id)
    if(!field)continue
    const projects=await all<{project_id:string}>(db,'SELECT project_id FROM peg_project_fields WHERE field_id=?',row.field_id)
-   if(projects.some(p=>{const effective=access.contexts.get(p.project_id);return effective&&fieldReadable(field,effective)}))manifest.fields.push({taskId:id,fieldId:row.field_id,digest:await digest(row.value)})
+   if(projects.some(p=>{const effective=access.contexts.get(p.project_id);return effective&&fieldReadable(field,effective)}))manifest.fields.push({taskId:id,fieldId:row.field_id,label:field.label,type:field.type,value:JSON.parse(row.value),digest:await digest(row.value)})
   }
   manifest.collaborators.push(...await all<any>(db,'SELECT * FROM peg_task_collaborators WHERE task_id=? ORDER BY operator_id',id))
  }

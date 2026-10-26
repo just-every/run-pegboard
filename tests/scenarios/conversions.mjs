@@ -80,6 +80,19 @@ export function registerConversionTests({test,api}){
     for(const path of [`projects/${result.projectId}`,`tasks/${intake.id}`,`refs/${oldRef}`,`attachments/${firstFile.id}`,`proofs/${proof.id}`])assert.equal((await guest.get(`/api/v1/${path}`)).status,404,path)
     const refused=await pass(guest.get(`/api/v1/conversions/${result.id}`),403)
     assert.ok(!JSON.stringify(refused).includes(label(9115)))
+    const recurring=await project(root,9116),recurringTask=await work(root,recurring.id,9117)
+    await pass(root.post('/api/v1/tasks',{parentId:recurringTask.id,title:label(9118)}))
+    const team=await pass(root.post('/api/v1/teams',{name:label(9119),privacy:'private'}))
+    for(const person of [peer,guest])await pass(root.post('/api/v1/grants',{objectType:'team',objectId:team.id,granteeId:person.id,level:'viewer'}))
+    const standing=await pass(root.post('/api/v1/grants',{objectType:'project',objectId:recurring.id,granteeType:'team',granteeId:team.id,level:'viewer'}))
+    const scheduleInput={sourceType:'project',sourceId:recurring.id,unit:'month',start:'2026-01-01',count:1,grantIds:[standing.id]},schedulePlan=await pass(root.post('/api/v1/recurrences/preview',scheduleInput))
+    const schedule=await pass(root.post('/api/v1/recurrences',{...scheduleInput,revision:schedulePlan.token}))
+    await pass(root.post(`/api/v1/recurrences/${schedule.id}/run`,{}))
+    const occurrence=(await pass(root.get(`/api/v1/recurrences/${schedule.id}`))).occurrences[0],occurrenceBoard=await pass(root.get(`/api/v1/projects/${occurrence.object_id}`))
+    const generated=occurrenceBoard.columns.flatMap(column=>column.tasks)[0],convert={kind:'task_to_project',sourceId:generated.id}
+    const derived=await apply(root,convert,await preview(root,convert))
+    assert.equal((await peer.get(`/api/v1/projects/${derived.projectId}`)).status,200)
+    assert.equal((await guest.get(`/api/v1/projects/${derived.projectId}`)).status,404,'recurring internal grant classification survives conversion')
   })
 
   test('converts a populated project with chosen nested work and explicit retained links while preserving inert configuration',async()=>{

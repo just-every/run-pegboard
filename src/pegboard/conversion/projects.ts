@@ -71,8 +71,18 @@ export async function previewProjectConversion(db:D1Database,actor:Actor,workspa
  const mapping=tasks.map(task=>({taskId:task.id,title:task.title,action:task.id===sourceTask?.id?'source_record':input.kind==='task_to_project'?'project_work':retained.some(id=>id===task.id||ancestorOf(tasks,id,task.id))?'retained_link':'subtask'}))
  const reconciliation=await reconcileConversion(db,actor,tasks.map(t=>t.id)),repairs=await sourceRepairs(db,project.id),names=await displayNames(db,tasks.map(t=>t.owner_id))
  const capacity=[...new Set(tasks.map(t=>t.owner_id))].map(ownerId=>({ownerId,owner:names.get(ownerId)??'Former member',hours:tasks.filter(t=>t.owner_id===ownerId&&t.status!=='done').reduce((n,t)=>n+t.estimate_hours,0),addedHours:0}))
+ const memberships=[]
+ for(const projectId of [...contextIds].sort()){
+  const context=(await openProject(db,actor,projectId)).project
+  memberships.push({projectId,project:context.name,who:'Project owner and workspace administrators',level:'Admin',scope:'Project scope',capabilities:null,expiresAt:null})
+  if(context.visibility!=='private')memberships.push({projectId,project:context.name,who:context.visibility==='workspace'?'Current workspace members':'Current project team members',level:context.visibility==='workspace'?context.workspace_level:context.team_level,scope:'Project scope',capabilities:null,expiresAt:null})
+  for(const grant of await activeGrants(db,'project',projectId)){
+   const person=grant.grantee_type==='person'?(await displayNames(db,[grant.grantee_id])).get(grant.grantee_id):(await first<{name:string}>(db,'SELECT name FROM peg_teams WHERE id=?',grant.grantee_id))?.name
+   memberships.push({projectId,project:context.name,who:person??'Former member',level:grant.level,scope:grant.scope==='assignee'?'Assigned work only':grant.scope==='approve'?'Approval only':'Project scope',capabilities:grant.scopes,expiresAt:grant.expires_at})
+  }
+ }
  const options={kind:input.kind,sourceId:source.id,targetProjectId,taskIds:selected,retainIds:retained,visibility,name}
- const payload={kind:input.kind,source,target:{type:input.kind==='task_to_project'?'project':'task',title:name,projectId:targetProjectId},options,tasks,mapping,reconciliation,repairs,capacity,visibility:{before:project.visibility,after:visibility,note:'The same owner, native grant restrictions and expiry are retained. Historical files keep their original project context.'},contextIds:[...contextIds].sort(),project,homes,selected}
+ const payload={kind:input.kind,source,target:{type:input.kind==='task_to_project'?'project':'task',title:name,projectId:targetProjectId},options,tasks,mapping,reconciliation,repairs,capacity,memberships,visibility:{before:project.visibility,after:visibility,note:'The same owner, native grant restrictions and expiry are retained. Historical files keep their original project context.'},contextIds:[...contextIds].sort(),project,homes,selected}
  return {...payload,rev,token:await digest([actor.id,rev,payload])}
 }
 function ancestorOf(tasks:TaskRow[],root:string,id:string){let current=tasks.find(t=>t.id===id);for(let depth=0;current?.parent_id&&depth<50;depth++){if(current.parent_id===root)return true;current=tasks.find(t=>t.id===current!.parent_id)}return false}
@@ -86,7 +96,13 @@ export async function applyProjectConversion(db:D1Database,actor:Actor,workspace
   targetType='project';targetId=newId('prj')
   const task=preview.tasks.find(t=>t.id===preview.source.id)!
   statements.push(bound(db,'INSERT INTO peg_projects(id,workspace_id,name,description,owner_id,team_id,visibility,team_level,workspace_level,start_date,due_date,created_by,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)',[targetId,workspace,preview.options.name,task.description,project.owner_id,project.team_id,project.visibility,project.team_level,project.workspace_level,task.start_date,task.due_date,actor.id,at]))
-  for(const grant of await activeGrants(db,'project',project.id))statements.push(bound(db,"INSERT INTO peg_grants(id,workspace_id,object_type,object_id,grantee_type,grantee_id,level,scope,scopes,source,created_by,created_at,expires_at) VALUES(?,?,'project',?,?,?,?,?,?,'direct',?,?,?)",[newId('grant'),workspace,targetId,grant.grantee_type,grant.grantee_id,grant.level,grant.scope,grant.scopes,actor.id,at,grant.expires_at]))
+  const origin=await first<{template_id:string;source_id:string}>(db,"SELECT template_id,source_id FROM peg_template_origins WHERE object_type='project' AND object_id=?",project.id)
+  if(origin)statements.push(bound(db,"INSERT INTO peg_template_origins VALUES('project',?,?,?)",[targetId,origin.template_id,origin.source_id]))
+  for(const grant of await activeGrants(db,'project',project.id)){
+   const grantId=newId('grant')
+   statements.push(bound(db,"INSERT INTO peg_grants(id,workspace_id,object_type,object_id,grantee_type,grantee_id,level,scope,scopes,source,created_by,created_at,expires_at) VALUES(?,?,'project',?,?,?,?,?,?,'direct',?,?,?)",[grantId,workspace,targetId,grant.grantee_type,grant.grantee_id,grant.level,grant.scope,grant.scopes,actor.id,at,grant.expires_at]))
+   if(origin&&await first(db,'SELECT 1 FROM peg_recurring_grants WHERE grant_id=?',grant.id))statements.push(bound(db,'INSERT INTO peg_recurring_grants VALUES(?)',[grantId]))
+  }
   for(const field of await all<{key:string;field_id:string}>(db,'SELECT key,field_id FROM peg_project_fields WHERE project_id=? ORDER BY key',project.id))statements.push(bound(db,'INSERT INTO peg_project_fields VALUES(?,?,?)',[targetId,field.key,field.field_id]))
   for(const child of preview.tasks.filter(t=>t.parent_id===task.id)){
    effects.push({kind:'task_structure',taskId:child.id,before:{parentId:task.id,kind:child.kind},after:{parentId:null,kind:child.kind==='subtask'?'task':child.kind}})

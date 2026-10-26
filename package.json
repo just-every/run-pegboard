@@ -40,7 +40,8 @@
     "delivery:spec": "node scripts/build-deployment-spec.mjs",
     "check:deployment-spec": "node scripts/build-deployment-spec.mjs --check",
     "delivery:artifact": "node scripts/delivery/base/cli.mjs artifact --config packaging.json",
-    "test:templates": "rer queue test:templates -- sh -c \"node tests/journeys/templates.mjs\""
+    "test:templates": "rer queue test:templates -- sh -c \"node tests/journeys/templates.mjs\"",
+    "test:conversions": "rer queue test:conversions -- sh -c \"node tests/journeys/conversions.mjs\""
   },
   "dependencies": {
     "@tanstack/react-router": "1.170.41",

@@ -1,4 +1,4 @@
-import {all, forbidden, notFound} from '../db'
+import {all, first, forbidden, notFound} from '../db'
 import {openTask,require as taskNeed} from '../tasks/access'
 import {openProject,need} from '../workspace/projects'
 import {activeGrants} from '../authorization/effective'
@@ -24,7 +24,8 @@ export async function objectAuthority(db:D1Database,actor:Actor,workspace:string
 }
 // Policy identity includes grant restrictions and expiry: equal current reader counts are insufficient.
 export async function projectScope(db:D1Database,project:ProjectRow){
- const grants=(await activeGrants(db,'project',project.id)).map(g=>[g.grantee_type,g.grantee_id,g.level,g.scope,g.scopes,g.expires_at]).sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b)))
- return JSON.stringify([project.workspace_id,project.owner_id,project.visibility,project.team_id,project.team_level,project.workspace_level,grants])
+ const occurrence=!!await first(db,"SELECT 1 FROM peg_template_origins WHERE object_type='project' AND object_id=?",project.id)
+ const grants=(await Promise.all((await activeGrants(db,'project',project.id)).map(async g=>[g.grantee_type,g.grantee_id,g.level,g.scope,g.scopes,g.expires_at,occurrence&&!!await first(db,'SELECT 1 FROM peg_recurring_grants WHERE grant_id=?',g.id)]))).sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b)))
+ return JSON.stringify([project.workspace_id,project.owner_id,project.visibility,project.team_id,project.team_level,project.workspace_level,occurrence,grants])
 }
 export async function projectHomes(db:D1Database,taskId:string){return all<import('../model').TaskProjectRow>(db,'SELECT * FROM peg_task_projects WHERE task_id=? ORDER BY project_id',taskId)}

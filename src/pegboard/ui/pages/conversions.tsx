@@ -34,6 +34,7 @@ export function ConversionsPage({viewer,input,tasks,projects,constituents,names,
     <Form action="/api/v1/conversions/apply" next="" label="Apply reviewed conversion">{fields('options' in preview?preview.options:{kind:preview.kind,sourceId:preview.sourceId,targetProjectId:preview.targetProjectId,parentId:preview.parentId})}<input type="hidden" name="token" value={preview.token}/><Submit>Apply reviewed conversion</Submit></Form>
    </Card>
    <Card title="Audience and capacity">{'note' in preview.visibility?<><p>Visibility: {preview.visibility.before} → {preview.visibility.after}</p><p>{preview.visibility.note}</p></>:<><p>Every current audience path remains scoped. Access does not expand.</p><ul className="rows">{preview.visibility.after.map(path=><li key={path.taskId+path.personId}>{path.name} · {path.capabilities.map(c=>c.replaceAll('_',' ')).join(', ')}</li>)}</ul></>}
+    {'tasks' in preview&&<details><summary>Review membership paths</summary><ul className="rows">{preview.memberships.map((path,index)=><li key={index}><span>{path.who} · {path.project}<br/>{path.level} · {path.scope}{path.capabilities?' · '+path.capabilities.replaceAll('_',' '):''} · {path.expiresAt?'Expires '+new Date(path.expiresAt).toISOString():'No expiry'}</span></li>)}</ul></details>}
     <ul className="rows">{preview.capacity.map(person=><li key={person.ownerId}>{person.owner} · {'hours' in person?person.hours:person.afterHours} open hours · {person.addedHours} added hours</li>)}</ul>
    </Card>
    <ConversionEvidence value={preview.reconciliation} names={names}/>
