@@ -11,6 +11,7 @@ export function ProjectsPage({ viewer, projects, teams, canCreate, workspace }: 
       </ul>}
     </Card>
     {canCreate && <Card title="Start a project">
+      <p><a className="button quiet" href="/app/templates">New project from a template</a></p>
       <Form action="/api/v1/projects" next="/app/projects" label="Start a project">
         <input type="hidden" name="workspaceId" value={workspace} />
         <Field label="Project name" name="name" required />

@@ -2032,3 +2032,90 @@ describe('PEG-064 retained graph recovery', {concurrency:false},()=>{
  })
 
 })
+
+describe('Direct project duplication through reviewed public doors', { concurrency: false }, () => {
+  let worker, human, creative, guest, source, brief, child, approval, bundle, ruleId, sourceGrant
+  const call = async (promise, status = 200) => { const response = await promise; assert.equal(response.status, status, JSON.stringify(response.body)); return response.body }
+  before(async () => {
+    worker = await startWorker(); human = worker.owner
+    creative = await worker.person('synthetic-pegboard-6101@example.com', 'Maya Production')
+    guest = await worker.person('synthetic-pegboard-6102@example.com', 'Client reviewer', 'guest')
+    source = await call(human.post('/api/v1/projects', { name: 'Austin spring campaign', startDate: '2026-06-01', dueDate: '2026-06-12' }))
+    sourceGrant = await call(human.post('/api/v1/grants', { objectType: 'project', objectId: source.id, granteeId: creative.id, level: 'editor' }))
+    await call(human.post('/api/v1/grants', { objectType: 'project', objectId: source.id, granteeId: guest.id, level: 'commenter' }))
+    brief = await call(human.post('/api/v1/tasks', { projectId: source.id, title: 'Produce campaign creative', ownerId: creative.id, startDate: '2026-06-01', dueDate: '2026-06-05', estimateHours: 12, internalNotes: 'Private supplier negotiation' }))
+    child = await call(human.post('/api/v1/tasks', { parentId: brief.id, title: 'Prepare print artwork', ownerId: creative.id, startDate: '2026-06-02', dueDate: '2026-06-03', estimateHours: 3 }))
+    approval = await call(human.post('/api/v1/tasks', { projectId: source.id, title: 'Approve campaign artwork', kind: 'approval', ownerId: creative.id, startDate: '2026-06-08', dueDate: '2026-06-08' }))
+    await call(human.post('/api/v1/dependencies', { predecessor: brief.id, successor: approval.id, type: 'fs' }))
+    await call(human.post(`/api/v1/projects/${source.id}/fields`, { key: 'campaign_code', label: 'Campaign code', type: 'text' }))
+    await call(human.post(`/api/v1/tasks/${brief.id}/fields`, { projectId: source.id, values: { campaign_code: 'Austin spring' } }))
+    await call(human.post(`/api/v1/tasks/${brief.id}/comments`, { body: 'Source-only negotiation notes' }))
+    const file = await call(human.post(`/api/v1/tasks/${brief.id}/attachments?name=synthetic-pegboard-6103.pdf`, proofDocument('Reviewed campaign artwork'), { 'content-type': 'application/pdf' }))
+    const proof = await call(human.post(`/api/v1/tasks/${brief.id}/proofs`, { attachmentId: file.id }))
+    const proofReview = await call(human.get(`/api/v1/proofs/${proof.id}/decision-preview`))
+    await call(human.post(`/api/v1/proofs/${proof.id}/decisions`, { versionId: proof.versionId, token: proofReview.token, action: 'approve', reason: 'Regional artwork approved' }))
+    assert.equal((await call(human.get(`/api/v1/proofs/${proof.id}`))).state, 'approve')
+    const decision = await call(human.get(`/api/v1/tasks/${approval.id}/decision-preview`))
+    await call(human.post(`/api/v1/tasks/${approval.id}/decision`, { revision: decision.token, action: 'approve', reason: 'Regional artwork approved' }))
+    bundle = await call(human.post('/api/v1/workflow-bundles', { name: 'Campaign routing' }))
+    await call(human.post(`/api/v1/workflow-bundles/${bundle.id}/versions`, { version: 1, key: 'priority', kind: 'rule', name: 'Production priority', priority: 'high' }))
+    const activation = await call(human.post(`/api/v1/workflow-bundles/${bundle.id}/preview`, { projectIds: [source.id] }))
+    await call(human.post(`/api/v1/workflow-bundles/${bundle.id}/adopt`, { projectIds: [source.id], keys: ['priority'], revision: activation.token }))
+    ruleId = `${bundle.id}:priority`
+  }, { timeout: 120000 })
+  after(() => worker?.stop())
+
+  it('duplicates only selected work with fresh identities and provenance, concrete original or relative dates, and no copied approvals, private context or active authority', async () => {
+    for (const selected of [false, true]) {
+      const input = { name: selected ? 'Denver summer campaign' : 'Austin selected work', taskIds: selected ? [brief.id, child.id, approval.id] : [brief.id, child.id], includeAssignees: selected, dateMode: selected ? 'relative' : 'original', ...(selected ? { startDate: '2026-07-06', memberIds: [creative.id], ruleIds: [ruleId] } : {}) }
+      const preview = await call(human.post(`/api/v1/projects/${source.id}/duplicate/preview`, input))
+      assert.equal(preview.audience.visibility, 'private'); assert.ok(preview.capacity.some(row => row.addedHours > 0))
+      const copied = await call(human.post(`/api/v1/projects/${source.id}/duplicate`, { ...input, revision: preview.token }))
+      assert.deepEqual(await call(human.post(`/api/v1/projects/${source.id}/duplicate`, { ...input, revision: preview.token })), copied)
+      assert.notEqual(copied.project.id, source.id); assert.equal(copied.project.visibility, 'private'); assert.equal(copied.tasks.length, input.taskIds.length)
+      assert.deepEqual(new Set(copied.tasks.map(t => t.sourceId)), new Set(input.taskIds))
+      for (const item of copied.tasks) {
+        assert.ok(!input.taskIds.includes(item.id)); const row = await call(human.get(`/api/v1/tasks/${item.id}`)), original = await call(human.get(`/api/v1/tasks/${item.sourceId}`))
+        assert.equal(row.title, original.title); assert.equal(row.owner.id, selected ? original.owner.id : human.id)
+        assert.equal(row.startDate, selected ? ({ [brief.id]: '2026-07-06', [child.id]: '2026-07-07', [approval.id]: '2026-07-13' })[item.sourceId] : original.startDate)
+        assert.equal(row.internalNotes, ''); assert.deepEqual(row.comments, []); assert.deepEqual(row.attachments, [])
+        assert.equal(row.projects.length, 1); assert.equal(row.projects[0].id, copied.project.id)
+        if (item.sourceId === child.id) assert.equal(row.parentId, copied.tasks.find(t => t.sourceId === brief.id).id)
+        if (item.sourceId === approval.id) { const decision = await call(human.get(`/api/v1/tasks/${item.id}/decision-preview`)); assert.equal(decision.state, 'pending'); assert.deepEqual(decision.decisions, []); assert.equal(original.status, 'done') }
+        if (item.sourceId === brief.id) assert.equal(row.projects[0].fields.find(f => f.key === 'campaign_code').value, 'Austin spring')
+      }
+      await call(creative.get(`/api/v1/projects/${copied.project.id}`), 404); await call(guest.get(`/api/v1/projects/${copied.project.id}`), 404)
+      assert.equal((await call(human.get(`/api/v1/projects/${copied.project.id}/bundle-configuration`))).length, 0)
+      if (selected) {
+        assert.equal(copied.staged.length, 2); assert.ok(copied.staged.every(s => s.activated_at === null))
+        const stageIds = copied.staged.map(s => s.id), review = await call(human.post(`/api/v1/projects/${copied.project.id}/duplicate-review/preview`, { stageIds }))
+        assert.equal(review.members[0].id, creative.id); assert.equal(review.rules.length, 1)
+        await call(human.post(`/api/v1/projects/${copied.project.id}/duplicate-review/activate`, { stageIds, revision: review.token }))
+        assert.equal((await call(creative.get(`/api/v1/projects/${copied.project.id}`))).level, 'editor')
+        await call(guest.get(`/api/v1/projects/${copied.project.id}`), 404)
+        const configuration = await call(human.get(`/api/v1/projects/${copied.project.id}/bundle-configuration`))
+        const active = configuration.find(c => c.kind === 'rule'); assert.ok(active.enabled)
+        assert.equal((await call(human.get(`/api/v1/workflow-bundles/${active.bundle_id}`))).jobs.length, 0, 'activation sends no copied-task jobs or duplicate effects')
+        const future = await call(human.post('/api/v1/tasks', { projectId: copied.project.id, title: 'New Denver print run' }))
+        await call(human.post(`/api/v1/workflow-bundles/${active.bundle_id}/jobs/process`, {}))
+        assert.equal((await call(human.get(`/api/v1/tasks/${future.id}`))).priority, 'high')
+      } else assert.deepEqual(copied.staged, [])
+    }
+  })
+
+  it('refuses detached children, stale previews and revoked source membership at copy and activation time', async () => {
+    await call(guest.post(`/api/v1/projects/${source.id}/duplicate/preview`, { taskIds: [brief.id] }), 403)
+    await call(human.post(`/api/v1/projects/${source.id}/duplicate/preview`, { taskIds: [child.id] }), 400)
+    const input = { name: 'Stale review must not copy', taskIds: [brief.id, child.id], memberIds: [creative.id], includeAssignees: true }
+    let preview = await call(human.post(`/api/v1/projects/${source.id}/duplicate/preview`, input))
+    await call(human.patch(`/api/v1/tasks/${brief.id}`, { description: 'Later reviewed creative direction' }))
+    await call(human.post(`/api/v1/projects/${source.id}/duplicate`, { ...input, revision: preview.token }), 409)
+    preview = await call(human.post(`/api/v1/projects/${source.id}/duplicate/preview`, input))
+    const copy = await call(human.post(`/api/v1/projects/${source.id}/duplicate`, { ...input, revision: preview.token }))
+    const stageIds = copy.staged.map(s => s.id), review = await call(human.post(`/api/v1/projects/${copy.project.id}/duplicate-review/preview`, { stageIds }))
+    await call(human.post(`/api/v1/grants/${sourceGrant.id}/revoke`, {}))
+    await call(human.post(`/api/v1/projects/${copy.project.id}/duplicate-review/activate`, { stageIds, revision: review.token }), 409)
+    await call(creative.get(`/api/v1/projects/${copy.project.id}`), 404)
+    const result = await call(human.get(`/api/v1/projects/${copy.project.id}/duplicate-result`)); assert.ok(result.staged.every(s => s.activated_at === null))
+  })
+})

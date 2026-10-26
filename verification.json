@@ -31,7 +31,31 @@
       "browser": false,
       "hosted": false,
       "commands": [
-        "pnpm run test:graph"
+        "pnpm run test:graph:work-graph"
+      ]
+    },
+    {
+      "name": "access-control",
+      "browser": false,
+      "hosted": false,
+      "commands": [
+        "pnpm run test:graph:access-control"
+      ]
+    },
+    {
+      "name": "portfolios",
+      "browser": false,
+      "hosted": false,
+      "commands": [
+        "pnpm run test:graph:portfolios"
+      ]
+    },
+    {
+      "name": "schedule",
+      "browser": false,
+      "hosted": false,
+      "commands": [
+        "pnpm run test:graph:schedule"
       ]
     },
     {
@@ -40,6 +64,14 @@
       "hosted": false,
       "commands": [
         "pnpm run test:journeys"
+      ]
+    },
+    {
+      "name": "templates",
+      "browser": true,
+      "hosted": false,
+      "commands": [
+        "pnpm run test:templates"
       ]
     }
   ],

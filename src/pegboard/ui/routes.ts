@@ -1,3 +1,13 @@
+import {TemplatesPage} from './pages/templates'
+import {templatePageData} from '../templates/page-data'
+import {DuplicatePage} from './pages/duplicate'
+import {sourceDuplication} from '../duplication/source'
+import {previewDuplicate} from '../duplication/preview'
+import {duplicateResult} from '../duplication/execution'
+import {previewDuplicateActivation} from '../duplication/activation'
+import {TemplateRulesPage} from './pages/template-rules'
+import {templateRuleView,previewTemplateRule} from '../templates/rules'
+import {listTemplates} from '../templates/definitions'
 import {fieldRevisionView,fieldRevisionPreview} from '../revisions/fields'
 import {FieldRevisionsPage} from './pages/field-revisions'
 import {bundleRevisionPreview} from '../revisions/bundles'
@@ -121,6 +131,17 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
   const { viewer, workspace } = await context(db, actor, session.operator.role)
   const [, section, id, tail] = segments
   try {
+    if(section==='templates'&&!id)return page('Templates',h(TemplatesPage,{viewer,...await templatePageData(db,actor,workspace,url.searchParams)}))
+    if(section==='projects'&&id&&tail==='duplicate'&&segments.length===4){
+      const input:Record<string,any>=Object.fromEntries(url.searchParams)
+      for(const key of ['taskIds','memberIds','ruleIds','stageIds'])input[key]=url.searchParams.getAll(key+'[]')
+      const result=input.result?await duplicateResult(db,actor,id):null
+      return page('Duplicate project',h(DuplicatePage,{viewer,input,result,source:result?null:await sourceDuplication(db,actor,id),preview:input.preview?await previewDuplicate(db,actor,id,input):null,review:result&&input.review?await previewDuplicateActivation(db,actor,id,input):null}))
+    }
+    if(section==='projects'&&id&&tail==='template-rules'&&segments.length===4){
+      const view=await templateRuleView(db,actor,id)
+      return page('Template rules',h(TemplateRulesPage,{viewer,view,templates:(await listTemplates(db,actor,view.project.workspace_id)).map(t=>({id:t.template.id,name:t.template.name,version:t.headVersion,roles:t.definition.roles})),people:await peopleOptions(db,actor,view.project.workspace_id),selectedTemplateId:url.searchParams.get('templateId')??undefined,preview:url.searchParams.get('review')?await previewTemplateRule(db,actor,url.searchParams.get('review')!,{...Object.fromEntries(url.searchParams),runIds:url.searchParams.getAll('runIds[]')}):null}))
+    }
     if(section==='fields'&&id&&tail==='revisions')return page('Field revisions',h(FieldRevisionsPage,{viewer,view:await fieldRevisionView(db,actor,id),preview:url.searchParams.has('fromVersion')?await fieldRevisionPreview(db,actor,id,Object.fromEntries(url.searchParams)):null}))
     if(section==='recovery'&&id==='bulk'&&!tail){const input=bulkInput({...Object.fromEntries(url.searchParams),taskIds:url.searchParams.getAll('taskIds[]')});return page('Bulk changes',h(BulkPage,{viewer,input,tasks:(await recoveryList(db,actor,workspace)).choices.filter(c=>c.value.startsWith('task.')).map(c=>({value:c.value.slice(5),label:c.label.slice(7)})),people:await peopleOptions(db,actor,workspace),listing:await listBulk(db,actor,workspace),preview:input.taskIds.length?await bulkPreview(db,actor,workspace,input):null,undo:url.searchParams.get('operationId')?await undoBulkPreview(db,actor,workspace,url.searchParams.get('operationId')!):null}))}
     if(section==='projects'&&id&&tail==='brief')return page('Project brief',h(BriefPage,{viewer,view:await briefView(db,actor,id,Object.fromEntries(url.searchParams))}))

@@ -1,4 +1,7 @@
 import {bulkRoutes} from './bulk-routes'
+import {templateRoutes} from './template-routes'
+import {duplicateRoutes} from './duplicate-routes'
+import {templateRuleRoutes} from './template-rule-routes'
 import {briefRoutes} from './brief-routes'
 import { recoveryRoutes } from './recovery-routes'
 import {bundleRoutes} from './bundle-routes'
@@ -60,3 +63,7 @@ recoveryRoutes(pegboardApi)
 briefRoutes(pegboardApi)
 
 bulkRoutes(pegboardApi)
+
+templateRoutes(pegboardApi)
+duplicateRoutes(pegboardApi)
+templateRuleRoutes(pegboardApi)

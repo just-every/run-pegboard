@@ -1,3 +1,4 @@
+import {templateRuleQueueStatements,processTemplateRuleRuns} from '../templates/rule-execution'
 import {bundleQueueStatements} from '../bundles/queue'
 import {setValues} from '../fields/values'
 // Tasks: one record each, hung in any number of projects, with one history and one reference.
@@ -68,13 +69,14 @@ export async function prepareTask(db: D1Database, actor: Actor, input: TaskInput
   }
   statements.unshift(bound(db, `INSERT INTO peg_tasks(id,workspace_id,title,description,kind,parent_id,status,priority,start_date,due_date,owner_id,creator_id,estimate_hours,internal_only,internal_notes,created_at,updated_at,completed_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     [id, workspaceId, title(input.title), (input.description ?? '').slice(0, 20000), kind === 'approval' ? 'task' : kind, parent?.id ?? null, status, input.priority ?? 'normal', date(input.startDate, 'start_date'), date(input.dueDate, 'due_date'), owner, actor.id, hours(input.estimateHours), input.internalOnly ? 1 : 0, (input.internalNotes ?? '').slice(0, 20000), at, at, status === 'done' ? at : null]))
-  statements.push(historyStatement(db, id, null, actor.id, 'created', { kind, parentId: parent?.id ?? null }),...(options.queueRules===false?[]:await bundleQueueStatements(db,projectId,id)))
-  return { id, statements }
+  statements.push(historyStatement(db, id, null, actor.id, 'created', { kind, parentId: parent?.id ?? null }),...(options.queueRules===false?[]:[...await bundleQueueStatements(db,projectId,id),...await templateRuleQueueStatements(db,projectId,id)]))
+  return { id, statements, projectId }
 }
 
 export async function createTask(db: D1Database, actor: Actor, input: TaskInput): Promise<TaskRow> {
-  const {id,statements}=await prepareTask(db,actor,input)
+  const {id,statements,projectId}=await prepareTask(db,actor,input)
   await batch(db,statements)
+  if(projectId)await processTemplateRuleRuns(db,projectId)
   return (await first<TaskRow>(db,'SELECT * FROM peg_tasks WHERE id=?',id))!
 }
 

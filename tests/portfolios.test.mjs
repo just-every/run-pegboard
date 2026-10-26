@@ -323,3 +323,197 @@ describe('Selective configuration revision recovery',{concurrency:false},()=>{
   await pass(owner.post(root+'/versions',{version:view.current.version,key:'brief',remove:true}));preview=await pass(owner.post(root+'/revisions/preview',input));assert.equal(preview.current,null);await pass(owner.post(root+'/revisions/restore',{...input,token:preview.token}));view=await pass(owner.get(root));assert.equal(view.current.components.brief.title,'Original print brief');assert.equal(view.items.find(i=>i.item_key==='brief').version,3)
  })
 })
+
+describe('Reusable templates through reviewed public doors', { concurrency: false }, () => {
+  let worker, human, designer, reviewer, ai, outsider, gallery, application, custom, baseDefinition
+  const call = async (promise, status = 200) => { const response = await promise; assert.equal(response.status, status, JSON.stringify(response.body)); return response.body }
+  const plan = (entry, extra = {}) => ({ templateId: entry.template.id, version: entry.version, startDate: '2026-07-02', name: `${entry.template.name} — regional delivery`, roles: Object.fromEntries(entry.definition.roles.map((role, i) => [role, [human.id, designer.id, reviewer.id][i % 3]])), ...extra })
+  before(async () => {
+    worker = await startWorker(); human = worker.owner
+    designer = await worker.person('synthetic-pegboard-6001@example.com', 'Maya Creative')
+    reviewer = await worker.person('synthetic-pegboard-6002@example.com', 'Leo Review')
+    ai = await worker.person('synthetic-pegboard-6003@example.com', 'Planning agent', 'agent')
+    outsider = await worker.person('synthetic-pegboard-6004@example.com', 'Unassigned stakeholder')
+    gallery = (await call(human.get('/api/v1/templates'))).templates
+  }, { timeout: 120000 })
+  after(() => worker?.stop())
+
+  it('instantiates every gallery family with reviewed working dates, nested work, owners, fields, dependencies, pending approvals and inactive rules', async () => {
+    assert.deepEqual(new Set(gallery.map(entry => entry.template.family)), new Set(['marketing', 'launch', 'onboarding', 'event', 'content']))
+    for (const entry of gallery) {
+      const input = plan(entry), preview = await call(human.post('/api/v1/templates/preview', input))
+      assert.deepEqual(preview.missingRoles, []); assert.equal(preview.visibility, 'private')
+      assert.ok(preview.capacity.some(row => row.addedHours > 0)); assert.ok(preview.unreachableOwners.includes(designer.id))
+      assert.equal(preview.tasks.find(t => t.start === 0).startDate, '2026-07-02')
+      assert.equal(preview.tasks.find(t => t.due === 1).dueDate, '2026-07-06', 'relative dates skip the observed holiday and weekend')
+      const applied = await call(human.post('/api/v1/templates/apply', { ...input, token: preview.token }))
+      assert.deepEqual(await call(human.post('/api/v1/templates/apply', { ...input, token: preview.token })), applied, 'replaying the reviewed choice returns one application')
+      const board = await call(human.get(`/api/v1/projects/${applied.projectId}`))
+      assert.equal(board.project.visibility, 'private'); assert.deepEqual(board.fields.map(f => f.key).sort(), entry.definition.fields.map(f => f.key).sort())
+      const rows = await Promise.all(applied.taskIds.map(id => call(human.get(`/api/v1/tasks/${id}`))))
+      assert.equal(rows.length, entry.definition.tasks.length); assert.equal(new Set(applied.taskIds).size, rows.length)
+      for (const [index, row] of rows.entries()) {
+        const expected = preview.tasks[index]
+        assert.equal(row.title, expected.title); assert.equal(row.startDate, expected.startDate); assert.equal(row.dueDate, expected.dueDate); assert.equal(row.owner.id, expected.ownerId)
+        const values = Object.fromEntries(row.projects.find(p => p.id === applied.projectId).fields.map(f => [f.key, f.value]))
+        for (const [key, value] of Object.entries(expected.fields)) assert.deepEqual(values[key], value)
+        if (expected.parent) assert.equal(row.parentId, applied.taskIds[entry.definition.tasks.findIndex(t => t.key === expected.parent)])
+        if (expected.approval) { const decision = await call(human.get(`/api/v1/tasks/${row.id}/decision-preview`)); assert.equal(decision.state, 'pending'); assert.deepEqual(decision.decisions, []) }
+      }
+      for (const edge of entry.definition.dependencies) {
+        const successor = rows[entry.definition.tasks.findIndex(t => t.key === edge.successor)]
+        const links = await call(human.get(`/api/v1/tasks/${successor.id}/dependencies`))
+        assert.ok(links.dependencies.some(d => d.direction === 'predecessor' && d.task.id === applied.taskIds[entry.definition.tasks.findIndex(t => t.key === edge.predecessor)] && d.type === edge.type))
+      }
+      const applications = (await call(human.get(`/api/v1/projects/${applied.projectId}/template-applications`))).applications
+      assert.ok(applications.some(a => a.id === applied.applicationId))
+      const staged = (await call(human.get(`/api/v1/template-applications/${applied.applicationId}/rules`))).rules
+      assert.deepEqual(staged.map(r => r.definition), entry.definition.rules); assert.ok(staged.every(r => !r.active))
+      await call(outsider.get(`/api/v1/projects/${applied.projectId}`), 404)
+      if (entry.template.family === 'marketing') { application = applied; baseDefinition = structuredClone(entry.definition) }
+    }
+  })
+
+  it('requires an explicit missing-role choice and applies a new template version only after review while retaining human edits', async () => {
+    const entry = gallery[0], input = plan(entry), roles = { ...input.roles }; delete roles[entry.definition.roles[0]]
+    let preview = await call(human.post('/api/v1/templates/preview', { ...input, roles }))
+    assert.deepEqual(preview.missingRoles, [entry.definition.roles[0]])
+    await call(human.post('/api/v1/templates/apply', { ...input, roles, token: preview.token }), 400)
+    const explicit = { ...input, name: 'Unassigned launch review', roles: { ...roles, [entry.definition.roles[0]]: null }, keepUnassigned: true }
+    preview = await call(human.post('/api/v1/templates/preview', explicit)); assert.deepEqual(preview.missingRoles, [])
+    const unassigned = await call(human.post('/api/v1/templates/apply', { ...explicit, token: preview.token }))
+    assert.equal((await call(human.get(`/api/v1/tasks/${unassigned.taskIds[0]}`))).owner.id, '')
+    custom = await call(human.post('/api/v1/templates', { name: 'Regional campaign standard', definition: baseDefinition }))
+    const customInput = { ...input, templateId: custom.id, version: custom.version }
+    preview = await call(human.post('/api/v1/templates/preview', customInput))
+    application = await call(human.post('/api/v1/templates/apply', { ...customInput, token: preview.token }))
+    const updated = structuredClone(baseDefinition); updated.tasks[0].title = 'Agree the revised regional brief'; updated.tasks[0].due += 1; updated.tasks[1].title = 'Revised audience checklist'
+    await call(human.patch(`/api/v1/tasks/${application.taskIds[1]}`, { title: 'Human-owned audience research' }))
+    const next = await call(human.post(`/api/v1/templates/${custom.id}/versions`, { baseVersion: custom.version, definition: updated }))
+    assert.equal((await call(human.get(`/api/v1/tasks/${application.taskIds[0]}`))).title, baseDefinition.tasks[0].title)
+    let adoption = await call(human.post(`/api/v1/template-applications/${application.applicationId}/adoption/preview`, { version: next.version }))
+    await call(human.patch(`/api/v1/tasks/${application.taskIds[2]}`, { description: 'Retain later production context' }))
+    await call(human.post(`/api/v1/template-applications/${application.applicationId}/adopt`, { version: next.version, token: adoption.token }), 409)
+    adoption = await call(human.post(`/api/v1/template-applications/${application.applicationId}/adoption/preview`, { version: next.version }))
+    await call(human.post(`/api/v1/template-applications/${application.applicationId}/adopt`, { version: next.version, token: adoption.token }))
+    assert.equal((await call(human.get(`/api/v1/tasks/${application.taskIds[0]}`))).title, updated.tasks[0].title)
+    assert.equal((await call(human.get(`/api/v1/tasks/${application.taskIds[1]}`))).title, 'Human-owned audience research')
+    assert.equal((await call(human.get(`/api/v1/tasks/${application.taskIds[2]}`))).description, 'Retain later production context')
+  })
+
+  it('captures task and project structures as scoped reusable templates and separately activates retained rules', async () => {
+    await call(human.patch(`/api/v1/tasks/${application.taskIds[0]}`, { internalNotes: 'Private source negotiation' }))
+    await call(human.post(`/api/v1/tasks/${application.taskIds[0]}/comments`, { body: 'Source-only discussion' }))
+    for (const sourceTaskId of [undefined, application.taskIds[0]]) {
+      const input = { sourceProjectId: application.projectId, ...(sourceTaskId ? { sourceTaskId } : {}), name: sourceTaskId ? 'Regional brief checklist' : 'Regional campaign structure' }
+      const preview = await call(human.post('/api/v1/templates/capture/preview', input))
+      assert.equal(preview.definition.kind, sourceTaskId ? 'task' : 'project')
+      for (const secret of ['Private source negotiation', 'Source-only discussion', designer.id, reviewer.id]) assert.ok(!JSON.stringify(preview.definition).includes(secret))
+      const saved = await call(human.post('/api/v1/templates/capture', { ...input, token: preview.token }))
+      await call(outsider.get(`/api/v1/templates/${saved.id}`), 404)
+      const entry = await call(human.get(`/api/v1/templates/${saved.id}`)), nextInput = plan(entry, { name: `${input.name} for Brisbane` })
+      const review = await call(human.post('/api/v1/templates/preview', nextInput))
+      const result = await call(human.post('/api/v1/templates/apply', { ...nextInput, token: review.token }))
+      assert.equal(result.taskIds.length, preview.definition.tasks.length)
+      assert.ok(result.taskIds.every(id => !application.taskIds.includes(id)))
+      for (const id of result.taskIds) { const task = await call(human.get(`/api/v1/tasks/${id}`)); assert.equal(task.internalNotes, ''); assert.deepEqual(task.comments, []) }
+    }
+    const staged = (await call(human.get(`/api/v1/template-applications/${application.applicationId}/rules`))).rules[0]
+    const review = await call(human.post(`/api/v1/template-staged-rules/${staged.id}/preview`, {}))
+    const activated = await call(human.post(`/api/v1/template-staged-rules/${staged.id}/activate`, { token: review.token }))
+    const created = await call(human.post('/api/v1/tasks', { projectId: application.projectId, title: 'Fresh post-activation brief' }))
+    await call(human.post(`/api/v1/workflow-bundles/${activated.bundleId}/jobs/process`, {}))
+    assert.equal((await call(human.get(`/api/v1/tasks/${created.id}`))).priority, staged.definition.priority)
+  })
+
+  it('holds an agent-selected template and date for exact human review and refuses changed choices, replay after revocation and unauthorized settings', async () => {
+    const entry = gallery[1], input = plan(entry, { name: 'Agent proposed launch' })
+    const proposed = await call(ai.post('/api/v1/templates/preview', input))
+    await call(ai.post('/api/v1/templates/apply', { ...input, token: proposed.token }), 403)
+    await call(human.post('/api/v1/templates/apply', { ...input, token: proposed.token }), 409)
+    const reviewed = await call(human.post('/api/v1/templates/preview', input))
+    await call(human.post('/api/v1/templates/apply', { ...input, startDate: '2026-07-07', token: reviewed.token }), 409)
+    await call(human.post('/api/v1/templates/apply', { ...input, templateId: gallery[0].template.id, token: reviewed.token }), 400)
+    const applied = await call(human.post('/api/v1/templates/apply', { ...input, token: reviewed.token }))
+    await call(ai.post('/api/v1/templates', { name: 'Unapproved agent template', definition: baseDefinition }), 403)
+    const grant = await call(human.post('/api/v1/grants', { objectType: 'project', objectId: applied.projectId, granteeId: designer.id, level: 'admin' }))
+    const add = plan(entry, { name: 'Added reviewed launch work', targetProjectId: applied.projectId })
+    const open = await call(designer.post('/api/v1/templates/preview', add))
+    await call(human.post(`/api/v1/grants/${grant.id}/revoke`, {}))
+    await call(designer.post('/api/v1/templates/apply', { ...add, token: open.token }), 404)
+    const after = await call(human.get(`/api/v1/projects/${applied.projectId}`)); assert.equal(after.counts.tasks, entry.definition.tasks.length)
+  })
+})
+
+describe('Pinned template rules through current Admin review', { concurrency: false }, () => {
+  let worker, human, production, ai, project, template, rule, definition, mapping
+  const call = async (promise, status = 200) => { const response = await promise; assert.equal(response.status, status, JSON.stringify(response.body)); return response.body }
+  const state = () => call(human.get(`/api/v1/projects/${project.id}/template-rules`))
+  const activate = async (extra = {}) => { const preview = await call(human.post(`/api/v1/template-rules/${rule.id}/preview`, extra)); return call(human.post(`/api/v1/template-rules/${rule.id}/activate`, { ...extra, token: preview.token })) }
+  before(async () => {
+    worker = await startWorker(); human = worker.owner
+    production = await worker.person('synthetic-pegboard-6201@example.com', 'Maya Production')
+    ai = await worker.person('synthetic-pegboard-6202@example.com', 'Planning agent', 'agent')
+    project = await call(human.post('/api/v1/projects', { name: 'Regional print requests' }))
+    await call(human.post(`/api/v1/projects/${project.id}/prefix`, { prefix: 'PRINT' }))
+    for (const person of [production, ai]) await call(human.post('/api/v1/grants', { objectType: 'project', objectId: project.id, granteeId: person.id, level: 'editor' }))
+    definition = { kind: 'task', description: 'Regional production checklist', roles: ['Producer'], phases: ['Production'], fields: [{ key: 'batch_code', label: 'Batch code', type: 'text' }], tasks: [{ key: 'print', title: 'Prepare print production', phase: 'Production', role: 'Producer', start: 0, due: 2, hours: 4, fields: { batch_code: 'Regional' } }, { key: 'check', parent: 'print', title: 'Check print dimensions', phase: 'Production', role: 'Producer', start: 0, due: 1, hours: 1, fields: {} }], dependencies: [], rules: [] }
+    template = await call(human.post('/api/v1/templates', { name: 'Regional print checklist', definition }))
+    mapping = { name: 'Route regional print requests', templateId: template.id, templateVersion: template.version, workName: 'Regional production checklist', roles: { Producer: production.id }, date: { source: 'fixed', value: '2026-07-02', offsetDays: 0 } }
+    rule = await call(human.post(`/api/v1/projects/${project.id}/template-rules`, mapping))
+  }, { timeout: 120000 })
+  after(() => worker?.stop())
+
+  it('applies activated pinned template dates and assignments before responding, with durable once-only runs and no recursive generation', async () => {
+    await call(production.post(`/api/v1/template-rules/${rule.id}/preview`, {}), 403)
+    await call(ai.post(`/api/v1/template-rules/${rule.id}/activate`, { token: 'synthetic-pegboard-6203' }), 403)
+    await call(human.post(`/api/v1/template-rules/${rule.id}/activate`, { token: 'synthetic-pegboard-6204' }), 409)
+    await activate()
+    const created = []
+    for (const title of ['Austin store request', 'Denver store request']) {
+      const trigger = await call(production.post('/api/v1/tasks', { projectId: project.id, title }))
+      const history = await state(), run = history.runs.find(r => r.task_id === trigger.id)
+      assert.equal(run.status, 'applied'); assert.equal(run.computed_start_date, '2026-07-02'); assert.equal(run.result.taskIds.length, definition.tasks.length)
+      for (const id of run.result.taskIds) {
+        const task = await call(human.get(`/api/v1/tasks/${id}`)); assert.equal(task.owner.id, production.id); assert.equal(task.startDate, '2026-07-02'); assert.equal(task.dueDate, task.parentId ? '2026-07-06' : '2026-07-07'); assert.ok(task.ref)
+        created.push(id)
+      }
+      assert.equal(new Set(created).size, created.length)
+    }
+    const before = await state(); assert.equal(before.runs.length, 2)
+    await worker.restart()
+    await call(human.post(`/api/v1/projects/${project.id}/template-rules/process`, {}))
+    const after = await state(); assert.deepEqual(after.runs.map(r => [r.id, r.result.taskIds]).sort(), before.runs.map(r => [r.id, r.result.taskIds]).sort())
+    const tasks = (await call(human.get(`/api/v1/projects/${project.id}`))).columns.flatMap(c => c.tasks)
+    assert.equal(tasks.length, 4, 'two initiating tasks plus one generated root per run')
+  })
+
+  it('holds a changed template or mapping until exact reactivation and rechecks the activating administrator before execution', async () => {
+    const nextDefinition = structuredClone(definition); nextDefinition.tasks[0].title = 'Prepare updated print production'
+    const next = await call(human.post(`/api/v1/templates/${template.id}/versions`, { baseVersion: template.version, definition: nextDefinition }))
+    const trigger = await call(production.post('/api/v1/tasks', { projectId: project.id, title: 'Request after template revision' }))
+    let history = await state(), pending = history.runs.find(r => r.task_id === trigger.id)
+    assert.equal(pending.status, 'pending'); assert.equal(pending.result, null)
+    mapping = { ...mapping, templateVersion: next.version, roles: { Producer: human.id }, date: { source: 'fixed', value: '2026-07-08', offsetDays: 0 } }
+    const changed = await call(human.post(`/api/v1/template-rules/${rule.id}`, { ...mapping, ruleVersion: rule.version })); rule.version = changed.version
+    const held = await call(production.post('/api/v1/tasks', { projectId: project.id, title: 'Request after mapping revision' }))
+    assert.equal((await state()).runs.find(r => r.task_id === held.id).status, 'pending')
+    const preview = await call(human.post(`/api/v1/template-rules/${rule.id}/preview`, { runIds: [pending.id] }))
+    await call(human.patch(`/api/v1/tasks/${held.id}`, { description: 'Later request details' }))
+    await call(human.post(`/api/v1/template-rules/${rule.id}/activate`, { runIds: [pending.id], token: preview.token }), 409)
+    await activate({ runIds: [pending.id] })
+    history = await state(); pending = history.runs.find(r => r.id === pending.id)
+    assert.equal(pending.status, 'applied'); assert.equal(pending.computed_start_date, '2026-07-08')
+    assert.equal((await call(human.get(`/api/v1/tasks/${pending.result.taskIds[0]}`))).owner.id, human.id)
+    assert.equal((await call(human.get(`/api/v1/tasks/${pending.result.taskIds[0]}`))).title, nextDefinition.tasks[0].title)
+    assert.equal((await call(human.get(`/api/v1/tasks/${held.id}`))).description, 'Later request details')
+    const grant = await call(human.post('/api/v1/grants', { objectType: 'project', objectId: project.id, granteeId: production.id, level: 'admin' }))
+    const delegated = await call(production.post(`/api/v1/projects/${project.id}/template-rules`, { ...mapping, name: 'Delegated print routing' }))
+    const delegatedPreview = await call(production.post(`/api/v1/template-rules/${delegated.id}/preview`, {}))
+    await call(production.post(`/api/v1/template-rules/${delegated.id}/activate`, { token: delegatedPreview.token }))
+    await call(human.post(`/api/v1/grants/${grant.id}/revoke`, {}))
+    const latest = await call(human.post('/api/v1/tasks', { projectId: project.id, title: 'Request after Admin revocation' }))
+    const refused = (await state()).runs.find(r => r.rule_id === delegated.id && r.task_id === latest.id)
+    assert.equal(refused.status, 'pending'); assert.equal(refused.result, null); assert.equal(refused.outcome, 'activation_scope_changed')
+  })
+})
