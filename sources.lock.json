@@ -2443,7 +2443,7 @@
       "executable": false
     },
     "src/pegboard/conversion/service.ts": {
-      "sha256": "d57628d770fa37af617c09c34fb28ebf6517b7067436e075730a0178fe9f6ce2",
+      "sha256": "aef8231680927272bfdd11753a3acacd955a5c06cee5c09aeaa04c84264fb2e6",
       "executable": false
     },
     "src/pegboard/conversion/undo.ts": {
@@ -2775,7 +2775,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/conversions.tsx": {
-      "sha256": "295eafb37a6d2513938d0d14f9dc00c158e24e867cb6c1d97d52a836e42acb08",
+      "sha256": "ae1babfa18a36f11137a9697cc4cb8f309ea4beac73c1171db7ba44c9b6a1b98",
       "executable": false
     },
     "src/pegboard/ui/pages/data.tsx": {

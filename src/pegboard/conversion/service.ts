@@ -9,6 +9,7 @@ export function conversionInput(input:Record<string,any>){
  const normalized:Record<string,any>={kind,sourceId}
  for(const key of ['targetProjectId','parentId','name','visibility','token'])if(input[key]!==undefined&&input[key]!=='')normalized[key]=input[key]
  for(const key of ['taskIds','retainIds'])if(input[key]!==undefined)normalized[key]=input[key]
+ if(kind==='project_to_task'&&input.mappingReviewed==='1')for(const key of ['taskIds','retainIds'])normalized[key]=input[key]??[]
  return normalized as ProjectConversionInput|HierarchyInput
 }
 export function previewConversion(db:D1Database,actor:Actor,workspace:string,input:Record<string,any>){
