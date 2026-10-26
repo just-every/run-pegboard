@@ -16,6 +16,10 @@ import { planningCanvasJourney } from './planning-canvas.mjs'
 import { portfolioJourney } from './portfolios.mjs'
 import { timelineJourney } from './timeline.mjs'
 
+const journeyNames = ["core", "recurrence", "approvals", "time-packets", "goals", "engineering", "meetings", "custody", "recovery", "departure", "canvas", "portfolio", "timeline", "register", "bundles"]
+const selected = new Set(process.env.PEGBOARD_JOURNEY === undefined ? journeyNames : process.env.PEGBOARD_JOURNEY.split(',').map(name => name.trim()))
+for (const name of selected) if (!journeyNames.includes(name)) throw new Error(`Unknown PEGBOARD_JOURNEY: ${name}`)
+
 // Harvest and QuickBooks Time schema fakes at the network edge; every Worker below reaches them through local origins.
 const engineering = await startEngineeringServices(), meetings = await startMeetingServices()
 const services = await startTimeServices(), settings = { PEGBOARD_LOCAL_TIME_SERVICE_ORIGINS: services.origins, PEGBOARD_VECTOR_ORIGIN:'https://vector.example.com',PEGBOARD_LOCAL_ENGINEERING_ORIGINS:engineering.origins, PEGBOARD_LOCAL_MEETING_ORIGINS:meetings.origins }
@@ -26,8 +30,20 @@ const sizes = [['1440', { width: 1440, height: 900 }], ['390', { width: 390, hei
 try {
   let owner = w.owner
   const ok = (r, status = 200) => { assert.equal(r.status, status, JSON.stringify(r.body)); return r.body }
+  let usedWorker = false
+  const select = async name => {
+    if (!selected.has(name)) return false
+    if (usedWorker) {
+      await w.stop()
+      w = await startWorker({ settings })
+      owner = w.owner
+    }
+    usedWorker = true
+    return true
+  }
+  if (await select('core')) {
   ok(await owner.post('/api/v1/teams', { name: 'Brand crew', privacy: 'public' }))
-  for (const [size, viewport] of (process.env.PEGBOARD_JOURNEY ? [] : sizes)) {
+  for (const [size, viewport] of sizes) {
     const open = async client => { const context = await browser.newContext({ viewport }); await context.addCookies(cookies(client)); return { context, page: await context.newPage() } }
     const flat = async page => assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), `no sideways scroll at ${size}: ${page.url()}`)
     const gus = await w.person(`gus${size}@example.com`, `Gus ${size}`, 'guest'), nina = await w.person(`nina${size}@example.com`, `Nina ${size}`), eli = await w.person(`eli${size}@example.com`, `Eli ${size}`)
@@ -425,9 +441,9 @@ try {
     await own.context.close()
     console.log(`journey at ${size}px passed`)
   }
-  if(!process.env.PEGBOARD_JOURNEY){await w.stop();w=await startWorker({settings});owner=w.owner}
+  }
   // Accountable recurring work: the standing audience, occurrence and held schedule, at both widths.
-  if(!process.env.PEGBOARD_JOURNEY||process.env.PEGBOARD_JOURNEY==='recurrence')for(const [size,viewport] of sizes){
+  if(await select('recurrence'))for(const [size,viewport] of sizes){
     const open=async client=>{const context=await browser.newContext({viewport});await context.addCookies(cookies(client));return {context,page:await context.newPage()}}
     const flat=async page=>assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`recurrence no sideways scroll ${size}`)
     const proof=async(name,page)=>{if(process.env.PEGBOARD_PROOF_DIR){await mkdir(process.env.PEGBOARD_PROOF_DIR,{recursive:true});await page.screenshot({path:join(process.env.PEGBOARD_PROOF_DIR,`${name}-${size}.png`),fullPage:true})}}
@@ -531,9 +547,8 @@ try {
     await flat(page);await proof('recurrence-pinned-home-held',page)
     await oversight.context.close();await own.context.close();console.log(`Accountable recurring work at ${size}px passed`)
   }
-  if(!process.env.PEGBOARD_JOURNEY){await w.stop();w=await startWorker({settings});owner=w.owner}
   // Recurrence and revision-bound human approval: explicit states and attributed reopens.
-  if(!process.env.PEGBOARD_JOURNEY||process.env.PEGBOARD_JOURNEY==='approvals')for(const [size,viewport] of sizes){
+  if(await select('approvals'))for(const [size,viewport] of sizes){
     const open=async client=>{const context=await browser.newContext({viewport});await context.addCookies(cookies(client));return {context,page:await context.newPage()}}
     const flat=async page=>assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`approval no sideways scroll ${size}`)
     const proof=async(name,page)=>{if(process.env.PEGBOARD_PROOF_DIR){await mkdir(process.env.PEGBOARD_PROOF_DIR,{recursive:true});await page.screenshot({path:join(process.env.PEGBOARD_PROOF_DIR,`${name}-${size}.png`),fullPage:true})}}
@@ -570,9 +585,8 @@ try {
     const sole=ok(await owner.post('/api/v1/tasks',{title:`Only reviewer owns this work ${size}`,projectId:project.id,kind:'approval'}));await reviewer.page.goto(`${w.origin}/app/tasks/${sole.id}`);await expect(reviewer.page.locator('main')).toContainText('Another eligible owner or administrator must decide it.');assert.equal(await reviewer.page.getByRole('button',{name:'Record reviewed decision'}).count(),0);await flat(reviewer.page);await proof('approval-sole-reviewer-waits',reviewer.page)
     await writer.context.close();await reviewer.context.close();console.log(`Recurring work and human decisions at ${size}px passed`)
   }
-  if(!process.env.PEGBOARD_JOURNEY){await w.stop();w=await startWorker({settings});owner=w.owner}
   // Read-only time service packets: approved downloads and explicit pending work at both widths.
-  if(!process.env.PEGBOARD_JOURNEY||process.env.PEGBOARD_JOURNEY==='time-packets')for(const [size,viewport] of sizes){
+  if(await select('time-packets'))for(const [size,viewport] of sizes){
     const person=await w.person(`packet-${size}@example.com`,`Campaign coordinator ${size}`),project=ok(await person.post('/api/v1/projects',{name:`Autumn campaign ${size}`})),task=ok(await person.post('/api/v1/tasks',{title:'Prepare launch brief',projectId:project.id}))
     const sheet=ok(await person.post('/api/v1/timesheets',{startDate:'2026-10-22',endDate:'2026-10-22'}))
     const entry=ok(await person.post(`/api/v1/timesheets/${sheet.id}/entries`,{taskId:task.id,date:'2026-10-22',seconds:72,notes:'Review the launch brief',key:'synthetic-pegboard-951'}))
@@ -620,7 +634,7 @@ try {
     await admin.close();console.log(`Reviewed time service delivery at ${size}px passed`)
   }
   // Goal visibility and accountable owners: complete native Goals workflows at both widths.
-  if(!process.env.PEGBOARD_JOURNEY||process.env.PEGBOARD_JOURNEY==='goals')for(const [size,viewport] of sizes){
+  if(await select('goals'))for(const [size,viewport] of sizes){
     const open=async client=>{const context=await browser.newContext({viewport});await context.addCookies(cookies(client));return {context,page:await context.newPage()}}
     const flat=async page=>assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`goals no sideways scroll ${size}`)
     const proof=async(name,page)=>{if(process.env.PEGBOARD_PROOF_DIR){await mkdir(process.env.PEGBOARD_PROOF_DIR,{recursive:true});await page.screenshot({path:join(process.env.PEGBOARD_PROOF_DIR,`${name}-${size}.png`),fullPage:true})}}
@@ -727,9 +741,8 @@ try {
     console.log(`Goal visibility and accountable owners at ${size}px passed`)
   }
 
-  if(!process.env.PEGBOARD_JOURNEY){await w.stop();w=await startWorker({settings});owner=w.owner}
   // Engineering handoff: actual review forms against all three provider wire boundaries.
-  if(!process.env.PEGBOARD_JOURNEY||process.env.PEGBOARD_JOURNEY==='engineering')for(const [size,viewport] of sizes){
+  if(await select('engineering'))for(const [size,viewport] of sizes){
     const context=await browser.newContext({viewport});await context.addCookies(cookies(owner));const page=await context.newPage()
     const proof=async name=>{
       assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`engineering reflow ${name} ${size}`)
@@ -787,7 +800,7 @@ try {
   }
 
   // Meeting import and human adoption use the product's own source and review pages.
-  if(!process.env.PEGBOARD_JOURNEY||process.env.PEGBOARD_JOURNEY==='meetings')for(const [size,viewport] of sizes){
+  if(await select('meetings'))for(const [size,viewport] of sizes){
     const context=await browser.newContext({viewport});await context.addCookies(cookies(owner));const page=await context.newPage()
     const proof=async name=>{
       assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`meeting reflow ${name} ${size}`)
@@ -831,7 +844,7 @@ try {
   }
 
   // Data settings and permanent audit, through the same HTML forms as the owner uses.
-  if(!process.env.PEGBOARD_JOURNEY||process.env.PEGBOARD_JOURNEY==='custody')for(const [size,viewport] of sizes){
+  if(await select('custody'))for(const [size,viewport] of sizes){
     const context=await browser.newContext({viewport});await context.addCookies(cookies(owner));const page=await context.newPage()
     const proof=async name=>{
       assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`no sideways scroll: ${name} ${size}`)
@@ -883,13 +896,13 @@ try {
     const download=await page.request.get(w.origin+await page.getByRole('link',{name:'Export this page as JSON'}).getAttribute('href'));assert.equal(download.status(),200);assert.ok((await download.json()).events.every(e=>e.target_id===p.id))
     await context.close();console.log(`Data custody at ${size}px passed`)
   }
-  if(!process.env.PEGBOARD_JOURNEY||process.env.PEGBOARD_JOURNEY==='recovery')await recoveryJourney({w,browser,sizes,ok})
-  if(!process.env.PEGBOARD_JOURNEY||process.env.PEGBOARD_JOURNEY==='departure')await memberRemovalJourney({w,browser,sizes,ok})
-  if(!process.env.PEGBOARD_JOURNEY||process.env.PEGBOARD_JOURNEY==='canvas')await planningCanvasJourney({w,browser,sizes,ok})
-  if(!process.env.PEGBOARD_JOURNEY||process.env.PEGBOARD_JOURNEY==='portfolio')await portfolioJourney({w,browser,sizes,ok})
-  if(!process.env.PEGBOARD_JOURNEY||process.env.PEGBOARD_JOURNEY==='timeline')await timelineJourney({w,browser,sizes,ok})
-  if(!process.env.PEGBOARD_JOURNEY||process.env.PEGBOARD_JOURNEY==='register')await deliveryRegisterJourney({w,browser,sizes,ok})
-  if(!process.env.PEGBOARD_JOURNEY||process.env.PEGBOARD_JOURNEY==='bundles')await workflowBundleJourney({w,browser,sizes,ok})
+  if(await select('recovery'))await recoveryJourney({w,browser,sizes,ok})
+  if(await select('departure'))await memberRemovalJourney({w,browser,sizes,ok})
+  if(await select('canvas'))await planningCanvasJourney({w,browser,sizes,ok})
+  if(await select('portfolio'))await portfolioJourney({w,browser,sizes,ok})
+  if(await select('timeline'))await timelineJourney({w,browser,sizes,ok})
+  if(await select('register'))await deliveryRegisterJourney({w,browser,sizes,ok})
+  if(await select('bundles'))await workflowBundleJourney({w,browser,sizes,ok})
 } finally {
   await browser.close()
   await w.stop()
