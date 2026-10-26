@@ -207,7 +207,7 @@
       "executable": false
     },
     "base-copies.json": {
-      "sha256": "7c93c28f55478793e76620041ff50318411db3a7ab88108a53f530f1a47d9786",
+      "sha256": "b0dc8dd747d91c7a4f2c5a8ccea3000614d1e8112b9c520ef34adf98cf7d8fce",
       "executable": false
     },
     "CLAUDE.md": {
@@ -251,7 +251,7 @@
       "executable": false
     },
     "docs/LOOK.md": {
-      "sha256": "94bc7a03477dc817d5342734ee4386dbde1ddb9dc0f2b0871fd46e7728a5b797",
+      "sha256": "aaf9eb99b87dd93a3c50866fbd82b5451cdf324ce292da4e965871348f9a6223",
       "executable": false
     },
     "docs/MEETING-REVIEW.md": {
@@ -523,7 +523,7 @@
       "executable": false
     },
     "package.json": {
-      "sha256": "fa6656b731c8271513b57900a940fbd30ec56f171b52ec271448888c9805ec4b",
+      "sha256": "dd1fc06c68a905f7a95a9a314b3f465120745599f72518f8d8ab2ff7307a390a",
       "executable": false
     },
     "packaging.json": {
@@ -935,7 +935,7 @@
       "executable": false
     },
     "public/look/shell.css": {
-      "sha256": "1371a01ee4b6c5b76a5a90c9bc462e33d89dae1b8323142fbb225af0f8d056f2",
+      "sha256": "dd402e9a2fb526fec307947326e37760d97d5bcf4a02704a14f595b6367621b5",
       "executable": false
     },
     "public/look/tokens.css": {
@@ -1136,6 +1136,10 @@
     },
     "scripts/edition-authoring/updates.mjs": {
       "sha256": "54e7246025a618ed16ee042c22dc9a8dc27b06175c30f81c4c6568992ed04799",
+      "executable": false
+    },
+    "scripts/install-chromium-deps.py": {
+      "sha256": "5fdf0266ba333677288d3db15c053d48e5fc048f1de19c43006f26cf10b49a52",
       "executable": false
     },
     "scripts/install.mjs": {
@@ -2919,7 +2923,7 @@
       "executable": false
     },
     "src/ui/bar.tsx": {
-      "sha256": "ae05954f7a028b01885fecba0a0479f80d29d59fe9a3d17849a5aeec57f4860b",
+      "sha256": "ad07865fdc0a271ca20d20bfc4ee5b1d0e45833318ae26b87c2b8b1a123b4d44",
       "executable": false
     },
     "src/ui/document.server.tsx": {
@@ -2939,7 +2943,7 @@
       "executable": false
     },
     "src/ui/home.tsx": {
-      "sha256": "62689a0c587e47f5e557370ba1f0ac90a13d2011f87e4ea71a69b7d887a74d54",
+      "sha256": "08239a8ebb6143c0f8d8c6ef917ddef13b7863aee745d05e8ce7803fe7a46a85",
       "executable": false
     },
     "src/ui/icons.tsx": {
@@ -3007,7 +3011,7 @@
       "executable": false
     },
     "tests/runtime.mjs": {
-      "sha256": "5c95e10cbda103227663a077e6713e3aa092246f7391d68a16d008c1e2741c4e",
+      "sha256": "ac81b69f714292bad19f793392962a6f524185e995c7ce13952bf77a76bed8e4",
       "executable": false
     },
     "tests/schedule.test.mjs": {
