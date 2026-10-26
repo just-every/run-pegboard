@@ -383,6 +383,10 @@ describe('Reusable templates through reviewed public doors', { concurrency: fals
     preview = await call(human.post('/api/v1/templates/preview', explicit)); assert.deepEqual(preview.missingRoles, [])
     const unassigned = await call(human.post('/api/v1/templates/apply', { ...explicit, token: preview.token }))
     assert.equal((await call(human.get(`/api/v1/tasks/${unassigned.taskIds[0]}`))).owner.id, '')
+    const copyInput = { name: 'Explicitly unassigned copied campaign', taskIds: unassigned.taskIds, includeAssignees: true }
+    const copyPreview = await call(human.post(`/api/v1/projects/${unassigned.projectId}/duplicate/preview`, copyInput))
+    const copy = await call(human.post(`/api/v1/projects/${unassigned.projectId}/duplicate`, { ...copyInput, revision: copyPreview.token }))
+    assert.equal(copy.tasks.find(t => t.sourceId === unassigned.taskIds[0]).ownerId, '')
     custom = await call(human.post('/api/v1/templates', { name: 'Regional campaign standard', definition: baseDefinition }))
     const customInput = { ...input, templateId: custom.id, version: custom.version }
     preview = await call(human.post('/api/v1/templates/preview', customInput))

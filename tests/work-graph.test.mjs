@@ -2034,7 +2034,7 @@ describe('PEG-064 retained graph recovery', {concurrency:false},()=>{
 })
 
 describe('Direct project duplication through reviewed public doors', { concurrency: false }, () => {
-  let worker, human, creative, guest, source, brief, child, approval, bundle, ruleId, sourceGrant
+  let worker, human, creative, guest, source, brief, child, approval, bundle, ruleId, sourceGrant, observer, noticesBefore
   const call = async (promise, status = 200) => { const response = await promise; assert.equal(response.status, status, JSON.stringify(response.body)); return response.body }
   before(async () => {
     worker = await startWorker(); human = worker.owner
@@ -2062,6 +2062,13 @@ describe('Direct project duplication through reviewed public doors', { concurren
     const activation = await call(human.post(`/api/v1/workflow-bundles/${bundle.id}/preview`, { projectIds: [source.id] }))
     await call(human.post(`/api/v1/workflow-bundles/${bundle.id}/adopt`, { projectIds: [source.id], keys: ['priority'], revision: activation.token }))
     ruleId = `${bundle.id}:priority`
+    observer = await worker.person('synthetic-pegboard-6104@example.com', 'Campaign observer')
+    await call(observer.post('/api/v1/access-requests', { targetId: source.id, level: 'viewer', message: 'Read campaign progress' }))
+    const request = (await call(observer.get('/api/v1/access-requests'))).mine[0]
+    const requestReview = await call(human.get(`/api/v1/access-requests/${request.id}`))
+    await call(human.post(`/api/v1/access-requests/${request.id}/decision`, { decision: 'approve', level: 'viewer', scope: 'full', revision: requestReview.revision }))
+    noticesBefore = (await call(observer.get('/api/v1/access-requests'))).notices
+    assert.equal(noticesBefore.length, 1)
   }, { timeout: 120000 })
   after(() => worker?.stop())
 
@@ -2100,6 +2107,7 @@ describe('Direct project duplication through reviewed public doors', { concurren
         await call(human.post(`/api/v1/workflow-bundles/${active.bundle_id}/jobs/process`, {}))
         assert.equal((await call(human.get(`/api/v1/tasks/${future.id}`))).priority, 'high')
       } else assert.deepEqual(copied.staged, [])
+      assert.deepEqual((await call(observer.get('/api/v1/access-requests'))).notices, noticesBefore, 'copying and activation produce no duplicated source decision notification')
     }
   })
 

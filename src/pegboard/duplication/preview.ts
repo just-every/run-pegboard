@@ -31,9 +31,9 @@ export async function previewDuplicate(db:D1Database,actor:Actor,id:string,input
  const work=[]
  for(const task of tasks){
   const ownerId=includeAssignees?task.owner_id:actor.id
-  if(!await workspaceRole(db,ownerId,source.project.workspace_id))throw invalid('duplicate_assignee_unavailable')
+  if(ownerId&&!await workspaceRole(db,ownerId,source.project.workspace_id))throw invalid('duplicate_assignee_unavailable')
   work.push({...task,owner_id:ownerId,owner:ownerId===actor.id?actor.displayName:source.names[ownerId]??'Member',start_date:shifted(task.start_date,offset),due_date:shifted(task.due_date,offset),status:task.approval?'todo' as const:task.status})
-  if(ownerId!==actor.id&&!['owner','admin'].includes(await workspaceRole(db,ownerId,source.project.workspace_id)??''))warnings.push(`${source.names[ownerId]??'An assignee'} needs a separately activated membership to open ${task.title}.`)
+  if(ownerId&&ownerId!==actor.id&&!['owner','admin'].includes(await workspaceRole(db,ownerId,source.project.workspace_id)??''))warnings.push(`${source.names[ownerId]??'An assignee'} needs a separately activated membership to open ${task.title}.`)
  }
  const fields=source.fields.filter(f=>{
   if(f.type==='rollup'){
