@@ -29,16 +29,16 @@ export async function templateGalleryJourney({w,page,proof,size,ok}){
   await page.goto(`${w.origin}/app/templates`)
  }
  // Author a reusable version from the actual gallery definition and instantiate it through the same review form.
- await page.getByRole('link',{name:source.entry.template.name,exact:true}).click()
+ await page.goto(`${w.origin}/app/templates?manage=1&templateId=${source.entry.template.id}`)
  let form=page.getByRole('form',{name:'Save template definition'});await form.getByLabel('Template name',{exact:true}).fill(`Regional campaign standard ${size}`);await form.getByRole('button',{name:'Save new template',exact:true}).click()
  await page.getByRole('link',{name:`Regional campaign standard ${size}`,exact:true}).click();await proof('custom-definition')
- const customId=new URL(page.url()).searchParams.get('templateId')
+ const customId=new URL(page.url()).searchParams.get('templateId');await page.goto(`${w.origin}/app/templates?templateId=${customId}`)
  form=page.getByRole('form',{name:'Review template work'});await form.getByLabel('Project or work name').fill(`Regional standard application ${size}`);await form.getByLabel('Start date',{exact:true}).fill('2026-07-02')
  for(const [i,role]of source.entry.definition.roles.entries())await form.getByLabel(role,{exact:true}).selectOption([owner.id,creative.id,reviewer.id][i])
  await form.getByRole('button',{name:'Preview work and dates'}).click();await page.getByRole('form',{name:'Apply reviewed template'}).getByRole('button').click();await page.getByRole('link',{name:`Regional standard application ${size}`,exact:true}).first().click()
  const projectId=new URL(page.url()).pathname.split('/').pop(),application=ok(await owner.get(`/api/v1/projects/${projectId}/template-applications`)).applications[0]
  ok(await owner.patch(`/api/v1/tasks/${application.result.taskIds[1]}`,{title:'Human-owned regional audience research'}))
- await page.goto(`${w.origin}/app/templates?templateId=${customId}`)
+ await page.goto(`${w.origin}/app/templates?manage=1&templateId=${customId}`)
  const next=structuredClone(source.entry.definition);next.tasks[0].title='Revised regional campaign brief';next.tasks[1].title='Updated audience research'
  form=page.getByRole('form',{name:'Save template definition'});await form.getByLabel('Template definition JSON').fill(JSON.stringify(next));await proof('version-author');await form.getByRole('button',{name:'Save immutable next version'}).click()
  assert.equal(ok(await owner.get(`/api/v1/tasks/${application.result.taskIds[0]}`)).title,source.entry.definition.tasks[0].title)
@@ -47,7 +47,7 @@ export async function templateGalleryJourney({w,page,proof,size,ok}){
  assert.equal(ok(await owner.get(`/api/v1/tasks/${application.result.taskIds[0]}`)).title,'Revised regional campaign brief');assert.equal(ok(await owner.get(`/api/v1/tasks/${application.result.taskIds[1]}`)).title,'Human-owned regional audience research')
  // Capture both a project and one root task using named source selectors.
  for(const taskOnly of [false,true]){
-  await page.goto(`${w.origin}/app/templates`);form=page.getByRole('form',{name:'Choose template source'});await form.getByLabel('Source project').selectOption(source.id);await form.getByRole('button',{name:'Choose source'}).click()
+  await page.goto(`${w.origin}/app/templates?manage=1`);form=page.getByRole('form',{name:'Choose template source'});await form.getByLabel('Source project').selectOption(source.id);await form.getByRole('button',{name:'Choose source'}).click()
   form=page.getByRole('form',{name:'Preview reusable template'});if(taskOnly)await form.getByLabel('Source work').selectOption(source.tasks.find(t=>!t.parentId&&t.subtasks.length).id)
   await form.getByLabel('Template name',{exact:true}).fill(`${taskOnly?'Brief checklist':'Campaign structure'} ${size}`);await form.getByRole('button',{name:'Preview reusable structure'}).click();await proof(taskOnly?'task-capture-review':'project-capture-review');await page.getByRole('form',{name:'Save reviewed template'}).getByRole('button',{name:'Save this template'}).click();await proof(taskOnly?'task-captured':'project-captured')
  }

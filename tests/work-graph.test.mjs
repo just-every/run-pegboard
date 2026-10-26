@@ -2103,6 +2103,32 @@ describe('Direct project duplication through reviewed public doors', { concurren
     }
   })
 
+  it('preserves approve-only, restricted and assignee memberships when their staged grants are explicitly activated', async () => {
+    const approveOnly = await worker.person('synthetic-pegboard-6111@example.com', 'Limited reviewer')
+    const restricted = await worker.person('synthetic-pegboard-6112@example.com', 'Comment-only producer')
+    const assignee = await worker.person('synthetic-pegboard-6113@example.com', 'Assigned artwork producer')
+    const expiresAt = Date.now() + 3600000
+    for (const grant of [{ granteeId: approveOnly.id, scope: 'approve' }, { granteeId: restricted.id, scopes: ['read', 'comment'] }, { granteeId: assignee.id, scope: 'assignee' }]) await call(human.post('/api/v1/grants', { objectType: 'project', objectId: source.id, level: 'editor', expiresAt, ...grant }))
+    await call(human.patch(`/api/v1/tasks/${brief.id}`, { ownerId: assignee.id }))
+    const input = { name: 'Preserve scoped campaign memberships', taskIds: [brief.id, child.id, approval.id], includeAssignees: true, memberIds: [approveOnly.id, restricted.id, assignee.id] }
+    const preview = await call(human.post(`/api/v1/projects/${source.id}/duplicate/preview`, input))
+    const copy = await call(human.post(`/api/v1/projects/${source.id}/duplicate`, { ...input, revision: preview.token }))
+    const stageIds = copy.staged.map(s => s.id), review = await call(human.post(`/api/v1/projects/${copy.project.id}/duplicate-review/preview`, { stageIds }))
+    assert.ok(review.members.every(m => m.paths.every(p => p.expiresAt === expiresAt)))
+    await call(human.post(`/api/v1/projects/${copy.project.id}/duplicate-review/activate`, { stageIds, revision: review.token }))
+    const root = copy.tasks.find(t => t.sourceId === brief.id), nested = copy.tasks.find(t => t.sourceId === child.id), signoff = copy.tasks.find(t => t.sourceId === approval.id)
+    await call(approveOnly.get(`/api/v1/tasks/${root.id}`))
+    await call(approveOnly.patch(`/api/v1/tasks/${root.id}`, { title: 'Must not edit' }), 403)
+    await call(approveOnly.post(`/api/v1/tasks/${root.id}/comments`, { body: 'Must not comment' }), 403)
+    await call(restricted.get(`/api/v1/tasks/${root.id}`))
+    await call(restricted.post(`/api/v1/tasks/${root.id}/comments`, { body: 'Permitted restricted comment' }))
+    await call(restricted.patch(`/api/v1/tasks/${root.id}`, { title: 'Must not edit' }), 403)
+    await call(assignee.get(`/api/v1/projects/${copy.project.id}`), 404)
+    await call(assignee.patch(`/api/v1/tasks/${root.id}`, { description: 'Only the assigned artwork' }))
+    await call(assignee.get(`/api/v1/tasks/${nested.id}`), 404)
+    await call(assignee.get(`/api/v1/tasks/${signoff.id}`), 404)
+  })
+
   it('refuses detached children, stale previews and revoked source membership at copy and activation time', async () => {
     await call(guest.post(`/api/v1/projects/${source.id}/duplicate/preview`, { taskIds: [brief.id] }), 403)
     await call(human.post(`/api/v1/projects/${source.id}/duplicate/preview`, { taskIds: [child.id] }), 400)

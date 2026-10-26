@@ -1,14 +1,36 @@
 import {all, first, forbidden, invalid} from '../db'
-import {projectEffective} from '../authorization/effective'
+import {activeGrants, projectEffective, teamsOf, type Effective} from '../authorization/effective'
+import {maxLevel, type Capability, type Level} from '../authorization/levels'
 import {openProject, need, fieldReadable, listSections} from '../workspace/projects'
 import {workspaceRole, displayNames, type Actor} from '../workspace/people'
 import {openTask} from '../tasks/access'
 import {definitions, projectTaskIds} from '../fields/definitions'
-import type {TaskRow} from '../model'
+import type {GrantRow, ProjectRow, TaskRow} from '../model'
 import type {Component} from '../bundles/definitions'
 
-export interface MemberChoice {id:string; name:string; level:string; role:string}
+type SourceGrant=Pick<GrantRow,'id'|'level'|'scope'|'scopes'|'expires_at'|'grantee_type'|'grantee_id'>
+export interface MemberPath {id:string;via:string;level:Level;scope:GrantRow['scope'];capabilities:Capability[];expiresAt:number|null;sourceGrant:SourceGrant|null;teamMembership:SourceGrant|null}
+export interface MemberChoice {id:string; name:string; level:Level; role:string;paths:MemberPath[]}
 export interface RuleChoice {id:string; bundleId:string; key:string; version:number; config:Component}
+const grantConfig=(grant:GrantRow):SourceGrant=>({id:grant.id,level:grant.level,scope:grant.scope,scopes:grant.scopes,expires_at:grant.expires_at,grantee_type:grant.grantee_type,grantee_id:grant.grantee_id})
+const expiry=(...grants:(GrantRow|null)[])=>{const dates=grants.flatMap(grant=>grant?.expires_at===null||!grant?[]:[grant.expires_at]);return dates.length?Math.min(...dates):null}
+
+/** Keep each effective path distinct: level alone does not describe what it permits. */
+async function memberPaths(db:D1Database,personId:string,project:ProjectRow,access:Effective):Promise<MemberPath[]>{
+ const grants=await activeGrants(db,'project',project.id),memberships=await teamsOf(db,personId),paths:MemberPath[]=[]
+ for(const path of access.paths){
+  if(!path.capabilities.length)continue
+  const grant=path.grantId?grants.find(grant=>grant.id===path.grantId):null
+  if(path.grantId&&!grant)continue
+  const throughTeam=path.source==='team'||path.source==='default'&&project.visibility==='team'
+  const teamId=path.source==='team'?grant?.grantee_id:project.team_id
+  const teamPaths=throughTeam?memberships.filter(m=>m.object_id===teamId):[null]
+  for(const membership of teamPaths){
+   paths.push({id:(grant?'grant:'+grant.id:path.source)+(membership?':membership:'+membership.id:''),via:path.via,level:path.level,scope:path.scope??'full',capabilities:[...path.capabilities].sort(),expiresAt:expiry(grant??null,membership),sourceGrant:grant?grantConfig(grant):null,teamMembership:membership?grantConfig(membership):null})
+  }
+ }
+ return paths.sort((a,b)=>a.id.localeCompare(b.id))
+}
 export async function duplicationAdmin(db:D1Database, actor:Actor, id:string) {
  const opened=await openProject(db,actor,id)
  need(opened.effective,'manage_templates')
@@ -41,7 +63,9 @@ export async function sourceDuplication(db:D1Database,actor:Actor,id:string){
   const role=await workspaceRole(db,person.id,project.workspace_id)
   if(!role||role==='agent')continue
   const access=await projectEffective(db,{...actor,id:person.id},project)
-  if(access.capabilities.has('read')&&access.level)members.push({id:person.id,name:person.display_name,level:access.level,role})
+  const paths=await memberPaths(db,person.id,project,access)
+  const level=paths.reduce<Level|null>((level,path)=>maxLevel(level,path.level),null)
+  if(paths.length&&level)members.push({id:person.id,name:person.display_name,level,role,paths})
  }
  const rules=(await all<{bundle_id:string;item_key:string;version:number;config:string}>(db,"SELECT * FROM peg_bundle_items WHERE project_id=? AND kind='rule' ORDER BY bundle_id,item_key",id)).map(r=>({id:r.bundle_id+':'+r.item_key,bundleId:r.bundle_id,key:r.item_key,version:r.version,config:JSON.parse(r.config) as Component}))
  const fields=(await definitions(db,id)).filter(f=>fieldReadable(f,effective))

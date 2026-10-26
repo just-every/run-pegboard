@@ -2,7 +2,6 @@ import {all, bound, conflict, first, forbidden, invalid, newId, now} from '../db
 import {digest, guarded, revision} from '../decisions/revision'
 import {auditStatement, bumpEpoch} from '../authorization/audit'
 import {projectEffective} from '../authorization/effective'
-import {rank, type Level} from '../authorization/levels'
 import {workspaceRole, workspaceSettings, type Actor} from '../workspace/people'
 import {workActions} from '../bundles/action-config'
 import type {Component} from '../bundles/definitions'
@@ -21,13 +20,13 @@ export async function previewDuplicateActivation(db:D1Database,actor:Actor,id:st
  const members:({stageId:string}&MemberChoice)[]=[],rules:{stageId:string;sourceId:string;name:string;config:Component;version:number}[]=[]
  for(const stage of selected.filter(s=>s.kind==='member')){
   const pinned=stage.config as MemberChoice,person=current.members.find(m=>m.id===pinned.id)
-  if(!person||person.role!==pinned.role||person.level!==pinned.level)throw conflict('duplicate_member_changed')
+  if(!person||person.role!==pinned.role||person.level!==pinned.level||!Array.isArray(pinned.paths)||JSON.stringify(person.paths)!==JSON.stringify(pinned.paths))throw conflict('duplicate_member_changed')
   if(person.role==='guest'&&!(await workspaceSettings(db,result.project.workspace_id)).guestsAllowed)throw forbidden('guests_disabled')
   members.push({...person,stageId:stage.id})
  }
  const reaches=async(personId:string)=>{
   const member=members.find(m=>m.id===personId)
-  if(member)return member.role!=='guest'&&rank(member.level as Level)>=rank('viewer')
+  if(member&&member.role!=='guest'&&member.paths.some(path=>path.scope!=='assignee'&&path.capabilities.includes('read')))return true
   const effective=await projectEffective(db,{...actor,id:personId},result.project)
   return effective.role!=='guest'&&effective.role!=='agent'&&effective.capabilities.has('read')
  }
@@ -62,8 +61,8 @@ export async function activateDuplicate(db:D1Database,actor:Actor,id:string,inpu
  const review=await previewDuplicateActivation(db,actor,id,input)
  if(input.revision!==review.token)throw conflict('duplicate_activation_changed')
  const {project}=await duplicationAdmin(db,actor,id),at=now(),statements:D1PreparedStatement[]=[]
- for(const member of review.members){
-  statements.push(bound(db,"INSERT INTO peg_grants(id,workspace_id,object_type,object_id,grantee_type,grantee_id,level,scope,source,created_by,created_at) VALUES(?,?,'project',?,'person',?,?,'full','direct',?,?)",[newId('grant'),project.workspace_id,id,member.id,member.level,actor.id,at]))
+ for(const member of review.members)for(const path of member.paths){
+  statements.push(bound(db,"INSERT INTO peg_grants(id,workspace_id,object_type,object_id,grantee_type,grantee_id,level,scope,scopes,source,created_by,created_at,expires_at) VALUES(?,?,'project',?,'person',?,?,?,?,'direct',?,?,?)",[newId('grant'),project.workspace_id,id,member.id,path.level,path.scope,path.capabilities.join(','),actor.id,at,path.expiresAt]))
  }
  if(review.rules.length){
   // An independent native bundle prevents later source edits from silently changing this activation.
