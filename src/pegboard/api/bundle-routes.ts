@@ -1,3 +1,4 @@
+import {bundleRevisionPreview,restoreBundleRevision} from '../revisions/bundles'
 import type {Hono} from 'hono'
 import type {Bindings} from '../../auth.server'
 import {door} from './door'
@@ -10,6 +11,8 @@ export function bundleRoutes(app:Hono<{Bindings:Bindings}>){
  app.get('/workflow-bundles',door(({db,actor,workspace})=>listBundles(db,actor,workspace).then(bundles=>({bundles}))))
  app.post('/workflow-bundles',door(({db,actor,workspace,input})=>createBundle(db,actor,workspace,input),{next:r=>`/app/workflow-bundles/${r.id}`}))
  app.get('/workflow-bundles/:id',door(({db,actor,params})=>bundleView(db,actor,params.id)))
+ app.post('/workflow-bundles/:id/revisions/preview',door(({db,actor,params,input})=>bundleRevisionPreview(db,actor,params.id,input)))
+ app.post('/workflow-bundles/:id/revisions/restore',door(({db,actor,params,input})=>restoreBundleRevision(db,actor,params.id,input),{next}))
  app.post('/workflow-bundles/:id/versions',door(({db,actor,params,input})=>versionBundle(db,actor,params.id,input),{next}))
  app.post('/workflow-bundles/:id/preview',door(({db,actor,params,input})=>previewBundle(db,actor,params.id,input)))
  app.post('/workflow-bundles/:id/adopt',door(({db,actor,params,input})=>adoptBundle(db,actor,params.id,input),{next}))

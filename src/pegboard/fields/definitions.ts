@@ -1,3 +1,4 @@
+import {fieldVersionStatement} from '../revisions/field-store'
 import {
   all,
   batch,
@@ -150,6 +151,7 @@ export async function define(
         JSON.stringify(field.config),
       ],
     ),
+    fieldVersionStatement(db,id,actor.id),
     bound(db, 'INSERT INTO peg_project_fields VALUES(?,?,?)', [
       projectId,
       field.key,

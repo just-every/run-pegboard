@@ -242,3 +242,84 @@ describe('Reusable workflow bundles',{concurrency:false},()=>{
   const limited=await ok(member.get(`/api/v1/projects/${projects[2].id}/bundle-configuration`));assert.ok(limited.every(i=>i.kind==='view'||i.kind==='field'))
  })
 })
+
+describe('Activated rule effect recovery',{concurrency:false},()=>{
+ let w,owner,member,outsider
+ const pass=async promise=>{const r=await promise;assert.equal(r.status,200,JSON.stringify(r.body)+(r.status===500?' '+(w.output().match(/(?:D1_ERROR|SQLITE_\w+|Error:)[^\n]*/g)??[]).slice(-3).join(' '):''));return r.body}
+ before(async()=>{w=await startWorker();owner=w.owner;member=await w.person('synthetic-pegboard-6401@example.com','Maya Production');outsider=await w.person('synthetic-pegboard-6402@example.com','Other department')},{timeout:120000})
+ after(()=>w?.stop())
+ it('records activated date and assignment effects once and undoes only unchanged fields with current authority',async()=>{
+  const p=await pass(owner.post('/api/v1/projects',{name:'Autumn retail production'}))
+  await pass(owner.post('/api/v1/grants',{objectType:'project',objectId:p.id,granteeId:member.id,level:'editor'}))
+  const b=await pass(owner.post('/api/v1/workflow-bundles',{name:'Fixed production routing'})),root=`/api/v1/workflow-bundles/${b.id}`
+  const definition={version:1,key:'production',kind:'rule',name:'Fixed production commitments',priority:'high',ownerId:member.id,startDate:'2026-12-01',dueDate:'2026-12-15'}
+  assert.equal((await member.post(root+'/versions',definition)).status,403)
+  await pass(owner.post(root+'/versions',definition))
+  const preview=await pass(owner.post(root+'/preview',{projectIds:[p.id]}));await pass(owner.post(root+'/adopt',{projectIds:[p.id],keys:['production'],revision:preview.token}))
+  const t=await pass(owner.post('/api/v1/tasks',{projectId:p.id,title:'Print Austin launch cards',startDate:'2026-11-27',dueDate:'2026-12-10'}))
+  await w.restart();assert.equal((await pass(owner.post(root+'/jobs/process',{}))).applied,1);assert.equal((await pass(owner.post(root+'/jobs/process',{}))).applied,0)
+  const applied=await pass(owner.get(`/api/v1/tasks/${t.id}`));assert.equal(applied.owner.id,member.id);assert.equal(applied.startDate,'2026-12-01');assert.equal(applied.dueDate,'2026-12-15')
+  const job=(await pass(owner.get(root))).jobs.find(j=>j.task_id===t.id);assert.ok(job.operation_id)
+  const undoPath=`/api/v1/recovery/bulk/${job.operation_id}`
+  assert.equal((await outsider.get(undoPath+'/undo-preview')).status,404)
+  let undo=await pass(owner.get(undoPath+'/undo-preview'));assert.equal(undo.origin.run_id,job.id);assert.equal(undo.origin.definition_version,2);assert.equal(undo.origin.activating_admin,owner.id);assert.equal(undo.restored.length,4);assert.ok(undo.restored.every(e=>e.effectId))
+  await pass(member.patch(`/api/v1/tasks/${t.id}`,{dueDate:'2026-12-16'}));await pass(member.patch(`/api/v1/tasks/${t.id}`,{dueDate:'2026-12-15',description:'Keep the later print instructions'}))
+  assert.equal((await owner.post(undoPath+'/undo',{token:undo.token})).status,409)
+  undo=await pass(owner.get(undoPath+'/undo-preview'));assert.ok(undo.conflicts.some(e=>e.field==='due_date'&&e.reason==='later_field_edit'))
+  const result=await pass(owner.post(undoPath+'/undo',{token:undo.token}));assert.equal(result.restored.length,3)
+  const restored=await pass(owner.get(`/api/v1/tasks/${t.id}`));assert.equal(restored.owner.id,owner.id);assert.equal(restored.startDate,'2026-11-27');assert.equal(restored.dueDate,'2026-12-15');assert.equal(restored.description,'Keep the later print instructions')
+  assert.equal((await owner.post(undoPath+'/undo',{token:undo.token})).status,409);await w.restart();assert.equal((await pass(owner.post(root+'/jobs/process',{}))).applied,0)
+  const remove=await pass(owner.post('/api/v1/data/erasure-preview',{type:'task',id:t.id}));await pass(owner.post('/api/v1/data/erase',{type:'task',id:t.id,token:remove.token,confirm:true}));assert.equal((await owner.get(undoPath+'/undo-preview')).status,404)
+ })
+})
+
+describe('Owned rule work action recovery',{concurrency:false},()=>{
+ let w,owner,member,outsider,p,q,tag,b,root
+ const pass=async promise=>{const r=await promise;assert.equal(r.status,200,JSON.stringify(r.body)+(r.status===500?' '+(w.output().match(/(?:D1_ERROR|SQLITE_\w+|Error:)[^\n]*/g)??[]).slice(-3).join(' '):''));return r.body}
+ const configure=async actions=>{
+  const view=await pass(owner.get(root));await pass(owner.post(root+'/versions',{version:view.current.version,key:'work',kind:'rule',name:'Reviewed production actions',priority:'normal',actions}));const preview=await pass(owner.post(root+'/preview',{projectIds:[p.id]}));return pass(owner.post(root+'/adopt',{projectIds:[p.id],keys:['work'],revision:preview.token}))
+ }
+ const run=async(title,concurrent=false)=>{const task=await pass(owner.post('/api/v1/tasks',{projectId:p.id,title}));if(concurrent){const responses=await Promise.all([owner.post(root+'/jobs/process',{}),owner.post(root+'/jobs/process',{})]);assert.ok(responses.some(r=>r.status===200));assert.ok(responses.every(r=>[200,409].includes(r.status)))}else await pass(owner.post(root+'/jobs/process',{}));const job=(await pass(owner.get(root))).jobs.find(j=>j.task_id===task.id);return {task,job,path:`/api/v1/recovery/rules/${job.id}`}}
+ before(async()=>{
+  w=await startWorker();owner=w.owner;member=await w.person('synthetic-pegboard-6403@example.com','Maya Campaign');outsider=await w.person('synthetic-pegboard-6404@example.com','Other department')
+  p=await pass(owner.post('/api/v1/projects',{name:'Austin rule production'}));q=await pass(owner.post('/api/v1/projects',{name:'Dallas shared production'}));for(const project of [p,q])await pass(owner.post('/api/v1/grants',{objectType:'project',objectId:project.id,granteeId:member.id,level:'editor'}))
+  tag=await pass(owner.post('/api/v1/tags',{projectId:p.id,name:'Retail production',visibility:'project'}));b=await pass(owner.post('/api/v1/workflow-bundles',{name:'Scoped production actions'}));root=`/api/v1/workflow-bundles/${b.id}`
+ },{timeout:120000})
+ after(()=>w?.stop())
+ it('runs all six owned actions once and preserves later work and reintroduced relationships during scoped undo',async()=>{
+  const actions=[{kind:'complete'},{kind:'comment',value:'Production routing recorded by the activated rule'},{kind:'collaborator',value:member.id},{kind:'project',value:q.id},{kind:'subtask',value:'Prepare regional print artwork'},{kind:'tag',value:tag.id}]
+  await configure(actions)
+  const first=await run('Unchanged production routing',true),read=()=>pass(owner.get(`/api/v1/tasks/${first.task.id}`)),before=await read();assert.equal(before.status,'done');assert.equal(before.comments.length,1);assert.equal(before.subtasks.length,1);assert.equal(before.collaborators.length,1);assert.equal(before.projects.length,2);assert.equal(before.tags.length,1)
+  await w.restart();assert.equal((await pass(owner.post(root+'/jobs/process',{}))).applied,0);assert.equal((await read()).subtasks.length,1)
+  assert.equal((await outsider.get(first.path+'/undo-preview')).status,404)
+  let preview=await pass(owner.get(first.path+'/undo-preview'));assert.equal(preview.restoredWork.length,6);assert.ok(preview.restoredWork.every(e=>e.effectId));assert.equal(preview.origin.activating_admin,owner.id)
+  await pass(owner.post(first.path+'/undo',{token:preview.token}));const restored=await read();assert.equal(restored.status,'todo');assert.equal(restored.comments.length,0);assert.equal(restored.subtasks.length,0);assert.equal(restored.projects.length,1);assert.equal(restored.collaborators.length,0);assert.equal(restored.tags.length,0);assert.equal((await owner.get(`/api/v1/tasks/${before.subtasks[0].id}`)).status,404)
+  const second=await run('Later human routing work'),view=await pass(owner.get(`/api/v1/tasks/${second.task.id}`)),child=view.subtasks[0]
+  await pass(member.patch(`/api/v1/tasks/${child.id}`,{description:'Preserve the later production instructions'}));await pass(member.patch(`/api/v1/tasks/${second.task.id}`,{collaborators:[]}));await pass(member.patch(`/api/v1/tasks/${second.task.id}`,{collaborators:[member.id]}))
+  await pass(member.post(`/api/v1/tasks/${second.task.id}/tags`,{tagId:tag.id,remove:true}));await pass(member.post(`/api/v1/tasks/${second.task.id}/tags`,{tagId:tag.id}))
+  preview=await pass(owner.get(second.path+'/undo-preview'));assert.ok(preview.conflicts.some(e=>e.field==='subtask'&&e.reason==='later_created_work'));assert.ok(preview.conflicts.some(e=>e.field==='collaborator'&&e.reason==='later_relationship_change'));assert.ok(preview.conflicts.some(e=>e.field==='tag'&&e.reason==='later_relationship_change'));assert.ok(preview.conflicts.some(e=>e.field==='project'&&e.reason==='later_project_work'))
+  await pass(member.patch(`/api/v1/tasks/${second.task.id}`,{description:'Preserve the separate print note'}));assert.equal((await owner.post(second.path+'/undo',{token:preview.token})).status,409)
+  preview=await pass(owner.get(second.path+'/undo-preview'));await pass(owner.post(second.path+'/undo',{token:preview.token}));const kept=await pass(owner.get(`/api/v1/tasks/${second.task.id}`));assert.equal(kept.description,'Preserve the separate print note');assert.equal(kept.comments.length,0);assert.equal(kept.collaborators.length,1);assert.equal(kept.tags.length,1);assert.equal(kept.subtasks.length,1);assert.equal((await pass(owner.get(`/api/v1/tasks/${child.id}`))).description,'Preserve the later production instructions')
+  await configure([{kind:'complete'}]);const approval=await pass(owner.post('/api/v1/tasks',{projectId:p.id,title:'Independent sign-off',kind:'approval',ownerId:member.id}));await pass(owner.post(root+'/jobs/process',{}));assert.equal((await pass(owner.get(root))).jobs.find(j=>j.task_id===approval.id).outcome_reason,'approval_decision_required');assert.equal((await pass(owner.get(`/api/v1/tasks/${approval.id}/decision-preview`))).state,'pending')
+  await configure([{kind:'collaborator',value:outsider.id}]);const denied=await run('No new recipient access');assert.equal(denied.job.status,'cancelled');assert.equal((await outsider.get(`/api/v1/tasks/${denied.task.id}`)).status,404)
+ })
+})
+
+describe('Selective configuration revision recovery',{concurrency:false},()=>{
+ let w,owner,editor
+ const pass=async promise=>{const r=await promise;assert.equal(r.status,200,JSON.stringify(r.body));return r.body}
+ before(async()=>{w=await startWorker();owner=w.owner;editor=await w.person('synthetic-pegboard-6412@example.com','Maya Production')},{timeout:120000})
+ after(()=>w?.stop())
+ it('compares and restores a retained component without replacing newer configuration, activated rules or dependent work',async()=>{
+  const p=await pass(owner.post('/api/v1/projects',{name:'Retained production workflow'}));await pass(owner.post('/api/v1/grants',{objectType:'project',objectId:p.id,granteeId:editor.id,level:'editor'}))
+  const b=await pass(owner.post('/api/v1/workflow-bundles',{name:'Production revision history'})),root=`/api/v1/workflow-bundles/${b.id}`
+  await pass(owner.post(root+'/versions',{version:1,key:'brief',kind:'template',name:'Production brief',title:'Original print brief'}));await pass(owner.post(root+'/versions',{version:2,key:'route',kind:'rule',name:'Fixed production priority',priority:'high'}))
+  const adoption=await pass(owner.post(root+'/preview',{projectIds:[p.id]}));await pass(owner.post(root+'/adopt',{projectIds:[p.id],keys:['brief','route'],revision:adoption.token}));const work=await pass(owner.post(root+`/projects/${p.id}/start`,{key:'brief',ownerId:editor.id}));await pass(editor.patch(`/api/v1/tasks/${work.taskId}`,{description:'Keep the later print specification'}))
+  await pass(owner.post(root+'/versions',{version:3,key:'brief',kind:'template',name:'Revised production brief',title:'Revised print brief'}));await pass(owner.post(root+'/versions',{version:4,key:'route',kind:'rule',name:'Revised priority',priority:'urgent'}))
+  const input={fromVersion:2,component:'brief'};assert.equal((await editor.post(root+'/revisions/preview',input)).status,403)
+  let preview=await pass(owner.post(root+'/revisions/preview',input));assert.equal(preview.current.title,'Revised print brief');assert.equal(preview.restored.title,'Original print brief')
+  await pass(owner.post(root+'/versions',{version:5,key:'other',kind:'view',name:'Later saved view',status:'todo'}));assert.equal((await owner.post(root+'/revisions/restore',{...input,token:preview.token})).status,409)
+  preview=await pass(owner.post(root+'/revisions/preview',input));await pass(owner.post(root+'/revisions/restore',{...input,token:preview.token}));let view=await pass(owner.get(root));assert.equal(view.current.components.brief.title,'Original print brief');assert.equal(view.current.components.route.priority,'urgent');assert.equal(view.current.components.other.name,'Later saved view');assert.equal(view.items.find(i=>i.item_key==='route').config.priority,'high');assert.equal((await pass(owner.get(`/api/v1/tasks/${work.taskId}`))).description,'Keep the later print specification')
+  await pass(owner.post(root+'/versions',{version:view.current.version,key:'brief',remove:true}));preview=await pass(owner.post(root+'/revisions/preview',input));assert.equal(preview.current,null);await pass(owner.post(root+'/revisions/restore',{...input,token:preview.token}));view=await pass(owner.get(root));assert.equal(view.current.components.brief.title,'Original print brief');assert.equal(view.items.find(i=>i.item_key==='brief').version,3)
+ })
+})

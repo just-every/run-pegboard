@@ -14,7 +14,7 @@ export async function recoveryDependencies(db:D1Database,type:RecoveryType,id:st
     if(!await first(db,'SELECT 1 FROM peg_tasks WHERE id=?',task.parent_id))conflicts.add('missing_parent')
     else if(await isRecoveryHidden(db,'task',task.parent_id))conflicts.add('parent_in_trash')
   }
-  if(type==='proof_version'&&await isRecoveryHidden(db,'task',task.id))conflicts.add('task_in_trash')
+  if((type==='proof_version'||type==='attachment')&&await isRecoveryHidden(db,'task',task.id))conflicts.add('task_in_trash')
   const broken=await all<{kind:string}>(db,`WITH RECURSIVE ancestry(id,parent_id) AS (
     SELECT id,parent_id FROM peg_tasks WHERE id=? UNION SELECT t.id,t.parent_id FROM peg_tasks t JOIN ancestry a ON t.id=a.parent_id
   ) SELECT CASE WHEN p.id IS NULL THEN 'missing_project' ELSE 'missing_section' END kind

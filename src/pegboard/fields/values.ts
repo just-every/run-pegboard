@@ -1,3 +1,4 @@
+import {fieldVersionStatement} from '../revisions/field-store'
 import {
   all,
   batch,
@@ -454,6 +455,7 @@ export async function changeDefinition(
           preview.version,
         ],
       ),
+      fieldVersionStatement(db,fieldId,actor.id),
       auditStatement(db, {
         workspaceId: (await first<{ workspace_id: string }>(
           db,

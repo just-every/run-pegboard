@@ -1,3 +1,4 @@
+import {fieldRevisionView,fieldRevisionPreview,restoreFieldRevision} from '../revisions/fields'
 import type { Hono } from 'hono'
 import type { Bindings } from '../../auth.server'
 import { door, flag } from './door'
@@ -13,6 +14,9 @@ import {
 } from '../tags/tags'
 import { addSection, openProject, need } from '../workspace/projects'
 export function fieldRoutes(app: Hono<{ Bindings: Bindings }>) {
+  app.get('/fields/:id/revisions',door(({db,actor,params})=>fieldRevisionView(db,actor,params.id)))
+  app.post('/fields/:id/revisions/preview',door(({db,actor,params,input})=>fieldRevisionPreview(db,actor,params.id,input)))
+  app.post('/fields/:id/revisions/restore',door(({db,actor,params,input})=>restoreFieldRevision(db,actor,params.id,input),{next:(_,d)=>`/app/fields/${d.params.id}/revisions`}))
   app.get(
     '/field-library',
     door(async ({ actor, db, workspace }) => ({

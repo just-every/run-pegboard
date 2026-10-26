@@ -30,7 +30,7 @@ async function sectionFor(db: D1Database, projectId: string, sectionId?: string 
 }
 const nextPosition = async (db: D1Database, projectId: string, sectionId: string | null) => (await first<{ n: number }>(db, 'SELECT COALESCE(MAX(position),0)+1 n FROM peg_task_projects WHERE project_id=? AND COALESCE(section_id,\'\')=COALESCE(?,\'\')', projectId, sectionId))!.n
 
-export async function prepareTask(db: D1Database, actor: Actor, input: TaskInput) {
+export async function prepareTask(db: D1Database, actor: Actor, input: TaskInput, options:{queueRules?:boolean}={}) {
   const kind = input.kind ?? (input.parentId ? 'subtask' : 'task')
   if (!kinds.includes(kind)) throw invalid('kind')
   let projectId = input.projectId ?? null, workspaceId = input.workspaceId ?? 'ws_main', parent: TaskRow | null = null
@@ -68,7 +68,7 @@ export async function prepareTask(db: D1Database, actor: Actor, input: TaskInput
   }
   statements.unshift(bound(db, `INSERT INTO peg_tasks(id,workspace_id,title,description,kind,parent_id,status,priority,start_date,due_date,owner_id,creator_id,estimate_hours,internal_only,internal_notes,created_at,updated_at,completed_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     [id, workspaceId, title(input.title), (input.description ?? '').slice(0, 20000), kind === 'approval' ? 'task' : kind, parent?.id ?? null, status, input.priority ?? 'normal', date(input.startDate, 'start_date'), date(input.dueDate, 'due_date'), owner, actor.id, hours(input.estimateHours), input.internalOnly ? 1 : 0, (input.internalNotes ?? '').slice(0, 20000), at, at, status === 'done' ? at : null]))
-  statements.push(historyStatement(db, id, null, actor.id, 'created', { kind, parentId: parent?.id ?? null }),...await bundleQueueStatements(db,projectId,id))
+  statements.push(historyStatement(db, id, null, actor.id, 'created', { kind, parentId: parent?.id ?? null }),...(options.queueRules===false?[]:await bundleQueueStatements(db,projectId,id)))
   return { id, statements }
 }
 

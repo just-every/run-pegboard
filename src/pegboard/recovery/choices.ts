@@ -3,7 +3,7 @@ import type {Actor} from '../workspace/people'
 import {recoverySubject} from './authority'
 import {isRecoveryHidden,type RecoveryType} from './visibility'
 export async function recoveryChoices(db:D1Database,actor:Actor,workspace:string) {
- const rows=await all<{type:RecoveryType;id:string}>(db,`SELECT 'project' type,id FROM peg_projects WHERE workspace_id=? UNION ALL SELECT 'task',id FROM peg_tasks WHERE workspace_id=? UNION ALL SELECT 'proof_version',v.id FROM peg_proof_versions v JOIN peg_proofs p ON p.id=v.proof_id JOIN peg_tasks t ON t.id=p.task_id WHERE t.workspace_id=?`,workspace,workspace,workspace)
+ const rows=await all<{type:RecoveryType;id:string}>(db,`SELECT 'project' type,id FROM peg_projects WHERE workspace_id=? UNION ALL SELECT 'task',id FROM peg_tasks WHERE workspace_id=? UNION ALL SELECT 'proof_version',v.id FROM peg_proof_versions v JOIN peg_proofs p ON p.id=v.proof_id JOIN peg_tasks t ON t.id=p.task_id WHERE t.workspace_id=? UNION ALL SELECT 'attachment',a.id FROM peg_attachments a JOIN peg_tasks t ON t.id=a.task_id WHERE t.workspace_id=? AND NOT EXISTS(SELECT 1 FROM peg_proof_versions v WHERE v.attachment_id=a.id)`,workspace,workspace,workspace,workspace)
  const choices=[]
  for(const row of rows) {
   if(await isRecoveryHidden(db,row.type,row.id))continue

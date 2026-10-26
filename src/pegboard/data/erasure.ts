@@ -101,7 +101,9 @@ export async function erasurePlan(db:D1Database,actor:Actor,workspace:string,typ
     await take('peg_tasks',scoped('id'),tasks)
     await take('peg_webhooks',projectScoped('project_id'),projects)
     await take('peg_project_fields',projectScoped('project_id'),projects)
+    const fieldRevisions=await selectKeys(db,'peg_field_versions',`field_id IN(SELECT id FROM peg_field_definitions WHERE ${projectScoped('authority_project')})`,projects)
     await take('peg_field_definitions',projectScoped('authority_project'),projects)
+    if(fieldRevisions.keys.length)selections.push(fieldRevisions)
     for(const table of ['peg_sections','peg_tag_projects','peg_project_completion','peg_ref_prefixes'])await take(table,projectScoped('project_id'),projects)
     await take('peg_projects',projectScoped('id'),projects)
   }

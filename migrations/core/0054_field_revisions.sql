@@ -1,0 +1,5 @@
+CREATE TABLE peg_field_versions(field_id TEXT NOT NULL,version INTEGER NOT NULL,snapshot TEXT NOT NULL,actor_id TEXT,created_at INTEGER NOT NULL,PRIMARY KEY(field_id,version));
+INSERT INTO peg_field_versions SELECT id,version,json_object('key',key,'label',label,'type',type,'visibility',visibility,'units',units,'config',json(config)),NULL,unixepoch()*1000 FROM peg_field_definitions;
+CREATE TRIGGER peg_field_versions_immutable BEFORE UPDATE ON peg_field_versions BEGIN SELECT RAISE(ABORT,'immutable_field_revision'); END;
+CREATE TRIGGER peg_field_versions_retained BEFORE DELETE ON peg_field_versions WHEN EXISTS(SELECT 1 FROM peg_field_definitions WHERE id=OLD.field_id) AND NOT EXISTS(SELECT 1 FROM peg_data_erased_objects e JOIN peg_field_definitions f ON e.object_id=f.authority_project WHERE f.id=OLD.field_id AND e.object_type='project') BEGIN SELECT RAISE(ABORT,'reviewed_field_revision_erasure_required'); END;
+CREATE TRIGGER peg_field_versions_erased AFTER DELETE ON peg_field_definitions BEGIN DELETE FROM peg_field_versions WHERE field_id=OLD.id; END;

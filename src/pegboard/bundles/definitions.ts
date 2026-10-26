@@ -1,8 +1,9 @@
+import {workActions,type WorkAction} from './action-config'
 import {all,bound,first,forbidden,invalid,newId,notFound,now} from '../db'
 import {guarded,revision} from '../decisions/revision'
 import {workspaceRole,type Actor} from '../workspace/people'
 import {catalogue} from '../fields/definitions'
-export interface Component {kind:'field'|'view'|'rule'|'template'|'stages';name:string;fieldId?:string;fieldKey?:string;fieldVersion?:number;fieldType?:string;status?:string;priority?:string;title?:string;taskKind?:string;titles?:string[]}
+export interface Component {kind:'field'|'view'|'rule'|'template'|'stages';name:string;fieldId?:string;fieldKey?:string;fieldVersion?:number;fieldType?:string;status?:string;priority?:string;actions?:WorkAction[];ownerId?:string;startDate?:string;dueDate?:string;title?:string;taskKind?:string;titles?:string[]}
 export interface Bundle {id:string;workspace_id:string;name:string;created_by:string;created_at:number}
 export interface Item {bundle_id:string;project_id:string;item_key:string;kind:string;base:string;config:string;version:number}
 export const text=(v:unknown,key:string,max=160)=>{if(typeof v!=='string'||!v.trim()||v.length>max)throw invalid(key);return v.trim()}
@@ -12,7 +13,7 @@ export async function listBundles(db:D1Database,actor:Actor,workspace:string){aw
 export async function bundleView(db:D1Database,actor:Actor,id:string){
  const bundle=await loadBundle(db,actor,id),versions=(await all<{version:number;components:string;created_by:string;created_at:number}>(db,'SELECT * FROM peg_bundle_versions WHERE bundle_id=? ORDER BY version DESC',id)).map(v=>({...v,components:JSON.parse(v.components) as Record<string,Component>}))
  const adoptions=await all<{project_id:string;name:string;enabled:number;epoch:number}>(db,'SELECT a.*,p.name FROM peg_bundle_adoptions a JOIN peg_projects p ON p.id=a.project_id WHERE bundle_id=?',id)
- const items=await all<Item>(db,'SELECT * FROM peg_bundle_items WHERE bundle_id=?',id),history=await all<{id:string;project_id:string;actor_id:string;action:string;detail:string;at:number}>(db,'SELECT * FROM peg_bundle_history WHERE bundle_id=? ORDER BY at DESC,id',id),jobs=await all<{id:string;project_id:string;task_id:string;status:string}>(db,'SELECT * FROM peg_bundle_jobs WHERE bundle_id=? ORDER BY created_at DESC',id)
+ const items=await all<Item>(db,'SELECT * FROM peg_bundle_items WHERE bundle_id=?',id),history=await all<{id:string;project_id:string;actor_id:string;action:string;detail:string;at:number}>(db,'SELECT * FROM peg_bundle_history WHERE bundle_id=? ORDER BY at DESC,id',id),jobs=await all<{id:string;project_id:string;task_id:string;status:string;definition_version:number|null;outcome_reason:string|null;operation_id:string|null;activating_admin:string|null}>(db,'SELECT j.*,r.operation_id,r.activating_admin FROM peg_bundle_jobs j LEFT JOIN peg_rule_effect_runs r ON r.run_id=j.id WHERE j.bundle_id=? ORDER BY j.created_at DESC',id)
  const runs=await all<{id:string;project_id:string;item_key:string;config:string;owner_id:string}>(db,'SELECT * FROM peg_bundle_runs WHERE bundle_id=? ORDER BY created_at',id),runTasks=await all<{run_id:string;step:number;task_id:string;title:string;status:string}>(db,'SELECT r.run_id,r.step,r.task_id,t.title,t.status FROM peg_bundle_run_tasks r JOIN peg_bundle_runs b ON b.id=r.run_id JOIN peg_tasks t ON t.id=r.task_id WHERE b.bundle_id=? ORDER BY r.step',id)
  return {runs:runs.map(r=>({...r,config:JSON.parse(r.config) as Component,tasks:runTasks.filter(t=>t.run_id===r.id)})),bundle,versions,current:versions[0],adoptions,items:items.map(i=>({...i,base:JSON.parse(i.base) as Component,config:JSON.parse(i.config) as Component,override:i.base!==i.config})),history,jobs}
 }
@@ -32,7 +33,16 @@ export async function versionBundle(db:D1Database,actor:Actor,id:string,input:Re
    const field=(await catalogue(db,actor,view.bundle.workspace_id)).find(f=>f.id===input.fieldId);if(!field)throw invalid('field')
    Object.assign(component,{fieldId:field.id,fieldKey:field.key,fieldVersion:field.version,fieldType:field.type})
   }else if(kind==='view'){if(!['all','todo','doing','done'].includes(input.status))throw invalid('status');component.status=input.status}
-  else if(kind==='rule'){if(!['low','normal','high','urgent'].includes(input.priority))throw invalid('priority');component.priority=input.priority}
+  else if(kind==='rule'){
+   if(!['low','normal','high','urgent'].includes(input.priority))throw invalid('priority');component.priority=input.priority
+   if(input.ownerId)component.ownerId=text(input.ownerId,'rule_owner',100)
+   for(const key of ['startDate','dueDate'] as const)if(input[key]){
+    const value=input[key];if(typeof value!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(value)||Number.isNaN(Date.parse(value))||new Date(value+'T00:00:00Z').toISOString().slice(0,10)!==value)throw invalid('rule_date')
+    component[key]=value
+   }
+   if(component.startDate&&component.dueDate&&component.startDate>component.dueDate)throw invalid('rule_date_order')
+   component.actions=workActions(input.actions??[...(input.complete==='yes'?[{kind:'complete'}]:[]),...['comment','collaborator','project','subtask','tag'].filter(key=>input['action_'+key]).map(kind=>({kind,value:input['action_'+kind]}))])
+  }
   else if(kind==='template'){component.title=text(input.title,'task_title');if(!['task','milestone'].includes(input.taskKind??'task'))throw invalid('task_kind');component.taskKind=input.taskKind??'task'}
   else if(kind==='stages'){const titles=Array.isArray(input.titles)?input.titles:String(input.titles??'').split('\n');if(!titles.length||titles.length>10)throw invalid('stages');component.titles=titles.map((t:unknown)=>text(t,'stage_title'))}
   else throw invalid('component_kind')

@@ -1,3 +1,5 @@
+import {workEffectRows,workUndoPreview,workUndoStatements} from '../bundles/work-actions'
+import {ruleOrigin} from '../bundles/run-history'
 import { all, bound, conflict, first, forbidden, invalid, newId, notFound, now, PegError, type Param } from '../db'
 import { rootOf, taskAccess } from '../authorization/effective'
 import { digest, guarded, revision } from '../decisions/revision'
@@ -10,10 +12,10 @@ const fields = {ownerId:'owner_id',startDate:'start_date',dueDate:'due_date',pri
 type Field = typeof fields[keyof typeof fields]
 type Value = string | null
 export interface BulkInput {taskIds:string[];patch:{ownerId?:string;startDate?:string|null;dueDate?:string|null;priority?:string};token?:unknown}
-interface Effect {taskId:string;field:Field;before:Value;after:Value}
+interface Effect {effectId?:string;taskId:string;field:Field;before:Value;after:Value}
 interface Operation {id:string;workspace_id:string;actor_id:string;applied_at:number;task_count:number}
-interface EffectRow {id:string;operation_id:string;task_id:string;field:Field;before_value:string;after_value:string;history_id:number;task_decisions:number;proof_decisions:number}
-interface UndoConflict {taskId:string;field:Field;reason:string}
+interface EffectRow {id:string;operation_id:string;task_id:string;field:Field;before_value:string;after_value:string;history_id:number;task_decisions:number;proof_decisions:number;field_generation:number|null}
+interface UndoConflict {effectId?:string;taskId:string;field:string;reason:string}
 
 async function human(db:D1Database,actor:Actor,workspace:string) {
  const role=await workspaceRole(db,actor.id,workspace)
@@ -63,7 +65,7 @@ async function replacement(db:D1Database,actor:Actor,task:TaskRow,owner:string) 
  if(!next.capabilities.has('read')||!next.capabilities.has('edit'))throw forbidden('bulk_owner_existing_access')
 }
 async function counts(db:D1Database,id:string) {
- return (await first<{task_decisions:number;proof_decisions:number}>(db,`SELECT
+ return (await first<{task_decisions:number;proof_decisions:number;field_generation:number|null}>(db,`SELECT
  (SELECT COUNT(*) FROM peg_task_decisions WHERE task_id=?) task_decisions,
  (SELECT COUNT(*) FROM peg_proof_decisions d JOIN peg_proofs p ON p.id=d.proof_id WHERE p.task_id=?) proof_decisions`,id,id))!
 }
@@ -93,20 +95,25 @@ function edit(db:D1Database,actor:Actor,taskId:string,effects:Effect[],at:number
  return [reopenGuard(db,taskId,actor.id,kind),bound(db,`UPDATE peg_tasks SET ${assignments.join(',')},updated_at=? WHERE id=?`,[...args,at,taskId]),
   historyStatement(db,taskId,null,actor.id,kind,{...Object.fromEntries(effects.map(effect=>[effect.field,{from:effect.before,to:effect.after}])),operationId})]
 }
+export async function prepareBulkEffects(db:D1Database,actor:Actor,workspace:string,preview:Awaited<ReturnType<typeof bulkPreview>>,kind='bulk.applied',extraTaskIds:string[]=[]) {
+ const id=newId('bulk'),at=now(),changed=preview.tasks.filter(task=>task.effects.length),statements=[bound(db,'INSERT INTO peg_bulk_operations VALUES(?,?,?,?,?)',[id,workspace,actor.id,at,new Set([...changed.map(t=>t.id),...extraTaskIds]).size])]
+ for(const task of changed){
+  const decisions=await counts(db,task.id)
+  statements.push(...edit(db,actor,task.id,task.effects,at,task.reopensApproval,kind,id))
+  for(const effect of task.effects)statements.push(bound(db,`INSERT INTO peg_bulk_effects VALUES(?,?,?,?,?,?,(SELECT COALESCE(MAX(id),0) FROM peg_history WHERE task_id=?),?,?,COALESCE((SELECT generation FROM peg_rule_mutation_generations WHERE task_id=? AND kind=?),0))`,[newId('effect'),id,task.id,effect.field,JSON.stringify(effect.before),JSON.stringify(effect.after),task.id,decisions.task_decisions,decisions.proof_decisions,task.id,effect.field]))
+  const {access}=await subject(db,actor,workspace,task.id)
+  statements.push(permanentEvent(db,{workspace:access.personal?null:workspace,actor:actor.id,action:kind,type:'task',id:task.id,metadata:{id,count:task.effects.length}}))
+ }
+ return {statements,result:{id,operationId:id,at,tasks:changed.length,effects:changed.reduce((sum,task)=>sum+task.effects.length,0)}}
+}
+
 export async function applyBulk(db:D1Database,actor:Actor,workspace:string,input:BulkInput) {
  const preview=await bulkPreview(db,actor,workspace,input)
  if(input.token!==preview.token)throw conflict('bulk_review_changed')
  if(!preview.canApply)throw conflict('bulk_no_applicable_effects')
- const id=newId('bulk'),at=now(),changed=preview.tasks.filter(task=>task.effects.length),statements=[bound(db,'INSERT INTO peg_bulk_operations VALUES(?,?,?,?,?)',[id,workspace,actor.id,at,changed.length])]
- for(const task of changed){
-  const decisions=await counts(db,task.id)
-  statements.push(...edit(db,actor,task.id,task.effects,at,task.reopensApproval,'bulk.applied',id))
-  for(const effect of task.effects)statements.push(bound(db,`INSERT INTO peg_bulk_effects VALUES(?,?,?,?,?,?,(SELECT COALESCE(MAX(id),0) FROM peg_history WHERE task_id=?),?,?)`,[newId('effect'),id,task.id,effect.field,JSON.stringify(effect.before),JSON.stringify(effect.after),task.id,decisions.task_decisions,decisions.proof_decisions]))
-  const {access}=await subject(db,actor,workspace,task.id)
-  statements.push(permanentEvent(db,{workspace:access.personal?null:workspace,actor:actor.id,action:'bulk.applied',type:'task',id:task.id,metadata:{id,count:task.effects.length}}))
- }
- await guarded(db,preview.rev,statements)
- return {id,operationId:id,at,tasks:changed.length,effects:changed.reduce((sum,task)=>sum+task.effects.length,0)}
+ const prepared=await prepareBulkEffects(db,actor,workspace,preview)
+ await guarded(db,preview.rev,prepared.statements)
+ return prepared.result
 }
 
 async function operation(db:D1Database,actor:Actor,workspace:string,id:string,write:boolean) {
@@ -114,7 +121,9 @@ async function operation(db:D1Database,actor:Actor,workspace:string,id:string,wr
  const op=await first<Operation>(db,'SELECT * FROM peg_bulk_operations WHERE id=? AND workspace_id=?',id,workspace)
  if(!op)throw notFound()
  const effects=await all<EffectRow>(db,'SELECT * FROM peg_bulk_effects WHERE operation_id=? ORDER BY task_id,field',id)
- const taskIds=[...new Set(effects.map(effect=>effect.task_id))]
+ const workEffects=await workEffectRows(db,id),origin=await ruleOrigin(db,id)
+ if(origin&&origin.work_count!==workEffects.length)throw notFound()
+ const taskIds=[...new Set([...effects.map(effect=>effect.task_id),...workEffects.map(effect=>effect.taskId)])]
  // Erased effects never leave an apparently complete restorable operation behind.
  if(taskIds.length!==op.task_count)throw notFound()
  const tasks=new Map<string,TaskRow>()
@@ -132,23 +141,26 @@ export async function undoBulkPreview(db:D1Database,actor:Actor,workspace:string
    let reason:string|null=null
    if(current.task_decisions!==effect.task_decisions||current.proof_decisions!==effect.proof_decisions)reason='later_human_decision'
    else if(task[effect.field]!==after)reason='later_field_value'
+   else if(effect.field_generation!==null&&effect.field_generation!==((await first<{generation:number}>(db,'SELECT generation FROM peg_rule_mutation_generations WHERE task_id=? AND kind=?',task.id,effect.field))?.generation??0))reason='later_field_edit'
    else if(history.some(row=>row.id>effect.history_id&&Object.prototype.hasOwnProperty.call(JSON.parse(row.detail),effect.field)))reason='later_field_edit'
    else if((effect.field==='start_date'||effect.field==='due_date')&&await dependency(db,task.id))reason='dependency_cascade_requires_review'
    else if(effect.field==='owner_id'){
     try{await replacement(db,actor,task,before!)}catch(error){if(error instanceof PegError&&[400,403,404,409].includes(error.status))reason='previous_owner_unavailable';else throw error}
    }
-   if(reason)conflicts.push({taskId:task.id,field:effect.field,reason})
-   else restored.push({taskId:task.id,field:effect.field,before:after,after:before})
+   if(reason)conflicts.push({effectId:effect.id,taskId:task.id,field:effect.field,reason})
+   else restored.push({effectId:effect.id,taskId:task.id,field:effect.field,before:after,after:before})
   }
   // Restoring one date beside a newer, preserved date must not invert the interval.
   const selected=restored.filter(effect=>effect.taskId===task.id)
   const startEffect=selected.find(effect=>effect.field==='start_date'),dueEffect=selected.find(effect=>effect.field==='due_date')
   const start=startEffect?startEffect.after:task.start_date,due=dueEffect?dueEffect.after:task.due_date
   if(start&&due&&Date.parse(start)>Date.parse(due))for(const effect of selected.filter(effect=>effect.field==='start_date'||effect.field==='due_date')){
-   restored.splice(restored.indexOf(effect),1);conflicts.push({taskId:task.id,field:effect.field,reason:'later_date_conflict'})
+   restored.splice(restored.indexOf(effect),1);conflicts.push({effectId:effect.effectId,taskId:task.id,field:effect.field,reason:'later_date_conflict'})
   }
  }
- const plan={id,operation:op,tasks:[...tasks.values()].map(task=>({id:task.id,title:task.title})),restored,conflicts,canApply:true}
+ const work=await workUndoPreview(db,actor,id)
+ conflicts.push(...work.conflicts)
+ const plan={id,restoredWork:work.restored,origin:await ruleOrigin(db,id),operation:op,tasks:[...tasks.values()].map(task=>({id:task.id,title:task.title})),restored,conflicts,canApply:true}
  return {...plan,rev,token:await digest(['bulk.undo',workspace,actor.id,rev,plan])}
 }
 export async function undoBulk(db:D1Database,actor:Actor,workspace:string,id:string,input:{token?:unknown}|string) {
@@ -160,9 +172,11 @@ export async function undoBulk(db:D1Database,actor:Actor,workspace:string,id:str
   const reopen=task.status==='done'&&!!await first(db,'SELECT 1 FROM peg_approval_tasks WHERE task_id=?',taskId)
   statements.push(...edit(db,actor,taskId,effects,at,reopen,'bulk.undone',id),permanentEvent(db,{workspace:access.personal?null:workspace,actor:actor.id,action:'bulk.undone',type:'task',id:taskId,metadata:{id,count:effects.length}}))
  }
- statements.push(bound(db,'INSERT INTO peg_bulk_undos VALUES(?,?,?,?,?)',[id,actor.id,at,preview.restored.length,JSON.stringify(preview.conflicts)]))
+ statements.push(...workUndoStatements(db,actor,preview.restoredWork,workspace))
+ for(const taskId of [...new Set(preview.restoredWork.map(e=>e.taskId))])statements.push(permanentEvent(db,{workspace,actor:actor.id,action:'rule.work_undone',type:'task',id:taskId,metadata:{id,count:preview.restoredWork.filter(e=>e.taskId===taskId).length}}))
+ statements.push(bound(db,'INSERT INTO peg_bulk_undos VALUES(?,?,?,?,?)',[id,actor.id,at,preview.restored.length+preview.restoredWork.length,JSON.stringify(preview.conflicts)]))
  await guarded(db,preview.rev,statements)
- return {id,operationId:id,at,restored:preview.restored,conflicts:preview.conflicts}
+ return {id,operationId:id,at,restored:preview.restored,restoredWork:preview.restoredWork,conflicts:preview.conflicts}
 }
 export async function listBulk(db:D1Database,actor:Actor,workspace:string) {
  await human(db,actor,workspace)
@@ -173,7 +187,7 @@ export async function listBulk(db:D1Database,actor:Actor,workspace:string) {
    let canUndo=true
    try{await operation(db,actor,workspace,row.id,true)}catch(error){if(error instanceof PegError&&[403,404].includes(error.status))canUndo=false;else throw error}
    const undo=await first<{actor_id:string;undone_at:number;restored:number;conflicts:string}>(db,'SELECT * FROM peg_bulk_undos WHERE operation_id=?',row.id)
-   operations.push({...row,tasks:[...tasks.values()].map(task=>({id:task.id,title:task.title})),effectCount:effects.length,canUndo:canUndo&&!undo,undo:undo?{...undo,conflicts:JSON.parse(undo.conflicts)}:null})
+   operations.push({...row,origin:await ruleOrigin(db,row.id),tasks:[...tasks.values()].map(task=>({id:task.id,title:task.title})),effectCount:effects.length+(await workEffectRows(db,row.id)).length,canUndo:canUndo&&!undo,undo:undo?{...undo,conflicts:JSON.parse(undo.conflicts)}:null})
   }catch(error){if(!(error instanceof PegError&&[403,404].includes(error.status)))throw error}
  }
  return {operations}
