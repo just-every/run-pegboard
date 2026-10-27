@@ -62,7 +62,7 @@ export async function erasurePlan(db:D1Database,actor:Actor,workspace:string,typ
     if(await first(db,'SELECT 1 FROM peg_time_entries WHERE person_id=?',id))blockers.push('retained_time_records_require_separate_review')
     await take('peg_workspace_members','operator_id=?',[id]);await take('peg_personal_layout','operator_id=?',[id]);await take('peg_personal_moves','operator_id=?',[id]);await take('peg_personal_rules','operator_id=?',[id]);await take('peg_personal_sections','operator_id=?',[id]);await take('peg_personal_settings','operator_id=?',[id])
     await take('peg_grants',"grantee_type='person' AND grantee_id=?",[id]);await take('peg_task_collaborators','operator_id=?',[id]);await take('peg_approvers','operator_id=?',[id]);await take('peg_inbox','operator_id=? OR request_id IN(SELECT id FROM peg_access_requests WHERE requester_id=?)',[id,id]);await take('peg_access_requests','requester_id=?',[id])
-    await take('peg_comments','author_id=?',[id]);await take('peg_attachments','created_by=?',[id])
+    await take('peg_comments','author_id=?',[id]);await take('peg_attachments','created_by=?',[id]);await take('peg_status_subscriptions','operator_id=?',[id])
     retained.local_auth_material=(await first<{n:number}>(db,'SELECT (SELECT COUNT(*) FROM oa_sessions WHERE operator_id=?)+(SELECT COUNT(*) FROM oa_tokens WHERE operator_id=?)+(SELECT COUNT(*) FROM oa_credentials WHERE operator_id=?)+(SELECT COUNT(*) FROM oa_external_identities WHERE operator_id=?) n',id,id,id,id))!.n
     retained.legacy_access_activity=(await first<{n:number}>(db,'SELECT COUNT(*) n FROM peg_audit WHERE actor_id=? OR subject_id=?',id,id))!.n
     // Identity values are replaced only after authority is explicitly deactivated. Permanent audit IDs remain opaque.
@@ -81,6 +81,7 @@ export async function erasurePlan(db:D1Database,actor:Actor,workspace:string,typ
     await take('peg_agent_retrieval','output_id IN(SELECT id FROM peg_agent_outputs WHERE actor_id=?)',[id]);await take('peg_agent_outputs','actor_id=?',[id])
   }
   if(tasks.length||projects.length){
+    if(projects.length)await take('peg_status_subscriptions',`subject_type='project' AND subject_id IN (${placeholders(projects)})`,projects)
     if(await first(db,`SELECT 1 FROM peg_time_entries WHERE task_id IN (${placeholders(tasks)}) OR project_id IN (${placeholders(projects)})`,...tasks,...projects))blockers.push('retained_time_records_require_separate_review')
     const sourceIds=[...tasks,...projects]
     if(await first(db,`SELECT 1 FROM peg_status_drafts d WHERE (d.subject_type='project' AND d.subject_id IN (${placeholders(projects)})) OR EXISTS(SELECT 1 FROM json_each(d.sources) s WHERE json_extract(s.value,'$.id') IN (${placeholders(tasks)})) UNION SELECT 1 FROM peg_status_revisions r JOIN peg_status_updates u ON u.id=r.id WHERE (u.subject_type='project' AND u.subject_id IN (${placeholders(projects)})) OR EXISTS(SELECT 1 FROM json_each(r.sources) s WHERE json_extract(s.value,'$.id') IN (${placeholders(tasks)}))`,...projects,...tasks,...projects,...tasks))blockers.push('review_status_snapshot_custody_before_erasure')

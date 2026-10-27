@@ -11,7 +11,7 @@ export async function statusSubscription(db: D1Database, actor: Actor, type: str
   const { workspace } = await statusAccess(db, actor, type, id)
   if (!internalRoles.includes(await workspaceRole(db, actor.id, workspace) ?? '')) throw forbidden('internal_status_subscription')
   if (input) {
-    if (typeof input.enabled !== 'boolean' || !Array.isArray(input.channels) || !input.channels.length || input.channels.some((channel: unknown) => !statusChannels.includes(String(channel)))) throw invalid('status_subscription')
+    if (typeof input.enabled !== 'boolean' || !Array.isArray(input.channels) || !input.channels.length || input.channels.some((channel: unknown) => typeof channel !== 'string' || !statusChannels.includes(channel))) throw invalid('status_subscription')
     const channels = [...new Set<string>(input.channels)].sort()
     await batch(db, [bound(db,
       `INSERT INTO peg_status_subscriptions(subject_type,subject_id,operator_id,channels,enabled,updated_at) VALUES (?,?,?,?,?,?)

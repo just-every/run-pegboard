@@ -22,9 +22,10 @@ export default {
   }
   return true
  },
- importSafety,
- importRow(table,row){if(table==='peg_template_rule_runs'&&row.status==='queued')return {...row,status:'pending',activation_id:null,outcome:'restored_inactive'};if(table==='peg_bundle_jobs'&&row.status==='queued')return {...row,status:'cancelled',finished_at:1};return importSafety[table]?{...row,...Object.fromEntries(Object.entries(importSafety[table]).map(([key,values])=>[key,values[0]]))}:row},
+ importSafety:{...importSafety,peg_status_subscriptions:{enabled:[0]}},
+ importRow(table,row){if(table==='peg_status_subscriptions')return {...row,enabled:0};if(table==='peg_template_rule_runs'&&row.status==='queued')return {...row,status:'pending',activation_id:null,outcome:'restored_inactive'};if(table==='peg_bundle_jobs'&&row.status==='queued')return {...row,status:'cancelled',finished_at:1};return importSafety[table]?{...row,...Object.fromEntries(Object.entries(importSafety[table]).map(([key,values])=>[key,values[0]]))}:row},
  exportRow(table,row){
+  if(table==='peg_status_subscriptions')return {...row,enabled:0}
   if(table==='peg_template_rules')return {...row,enabled:0,activation_id:null}
   if(table==='peg_template_rule_runs'&&row.status==='queued')return {...row,status:'pending',activation_id:null,outcome:'restored_inactive'}
   if(table==='peg_bundle_adoptions')return {...row,enabled:0}
