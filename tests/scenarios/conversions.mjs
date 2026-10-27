@@ -155,6 +155,7 @@ export function registerConversionTests({test,api}){
     const input={kind:'project_to_task',sourceId:source.id,name:label(9209),taskIds:[selected.id],retainIds:[retained.id]}
     const plan=await preview(root,input)
     await nativeHistory(root,[selected.id,retained.id,child.id],plan)
+    assert.deepEqual([plan.reconciliation.tasks,plan.reconciliation.comments,plan.reconciliation.aliases,plan.reconciliation.fields],[3,1,0,0])
     assert.equal(plan.mapping.find(row=>row.taskId===selected.id).action,'subtask')
     assert.equal(plan.mapping.find(row=>row.taskId===retained.id).action,'retained_link')
     const result=await apply(root,input,plan);conserved(plan.reconciliation,result.reconciliation)
@@ -192,6 +193,7 @@ export function registerConversionTests({test,api}){
     assert.deepEqual(promotionPlan.visibility.before.map(row=>[row.taskId,row.personId]).sort(),[[child.id,root.id],[child.id,peer.id],[nested.id,root.id],[nested.id,peer.id]].sort())
     assert.ok(promotionPlan.visibility.before.every(row=>row.capabilities.includes('read')&&row.capabilities.includes('edit')))
     await nativeHistory(root,[child.id,nested.id],promotionPlan,[root,peer])
+    assert.deepEqual([promotionPlan.reconciliation.tasks,promotionPlan.reconciliation.comments,promotionPlan.reconciliation.files,promotionPlan.reconciliation.proofVersions,promotionPlan.reconciliation.timeSeconds,promotionPlan.reconciliation.aliases,promotionPlan.reconciliation.fields],[2,1,1,1,901,0,0])
     assert.equal(promotionPlan.visibility.expanded,false)
     assert.deepEqual(promotionPlan.mapping.find(row=>row.id===child.id).after,{...promotionPlan.mapping.find(row=>row.id===child.id).before,parentId:null,kind:'task'})
     const promoted=await apply(root,promotion,promotionPlan),after=await task(root,child.id)
