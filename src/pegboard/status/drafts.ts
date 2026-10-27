@@ -75,12 +75,13 @@ export async function saveDraft(db: D1Database, actor: Actor, input: Record<stri
     const result = await bound(db, 'UPDATE peg_status_drafts SET content=?,sources=?,recipients=?,updated_at=?,version=version+1 WHERE id=? AND version=?', [...args, nextId, previous.version]).run()
     if (!result.meta.changes) throw conflict('stale_status_draft')
   } else await batch(db, [bound(db, 'INSERT INTO peg_status_drafts(id,workspace_id,subject_type,subject_id,version,content,sources,recipients,corrects_id,created_by,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)', [nextId, workspace, type, subjectId, version, args[0], args[1], args[2], correctsId, actor.id, args[3]])])
-  return decode((await draft(db, actor, nextId)))
+  return readDraft(db,actor,nextId)
 }
 export async function readDraft(db: D1Database, actor: Actor, id: string) {
   const row = await draft(db,actor,id)
   const rejection = await first<{rejected_by:string;reason:string;created_at:number}>(db,'SELECT rejected_by,reason,created_at FROM peg_status_draft_rejections WHERE draft_id=? AND version=?',id,row.version)
-  return {...decode(row),rejection}
+  const view=decode(row)
+  return {...view,sources:await publicSources(db,actor,row.workspace_id,view.sources),rejection}
 }
 export async function rejectDraft(db: D1Database, actor: Actor, id: string, input: Record<string,any>) {
   const seen=await epoch(db), row=await draft(db,actor,id)
@@ -113,7 +114,7 @@ async function readable(db: D1Database, actor: Actor, type: string, id: string, 
     if ((current.internalOnly || s.internalOnly) && await workspaceRole(db, actor.id, (await statusAccess(db, actor, type, id)).workspace) === 'guest') throw notFound()
   }
 }
-export async function reviewDraft(db: D1Database, actor: Actor, id: string) {
+async function reviewedDraft(db: D1Database, actor: Actor, id: string) {
   const row = await draft(db, actor, id), view = decode(row), seen = await epoch(db)
   await human(db, actor, row.workspace_id)
   if(await first(db,'SELECT 1 FROM peg_status_draft_rejections WHERE draft_id=? AND version=?',id,row.version))throw conflict('status_draft_rejected')
@@ -121,8 +122,18 @@ export async function reviewDraft(db: D1Database, actor: Actor, id: string) {
   for (const recipient of view.recipients) await readable(db, await recipientActor(db, recipient.id), row.subject_type, row.subject_id, view.sources)
   return { ...view, reviewedBy: actor.id, token: await hash({ row, actor: actor.id, epoch: seen }), epoch: seen }
 }
+async function publicSources(db:D1Database,actor:Actor,workspace:string,sources:Source[]) {
+  const visible=[]
+  for(const saved of sources){const {membership:_membership,...fields}=saved;visible.push({...fields,projectIds:(await source(db,actor,saved.id,workspace)).projectIds})}
+  return visible
+}
+export async function reviewDraft(db:D1Database,actor:Actor,id:string) {
+  const view=await reviewedDraft(db,actor,id)
+  const {workspace}=await statusAccess(db,actor,view.subjectType,view.subjectId,true)
+  return {...view,sources:await publicSources(db,actor,workspace,view.sources)}
+}
 export async function publishDraft(db: D1Database, actor: Actor, id: string, token: unknown) {
-  const row = await draft(db, actor, id), review = await reviewDraft(db, actor, id)
+  const row = await draft(db, actor, id), review = await reviewedDraft(db, actor, id)
   if (row.version !== review.version || typeof token !== 'string' || token !== review.token) throw conflict('stale_status_review')
   const existing = await first<{ id: string }>(db, 'SELECT id FROM peg_status_revisions WHERE draft_id=? AND draft_version=?', id, row.version)
   if (existing) return { id: existing.id, replay: true }
