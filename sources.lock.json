@@ -203,7 +203,7 @@
       "executable": false
     },
     "AGENTS.md": {
-      "sha256": "085223ae4187350e367bf196616b5f5bca0c8baa3dcc4b3d260cbcf1082a1d65",
+      "sha256": "5ee0f9ab6b147c449d3de078c64bab4f86fe2d26d5c944b33f667ac8f7a19bc1",
       "executable": false
     },
     "base-copies.json": {
@@ -547,7 +547,7 @@
       "executable": false
     },
     "migrations/core/0063_public_api.sql": {
-      "sha256": "d2bdbfdf4cb44893d4d5eaa223db53f8c6c67eda0004979ddf9e4055e997c398",
+      "sha256": "877adc1349ffe29d943a61742a5dcac264ff302a2ee06f85afd7eae97ed113ce",
       "executable": false
     },
     "ONBOARDING.md": {
@@ -1020,6 +1020,10 @@
     },
     "scripts/build-deployment-spec.mjs": {
       "sha256": "4637125950a91ec969a91a7eab59c577e7fb55b3831f28407e813a528d1edd7a",
+      "executable": false
+    },
+    "scripts/contract-docs.mjs": {
+      "sha256": "d79275884ccbf19238064aff06530fe74e1836bd1a98bf9625147fb8d3b3d2ab",
       "executable": false
     },
     "scripts/delivery/base/artifact.mjs": {
@@ -2519,7 +2523,7 @@
       "executable": false
     },
     "src/pegboard/decisions/revision.ts": {
-      "sha256": "0c4134efe708d582b796ddd53f5671294f7cebe05373037accea4a70278ff08e",
+      "sha256": "3ff9c8b8caa388846c6abb8ea9d7ffc7069997cf4537c544f26684d604e54c57",
       "executable": false
     },
     "src/pegboard/decisions/tasks.ts": {
@@ -2599,7 +2603,7 @@
       "executable": false
     },
     "src/pegboard/portability/policy.mjs": {
-      "sha256": "c0b8e5ed8335ee595a87f236de6b6da806af0a01af30caf4d89d9fb5a898139b",
+      "sha256": "443329ac9a6e1921d7b57bd06d1573a11b162876f73bfaadedd24f8134784b7d",
       "executable": false
     },
     "src/pegboard/portfolios/portfolios.ts": {
@@ -2619,7 +2623,7 @@
       "executable": false
     },
     "src/pegboard/public-api/operations.ts": {
-      "sha256": "05c15a69e545ad6eb4c718b86bfa38afda614cc51827ebe8abc3eeffac652cc9",
+      "sha256": "fcb37e6dc27cce0ff90d78bf907da208493211a6a81894c136a8d44343d751c8",
       "executable": false
     },
     "src/pegboard/public-api/schema.ts": {
@@ -3224,6 +3228,10 @@
     },
     "tests/journeys/project-duplicate.mjs": {
       "sha256": "6ae90056e60cfb189a9eb7aec02d3f86520924c83c671f6b9e16b710a6dc7610",
+      "executable": false
+    },
+    "tests/journeys/public-api.mjs": {
+      "sha256": "b33eee64d2d32051ba7caeb3b4b27f0d249357c9e8eddde4188849fe36b90d7d",
       "executable": false
     },
     "tests/journeys/recovery.mjs": {

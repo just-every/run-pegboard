@@ -29,3 +29,17 @@ CREATE TABLE peg_webhook_deliveries (
 );
 CREATE TRIGGER peg_api_webhook_insert AFTER INSERT ON peg_webhooks BEGIN UPDATE peg_personal_revision SET value=value+1 WHERE id=1; END;
 CREATE TRIGGER peg_api_webhook_update AFTER UPDATE ON peg_webhooks BEGIN UPDATE peg_personal_revision SET value=value+1 WHERE id=1; END;
+CREATE TABLE peg_api_guards (key_id TEXT NOT NULL);
+CREATE TRIGGER peg_api_guard_check BEFORE INSERT ON peg_api_guards BEGIN
+ SELECT CASE WHEN NOT EXISTS(
+  SELECT 1 FROM peg_api_keys k JOIN oa_operators o ON o.id=k.owner_id
+  WHERE k.id=NEW.key_id AND k.revoked_at IS NULL AND k.writable=1
+   AND k.expires_at>CAST((julianday('now')-2440587.5)*86400000 AS INTEGER)
+   AND o.status='active' AND o.version=k.owner_version
+   AND EXISTS(SELECT 1 FROM peg_workspaces w WHERE w.id='ws_main' AND COALESCE(json_extract(w.settings,'$.integrationsEnabled'),1)=1)
+ ) THEN RAISE(ABORT,'api_credential_changed') END;
+END;
+CREATE TRIGGER peg_api_guard_consume AFTER INSERT ON peg_api_guards BEGIN DELETE FROM peg_api_guards WHERE rowid=NEW.rowid; END;
+CREATE TRIGGER peg_api_key_insert AFTER INSERT ON peg_api_keys BEGIN UPDATE peg_personal_revision SET value=value+1 WHERE id=1; UPDATE peg_departure_revision SET value=value+1 WHERE id=1; END;
+CREATE TRIGGER peg_api_key_update AFTER UPDATE ON peg_api_keys BEGIN UPDATE peg_personal_revision SET value=value+1 WHERE id=1; UPDATE peg_departure_revision SET value=value+1 WHERE id=1; END;
+CREATE TRIGGER peg_api_key_delete AFTER DELETE ON peg_api_keys BEGIN UPDATE peg_personal_revision SET value=value+1 WHERE id=1; UPDATE peg_departure_revision SET value=value+1 WHERE id=1; END;

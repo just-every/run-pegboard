@@ -61,7 +61,7 @@ export async function execute(db: D1Database, access: Access, name: string, inpu
   else if (!key.personal) throw notFound()
   if (!['task', 'approval', undefined].includes(input.kind)) throw invalid('kind')
   return once(db, access, name, input, async () => {
-   const rev = await revision(db)
+   const rev = {...await revision(db),apiKeyId:key.id}
    const created = await prepareTask(db, actor, { title: input.title, description: input.description, projectId: input.projectId, estimateHours: input.estimateHours, kind: input.kind }, { queueRules: false })
    await guarded(db, rev, created.statements)
    return { id: created.id }
@@ -70,7 +70,7 @@ export async function execute(db: D1Database, access: Access, name: string, inpu
  if (name === 'task_update' || name === 'task_comment') {
   writable(access); await taskScope(db, access, String(input.taskId))
   return once(db, access, name, input, async () => {
-   const fence = await revision(db)
+   const fence = {...await revision(db),apiKeyId:key.id}
    if (name === 'task_comment') return addComment(db, actor, input.taskId, input.body, false, fence)
    const current = await readTask(db, access, input.taskId)
    if (input.revision !== current.revision) throw conflict('task_revision_changed')
