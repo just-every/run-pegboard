@@ -3,7 +3,7 @@ import { openTask, require as need } from '../tasks/access'
 import { taskAccess } from '../authorization/effective'
 import { displayNames, operatorRow, workspaceRole, type Actor } from '../workspace/people'
 import { digest, guarded, revision } from '../decisions/revision'
-import { historyStatement } from '../tasks/history'
+import { reopenGuard,historyStatement } from '../tasks/history'
 import { permanentEvent } from '../audit/search'
 import { isRecoveryHidden } from '../recovery/visibility'
 import type { Delivery } from '../access-requests/notify'
@@ -20,7 +20,7 @@ async function subject(db:D1Database,actor:Actor,kind:string,id:string){
  const opened=await openTask(db,actor,proof?.task_id??id)
  if(kind==='task'&&!await first(db,'SELECT 1 FROM peg_approval_tasks WHERE task_id=?',id))throw invalid('approval_task_required')
  const {status,completed_at,updated_at,...material}=opened.task
- const version=proof?.current_version??await digest([material,await all(db,'SELECT * FROM peg_field_values WHERE task_id=? ORDER BY field_id',opened.task.id),await all(db,'SELECT id FROM peg_comments WHERE task_id=? ORDER BY id',opened.task.id),await all(db,'SELECT id FROM peg_attachments WHERE task_id=? ORDER BY id',opened.task.id),await all(db,'SELECT id FROM peg_proofs WHERE task_id=? ORDER BY id',opened.task.id)])
+ const version=proof?.current_version??await digest([material,await all(db,'SELECT * FROM peg_field_values WHERE task_id=? ORDER BY field_id',opened.task.id),await all(db,'SELECT id FROM peg_comments WHERE task_id=? ORDER BY id',opened.task.id),await all(db,'SELECT id FROM peg_attachments WHERE task_id=? ORDER BY id',opened.task.id),await all(db,'SELECT id,current_version FROM peg_proofs WHERE task_id=? ORDER BY id',opened.task.id),await all(db,'SELECT * FROM peg_task_projects WHERE task_id=? ORDER BY project_id',opened.task.id),await all(db,'SELECT * FROM peg_field_definitions WHERE id IN (SELECT field_id FROM peg_field_values WHERE task_id=? UNION SELECT field_id FROM peg_project_fields WHERE project_id IN (SELECT project_id FROM peg_task_projects WHERE task_id=?)) ORDER BY id',opened.task.id,opened.task.id)])
  if(proof&&await isRecoveryHidden(db,'proof_version',version))throw notFound()
  return {...opened,version}
 }
@@ -49,7 +49,7 @@ export async function previewRoute(db:D1Database,actor:Actor,kind:string,id:stri
 export async function configureRoute(db:D1Database,actor:Actor,kind:string,id:string,input:Record<string,any>){
  const p=await previewRoute(db,actor,kind,id,input);if(input.token!==p.token)throw conflict('approval_review_changed')
  const s=await subject(db,actor,kind,id),routeId=newId('route'),at=now()
- await guarded(db,p.rev,[bound(db,'UPDATE peg_approval_routes SET withdrawn_at=? WHERE kind=? AND subject_id=? AND withdrawn_at IS NULL',[at,kind,id]),bound(db,'INSERT INTO peg_approval_routes VALUES(?,?,?,?,?,?,?,?,?,?,?,NULL)',[routeId,kind,id,s.task.id,p.version,p.mode,JSON.stringify(p.stages),p.dueAt,p.reminderAt,actor.id,at]),historyStatement(db,s.task.id,null,actor.id,'approval.routed',{routeId,version:p.version,mode:p.mode})])
+ await guarded(db,p.rev,[reopenGuard(db,s.task.id,actor.id,'approval_rerouted'),bound(db,"UPDATE peg_tasks SET status='todo',completed_at=NULL,updated_at=? WHERE id=? AND status='done' AND EXISTS(SELECT 1 FROM peg_approval_tasks WHERE task_id=?)",[at,s.task.id,s.task.id]),bound(db,'UPDATE peg_approval_routes SET withdrawn_at=? WHERE kind=? AND subject_id=? AND withdrawn_at IS NULL',[at,kind,id]),bound(db,'INSERT INTO peg_approval_routes VALUES(?,?,?,?,?,?,?,?,?,?,?,NULL)',[routeId,kind,id,s.task.id,p.version,p.mode,JSON.stringify(p.stages),p.dueAt,p.reminderAt,actor.id,at]),historyStatement(db,s.task.id,null,actor.id,'approval.routed',{routeId,version:p.version,mode:p.mode})])
  return {id:routeId,version:p.version}
 }
 export async function routeView(db:D1Database,actor:Actor,id:string){
@@ -58,7 +58,10 @@ export async function routeView(db:D1Database,actor:Actor,id:string){
  const complete=stages.map((stage,i)=>votes.filter(v=>v.stage===i&&v.action==='approve').length>=stage.quorum)
  const mine=stages.findIndex(stage=>stage.people.includes(actor.id)),active=mine>=0&&(route.mode==='parallel'||complete.slice(0,mine).every(Boolean))
  const state=route.withdrawn_at?'withdrawn':s.version!==route.version?'stale':votes.some(v=>v.action==='reject')?'rejected':votes.some(v=>v.action==='changes')?'changes_requested':complete.every(Boolean)?'approved':'pending'
- const canDecide=state==='pending'&&active&&!votes.some(v=>v.actor_id===actor.id)&&s.access.capabilities.has('approve')&&s.access.role!=='agent'&&await independent(db,s.task.id,s.task.owner_id,actor.id)
+ const link=await first<{expires_at:number}>(db,'SELECT expires_at FROM peg_approval_links WHERE route_id=? AND recipient_id=? AND version=? AND revoked_at IS NULL AND expires_at>? ORDER BY expires_at DESC LIMIT 1',id,actor.id,route.version,now())
+ if(s.access.role==='guest'&&link)rev.until=Math.min(rev.until??Infinity,link.expires_at)
+ const externalLink=s.access.role!=='guest'||!!link
+ const canDecide=externalLink&&state==='pending'&&active&&!votes.some(v=>v.actor_id===actor.id)&&s.access.capabilities.has('approve')&&s.access.role!=='agent'&&await independent(db,s.task.id,s.task.owner_id,actor.id)
  const canManage=s.access.capabilities.has('manage_shares')&&s.access.role!=='guest'&&s.access.role!=='agent'
  const names=await displayNames(db,stages.flatMap(stage=>stage.people)),links=canManage?await all<{id:string;recipient_id:string;expires_at:number;revoked_at:number|null}>(db,'SELECT * FROM peg_approval_links WHERE route_id=?',id):[]
  const material=route.kind==='proof'?await first<{name:string;version:number}>(db,'SELECT a.name,v.version FROM peg_proof_versions v JOIN peg_attachments a ON a.id=v.attachment_id WHERE v.id=?',route.version):null
@@ -84,7 +87,7 @@ export async function changeRoute(db:D1Database,actor:Actor,id:string,input:Reco
  stages[stage].people=stages[stage].people.map(p=>p===from?to:p)
  const p=await previewRoute(db,actor,route.kind,route.subject_id,{stages,mode:route.mode,dueAt:route.due_at,reminderAt:route.reminder_at})
  await guarded(db,p.rev,[bound(db,'UPDATE peg_approval_routes SET stages=? WHERE id=?',[JSON.stringify(stages),id]),bound(db,'UPDATE peg_approval_links SET revoked_at=? WHERE route_id=? AND recipient_id=?',[now(),id,from]),historyStatement(db,view.taskId,null,actor.id,'approval.delegated',{routeId:id,from,to,stage})])
- }else if(input.action==='withdraw')await guarded(db,view.rev,[bound(db,'UPDATE peg_approval_routes SET withdrawn_at=? WHERE id=?',[now(),id]),bound(db,'UPDATE peg_approval_links SET revoked_at=? WHERE route_id=?',[now(),id]),historyStatement(db,view.taskId,null,actor.id,'approval.withdrawn',{routeId:id})])
+ }else if(input.action==='withdraw')await guarded(db,view.rev,[reopenGuard(db,view.taskId,actor.id,'approval_withdrawn'),bound(db,"UPDATE peg_tasks SET status='todo',completed_at=NULL,updated_at=? WHERE id=? AND status='done' AND EXISTS(SELECT 1 FROM peg_approval_tasks WHERE task_id=?)",[now(),view.taskId,view.taskId]),bound(db,'UPDATE peg_approval_routes SET withdrawn_at=? WHERE id=?',[now(),id]),bound(db,'UPDATE peg_approval_links SET revoked_at=? WHERE route_id=?',[now(),id]),historyStatement(db,view.taskId,null,actor.id,'approval.withdrawn',{routeId:id})])
  else throw invalid('approval_action')
  return {id}
 }
@@ -92,12 +95,12 @@ export async function shareRoute(db:D1Database,actor:Actor,id:string,input:Recor
  const view=await routeView(db,actor,id);if(!view.canManage)throw forbidden('manage_shares');if(input.token!==view.token||view.state!=='pending')throw conflict('approval_review_changed')
  const recipient=String(input.recipientId??''),expiresAt=timestamp(input.expiresAt);if(!expiresAt||!view.stages.some(s=>s.people?.includes(recipient)))throw invalid('approval_recipient')
  const link=newId('review')
- await guarded(db,view.rev,[bound(db,'INSERT INTO peg_approval_links VALUES(?,?,?,?,?,NULL)',[link,id,recipient,view.version,expiresAt]),historyStatement(db,view.taskId,null,actor.id,'approval.shared',{routeId:id,recipient,version:view.version})])
+ await guarded(db,view.rev,[bound(db,'UPDATE peg_approval_links SET revoked_at=? WHERE route_id=? AND recipient_id=? AND revoked_at IS NULL',[now(),id,recipient]),bound(db,'INSERT INTO peg_approval_links VALUES(?,?,?,?,?,NULL)',[link,id,recipient,view.version,expiresAt]),historyStatement(db,view.taskId,null,actor.id,'approval.shared',{routeId:id,recipient,version:view.version})])
  return {id:link,path:'/app/proof-reviews/'+link,recipientId:recipient,version:view.version}
 }
 export async function reviewLink(db:D1Database,actor:Actor,id:string){
  const link=await first<{route_id:string;recipient_id:string;version:string;expires_at:number;revoked_at:number|null}>(db,'SELECT * FROM peg_approval_links WHERE id=?',id)
- if(!link||link.recipient_id!==actor.id||link.revoked_at||link.expires_at<0)throw notFound()
+ if(!link||link.recipient_id!==actor.id||link.revoked_at||link.expires_at<=now())throw notFound()
  const view=await routeView(db,actor,link.route_id);if(view.version!==link.version||['stale','withdrawn'].includes(view.state)||!((await subject(db,actor,view.kind,view.subjectId)).access.capabilities.has('approve')))throw notFound()
  return {linkId:id,...view}
 }
