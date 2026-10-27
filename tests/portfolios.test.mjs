@@ -542,3 +542,110 @@ describe('Pinned template rules through current Admin review', { concurrency: fa
     assert.equal((await state()).runs.find(r => r.id === heldByAi.id).status, 'applied')
   })
 })
+
+describe('Reviewed stakeholder status revisions', { concurrency: false }, () => {
+  let worker, human, member, viewer, guest, agent, portfolio, projects, sources, input, revision, clientRevision, guestGrant
+  const call = async (promise, status = 200) => { const response = await promise; assert.equal(response.status, status, JSON.stringify(response.body)); return response.body }
+  const publish = async draft => {
+    const review = await call(human.post(`/api/v1/status-drafts/${draft.id}/review`, {}))
+    return call(human.post(`/api/v1/status-drafts/${draft.id}/publish`, { token: review.token }))
+  }
+  before(async () => {
+    worker = await startWorker(); human = worker.owner
+    member = await worker.person('synthetic-pegboard-1501@example.com', 'Morgan Publisher')
+    viewer = await worker.person('synthetic-pegboard-1502@example.com', 'Taylor Viewer')
+    guest = await worker.person('synthetic-pegboard-1503@example.com', 'Client Guest', 'guest')
+    agent = await worker.person('synthetic-pegboard-1504@example.com', 'Status Agent', 'agent')
+    portfolio = await call(human.post('/api/v1/portfolios', { name: 'Reviewed client programs' }))
+    projects = []; sources = []
+    for (const name of ['Austin launch', 'Denver launch', 'Boston launch']) {
+      const project = await call(human.post('/api/v1/projects', { name, visibility: 'workspace', workspaceLevel: 'commenter' })); projects.push(project)
+      await call(human.post(`/api/v1/portfolios/${portfolio.id}/projects`, { projectId: project.id }))
+      sources.push(await call(human.post('/api/v1/tasks', { projectId: project.id, title: `${name} approved creative`, description: 'Human-reviewed campaign milestone' })))
+    }
+    guestGrant = await call(human.post('/api/v1/grants', { objectType: 'project', objectId: projects[0].id, granteeId: guest.id, level: 'commenter' }))
+    await call(human.post('/api/v1/grants', { objectType: 'project', objectId: projects[0].id, granteeId: viewer.id, level: 'viewer' }))
+    await call(human.post(`/api/v1/portfolios/${portfolio.id}/members`, { operatorId: member.id, level: 'viewer' }))
+    input = { subjectType: 'portfolio', subjectId: portfolio.id, health: 'on_track', summary: 'Three launches reviewed', highlights: 'Creative approved', risks: 'Internal contract negotiation', decisions: 'Launch after legal review', nextSteps: 'Confirm print', from: '2026-10-01', to: '2026-10-26', sourceIds: sources.map(s => s.id), recipients: [{ id: member.id, channels: ['in_app','slack','teams','nook','email'] }] }
+  }, { timeout: 120000 })
+  after(() => worker?.stop())
+
+  it('keeps three-project drafts separate, refuses stale sources and changed reviews, and publishes exact content once with honest channel outcomes', async () => {
+    let draft = await call(human.post('/api/v1/status-drafts', input))
+    assert.equal(draft.version, 1); assert.deepEqual(draft.sources.map(s => s.id), sources.map(s => s.id))
+    assert.deepEqual((await call(human.get(`/api/v1/status-history/portfolio/${portfolio.id}`))).revisions, [])
+    const reviewed = await call(human.post(`/api/v1/status-drafts/${draft.id}/review`, {}))
+    await call(human.patch(`/api/v1/tasks/${sources[1].id}`, { description: 'Revised after draft review' }))
+    await call(human.post(`/api/v1/status-drafts/${draft.id}/publish`, { token: reviewed.token }), 409)
+    assert.deepEqual((await call(human.get(`/api/v1/status-history/portfolio/${portfolio.id}`))).revisions, [])
+    draft = await call(human.patch(`/api/v1/status-drafts/${draft.id}`, { ...input, version: draft.version }))
+    const current = await call(human.post(`/api/v1/status-drafts/${draft.id}/review`, {}))
+    draft = await call(human.patch(`/api/v1/status-drafts/${draft.id}`, { ...input, summary: 'Updated human wording', version: draft.version }))
+    await call(human.post(`/api/v1/status-drafts/${draft.id}/publish`, { token: current.token }), 409)
+    const exact = await call(human.post(`/api/v1/status-drafts/${draft.id}/review`, {}))
+    const results = await Promise.all([1,2].map(() => call(human.post(`/api/v1/status-drafts/${draft.id}/publish`, { token: exact.token }))))
+    assert.equal(new Set(results.map(r => r.id)).size, 1); revision = results[0]
+    const published = await call(member.get(`/api/v1/status-revisions/${revision.id}`))
+    assert.deepEqual(published.content, { ...exact.content }); assert.equal(published.reviewedBy, human.id)
+    assert.deepEqual(published.receipts.map(r => [r.channel,r.state,r.reason]).sort(), [['email','blocked','connector_not_implemented'],['in_app','available',null],['nook','blocked','connector_not_implemented'],['slack','blocked','connector_not_implemented'],['teams','blocked','connector_not_implemented']])
+    assert.equal((await call(human.get(`/api/v1/status-history/portfolio/${portfolio.id}`))).revisions.length, 1)
+    await call(member.get(`/api/v1/status-drafts/${draft.id}`), 403)
+    await call(guest.get(`/api/v1/status-revisions/${revision.id}`), 404)
+    await worker.restart()
+    assert.equal((await call(human.post(`/api/v1/status-drafts/${draft.id}/publish`, { token: exact.token }))).id, revision.id)
+  })
+
+  it('requires current human authority and exact client recipients, excludes private sources and keeps a separate client draft unpublished', async () => {
+    const aiGrant = await call(human.post('/api/v1/grants', { objectType: 'project', objectId: projects[0].id, granteeId: agent.id, level: 'editor' }))
+    const projectInput = { ...input, subjectType: 'project', subjectId: projects[0].id, sourceIds: [sources[0].id], recipients: [{ id: guest.id, channels: ['in_app'] }], risks: '' }
+    await call(agent.post('/api/v1/status-drafts', projectInput), 403)
+    await call(viewer.post('/api/v1/status-drafts', projectInput), 403)
+    const secret = await call(human.post('/api/v1/tasks', { projectId: projects[0].id, title: 'Private acquisition risk', internalOnly: true }))
+    const unsafe = await call(human.post('/api/v1/status-drafts', { ...projectInput, sourceIds: [secret.id] }))
+    await call(human.post(`/api/v1/status-drafts/${unsafe.id}/review`, {}), 404)
+    const clientDraft = await call(human.post('/api/v1/status-drafts', projectInput))
+    assert.deepEqual((await call(guest.get(`/api/v1/status-history/project/${projects[0].id}`))).revisions, [])
+    const review = await call(human.post(`/api/v1/status-drafts/${clientDraft.id}/review`, {}))
+    await call(human.patch(`/api/v1/status-drafts/${clientDraft.id}`, { ...projectInput, version: clientDraft.version, recipients: [{ id: viewer.id, channels: ['in_app'] }] }))
+    await call(human.post(`/api/v1/status-drafts/${clientDraft.id}/publish`, { token: review.token }), 409)
+    const restored = await call(human.patch(`/api/v1/status-drafts/${clientDraft.id}`, { ...projectInput, version: clientDraft.version + 1 }))
+    clientRevision = await publish(restored)
+    const visible = await call(guest.get(`/api/v1/status-revisions/${clientRevision.id}`))
+    assert.equal(visible.content.risks, ''); assert.deepEqual(visible.sources.map(s => s.id), [sources[0].id]); assert.ok(!JSON.stringify(visible).includes('Private acquisition'))
+    await call(viewer.get(`/api/v1/status-revisions/${clientRevision.id}`), 404)
+    await call(human.post('/api/v1/grants', { objectType: 'project', objectId: projects[0].id, granteeId: member.id, level: 'admin' }))
+    const delegated = await call(member.post('/api/v1/status-drafts', projectInput))
+    const delegatedReview = await call(member.post(`/api/v1/status-drafts/${delegated.id}/review`, {}))
+    await call(agent.post(`/api/v1/status-drafts/${delegated.id}/publish`, { token: delegatedReview.token }), 403)
+    await call(human.post(`/api/v1/grants/${aiGrant.id}/revoke`, {}))
+  })
+
+  it('retains immutable corrections and revision-bound member and guest threads while hiding internal replies and refusing revoked access', async () => {
+    const base = await call(human.get(`/api/v1/status-revisions/${clientRevision.id}`))
+    const internal = await call(human.post(`/api/v1/status-revisions/${clientRevision.id}/comments`, { body: 'Internal acquisition context', internalOnly: true }))
+    const reply = await call(human.post(`/api/v1/status-revisions/${clientRevision.id}/comments`, { body: 'Internal nested detail', parentId: internal.id }))
+    const comment = await call(guest.post(`/api/v1/status-revisions/${clientRevision.id}/comments`, { body: 'Client confirms the milestone' }))
+    await call(human.post(`/api/v1/status-revisions/${clientRevision.id}/comments`, { body: 'Thank you', parentId: comment.id }))
+    await call(guest.post(`/api/v1/status-revisions/${clientRevision.id}/comments`, { body: 'Guess hidden parent', parentId: reply.id }), 404)
+    await call(guest.post(`/api/v1/status-revisions/${clientRevision.id}/comments`, { body: 'Cannot write internal', internalOnly: true }), 403)
+    const visible = (await call(guest.get(`/api/v1/status-revisions/${clientRevision.id}/comments`))).comments
+    assert.deepEqual(visible.map(c => c.body).sort(), ['Client confirms the milestone','Thank you']); assert.equal(visible.find(c => c.id === comment.id).author_id, guest.id)
+    const original = visible.find(c => c.id === comment.id)
+    await call(human.patch(`/api/v1/status-revisions/${clientRevision.id}/comments/${comment.id}`, { version: original.created_at, body: 'Impersonate client' }), 403)
+    const changed = await call(guest.patch(`/api/v1/status-revisions/${clientRevision.id}/comments/${comment.id}`, { version: original.created_at, body: 'Client correction' }))
+    await call(guest.patch(`/api/v1/status-revisions/${clientRevision.id}/comments/${comment.id}`, { version: original.created_at, body: 'Stale overwrite' }), 409)
+    await call(guest.patch(`/api/v1/status-revisions/${clientRevision.id}/comments/${comment.id}`, { version: changed.version, delete: true }))
+    const correctionDraft = await call(human.post('/api/v1/status-drafts', { ...input, subjectType: 'project', subjectId: projects[0].id, sourceIds: [sources[0].id], recipients: [{ id: guest.id, channels: ['in_app'] }], risks: '', correctsId: clientRevision.id, summary: 'Corrected launch statement' }))
+    const correction = await publish(correctionDraft)
+    assert.deepEqual((await call(human.get(`/api/v1/status-revisions/${clientRevision.id}`))).content, base.content)
+    assert.deepEqual((await call(guest.get(`/api/v1/status-revisions/${correction.id}/comments`))).comments, [])
+    const history = await call(guest.get(`/api/v1/status-history/project/${projects[0].id}`))
+    assert.equal(history.revisions.length, 2); assert.equal(history.revisions.find(r => r.id === correction.id).correctsId, clientRevision.id)
+    assert.equal((await call(guest.get(`/api/v1/status-revisions/${clientRevision.id}/comments`))).comments.find(c => c.id === comment.id).body, '')
+    await call(human.post(`/api/v1/grants/${guestGrant.id}/revoke`, {}))
+    await call(guest.get(`/api/v1/status-revisions/${clientRevision.id}`), 404)
+    await call(guest.post(`/api/v1/status-revisions/${clientRevision.id}/comments`, { body: 'Revoked reply' }), 404)
+    assert.equal((await call(human.get(`/api/v1/status-revisions/${clientRevision.id}`))).receipts[0].state, 'revoked')
+    assert.equal((await call(human.get(`/api/v1/status-history/project/${projects[0].id}`))).revisions.length, 2)
+  })
+})

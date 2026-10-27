@@ -1,0 +1,17 @@
+import type { Hono } from 'hono'
+import type { Bindings } from '../../auth.server'
+import { door } from './door'
+import { saveDraft, readDraft, reviewDraft, publishDraft, readRevision, statusHistory } from '../status/drafts'
+import { revisionComments, addRevisionComment, changeRevisionComment } from '../status/comments'
+export function statusRoutes(app: Hono<{ Bindings: Bindings }>) {
+  app.post('/status-drafts', door(({ db, actor, input }) => saveDraft(db, actor, input)))
+  app.get('/status-drafts/:id', door(({ db, actor, params }) => readDraft(db, actor, params.id)))
+  app.patch('/status-drafts/:id', door(({ db, actor, params, input }) => saveDraft(db, actor, input, params.id)))
+  app.post('/status-drafts/:id/review', door(({ db, actor, params }) => reviewDraft(db, actor, params.id)))
+  app.post('/status-drafts/:id/publish', door(({ db, actor, params, input }) => publishDraft(db, actor, params.id, input.token)))
+  app.get('/status-revisions/:id', door(({ db, actor, params }) => readRevision(db, actor, params.id)))
+  app.get('/status-revisions/:id/comments', door(({ db, actor, params }) => revisionComments(db, actor, params.id)))
+  app.post('/status-revisions/:id/comments', door(({ db, actor, params, input }) => addRevisionComment(db, actor, params.id, input)))
+  app.patch('/status-revisions/:id/comments/:comment', door(({ db, actor, params, input }) => changeRevisionComment(db, actor, params.id, params.comment, input)))
+  app.get('/status-history/:type/:id', door(({ db, actor, params }) => statusHistory(db, actor, params.type, params.id)))
+}

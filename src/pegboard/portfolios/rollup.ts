@@ -1,9 +1,10 @@
+import { openRevision } from '../status/drafts'
 import {recordCitations} from '../register/citations'
 import {registerView} from '../register/records'
 // A portfolio read as one person may read it. Every figure is computed from the projects and tasks that person can already
 // open, so totals never include hidden work and a hidden project leaves no name, count or gap. A task hung in several
 // projects is counted once in every total above them.
-import { all, first, invalid } from '../db'
+import { all, first, invalid, PegError } from '../db'
 import { projectEffective } from '../authorization/effective'
 import { loadProject } from '../authorization/grants'
 import { fieldReadable } from '../workspace/projects'
@@ -22,8 +23,16 @@ const subtree = async (db: D1Database, root: PortfolioRow) => {
   while (queue.length) for (const child of await all<PortfolioRow>(db, 'SELECT * FROM peg_portfolios WHERE parent_id=? ORDER BY name', queue.shift()!.id)) { out.push(child); queue.push(child) }
   return out
 }
-const latestStatus = (db: D1Database, type: string, id: string, at: number) =>
-  first<{ id: string; health: string; summary: string; author_id: string; published_at: number }>(db, 'SELECT id,health,summary,author_id,published_at FROM peg_status_updates WHERE subject_type=? AND subject_id=? AND published_at<=? ORDER BY published_at DESC LIMIT 1', type, id, at)
+const latestStatus = async (db: D1Database, actor: Actor, type: string, id: string, at: number) => {
+  const rows = await all<{ id: string; health: string; summary: string; author_id: string; published_at: number }>(db, 'SELECT id,health,summary,author_id,published_at FROM peg_status_updates WHERE subject_type=? AND subject_id=? AND published_at<=? ORDER BY published_at DESC', type, id, at)
+  for (const row of rows) {
+    if (await first(db, 'SELECT 1 FROM peg_status_revisions WHERE id=?', row.id)) {
+      try { await openRevision(db, actor, row.id) } catch (error) { if (error instanceof PegError && [403,404].includes(error.status)) continue; throw error }
+    }
+    return row
+  }
+  return null
+}
 
 interface TaskInfo { id: string; ref: string | null; title: string; kind: string; status: string; start: string | null; due: string | null; owner: string; ownerId: string; estimate: number; overdue: boolean; projects: string[] }
 const taskLink = (id: string) => `/app/tasks/${id}`
@@ -68,7 +77,7 @@ export async function portfolioRollup(db: D1Database, actor: Actor, id: string, 
     const nodes = [...chain].map(taskId => { const t = union.get(taskId)!; return { id: taskId, start: t.start_date, due: t.due_date, done: t.status === 'done' } })
     const used: Edge[] = edges.filter(e => chain.has(e.predecessor) && chain.has(e.successor))
     const slacks = new Map(slackOf(nodes, used, project.row.due_date).map(s => [s.id, s]))
-    const status = await latestStatus(db, 'project', projectId, evaluatedAt)
+    const status = await latestStatus(db, actor, 'project', projectId, evaluatedAt)
     const author = status ? (await displayNames(db, [status.author_id])).get(status.author_id) ?? 'Former member' : ''
     const tasks = project.tasks.map(task => info.get(task.id)!)
     const evidence: Evidence = {
@@ -124,7 +133,7 @@ export async function portfolioRollup(db: D1Database, actor: Actor, id: string, 
     id: p.id, name: p.name, summary: summarize(projectIdsOf(p, portfolios)), manual: await manual('portfolio', p.id),
     children: await Promise.all(portfolios.filter(q => q.parent_id === p.id).map(tree)),
   })
-  const manual = async (type: string, subject: string) => { const s = await latestStatus(db, type, subject, evaluatedAt); return s ? { id: s.id, citations:await recordCitations(db,actor,s.id), health: s.health, summary: s.summary, author: (await displayNames(db, [s.author_id])).get(s.author_id) ?? 'Former member', publishedAt: s.published_at } : null }
+  const manual = async (type: string, subject: string) => { const s = await latestStatus(db, actor, type, subject, evaluatedAt); return s ? { id: s.id, citations:await recordCitations(db,actor,s.id), health: s.health, summary: s.summary, author: (await displayNames(db, [s.author_id])).get(s.author_id) ?? 'Former member', publishedAt: s.published_at } : null }
 
   const names = new Map(portfolios.map(p => [p.id, p.name]))
   const projectRows = await Promise.all([...projects.keys()].map(async projectId => {

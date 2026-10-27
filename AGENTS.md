@@ -48,3 +48,10 @@ acceptance from a local structural check.
 Run tests for touched public flows and typecheck. Keep the inherited foundation
 tests intact. CI is the full verification wall. Stop only processes you started;
 never use broad kill commands or stop another checkout. Do not print secrets.
+
+## Contract document regeneration
+
+Lander-Regenerate: `node scripts/contract-docs.mjs write`, followed by
+`node scripts/contract-docs.mjs check`. CONTRACT.md owns acceptance and status;
+the generator reconciles checklist metadata, summary counts and docs/CLAIMS.md.
+Run `pnpm run source:lock` last, then `pnpm run source:check`.
