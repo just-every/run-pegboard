@@ -60,5 +60,26 @@ true`, plus `version` equal to the last `edited_at` or initial `created_at`.
 Only the author with current comment authority can edit or delete; stale edits
 refuse. Author and timestamps remain attributed, a deletion retains a tombstone,
 and edit and delete actions are audited. A reply stays attached to its exact
-publication revision. Mentions, follow and mute, ordinary comment notifications,
-digests and authenticated inbound replies remain outstanding acceptance work.
+publication revision.
+
+`GET` and `POST /api/v1/status-revisions/:id/preferences` read or save the caller's
+boolean `following` and `muted` choices. `GET /api/v1/status-notices` reads durable
+native discussion notices, rechecking current revision and source access, comment
+visibility and preferences. The reply can supply `mentions`, an array of recipient
+IDs already included in the reviewed audience. A mention never grants access or
+adds a new recipient. Muting suppresses all discussion notices; an explicit mention
+can notify an unfollowed recipient who has not muted the revision. Notices retain
+the exact revision and comment link, omit internal comments for guests, disappear
+from the recipient's feed after revocation and omit deleted comments. Editing a
+comment does not leave stale body text in a notice. Native notice availability
+does not claim an Inbox screen, digest, external channel delivery or human read.
+Those screens, queued channel notifications, digests and authenticated inbound
+replies remain outstanding acceptance work.
+
+The existing owner erasure preview reports
+`review_status_snapshot_custody_before_erasure` when cited task or project work,
+or an attributed actor, is still held in a status snapshot. The reviewed erasure
+request returns a retained outcome with no deleted rows. This conservative hold
+prevents a false claim of erasure while status copies remain. A reviewed snapshot
+erasure path remains outstanding; this foundation claims no legal retention or
+provider deletion qualification.

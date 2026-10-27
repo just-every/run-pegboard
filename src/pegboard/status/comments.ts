@@ -1,3 +1,4 @@
+import { discussionRecipients } from './discussion'
 import { all, batch, bound, conflict, first, forbidden, invalid, newId, notFound, now } from '../db'
 import { auditStatement } from '../authorization/audit'
 import { workspaceRole, type Actor } from '../workspace/people'
@@ -20,8 +21,10 @@ export async function addRevisionComment(db: D1Database, actor: Actor, id: strin
     parent = await first<Comment>(db, 'SELECT * FROM peg_status_comments WHERE id=? AND revision_id=?', input.parentId, id)
     if (!parent || parent.deleted_at || (guest && parent.internal_only)) throw notFound()
   }
+  const hidden = internal || !!parent?.internal_only
+  const recipients = await discussionRecipients(db,actor,id,hidden,input.mentions)
   const commentId = newId('comment'), at = now()
-  await batch(db, [bound(db, 'INSERT INTO peg_status_comments(id,revision_id,parent_id,author_id,body,internal_only,created_at) VALUES (?,?,?,?,?,?,?)', [commentId, id, parent?.id ?? null, actor.id, input.body.trim(), internal || parent?.internal_only ? 1 : 0, at]), auditStatement(db, { workspaceId: workspace, actorId: actor.id, action: 'status.comment_added', targetType: 'status_revision', targetId: id, subjectId: commentId })])
+  await batch(db, [bound(db, 'INSERT INTO peg_status_comments(id,revision_id,parent_id,author_id,body,internal_only,created_at) VALUES (?,?,?,?,?,?,?)', [commentId, id, parent?.id ?? null, actor.id, input.body.trim(), internal || parent?.internal_only ? 1 : 0, at]), ...recipients.map(recipient=>bound(db,'INSERT INTO peg_status_discussion_notices(comment_id,recipient_id,kind,created_at) VALUES (?,?,?,?)',[commentId,recipient.id,recipient.kind,at])), auditStatement(db, { workspaceId: workspace, actorId: actor.id, action: 'status.comment_added', targetType: 'status_revision', targetId: id, subjectId: commentId })])
   return { id: commentId, revisionId: id }
 }
 export async function changeRevisionComment(db: D1Database, actor: Actor, id: string, commentId: string, input: Record<string, any>) {

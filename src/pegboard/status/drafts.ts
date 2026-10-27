@@ -4,10 +4,11 @@ import { openProject, need } from '../workspace/projects'
 import { openPortfolio } from '../portfolios/portfolios'
 import { operatorRow, workspaceRole, type Actor } from '../workspace/people'
 import { openTask } from '../tasks/access'
+import { rootOf } from '../authorization/effective'
 import { healths } from '../portfolios/portfolios'
 
 type Content = { health: string; summary: string; highlights: string; risks: string; decisions: string; nextSteps: string; from: string; to: string }
-type Source = { id: string; title: string; description: string; status: string; updatedAt: number; internalOnly: number; projectIds: string[] }
+type Source = { id: string; title: string; description: string; status: string; updatedAt: number; internalOnly: number; projectIds: string[]; membership: string }
 type Recipient = { id: string; channels: string[] }
 interface Draft { id: string; workspace_id: string; subject_type: string; subject_id: string; version: number; content: string; sources: string; recipients: string; corrects_id: string | null; created_by: string; updated_at: number }
 interface Revision { id: string; draft_id: string; draft_version: number; content: string; sources: string; recipients: string; corrects_id: string | null; reviewed_by: string; review_token: string; workspace_id: string; subject_type: string; subject_id: string; published_at: number }
@@ -37,7 +38,7 @@ async function source(db: D1Database, actor: Actor, id: string, workspace: strin
   const { task, access } = await openTask(db, actor, id)
   if (task.workspace_id !== workspace) throw invalid('status_source')
   return { id: task.id, title: task.title, description: task.description, status: task.status, updatedAt: task.updated_at, internalOnly: task.internal_only,
-    projectIds: [...access.contexts.keys()].sort() }
+    projectIds: [...access.contexts.keys()].sort(), membership: JSON.stringify(await all<{project_id:string}>(db, 'SELECT project_id FROM peg_task_projects WHERE task_id=? ORDER BY project_id', (await rootOf(db,task)).id)) }
 }
 const hash = async (value: unknown) => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(value))))].map(n => n.toString(16).padStart(2, '0')).join('')
 const decode = (row: Draft) => ({ id: row.id, version: row.version, subjectType: row.subject_type, subjectId: row.subject_id, content: JSON.parse(row.content) as Content, sources: JSON.parse(row.sources) as Source[], recipients: JSON.parse(row.recipients) as Recipient[], correctsId: row.corrects_id })
@@ -104,7 +105,11 @@ export async function publishDraft(db: D1Database, actor: Actor, id: string, tok
   if (existing) return { id: existing.id, replay: true }
   const revisionId = newId('status'), at = now(), guard = newId('review')
   const checks = [bound(db, 'INSERT INTO peg_status_review_guards(id,valid) VALUES (?,(SELECT CASE WHEN version=? AND (SELECT value FROM peg_epoch WHERE id=1)=? THEN 1 ELSE 0 END FROM peg_status_drafts WHERE id=?))', [guard, row.version, review.epoch, id])]
-  for (const s of review.sources) checks.push(bound(db, 'INSERT INTO peg_status_review_guards(id,valid) VALUES (?,COALESCE((SELECT CASE WHEN title=? AND description=? AND status=? AND updated_at=? AND internal_only=? THEN 1 ELSE 0 END FROM peg_tasks WHERE id=?),0))', [newId('review'), s.title, s.description, s.status, s.updatedAt, s.internalOnly, s.id]))
+  for (const s of review.sources) {
+    const root = await rootOf(db, (await openTask(db,actor,s.id)).task)
+    checks.push(bound(db, 'INSERT INTO peg_status_review_guards(id,valid) VALUES (?,CASE WHEN (SELECT COALESCE(json_group_array(json_object(?,project_id)),?) FROM (SELECT project_id FROM peg_task_projects WHERE task_id=? ORDER BY project_id))=? THEN 1 ELSE 0 END)', [newId('review'), 'project_id', '[]', root.id, s.membership]))
+    checks.push(bound(db, 'INSERT INTO peg_status_review_guards(id,valid) VALUES (?,COALESCE((SELECT CASE WHEN title=? AND description=? AND status=? AND updated_at=? AND internal_only=? THEN 1 ELSE 0 END FROM peg_tasks WHERE id=?),0))', [newId('review'), s.title, s.description, s.status, s.updatedAt, s.internalOnly, s.id]))
+  }
   try {
     await batch(db, [...checks,
       bound(db, 'INSERT INTO peg_status_updates(id,workspace_id,subject_type,subject_id,health,summary,author_id,published_at) VALUES (?,?,?,?,?,?,?,?)', [revisionId, row.workspace_id, row.subject_type, row.subject_id, review.content.health, review.content.summary, actor.id, at]),
@@ -138,7 +143,7 @@ export async function readRevision(db: D1Database, actor: Actor, id: string) {
   // Re-evaluate authority on every read, including an old receipt after revocation.
   for (const receipt of receipts) try { await readable(db, await recipientActor(db, receipt.recipient_id), row.subject_type, row.subject_id, JSON.parse(row.sources)) } catch (error) { if (!(error instanceof PegError && [403,404].includes(error.status))) throw error; receipt.state = 'revoked'; receipt.reason = 'access_revoked' }
   const sources = []
-  for (const saved of JSON.parse(row.sources) as Source[]) sources.push({ ...saved, projectIds: (await source(db, actor, saved.id, workspace)).projectIds, link: `/app/tasks/${saved.id}` })
+  for (const saved of JSON.parse(row.sources) as Source[]) { const {membership: _membership, ...visible} = saved; sources.push({ ...visible, projectIds: (await source(db, actor, saved.id, workspace)).projectIds, link: `/app/tasks/${saved.id}` }) }
   return { id: row.id, subjectType: row.subject_type, subjectId: row.subject_id, content: JSON.parse(row.content), sources, correctsId: row.corrects_id, publishedAt: row.published_at, reviewedBy: row.reviewed_by, receipts }
 }
 export async function statusHistory(db: D1Database, actor: Actor, type: string, id: string) {
