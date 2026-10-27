@@ -199,7 +199,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "49597c09b2f9a13aed6ab74c65de65b8753954ffa31a96ccd53047869d17cc56",
+      "sha256": "97aae092ad8b347021c10473bf33bd19da2927b9a78a181ed8c0bd72049770ec",
       "executable": false
     },
     "AGENTS.md": {
@@ -215,7 +215,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "53f47df27b489a8c5a90d683ad8883b6eb693283c29884cd2d25516d10af9e00",
+      "sha256": "2de6bd485d415884cb9998546dbefddb54430348454da178c9dacf209012a329",
       "executable": false
     },
     "DEMO.md": {
@@ -239,7 +239,7 @@
       "executable": false
     },
     "docs/CLAIMS.md": {
-      "sha256": "1d9715fef6ad1bdc75b400f5e8a7df1370408c331cfc228d981bdc302b76f102",
+      "sha256": "4ed2ad2dc6adc8f22b4105b9d0cddfd5b261400bd44c99df1c1cd1f49dd3ad7d",
       "executable": false
     },
     "docs/DATA-CUSTODY.md": {
@@ -1036,6 +1036,10 @@
     },
     "rer-setup.json": {
       "sha256": "6c51afb4eafa742c40bd3876e43a61583e45f6a395e4973b2d691e47b040e328",
+      "executable": false
+    },
+    "RULINGS.md": {
+      "sha256": "c2395e8704a0458f38290b45573fce63b3127a694e858cdded2b72b230ac76bd",
       "executable": false
     },
     "RUN-LOCALLY.md": {
