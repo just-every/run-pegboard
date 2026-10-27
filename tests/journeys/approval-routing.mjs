@@ -94,6 +94,6 @@ export async function approvalRoutingJourney({w,browser,owner,cookies}){
  }
  await page.setViewportSize({width:1440,height:900});await guestPage.setViewportSize({width:1440,height:900})
  }
- console.log('Named proof and task routing, guest decisions, quorum and delegation passed at 1440; screens captured at 1440 and 390')
+ console.log('Named proof and task routing, guest decisions, quorum, delegation and stale task refusal passed; preview, pending, approved and stale screens captured at 1440 and 390')
  }finally{await context.close();await guestContext.close()}
 }
