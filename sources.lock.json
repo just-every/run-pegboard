@@ -2299,7 +2299,7 @@
       "executable": false
     },
     "src/pegboard/api/index.ts": {
-      "sha256": "25fd73b3c92be2bac7b36595326614674b49dd2d633a304404db45cbff995950",
+      "sha256": "f1994c8f4a14a186a1c779b427ef68730af3cee5c2673c10d4c2aedf7a452233",
       "executable": false
     },
     "src/pegboard/api/meeting-routes.ts": {
@@ -2367,7 +2367,7 @@
       "executable": false
     },
     "src/pegboard/authorization/effective.ts": {
-      "sha256": "2ae440350ca79d7b3c98db081d11211e6e05e89762ba450c351345c1bcb72b13",
+      "sha256": "d18449a414af87ff1d3c2aa3f54e05de7830d7a0c5818a45967af80f74053d99",
       "executable": false
     },
     "src/pegboard/authorization/grants.ts": {
@@ -2587,7 +2587,7 @@
       "executable": false
     },
     "src/pegboard/portability/policy.mjs": {
-      "sha256": "f28e0322a0484cc8da31f388a52d71af6851f5480bc5fd7d3bf44e06477e0e38",
+      "sha256": "5d37a345ccb0149112232c186f80e3069fa3e5cdf7648b3ac11b85380ec8d8f8",
       "executable": false
     },
     "src/pegboard/portfolios/portfolios.ts": {
@@ -2723,11 +2723,11 @@
       "executable": false
     },
     "src/pegboard/tasks/tasks.ts": {
-      "sha256": "0d07e375b5379bfda5630251d4f30f5f890a2113642251148fcc52e77fae768c",
+      "sha256": "70b207804e8dd21fe2b102cca71d9b19acb30c76d712be9c482bad94eecca176",
       "executable": false
     },
     "src/pegboard/tasks/view.ts": {
-      "sha256": "26b9c95d7a30249ff1a5c7871d7e557a23ba030a5ed07ce974528b3a9e7e9249",
+      "sha256": "5f514504064462568035fe6c4023e8b01a4ff29cdbf95b29bb4fb0ccf5e6ccbc",
       "executable": false
     },
     "src/pegboard/templates/adoption.ts": {
@@ -2987,7 +2987,7 @@
       "executable": false
     },
     "src/pegboard/workspace/people.ts": {
-      "sha256": "8259a5b81b3de5b8a6f6c20dc3bb82daa197a46d8b243ee13dd2570187fc96a3",
+      "sha256": "684e21b853f18941de6a7922e0123f307229b51664add366d54c03077491c03d",
       "executable": false
     },
     "src/pegboard/workspace/projects.ts": {
@@ -3283,7 +3283,7 @@
       "executable": false
     },
     "tests/work-graph.test.mjs": {
-      "sha256": "c2fdb9591314b618549511df21b12766fce60eb823766bb31cd6608d56f9708d",
+      "sha256": "49d5a6bc681f32fc12618f72cb5ed2656e5cd31396a4a6f11b0890d2414eee11",
       "executable": false
     },
     "tsconfig.json": {

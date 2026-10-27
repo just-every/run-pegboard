@@ -4,7 +4,7 @@ import branding from '../../branding.json'
 import { all, first, placeholders, run, type Param } from '../db'
 import { isAdministrator, type WorkspaceRole } from '../authorization/levels'
 
-export interface Actor { id: string; email: string; displayName: string; baseRole: 'owner' | 'admin' | 'member' }
+export interface Actor { apiScope?: { projects: string[]; personal: boolean }; id: string; email: string; displayName: string; baseRole: 'owner' | 'admin' | 'member' }
 export const actorOf = (session: Session): Actor => ({ id: session.operator.id, email: session.operator.email, displayName: session.operator.displayName, baseRole: session.operator.role })
 
 export const defaultWorkspaceId = 'ws_main'

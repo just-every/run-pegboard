@@ -1,3 +1,4 @@
+import {guarded, type revision} from '../decisions/revision'
 import { isRecoveryHidden } from '../recovery/visibility'
 import {registerView} from '../register/records'
 import {taskFields} from '../fields/values'
@@ -62,14 +63,15 @@ function shareHistory(detail: Record<string, unknown>, readable: Set<string>) {
   return out
 }
 
-export async function addComment(db: D1Database, actor: Actor, idOrRef: string, body: unknown, internalOnly = false) {
+export async function addComment(db: D1Database, actor: Actor, idOrRef: string, body: unknown, internalOnly = false, fence?: Awaited<ReturnType<typeof revision>>) {
   const { task, access } = await openTask(db, actor, idOrRef)
   require(access, 'comment')
   if (internalOnly && access.role === 'guest') throw forbidden('internal')
   if (typeof body !== 'string' || !body.trim() || body.length > 10000) throw invalid('body')
   const via = [...access.contexts].filter(([, effective]) => effective.capabilities.has('comment')).sort((a, b) => b[1].paths.length - a[1].paths.length)[0]?.[0] ?? null
   const id = newId('cmt')
-  await batch(db, [reopenGuard(db,task.id,actor.id,'comment'),bound(db, 'INSERT INTO peg_comments(id,task_id,project_id,author_id,body,created_at,internal_only) VALUES (?,?,?,?,?,?,?)', [id, task.id, via, actor.id, body.trim(), now(), internalOnly ? 1 : 0]), historyStatement(db, task.id, via, actor.id, internalOnly ? 'internal.comment.added' : 'comment.added', {})])
+  const statements = [reopenGuard(db,task.id,actor.id,'comment'),bound(db, 'INSERT INTO peg_comments(id,task_id,project_id,author_id,body,created_at,internal_only) VALUES (?,?,?,?,?,?,?)', [id, task.id, via, actor.id, body.trim(), now(), internalOnly ? 1 : 0]), historyStatement(db, task.id, via, actor.id, internalOnly ? 'internal.comment.added' : 'comment.added', {})]
+  if (fence) await guarded(db, fence, statements); else await batch(db, statements)
   return { id }
 }
 
