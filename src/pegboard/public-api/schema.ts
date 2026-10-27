@@ -8,6 +8,9 @@ export const tools = [
  { name: 'project_tasks', description: 'Read a cursor page of permitted project tasks.', inputSchema: object({ projectId: text, cursor: text, limit: integer }, ['projectId']) },
  { name: 'project_report', description: 'Read the permission-filtered project report.', inputSchema: object({ projectId: text }, ['projectId']) },
  { name: 'personal_tasks', description: 'List only your own no-project work.', inputSchema: object({}) },
+ { name: 'personal_sections', description: 'Read your own saved personal sections and their current edit revision.', inputSchema: object({}) },
+ { name: 'personal_section_save', description: 'Create or edit your own personal section at the reviewed revision.', inputSchema: object({ id: text, name: text, position: {type: 'number'}, revision: text, intent: text }, ['name', 'revision', 'intent']) },
+ { name: 'personal_task_place', description: 'Place your own personal task in a saved section. An empty section ID clears the section.', inputSchema: object({ ...task, sectionId: text, position: {type: 'number'}, today: {type: 'boolean'}, revision: text, intent: text }, ['taskId', 'revision', 'intent']) },
  { name: 'task_approve', description: 'Requires a human decision in Pegboard; external agents cannot approve.', inputSchema: object(task, ['taskId']), annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false } },
  { name: 'events_list', description: 'Read signed identifier-only events for currently permitted work.', inputSchema: object({ cursor: text, limit: integer }) },
  { name: 'event_receive', description: 'Verify a signed event and record its receipt once.', inputSchema: object({ envelope: { type: 'object' }, signature: text }, ['envelope', 'signature']) },
@@ -16,6 +19,7 @@ export const restOperations = [
  ['get', '/tasks/{taskId}', 'task_read'], ['post', '/tasks', 'task_create'], ['patch', '/tasks/{taskId}', 'task_update'],
  ['post', '/tasks/{taskId}/comments', 'task_comment'], ['get', '/projects/{projectId}/tasks', 'project_tasks'],
  ['get', '/projects/{projectId}/report', 'project_report'], ['get', '/personal-tasks', 'personal_tasks'],
+ ['get', '/personal-sections', 'personal_sections'], ['post', '/personal-sections', 'personal_section_save'], ['patch', '/personal-tasks/{taskId}/layout', 'personal_task_place'],
  ['post', '/tasks/{taskId}/approve', 'task_approve'], ['get', '/events', 'events_list'], ['post', '/events/receive', 'event_receive'],
 ] as const
 export function openapi() {
@@ -45,6 +49,7 @@ export function validateTool(name: string, value: unknown) {
    for (const [key, child] of Object.entries(schema.properties ?? {})) if (Object.hasOwn(value, key) && !walk(child, value[key])) return false
   } else if (schema.type === 'string' && typeof value !== 'string') return false
   else if (schema.type === 'number' && (typeof value !== 'number' || !Number.isFinite(value))) return false
+  else if (schema.type === 'boolean' && typeof value !== 'boolean') return false
   else if (schema.type === 'integer' && !Number.isSafeInteger(value)) return false
   if (schema.minimum !== undefined && value < schema.minimum) return false
   return true

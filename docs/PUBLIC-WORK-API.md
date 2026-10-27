@@ -65,6 +65,25 @@ sponsor is the installation owner. `task_approve` always refuses with
 also refuses. Finish an approval through the app's authenticated human decision
 door, under its existing independence and current-authority checks.
 
+## Personal sections and layout
+
+`personal_sections` (`GET /api/v1/public/personal-sections`) lists only the
+credential owner's sections and an opaque edit revision. A key without
+personal scope cannot use it. A writable personal key uses that revision and a
+unique intent with `personal_section_save` (`POST /api/v1/public/personal-sections`)
+to create a section, or supplies its own section ID to rename or rank it.
+`personal_task_place` (`PATCH /api/v1/public/personal-tasks/{taskId}/layout`)
+sets a personal task's section, rank and optional Today flag. An empty section
+ID clears the section; omitted fields retain their saved values.
+
+These operations call the native personal services. Another person's section
+or task remains unavailable even to an administrator's credential. Every edit
+checks its current credential and revision in the same transaction as its
+writes. Native section and layout edits invalidate external reviews too.
+Replaying an identical intent returns its prior result without moving work
+again. Section deletion and section-rule configuration remain outside this
+public surface.
+
 ## MCP connections
 
 Configure the installation's HTTPS MCP URL and the Bearer credential in your
@@ -128,7 +147,7 @@ PEG-027 remains partial. These doors cover task creation and editing, project
 pagination and reporting, personal tasks, comments, signed event receipts and
 reviewed webhook delivery. They do not yet expose the complete view and search,
 portfolio and goal report, time, human approval, import and export, automation,
-personal-section, tag, announcement-thread, duplicate-merge or custom-agent
+personal-section deletion and rule configuration, tag, announcement-thread, duplicate-merge or custom-agent
 resource surface. No missing resource silently falls back to a broader app
 route. Bounded idempotency recovery and
 retention, complete event-kind coverage, and automatic webhook dispatch and retries remain required.

@@ -1,5 +1,6 @@
 import {validateTool} from './schema'
 import {processTemplateRuleRuns} from '../templates/rule-execution'
+import {sections, section, place} from '../tasks/personal'
 import { all, batch, bound, conflict, first, forbidden, invalid, notFound, now, newId } from '../db'
 import { digest, guarded, revision } from '../decisions/revision'
 import { openProject, need } from '../workspace/projects'
@@ -55,6 +56,11 @@ async function signature(secret: string, value: unknown) {
  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
  return [...new Uint8Array(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(JSON.stringify(value))))].map(n => n.toString(16).padStart(2, '0')).join('')
 }
+async function personalReview(db: D1Database, access: Access) {
+ if (!access.key.personal) throw notFound()
+ const fence = await revision(db), rows = await sections(db, access.actor)
+ return { fence: {...fence, apiKeyId: access.key.id}, value: { sections: rows, revision: await digest([access.actor.id, fence, rows]) } }
+}
 export async function execute(db: D1Database, access: Access, name: string, input: Record<string, any>) {
  const problem = validateTool(name,input)
  if (problem) throw invalid(problem)
@@ -98,6 +104,20 @@ export async function execute(db: D1Database, access: Access, name: string, inpu
   const tasks = (await readableTasks(db, actor, input.projectId)).sort((a, b) => a.id.localeCompare(b.id)).filter(t => t.id > cursor)
   const page = tasks.slice(0, limit)
   return { tasks: await Promise.all(page.map(t => readTask(db, access, t.id))), next: tasks.length > limit ? page.at(-1)!.id : null }
+ }
+ if (name === 'personal_sections') return (await personalReview(db, access)).value
+ if (name === 'personal_section_save' || name === 'personal_task_place') {
+  writable(access)
+  if (!key.personal) throw notFound()
+  if (name === 'personal_section_save' && input.id && !(await sections(db, actor)).some(row => row.id === input.id)) throw notFound()
+  if (name === 'personal_task_place' && !(await taskScope(db, access, input.taskId)).access.personal) throw notFound()
+  return once(db, access, name, input, async () => {
+   const review = await personalReview(db, access)
+   if (input.revision !== review.value.revision) throw conflict('personal_revision_changed')
+   if (name === 'personal_section_save') return section(db, actor, {id: input.id, name: input.name, position: input.position}, review.fence)
+   await place(db, actor, input.taskId, {sectionId: input.sectionId, position: input.position, today: input.today}, review.fence)
+   return {id: input.taskId}
+  })
  }
  if (name === 'personal_tasks') {
   if (!key.personal) throw notFound()

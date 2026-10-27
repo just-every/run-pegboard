@@ -1,3 +1,4 @@
+import {guarded, type Revision} from '../decisions/revision'
 // Private layout and explicit, revision-bound visibility decisions.
 import {
   all,
@@ -116,6 +117,7 @@ export async function section(
   db: D1Database,
   actor: Actor,
   input: { id?: string; name: string; position?: number },
+  fence?: Revision,
 ) {
   if (
     typeof input.name !== 'string' ||
@@ -134,7 +136,7 @@ export async function section(
   )
     throw notFound()
   const id = input.id ?? newId('psec')
-  await batch(db, [
+  const statements = [
     bound(
       db,
       'INSERT INTO peg_personal_sections(id,operator_id,name,position) VALUES(?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,position=excluded.position',
@@ -145,7 +147,9 @@ export async function section(
         position(input.position ?? (await sections(db, actor)).length),
       ],
     ),
-  ])
+  ]
+  if (fence) await guarded(db, fence, statements)
+  else await batch(db, statements)
   return { id }
 }
 export async function place(
@@ -153,6 +157,7 @@ export async function place(
   actor: Actor,
   id: string,
   input: { sectionId?: string | null; position?: number; today?: boolean },
+  fence?: Revision,
 ) {
   const { task } = await openTask(db, actor, id)
   if (task.owner_id !== actor.id) throw notFound()
@@ -176,7 +181,7 @@ export async function place(
     actor.id,
     task.id,
   )
-  await batch(db, [
+  const statements = [
     bound(
       db,
       'INSERT INTO peg_personal_layout(operator_id,task_id,section_id,position,today) VALUES(?,?,?,?,?) ON CONFLICT(operator_id,task_id) DO UPDATE SET section_id=excluded.section_id,position=excluded.position,today=excluded.today',
@@ -190,7 +195,9 @@ export async function place(
         input.today === undefined ? (old?.today ?? 0) : input.today ? 1 : 0,
       ],
     ),
-  ])
+  ]
+  if (fence) await guarded(db, fence, statements)
+  else await batch(db, statements)
 }
 export async function addRule(
   db: D1Database,

@@ -199,7 +199,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "29380fc683453b33f670f5b258a6607f9ff6c0f2f5b96fdba8f96711695a2bce",
+      "sha256": "e11dcbd739171d25779d974f4413b04a35507249ba001a3ac6d53ab91f6b9be2",
       "executable": false
     },
     "AGENTS.md": {
@@ -215,7 +215,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "868bc2becb33c5b3bfdeb366444d3b1df0a6665d6927b23f0e4f848768e7b8ac",
+      "sha256": "013d3809d91c49268de944e0b8cf37dae9c00f7e1bf6e4399a8141ed6c917b0e",
       "executable": false
     },
     "DEMO.md": {
@@ -239,7 +239,7 @@
       "executable": false
     },
     "docs/CLAIMS.md": {
-      "sha256": "63ebd046c7cf5061a04936d1732c1c7751ab82f14d2a805b8219adb17943bcd7",
+      "sha256": "4912926798ff910b09227a2ed9a6b569e0e9214eb7035c74158ecb5600840812",
       "executable": false
     },
     "docs/DATA-CUSTODY.md": {
@@ -271,7 +271,7 @@
       "executable": false
     },
     "docs/PUBLIC-WORK-API.md": {
-      "sha256": "77d7e69a5bd8546ad51e9518b761c6dbc47944ef8ec808eab3dda240843b2b46",
+      "sha256": "9f3577a4fed676a3efd7fc1faecd51f78dd304dd9b73a44787101b84159bb88e",
       "executable": false
     },
     "docs/RECOVERY-API.md": {
@@ -552,6 +552,10 @@
     },
     "migrations/core/0063_public_api.sql": {
       "sha256": "77383512c1eec03ba92427f3baef4a842907dd871a6bae6ba3e4e33c845f6a31",
+      "executable": false
+    },
+    "migrations/core/0064_public_personal_revisions.sql": {
+      "sha256": "050bdfa375fccc3ffe6787721ddcc9c29abe1fc53a63f51a2fc60a7af43dc79e",
       "executable": false
     },
     "ONBOARDING.md": {
@@ -2627,11 +2631,11 @@
       "executable": false
     },
     "src/pegboard/public-api/operations.ts": {
-      "sha256": "dcffca1d8f79e6b10917bd6ec958ad5336a5c9b2c26774ff3711a3dd84eae803",
+      "sha256": "66192c3c336914f7e4eed3eae99c3648c71838b66ffd36440895d3461fb70317",
       "executable": false
     },
     "src/pegboard/public-api/schema.ts": {
-      "sha256": "79b4c6e5f14d6f18b6807afb5fdc2b04146ab1fe5c77a632b0f8ae4969ffe477",
+      "sha256": "80652c47d358e3154368adecd254b1256c41cec7add74ebcf14d9e69908ff284",
       "executable": false
     },
     "src/pegboard/public-api/webhooks.ts": {
@@ -2755,7 +2759,7 @@
       "executable": false
     },
     "src/pegboard/tasks/personal.ts": {
-      "sha256": "f35c25dd243a3a408fb172f87a40d161a777bee7ddb9816dbff3504ea35fef1a",
+      "sha256": "7c13ef83de3c486326eb064d6a2c690f27ed2bcfb836e9a39d86f5e280da4d7a",
       "executable": false
     },
     "src/pegboard/tasks/tasks.ts": {
@@ -3235,7 +3239,7 @@
       "executable": false
     },
     "tests/journeys/public-api.mjs": {
-      "sha256": "3ed3be8281e64cbbf50a45580b0cf0047503856b912122884162e97ac1d95806",
+      "sha256": "e1111a90fabc488e98906dde7a524367b689cb7f8c9993f6e96760830166ef59",
       "executable": false
     },
     "tests/journeys/recovery.mjs": {
@@ -3283,7 +3287,7 @@
       "executable": false
     },
     "tests/scenarios/public-api.mjs": {
-      "sha256": "09351c8d7a28d2d396f7655380d9aeede240446e47b17e2ec9fa7fa34048b619",
+      "sha256": "bfc4fc138d37b1511c4f1aae55cc52620d51dca80dbf036cbefdd98373d3a04f",
       "executable": false
     },
     "tests/scenarios/readiness.mjs": {
