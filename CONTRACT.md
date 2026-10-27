@@ -281,7 +281,7 @@ Every desk capability retains its original ID: PEG-001–027 are target clauses 
 
 ## Status
 
-Status and evidence describe the code and tests in this committed tree. Fresh judgment binds the exact landed commit to its Verify, Run site and complete publication scan records.
+Judged from the code and tests at commit `7ef930662fce45b7acd3e7b1bf62f4c02aadcc05` (27 October 2026). The candidate preserves those code and test bytes; this provenance update changes only documentation and the derived source lock. Fresh judgment binds the landed candidate to its exact Verify, Run site and complete publication scan records.
 
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
