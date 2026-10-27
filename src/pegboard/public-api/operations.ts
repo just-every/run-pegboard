@@ -1,6 +1,5 @@
 import { all, batch, bound, conflict, first, forbidden, invalid, notFound, now } from '../db'
 import { digest, guarded, revision } from '../decisions/revision'
-import { permanentEvent } from '../audit/search'
 import { openProject } from '../workspace/projects'
 import { openTask } from '../tasks/access'
 import { prepareTask, updateTask } from '../tasks/tasks'
@@ -31,9 +30,10 @@ async function readTask(db: D1Database, access: Access, id: string) {
   revision: await digest([task.id, rev]) }
 }
 const writable = (access: Access) => { if (!access.key.writable) throw forbidden('read_only_key') }
+const canonical = (value: any): any => Array.isArray(value) ? value.map(canonical) : value && typeof value === 'object' ? Object.fromEntries(Object.keys(value).sort().map(key => [key, canonical(value[key])])) : value
 const intent = (input: Record<string, any>) => { if (typeof input.intent !== 'string' || !/^[\w.-]{1,120}$/.test(input.intent)) throw invalid('idempotency_key_required'); return input.intent }
 async function once(db: D1Database, access: Access, name: string, input: Record<string, any>, perform: () => Promise<unknown>) {
- const id = intent(input), fingerprint = await digest([name, input])
+ const id = intent(input), fingerprint = await digest(canonical([name, input]))
  const existing = await first<{ fingerprint: string; response: string | null }>(db, 'SELECT fingerprint,response FROM peg_api_intents WHERE key_id=? AND intent=?', access.key.id, id)
  if (existing) {
   if (existing.fingerprint !== fingerprint) throw conflict('idempotency_key_reused')

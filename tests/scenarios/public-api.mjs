@@ -1,3 +1,4 @@
+import {createServer} from 'node:http'
 import assert from 'node:assert/strict'
 import { createHash, createHmac } from 'node:crypto'
 
@@ -16,7 +17,7 @@ export function registerPublicApiTests({ test, api }) {
   return { status: result.isError ? body.status : 200, body }
  }
  test('creates and edits through the published REST and MCP doors with exact pages, reports and signed replay-safe events', async () => {
-  const { worker, root } = api(), project = await ok(root.post('/api/v1/projects', { name: 'Public work' }))
+  const { worker, root, webhookEdge } = api(), project = await ok(root.post('/api/v1/projects', { name: 'Public work' }))
   const key = await issue(root, [project.id]), call = rest(worker, key), tool = mcp(call)
   const schema = await ok(call('GET', '/openapi.json'))
   assert.equal(schema.openapi, '3.1.0')
@@ -45,8 +46,27 @@ export function registerPublicApiTests({ test, api }) {
   await ok(tool('event_receive', { ...event, envelope: { ...event.envelope, taskId: b.id } }), 403)
   assert.equal((await ok(tool('event_receive', event))).applied, true)
   assert.equal((await ok(call('POST', '/events/receive', event))).applied, false)
+  const hook = await ok(root.post('/api/v1/webhooks', {projectId:project.id,url:'https://webhooks.example.com/events',events:['task.created']}))
+  webhookEdge.setSecret(hook.secret)
+  const preview=await ok(root.get(`/api/v1/webhooks/${hook.id}/event-preview?eventId=${event.envelope.id}`))
+  await ok(root.post(`/api/v1/webhooks/${hook.id}/deliver`,{eventId:event.envelope.id,revision:preview.token,consent:true,secret:'synthetic-pegboard-2'}),403)
+  const sent=await ok(root.post(`/api/v1/webhooks/${hook.id}/deliver`,{eventId:event.envelope.id,revision:preview.token,consent:true,secret:hook.secret}))
+  assert.equal(sent.state,'acknowledged');assert.equal(webhookEdge.deliveries.length,1);assert.equal(webhookEdge.effects.size,1)
+  assert.deepEqual(Object.keys(webhookEdge.deliveries[0].event).sort(),['at','id','subscriptionId','taskId','type'])
+  assert.equal(webhookEdge.deliveries[0].event.taskId,a.id)
+  assert.equal(webhookEdge.deliveries[0].signature,createHmac('sha256',hook.secret).update(webhookEdge.deliveries[0].text).digest('hex'))
+  const replay=await ok(root.post(`/api/v1/webhooks/${hook.id}/deliver`,{eventId:event.envelope.id,revision:preview.token,consent:true,secret:hook.secret}))
+  assert.equal(replay.replayed,true);assert.equal(webhookEdge.deliveries.length,1)
+  const packet=webhookEdge.deliveries[0]
+  const duplicate=await fetch(webhookEdge.origin+'/events',{method:'POST',headers:{'x-pegboard-signature':packet.signature},body:packet.text})
+  assert.equal(duplicate.status,200);assert.equal(webhookEdge.effects.size,1)
+  const forged=await fetch(webhookEdge.origin+'/events',{method:'POST',headers:{'x-pegboard-signature':'synthetic-pegboard-3'},body:packet.text})
+  assert.equal(forged.status,403);assert.equal(webhookEdge.effects.size,1)
+  assert.deepEqual((await ok(root.get(`/api/v1/webhooks/${hook.id}/deliveries`))).deliveries.map(d=>[d.event_id,d.state,d.status]),[[event.envelope.id,'acknowledged',200]])
   await worker.restart()
   assert.equal((await ok(tool('event_receive', event))).applied, false)
+  await ok(root.delete(`/api/v1/webhooks/${hook.id}`))
+  await ok(root.get(`/api/v1/webhooks/${hook.id}/event-preview?eventId=${event.envelope.id}`),404)
   assert.deepEqual(await ok(call('POST', '/tasks', { projectId: project.id, title: 'First task', estimateHours: 3, intent: 'create-first' })), a)
  })
  test('connects named clients using the MCP schema and refuses widened scope, expired keys and agent approval', async () => {
@@ -114,4 +134,18 @@ export function registerPublicApiTests({ test, api }) {
   await ok(guestCall('GET', `/tasks/${task.id}`), 404)
   await ok(guestTool('task_comment', { taskId: task.id, body: 'Revoked', intent: 'revoked' }), 404)
  })
+}
+
+export async function startWebhookEdge() {
+ const deliveries=[], effects=new Set()
+ let secret='synthetic-pegboard-1'
+ const server=createServer(async(req,res)=>{
+  const chunks=[];for await(const chunk of req)chunks.push(chunk)
+  const text=Buffer.concat(chunks).toString(), expected=createHmac('sha256',secret).update(text).digest('hex')
+  if(req.headers['x-pegboard-signature']!==expected){res.writeHead(403);res.end('forged');return}
+  const event=JSON.parse(text);deliveries.push({event,text,signature:req.headers['x-pegboard-signature']});effects.add(event.id)
+  res.writeHead(200,{'content-type':'application/json'});res.end(JSON.stringify({received:event.id}))
+ })
+ await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve))
+ return {origin:'http://127.0.0.1:'+server.address().port,deliveries,effects,setSecret:value=>{secret=value},stop:()=>new Promise(resolve=>server.close(resolve))}
 }

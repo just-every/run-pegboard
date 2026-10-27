@@ -1,4 +1,4 @@
-import {registerPublicApiTests} from './scenarios/public-api.mjs'
+import {registerPublicApiTests,startWebhookEdge} from './scenarios/public-api.mjs'
 // PEG-001, through the public doors (the JSON API and the forms that post to it): one task across projects, what a guest
 // never learns, references that outlive a prefix change, and the PEG-083 join and request journeys on the same graph.
 import assert from 'node:assert/strict'
@@ -2164,8 +2164,8 @@ describe('Direct project duplication through reviewed public doors', { concurren
 })
 
  describe('Public API and MCP', {concurrency:false}, () => {
- let worker,root,peer,guest
- before(async()=>{worker=await startWorker();root=worker.owner;peer=await worker.person('api-member@example.com','API Member');guest=await worker.person('api-guest@example.com','API Guest','guest')},{timeout:120000})
- after(()=>worker?.stop())
- registerPublicApiTests({test:it,api:()=>({worker,root,peer,guest})})
+ let worker,root,peer,guest,webhookEdge
+ before(async()=>{webhookEdge=await startWebhookEdge();worker=await startWorker({settings:{PEGBOARD_LOCAL_WEBHOOK_ORIGIN:webhookEdge.origin}});root=worker.owner;peer=await worker.person('api-member@example.com','API Member');guest=await worker.person('api-guest@example.com','API Guest','guest')},{timeout:120000})
+ after(async()=>{await worker?.stop();await webhookEdge?.stop()})
+ registerPublicApiTests({test:it,api:()=>({worker,root,peer,guest,webhookEdge})})
  })

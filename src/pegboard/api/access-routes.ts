@@ -1,3 +1,4 @@
+import {webhookPreview,deliverWebhook,webhookHistory,revokeWebhook} from '../public-api/webhooks'
 import {guestPreview} from '../guests/preview'
 // /api/v1: grants, the access review, access requests and their one decision door, webhooks.
 import type { Hono } from 'hono'
@@ -36,6 +37,10 @@ export function accessRoutes(app: App) {
   app.get('/access-requests/:id', door(({ actor, db, params }) => previewRequest(db, actor, params.id)))
   app.post('/access-requests/:id/decision', door(({ actor, db, params, input }) => decideRequest(db, actor, params.id, input), { next: () => '/app/inbox' }))
 
+  app.get('/webhooks/:id/event-preview', door(({db,actor,params,query}) => webhookPreview(db,actor,params.id,Number(query.get('eventId')))))
+  app.post('/webhooks/:id/deliver', door(({db,env,actor,params,input}) => deliverWebhook(db,env,actor,params.id,input)))
+  app.get('/webhooks/:id/deliveries', door(({db,actor,params}) => webhookHistory(db,actor,params.id)))
+  app.delete('/webhooks/:id', door(({db,actor,params}) => revokeWebhook(db,actor,params.id)))
   app.post('/webhooks', door(({ actor, db, workspace, input }) => registerWebhook(db, actor, { ...input, workspaceId: workspace, url: input.url, events: array(input.events) })))
   app.get('/webhooks', door(async ({ actor, db, workspace }) => ({ webhooks: await listWebhooks(db, actor, workspace) })))
 }

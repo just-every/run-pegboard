@@ -24,13 +24,13 @@ export async function registerWebhook(db: D1Database, actor: Actor, input: { wor
   if (!(await workspaceSettings(db, workspaceId)).integrationsEnabled) throw forbidden('integrations_disabled')
   let url: URL
   try { url = new URL(String(input.url)) } catch { throw invalid('url') }
-  if (url.protocol !== 'https:' || url.username || url.password || url.hostname === 'localhost') throw invalid('url')
+  if (url.protocol !== 'https:' || url.username || url.password || !url.hostname.includes('.') || /^[\d.]+$/.test(url.hostname) || url.hostname.includes(':') || /(?:^|\.)(?:localhost|local|internal)$/.test(url.hostname)) throw invalid('url')
   const events = Array.isArray(input.events) && input.events.length ? input.events : webhookEvents
   if (events.some(event => !webhookEvents.includes(event as string))) throw invalid('events')
   const id = newId('whk'), secret = `whsec_${crypto.randomUUID().replace(/-/g, '')}${crypto.randomUUID().replace(/-/g, '')}`
   await batch(db, [bound(db, 'INSERT INTO peg_webhooks(id,workspace_id,project_id,url,events,secret_hash,created_by,created_at) VALUES (?,?,?,?,?,?,?,?)', [id, workspaceId, input.projectId ?? null, url.href, events.join(','), await digest(secret), actor.id, now()]),
     auditStatement(db, { workspaceId, actorId: actor.id, action: 'webhook.registered', targetType: input.projectId ? 'project' : 'workspace', targetId: input.projectId ?? workspaceId, detail: { webhookId: id, url: url.origin, events } })])
-  return { id, url: url.href, events, projectId: input.projectId ?? null, secret, delivery: 'signed delivery arrives with PEG-027' }
+  return { id, url: url.href, events, projectId: input.projectId ?? null, secret, delivery: 'Review an event, then deliver with the once-shown secret.' }
 }
 
 export async function listWebhooks(db: D1Database, actor: Actor, workspaceId: string) {

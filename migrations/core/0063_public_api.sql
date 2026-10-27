@@ -23,3 +23,9 @@ CREATE TABLE peg_api_receipts (
  key_id TEXT NOT NULL, event_id INTEGER NOT NULL, received_at INTEGER NOT NULL,
  PRIMARY KEY(key_id,event_id)
 );
+CREATE TABLE peg_webhook_deliveries (
+ webhook_id TEXT NOT NULL, event_id INTEGER NOT NULL, state TEXT NOT NULL,
+ status INTEGER, at INTEGER NOT NULL, PRIMARY KEY(webhook_id,event_id)
+);
+CREATE TRIGGER peg_api_webhook_insert AFTER INSERT ON peg_webhooks BEGIN UPDATE peg_personal_revision SET value=value+1 WHERE id=1; END;
+CREATE TRIGGER peg_api_webhook_update AFTER UPDATE ON peg_webhooks BEGIN UPDATE peg_personal_revision SET value=value+1 WHERE id=1; END;
