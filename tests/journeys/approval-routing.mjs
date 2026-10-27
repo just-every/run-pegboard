@@ -14,7 +14,8 @@ export async function approvalRoutingJourney({w,browser,owner,cookies}){
  const proofs=[]
  try{
  for(const kind of ['task','proof']){
- const task=await ok(owner.post('/api/v1/tasks',{projectId:project.id,title:kind==='task'?'Campaign approval':'Creative proof',ownerId:author.id,...(kind==='task'?{kind:'approval'}:{})}))
+ const title=kind==='task'?'Campaign approval':'Creative proof',description=kind==='task'?'Review the campaign launch brief and confirm the client deliverables are ready.':'Review the creative proof PDF.'
+ const task=await ok(owner.post('/api/v1/tasks',{projectId:project.id,title,description,ownerId:author.id,...(kind==='task'?{kind:'approval'}:{})}))
  for(const p of [client,delegate])await ok(owner.post('/api/v1/grants',{objectType:'task',objectId:task.id,granteeId:p.id,level:'viewer',scope:'approve'}))
  let subject=task.id
  if(kind==='proof'){
@@ -33,10 +34,20 @@ export async function approvalRoutingJourney({w,browser,owner,cookies}){
  await page.getByRole('button',{name:'Apply reviewed routing',exact:true}).click();await page.waitForURL(/\/app\/approvals\/route_/)
  const routeId=page.url().split('/').pop();proofs.push({kind,routeId,taskId:task.id})
  await expect(page.getByRole('status')).toHaveText('pending')
+ assert.equal((await guestPage.goto(`${w.origin}/app/approvals/${routeId}`)).status(),404,'unshared guest cannot open a direct review route')
  const share=page.getByRole('form',{name:'Share reviewed proof'});await share.getByLabel('Reviewer',{exact:true}).selectOption(client.id);await share.getByLabel('Link expires (UTC)',{exact:true}).fill(new Date(Date.now()+86400000).toISOString().slice(0,16));await share.getByRole('button',{name:'Share reviewed version',exact:true}).click()
  const view=await ok(owner.get('/api/v1/approvals/'+routeId)),link=view.links[0]
+ const reviewedTask=async p=>{
+ const material=p.locator('article').filter({has:p.getByRole('heading',{name:'Reviewed material',exact:true})})
+ await expect(material.getByRole('link',{name:title,exact:true})).toHaveAttribute('href',`/app/tasks/${task.id}`)
+ await expect(material.getByText(description,{exact:true})).toBeVisible()
+ await expect(material.getByText('Reviewed task revision',{exact:false})).toBeVisible()
+ await expect(material.locator('code')).toBeVisible()
+ await expect(material.locator('code')).toHaveText(view.version)
+ }
  await guestPage.goto(`${w.origin}/app/proof-reviews/${link.id}`)
  await expect(guestPage.getByRole('status')).toHaveText('pending');await expect(guestPage.getByRole('button',{name:'Delegate review'})).toHaveCount(0)
+ if(kind==='task'){await reviewedTask(page);await reviewedTask(guestPage)}
  if(kind==='proof'){const download=guestPage.waitForEvent('download');await guestPage.getByRole('link',{name:'Download reviewed proof'}).click();assert.ok(await (await download).path())}
  const decision=guestPage.getByRole('form',{name:'Decide routed approval'});await decision.getByLabel('Decision reason',{exact:true}).fill('Reviewed campaign material');await decision.getByRole('button',{name:'Record reviewed decision',exact:true}).click();await expect(guestPage.getByRole('status')).toHaveText('pending')
  assert.equal((await ok(owner.get('/api/v1/approvals/'+routeId))).stages[0].approved,1)
@@ -47,6 +58,14 @@ export async function approvalRoutingJourney({w,browser,owner,cookies}){
  await page.setViewportSize({width,height:900});await guestPage.setViewportSize({width,height:900});await page.goto(`${w.origin}/app/approvals/${routeId}`);await guestPage.goto(`${w.origin}/app/proof-reviews/${link.id}`)
  for(const [name,p] of [['manager',page],['recipient',guestPage]]){
  assert.ok(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`${kind} ${name} reflows at ${width}`)
+ if(kind==='task'){
+ await reviewedTask(p)
+ const reviewUrl=p.url()
+ await p.getByRole('link',{name:title,exact:true}).click()
+ await p.waitForURL(`${w.origin}/app/tasks/${task.id}`)
+ await expect(p.getByRole('heading',{name:title,exact:true})).toBeVisible()
+ await p.goto(reviewUrl)
+ }
  if(process.env.PEGBOARD_PROOF_DIR){await mkdir(process.env.PEGBOARD_PROOF_DIR,{recursive:true});await p.screenshot({path:join(process.env.PEGBOARD_PROOF_DIR,`routing-${kind}-${name}-${width}.png`),fullPage:true})}
  }
  }

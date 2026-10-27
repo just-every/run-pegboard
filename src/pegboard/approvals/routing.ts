@@ -7,7 +7,10 @@ import { reopenGuard,historyStatement } from '../tasks/history'
 import { permanentEvent } from '../audit/search'
 import { isRecoveryHidden } from '../recovery/visibility'
 import type { Delivery } from '../access-requests/notify'
+import { proofContext } from './material'
 import { readinessPreferences } from '../notices/preferences'
+
+const escapeHtml=(value:string)=>value.replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]!))
 
 interface Stage { name:string; people:string[]; quorum:number }
 export interface Route { id:string;kind:'proof'|'task';subject_id:string;task_id:string;version:string;mode:'ordered'|'parallel';stages:string;due_at:number|null;reminder_at:number|null;created_by:string;created_at:number;withdrawn_at:number|null }
@@ -40,6 +43,7 @@ async function independent(db:D1Database,taskId:string,owner:string,person:strin
 }
 export async function previewRoute(db:D1Database,actor:Actor,kind:string,id:string,input:Record<string,any>){
  const rev=await revision(db),s=await subject(db,actor,kind,id);need(s.access,'manage_shares')
+ if(kind==='proof')await proofContext(db,actor,s,s.version)
  if(s.access.personal||s.access.role==='guest'||s.access.role==='agent')throw forbidden('internal_routing_authority')
  const config=parse(input)
  for(const stage of config.stages)for(const person of stage.people){const role=await workspaceRole(db,person,s.task.workspace_id);if(!role||role==='agent'||!await independent(db,s.task.id,s.task.owner_id,person))throw forbidden('independent_named_human');const access=await taskAccess(db,{id:person} as Actor,s.task);need(access,'approve')}
@@ -60,12 +64,15 @@ export async function routeView(db:D1Database,actor:Actor,id:string){
  const state=route.withdrawn_at?'withdrawn':s.version!==route.version?'stale':votes.some(v=>v.action==='reject')?'rejected':votes.some(v=>v.action==='changes')?'changes_requested':complete.every(Boolean)?'approved':'pending'
  const link=await first<{expires_at:number}>(db,'SELECT expires_at FROM peg_approval_links WHERE route_id=? AND recipient_id=? AND version=? AND revoked_at IS NULL AND expires_at>? ORDER BY expires_at DESC LIMIT 1',id,actor.id,route.version,now())
  if(s.access.role==='guest'&&link)rev.until=Math.min(rev.until??Infinity,link.expires_at)
+ if(s.access.role==='guest'&&(!link||state==='withdrawn'||state==='stale'))throw notFound()
  const externalLink=s.access.role!=='guest'||!!link
  const canDecide=externalLink&&state==='pending'&&active&&!votes.some(v=>v.actor_id===actor.id)&&s.access.capabilities.has('approve')&&s.access.role!=='agent'&&await independent(db,s.task.id,s.task.owner_id,actor.id)
  const canManage=s.access.capabilities.has('manage_shares')&&s.access.role!=='guest'&&s.access.role!=='agent'
+ if(canManage&&route.kind==='proof')await proofContext(db,actor,s,route.version)
+ const task=route.kind==='task'?{id:s.task.id,title:s.task.title,description:s.task.description,revision:route.version}:null
  const names=await displayNames(db,stages.flatMap(stage=>stage.people)),links=canManage?await all<{id:string;recipient_id:string;expires_at:number;revoked_at:number|null}>(db,'SELECT * FROM peg_approval_links WHERE route_id=?',id):[]
  const material=route.kind==='proof'?await first<{name:string;version:number}>(db,'SELECT a.name,v.version FROM peg_proof_versions v JOIN peg_attachments a ON a.id=v.attachment_id WHERE v.id=?',route.version):null
- return {names:Object.fromEntries([...names].filter(([id])=>canManage||id===actor.id)),material,links,id,kind:route.kind,subjectId:route.subject_id,taskId:s.task.id,version:route.version,state,mode:route.mode,dueAt:route.due_at,canDecide,canManage,stages:stages.map((stage,i)=>({name:stage.name,quorum:stage.quorum,approved:votes.filter(v=>v.stage===i&&v.action==='approve').length,complete:complete[i],...(canManage?{people:stage.people}:{})})),votes:canManage?votes:votes.filter(v=>v.actor_id===actor.id),rev,token:await digest([actor.id,route,s.version,rev,votes]),stage:mine}
+ return {task,names:Object.fromEntries([...names].filter(([id])=>canManage||id===actor.id)),material,links,id,kind:route.kind,subjectId:route.subject_id,taskId:s.task.id,version:route.version,state,mode:route.mode,dueAt:route.due_at,canDecide,canManage,stages:stages.map((stage,i)=>({name:stage.name,quorum:stage.quorum,approved:votes.filter(v=>v.stage===i&&v.action==='approve').length,complete:complete[i],...(canManage?{people:stage.people}:{})})),votes:canManage?votes:votes.filter(v=>v.actor_id===actor.id),rev,token:await digest([actor.id,route,s.version,rev,votes]),stage:mine}
 }
 export async function decideRoute(db:D1Database,actor:Actor,id:string,input:Record<string,any>){
  const view=await routeView(db,actor,id);if(!view.canDecide)throw forbidden('current_named_approver')
@@ -82,6 +89,7 @@ export async function decideRoute(db:D1Database,actor:Actor,id:string,input:Reco
 export async function changeRoute(db:D1Database,actor:Actor,id:string,input:Record<string,any>){
  const view=await routeView(db,actor,id);if(!view.canManage)throw forbidden('manage_shares');if(input.token!==view.token)throw conflict('approval_revision_changed')
  const route=(await first<Route>(db,'SELECT * FROM peg_approval_routes WHERE id=?',id))!,stages:Stage[]=JSON.parse(route.stages)
+ if(route.withdrawn_at||(await routeFor(db,route.kind,route.subject_id))?.id!==id)throw conflict('approval_route_inactive')
  if(input.action==='delegate'){
  const stage=Number(input.stage),from=String(input.from??''),to=String(input.to??'');if(!stages[stage]?.people.includes(from)||stages.some(s=>s.people.includes(to))||view.votes.some(v=>v.actor_id===from))throw invalid('approval_delegate')
  stages[stage].people=stages[stage].people.map(p=>p===from?to:p)
@@ -127,7 +135,7 @@ export async function dispatchReminders(db:D1Database,actor:Actor,id:string,deli
  const claim=await bound(db,"INSERT OR IGNORE INTO peg_approval_reminders VALUES(?,'sending',NULL)",[link.id]).run();if(!claim.meta.changes)continue
  try{
  const text=`Proof approval reminder. Reviewed version ${view.version}. Sign in to review: ${delivery.origin}/app/proof-reviews/${link.id}`
- const receipt=await delivery.mail.send({deliveryId:'proof-reminder-'+link.id,from:delivery.from,to:[recipient.email],subject:'Proof approval reminder',text,html:'<p>Sign in to review your shared proof version.</p>',headers:{'Auto-Submitted':'auto-generated'}})
+ const receipt=await delivery.mail.send({deliveryId:'proof-reminder-'+link.id,from:delivery.from,to:[recipient.email],subject:'Proof approval reminder',text,html:`<p>Proof approval reminder. Reviewed version ${escapeHtml(view.version)}.</p><p><a href="${escapeHtml(delivery.origin+'/app/proof-reviews/'+link.id)}">Sign in to review</a></p>`,headers:{'Auto-Submitted':'auto-generated'}})
  await bound(db,'UPDATE peg_approval_reminders SET state=?,sent_at=? WHERE link_id=?',[receipt?.status??'accepted',now(),link.id]).run();sent++
  }catch{await bound(db,"UPDATE peg_approval_reminders SET state='failed' WHERE link_id=?",[link.id]).run()}
  }
