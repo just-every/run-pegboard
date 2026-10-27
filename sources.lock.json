@@ -3323,7 +3323,7 @@
       "executable": false
     },
     "tests/work-graph.test.mjs": {
-      "sha256": "6e6df5bb6ca38d3681bc29aea229424db693be92e2f275a15589e08f412539d7",
+      "sha256": "6f0dda695c61379552ca4fc9b70666f4af80f86d9e7a139753006f1d3cbcdc2d",
       "executable": false
     },
     "tsconfig.json": {

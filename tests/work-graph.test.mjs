@@ -2187,7 +2187,7 @@ describe('Approval routing custody', {concurrency:false},()=>{
  await pass(root.post(`/api/v1/tasks/${f.task.id}/projects`,{projectId:hidden.id}))
  const file=await pass(root.post(`/api/v1/tasks/${f.task.id}/attachments?projectId=${hidden.id}&name=synthetic-pegboard-7210.pdf`,proofDocument('Hidden legal material'),{'content-type':'application/pdf'}))
  const proof=await pass(root.post(`/api/v1/tasks/${f.task.id}/proofs`,{attachmentId:file.id})),target={...f,subject:proof.id}
- await pass(root.post('/api/v1/grants',{objectType:'task',objectId:f.task.id,granteeId:stranger.id,level:'admin'}))
+ await pass(root.post('/api/v1/grants',{objectType:'project',objectId:f.project.id,granteeId:stranger.id,level:'admin'}))
  const config={mode:'parallel',stages:[{name:'Private legal sign-off',people:[external.id],quorum:1}]}
  const route=await configure(target,config),management=await view(root,route)
  assert.equal((await stranger.get('/api/v1/proofs/'+proof.id)).status,404)
