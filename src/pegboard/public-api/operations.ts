@@ -1,8 +1,8 @@
 import {validateTool} from './schema'
 import { all, batch, bound, conflict, first, forbidden, invalid, notFound, now, newId } from '../db'
 import { digest, guarded, revision } from '../decisions/revision'
-import { openProject } from '../workspace/projects'
-import { openTask } from '../tasks/access'
+import { openProject, need } from '../workspace/projects'
+import { openTask, require } from '../tasks/access'
 import { prepareTask, updateTask } from '../tasks/tasks'
 import { addComment, viewTask } from '../tasks/view'
 import { readableTasks, rollup, myTasks } from '../tasks/board'
@@ -39,7 +39,9 @@ async function once(db: D1Database, access: Access, name: string, input: Record<
  if (existing) {
   if (existing.fingerprint !== fingerprint) throw conflict('idempotency_key_reused')
   if (!existing.response) throw conflict('intent_in_progress')
-  return JSON.parse(existing.response)
+  const result = JSON.parse(existing.response)
+  if (name === 'task_create') await taskScope(db,access,String(result.id))
+  return result
  }
  try { await batch(db, [bound(db, 'INSERT INTO peg_api_intents VALUES(?,?,?,NULL)', [access.key.id, id, fingerprint])]) }
  catch { throw conflict('intent_in_progress') }
@@ -60,7 +62,7 @@ export async function execute(db: D1Database, access: Access, name: string, inpu
  if (name === 'task_approve') { await taskScope(db, access, String(input.taskId)); throw forbidden('human_approval_required') }
  if (name === 'task_create') {
   writable(access)
-  if (input.projectId) await projectScope(db, access, input.projectId)
+  if (input.projectId) need((await projectScope(db, access, input.projectId)).effective,'edit')
   else if (!key.personal) throw notFound()
   if (!['task', 'approval', undefined].includes(input.kind)) throw invalid('kind')
   return once(db, access, name, input, async () => {
@@ -71,7 +73,9 @@ export async function execute(db: D1Database, access: Access, name: string, inpu
   })
  }
  if (name === 'task_update' || name === 'task_comment') {
-  writable(access); await taskScope(db, access, String(input.taskId))
+  writable(access)
+  const opened = await taskScope(db, access, String(input.taskId))
+  require(opened.access,name === 'task_comment' ? 'comment' : 'edit')
   return once(db, access, name, input, async () => {
    const fence = {...await revision(db),apiKeyId:key.id}
    if (name === 'task_comment') return addComment(db, actor, input.taskId, input.body, false, fence)
