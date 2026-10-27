@@ -42,7 +42,7 @@ export async function projectConversionJourney({w,page,proof,size,ok,producer}){
  for(const value of ['Work records: 3','Comments: 1','References: 6','Field values: 1',`History entries: ${historyTotal}`,'Files: 2','Proof versions: 2','Time entries: 1','Recorded duration: 1800 seconds','Dependency links: 1','Collaborators: 1','Campaign budget · number: 12000'])await expect(evidence).toContainText(value)
  await expect(evidence.getByRole('link',{name:'Open original file',exact:true})).toHaveCount(2)
  await expect(evidence.getByRole('listitem').filter({hasText:'Comment by Mia Studio'})).toHaveCount(1)
- const collaborator=evidence.getByRole('listitem').filter({has:evidence.getByRole('link',{name:'Collaborating on retained work',exact:true})})
+ const collaborator=evidence.getByRole('listitem').filter({has:page.getByRole('link',{name:'Collaborating on retained work',exact:true})})
  await expect(collaborator).toHaveCount(1);await expect(collaborator).toContainText('Mia Studio')
  await expect(collaborator.getByRole('link')).toHaveAttribute('href',`/app/tasks/${intake.id}`)
  for(const row of native)for(const ref of [row.ref,...row.aliases])await expect(evidence.getByRole('link',{name:ref,exact:true})).toHaveAttribute('href',`/app/tasks/${row.id}`)
