@@ -2254,6 +2254,7 @@ describe('Approval routing custody', {concurrency:false},()=>{
  assert.equal((await view(root,ownershipRoute)).votes.length,0,'refused owners record no approval vote')
  assert.equal((await pass(root.get(`/api/v1/tasks/${owned.task.id}`))).status,'todo','refused owners leave work pending')
  const f=await fixture('task')
+ await pass(root.post('/api/v1/grants',{objectType:'task',objectId:f.task.id,granteeId:author.id,level:'viewer',scope:'approve'}))
  const bad={mode:'parallel',stages:[{name:'Review',people:[author.id],quorum:1}]}
  assert.equal((await root.post(`/api/v1/approval-routing/task/${f.subject}/preview`,bad)).status,403)
  await pass(root.patch(`/api/v1/tasks/${f.task.id}`,{ownerId:internal.id}))
