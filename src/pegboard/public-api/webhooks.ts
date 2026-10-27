@@ -15,18 +15,18 @@ async function subscription(db: D1Database, actor: Actor, id: string) {
  else if (!isAdministrator(await workspaceRole(db, actor.id, row.workspace_id))) throw forbidden('manage_integrations')
  return row
 }
-export async function webhookPreview(db: D1Database, actor: Actor, id: string, eventId: number) {
+export async function webhookPreview(db: D1Database, actor: Actor, id: string, eventId: string) {
  const rev = await revision(db), hook = await subscription(db, actor, id)
- const event = await first<{ id: number; task_id: string; kind: string; at: number }>(db, 'SELECT * FROM peg_api_events WHERE id=?', eventId)
+ const event = await first<{ id: number; public_id: string; task_id: string; kind: string; at: number }>(db, 'SELECT * FROM peg_api_events WHERE public_id=?', eventId)
  if (!event || !hook.events.split(',').includes(event.kind)) throw notFound()
  const opened = await openTask(db, actor, event.task_id)
  if (opened.access.personal || opened.task.workspace_id !== hook.workspace_id) throw notFound()
  if (hook.project_id && !await first(db, 'SELECT 1 FROM peg_task_projects WHERE task_id=? AND project_id=?', (await rootOf(db, opened.task)).id, hook.project_id)) throw notFound()
- const envelope = { id: event.id, type: event.kind, taskId: opened.task.id, at: event.at, subscriptionId: hook.id }
+ const envelope = { id: event.public_id, type: event.kind, taskId: opened.task.id, at: event.at, subscriptionId: hook.id }
  return { destination: hook.url, envelope, token: await digest([hook, envelope, rev]), rev }
 }
 export async function deliverWebhook(db: D1Database, env: Bindings, actor: Actor, id: string, input: Record<string, any>) {
- const preview = await webhookPreview(db, actor, id, Number(input.eventId)), hook = await subscription(db, actor, id)
+ const preview = await webhookPreview(db, actor, id, String(input.eventId)), hook = await subscription(db, actor, id)
  if (input.revision !== preview.token || input.consent !== true) throw conflict('webhook_review_required')
  const hashed = [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(String(input.secret ?? ''))))].map(n => n.toString(16).padStart(2, '0')).join('')
  if (hashed !== hook.secret_hash) throw forbidden('webhook_secret')

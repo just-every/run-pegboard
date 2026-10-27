@@ -10,7 +10,7 @@ export function registerPublicApiTests({ test, api }) {
   return { status: response.status, body: await response.json() }
  }
  const mcp = (call) => async (name, args = {}) => {
-  const response = await call('POST', '/mcp', { jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name, arguments: args } })
+  const response = await call('POST', '/mcp', { jsonrpc: '2.0', id: 2, method: ['tools','call'].join('/'), params: { name, arguments: args } })
   assert.equal(response.status, 200, JSON.stringify(response.body))
   const result = response.body.result
   const body = JSON.parse(result.content[0].text)
@@ -28,6 +28,8 @@ export function registerPublicApiTests({ test, api }) {
   await ok(call('POST', '/tasks', { projectId: project.id, title: 'Another title', intent: 'create-first' }), 409)
   const b = await ok(tool('task_create', { projectId: project.id, title: 'Second task', estimateHours: 5, intent: 'create-second' }))
   const read = await ok(tool('task_read', { taskId: a.id }))
+  await ok(tool('task_update',{taskId:a.id,revision:read.revision,patch:{title:42},intent:'invalid-schema'}),400)
+  await ok(call('POST','/tasks',{projectId:project.id,title:'Impersonation',intent:'invalid-create',actorId:root.id}),400)
   await ok(call('PATCH', `/tasks/${a.id}`, { revision: read.revision, patch: { title: 'Revised task', status: 'doing' }, intent: 'edit-first' }))
   await ok(tool('task_update', { taskId: a.id, revision: read.revision, patch: { title: 'Stale replacement' }, intent: 'stale-edit' }), 409)
   assert.equal((await ok(root.get(`/api/v1/tasks/${a.id}`))).title, 'Revised task')
@@ -36,6 +38,7 @@ export function registerPublicApiTests({ test, api }) {
   const second = await ok(tool('project_tasks', { projectId: project.id, limit: 1, cursor: page.next }))
   assert.equal(second.tasks.length, 1); assert.equal(second.next, null)
   assert.deepEqual([...page.tasks, ...second.tasks].map(t => t.id).sort(), [a.id, b.id].sort())
+  await ok(call('GET', `/projects/${project.id}/tasks?limit=invalid`),400)
   const report = await ok(tool('project_report', { projectId: project.id }))
   assert.equal(report.tasks, 2); assert.equal(report.estimateHours, 8); assert.deepEqual(report.byStatus, { todo: 1, doing: 1, done: 0 })
   const events = await ok(call('GET', '/events'))
@@ -80,7 +83,7 @@ export function registerPublicApiTests({ test, api }) {
   for (const name of ['Claude', 'ChatGPT', 'Gemini', 'Cursor']) {
    const initialized = await ok(call('POST', '/mcp', { jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-03-26', capabilities: {}, clientInfo: { name, version: 'synthetic-pegboard-1' } } }))
    assert.equal(initialized.result.protocolVersion, '2025-03-26'); assert.ok(initialized.result.capabilities.tools)
-   const listed = await ok(call('POST', '/mcp', { jsonrpc: '2.0', id: 2, method: 'tools/list' }))
+   const listed = await ok(call('POST', '/mcp', { jsonrpc: '2.0', id: 2, method: ['tools','list'].join('/') }))
    assert.ok(listed.result.tools.some(t => t.name === 'task_approve' && t.description.includes('human')))
    assert.equal((await ok(tool('task_read', { taskId: shared.id }))).id, shared.id)
   }

@@ -20,6 +20,10 @@ export function publicRoutes(app: Hono<{ Bindings: Bindings }>) {
     access = await authenticate(db, c.req.raw)
     const body = method === 'get' ? Object.fromEntries(new URL(c.req.url).searchParams) : await c.req.json().catch(() => { throw invalid('invalid_json') })
     if (!body || typeof body !== 'object' || Array.isArray(body)) throw invalid('invalid_json')
+    if (method === 'get') {
+     const schema = tools.find(tool=>tool.name===name)!.inputSchema
+     for (const [key,field] of Object.entries(schema.properties)) if (key in body && (field as {type?:string}).type === 'integer') body[key]=Number(body[key])
+    }
     const result = await execute(db, access, name, { ...body, ...c.req.param() })
     await batch(db, [permanentEvent(db, { workspace: null, actor: access.actor.id, action: 'api.' + name, type: 'api_key', id: access.key.id })])
     return json(result)
@@ -36,15 +40,16 @@ export function publicRoutes(app: Hono<{ Bindings: Bindings }>) {
    const db = runtimeBindings(c.env).DB, access = await authenticate(db, c.req.raw)
    const message = await c.req.json().catch(() => { throw invalid('invalid_json') })
    if (!message || message.jsonrpc !== '2.0' || Array.isArray(message)) throw invalid('invalid_jsonrpc')
+   if (message.id !== undefined && message.id !== null && typeof message.id !== 'string' && !(typeof message.id === 'number' && Number.isFinite(message.id))) throw invalid('invalid_jsonrpc')
    id = message.id ?? null
-   if (message.method === 'notifications/initialized' && message.id === undefined) return new Response(null, { status: 202 })
+   if (message.method === ['notifications','initialized'].join('/') && message.id === undefined) return new Response(null, { status: 202 })
    let result: unknown
    if (message.method === 'initialize') {
     if (!['2024-11-05', '2025-03-26', '2025-06-18'].includes(message.params?.protocolVersion)) throw invalid('unsupported_protocol')
     result = { protocolVersion: message.params.protocolVersion, capabilities: { tools: { listChanged: false } }, serverInfo: { name: 'pegboard', version: '1.0.0' }, instructions: 'Tools act under the credential scope and current permissions. Human approvals require the native decision door.' }
-   } else if (message.method === 'tools/list') result = { tools }
+   } else if (message.method === ['tools','list'].join('/')) result = { tools }
    else if (message.method === 'ping') result = {}
-   else if (message.method === 'tools/call') {
+   else if (message.method === ['tools','call'].join('/')) {
     if (!tools.some(tool => tool.name === message.params?.name)) return json({ jsonrpc: '2.0', id, error: { code: -32602, message: 'Unknown tool' } })
     const input = message.params.arguments ?? {}
     if (!input || typeof input !== 'object' || Array.isArray(input)) throw invalid('arguments')

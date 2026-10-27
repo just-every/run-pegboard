@@ -78,7 +78,7 @@ installed-client qualification remain outside these receipts.
 ## Signed events and reviewed webhook delivery
 
 `events_list` returns currently permitted task identifiers, event IDs, kind,
-time and credential audience with an HMAC-SHA256 signature. The signing key is
+time and credential audience with an HMAC-SHA256 signature. Event IDs and page cursors are opaque; pages contain only currently permitted events. The signing key is
 the hexadecimal SHA256 digest of the JSON-encoded Bearer credential. Verify the
 signature over the exact JSON envelope bytes. `event_receive` verifies the
 signature and current scope and records the event once per credential; its
@@ -122,8 +122,8 @@ reviewed webhook delivery. They do not yet expose the complete view and search,
 portfolio and goal report, time, human approval, import and export, automation,
 personal-section, tag, announcement-thread, duplicate-merge or custom-agent
 resource surface. No missing resource silently falls back to a broader app
-route. Full operation schema validation, bounded idempotency recovery and
-retention, and automatic webhook dispatch and retries remain required.
+route. Bounded idempotency recovery and
+retention, complete event-kind coverage, and automatic webhook dispatch and retries remain required.
 
 Default adopted pending ct: a current human explicitly authorizes only their
 own finite project or personal credential, with no authority expansion; every

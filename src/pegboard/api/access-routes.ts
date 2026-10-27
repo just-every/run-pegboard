@@ -37,7 +37,7 @@ export function accessRoutes(app: App) {
   app.get('/access-requests/:id', door(({ actor, db, params }) => previewRequest(db, actor, params.id)))
   app.post('/access-requests/:id/decision', door(({ actor, db, params, input }) => decideRequest(db, actor, params.id, input), { next: () => '/app/inbox' }))
 
-  app.get('/webhooks/:id/event-preview', door(({db,actor,params,query}) => webhookPreview(db,actor,params.id,Number(query.get('eventId')))))
+  app.get('/webhooks/:id/event-preview', door(({db,actor,params,query}) => webhookPreview(db,actor,params.id,String(query.get('eventId')))))
   app.post('/webhooks/:id/deliver', door(({db,env,actor,params,input}) => deliverWebhook(db,env,actor,params.id,input)))
   app.get('/webhooks/:id/deliveries', door(({db,actor,params}) => webhookHistory(db,actor,params.id)))
   app.delete('/webhooks/:id', door(({db,actor,params}) => revokeWebhook(db,actor,params.id)))

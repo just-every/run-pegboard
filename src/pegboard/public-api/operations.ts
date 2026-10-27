@@ -1,4 +1,5 @@
-import { all, batch, bound, conflict, first, forbidden, invalid, notFound, now } from '../db'
+import {validateTool} from './schema'
+import { all, batch, bound, conflict, first, forbidden, invalid, notFound, now, newId } from '../db'
 import { digest, guarded, revision } from '../decisions/revision'
 import { openProject } from '../workspace/projects'
 import { openTask } from '../tasks/access'
@@ -52,6 +53,8 @@ async function signature(secret: string, value: unknown) {
  return [...new Uint8Array(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(JSON.stringify(value))))].map(n => n.toString(16).padStart(2, '0')).join('')
 }
 export async function execute(db: D1Database, access: Access, name: string, input: Record<string, any>) {
+ const problem = validateTool(name,input)
+ if (problem) throw invalid(problem)
  const { actor, key } = access
  if (name === 'task_read') return readTask(db, access, String(input.taskId))
  if (name === 'task_approve') { await taskScope(db, access, String(input.taskId)); throw forbidden('human_approval_required') }
@@ -95,27 +98,38 @@ export async function execute(db: D1Database, access: Access, name: string, inpu
   return { tasks: (await myTasks(db, actor)).filter(t => t.personal) }
  }
  if (name === 'events_list') {
-  const cursor = Number(input.cursor ?? 0), limit = Number(input.limit ?? 50)
-  if (!Number.isSafeInteger(cursor) || cursor < 0 || !Number.isSafeInteger(limit) || limit < 1 || limit > 100) throw invalid('event_page')
-  const events = []
-  // Scan a bounded page; cursor advances even over inaccessible rows, whose identifiers and counts are never returned.
-  const rows = await all<{ id: number; task_id: string; kind: string; at: number }>(db, 'SELECT * FROM peg_api_events WHERE id>? ORDER BY id LIMIT ?', cursor, limit)
+  const limit = Number(input.limit ?? 50)
+  if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100) throw invalid('event_page')
+  const cursor = input.cursor ? await first<{after_id:number}>(db,'SELECT after_id FROM peg_api_cursors WHERE id=? AND key_id=?',String(input.cursor),key.id) : {after_id:0}
+  if (!cursor) throw invalid('event_cursor')
+  const events = [], visible = []
+  const rows = await all<{ id: number; public_id: string; task_id: string; kind: string; at: number }>(db, 'SELECT * FROM peg_api_events WHERE id>? ORDER BY id', cursor.after_id)
   for (const row of rows) {
    if (!await taskScope(db, access, row.task_id).catch(() => null)) continue
-   const envelope = { id: row.id, taskId: row.task_id, type: row.kind, at: row.at, audience: key.id }
+   visible.push(row)
+   if (visible.length > limit) break
+  }
+  for (const row of visible.slice(0,limit)) {
+   const envelope = { id: row.public_id, taskId: row.task_id, type: row.kind, at: row.at, audience: key.id }
    events.push({ envelope, signature: await signature(key.token_hash, envelope) })
   }
-  return { events, next: rows.length ? rows.at(-1)!.id : null, signing: 'HMAC-SHA256 using SHA256 of the JSON encoded bearer credential' }
+  let next: string|null = null
+  if (visible.length > limit) {
+   next = newId('cursor')
+   await batch(db,[bound(db,'INSERT INTO peg_api_cursors VALUES(?,?,?)',[next,key.id,visible[limit-1].id])])
+  }
+  return { events, next, signing: 'HMAC-SHA256 using SHA256 of the JSON encoded bearer credential' }
  }
  if (name === 'event_receive') {
   const envelope = input.envelope
-  if (!envelope || envelope.audience !== key.id || !Number.isSafeInteger(envelope.id) || typeof input.signature !== 'string') throw forbidden('event_signature')
+  if (!envelope || envelope.audience !== key.id || typeof envelope.id !== 'string' || !/^evt_[a-f0-9]{20}$/.test(envelope.id) || typeof input.signature !== 'string') throw forbidden('event_signature')
   const expected = await signature(key.token_hash, envelope)
   // Compare the fixed-size authenticators without a prefix timing signal.
   let different = expected.length ^ input.signature.length
   for (let i = 0; i < expected.length; i++) different |= expected.charCodeAt(i) ^ (input.signature.charCodeAt(i) || 0)
   if (different) throw forbidden('event_signature')
   await taskScope(db, access, envelope.taskId)
+  if (!await first(db,'SELECT 1 FROM peg_api_events WHERE public_id=? AND task_id=? AND kind=? AND at=?',envelope.id,envelope.taskId,envelope.type,envelope.at)) throw forbidden('event_signature')
   const result = await batch(db, [bound(db, 'INSERT OR IGNORE INTO peg_api_receipts VALUES(?,?,?)', [key.id, envelope.id, now()])])
   return { id: envelope.id, applied: result[0].meta.changes === 1 }
  }
