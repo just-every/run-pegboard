@@ -2247,6 +2247,13 @@ describe('Approval routing custody', {concurrency:false},()=>{
  assert.equal((await view(root,next)).version,version.versionId);assert.equal((await view(root,route)).votes.length,2,'a new routing plan retains the prior attributed review')
  const old=await pass(root.get(`/api/v1/proofs/${f.subject}/decision-preview`))
  assert.equal((await root.post(`/api/v1/proofs/${f.subject}/decisions`,{token:old.token,versionId:version.versionId,action:'approve',reason:'Bypass'})).status,409)
+ const separate=await fixture(),parallel=await configure(separate,{mode:'parallel',stages:[{name:'Brand review',people:[external.id],quorum:1},{name:'Legal review',people:[delegate.id],quorum:1}]})
+ await share(parallel,external);await share(parallel,delegate)
+ assert.equal((await view(delegate,parallel)).canDecide,true,'a later parallel stage can decide before the first stage')
+ assert.equal((await pass(decide(delegate,parallel))).state,'pending','one complete parallel stage does not finish the other')
+ assert.deepEqual((await view(root,parallel)).stages.map(stage=>stage.approved),[0,1],'parallel stages keep separate quorum counts')
+ assert.equal((await pass(decide(external,parallel))).state,'approved','both independent stages are required')
+ assert.deepEqual((await view(root,parallel)).votes.map(v=>v.actor_id).sort(),[external.id,delegate.id].sort())
  })
  it('requires quorum on an approval task, refuses current and prior owners and agents, and never lets the old decision door bypass named capability checks',async()=>{
  const owned=await fixture('task'),ownershipRoute=await configure(owned,{mode:'parallel',stages:[{name:'Independent review',people:[internal.id],quorum:1}]})

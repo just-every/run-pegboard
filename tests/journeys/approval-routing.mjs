@@ -34,6 +34,7 @@ export async function approvalRoutingJourney({w,browser,owner,cookies}){
  }else{await page.goto(`${w.origin}/app/tasks/${task.id}`);await page.getByRole('link',{name:'Approval routing',exact:true}).click()}
  const form=page.getByRole('form',{name:'Review routing plan'})
  await form.getByLabel('Stage order',{exact:true}).selectOption('parallel')
+ await form.getByLabel('Due (UTC)',{exact:true}).fill('2030-01-03T12:00')
  await form.getByLabel('Stage 1 name',{exact:true}).fill('Client sign-off')
  await form.getByLabel('Reviewers for stage 1',{exact:true}).selectOption([client.id,delegate.id])
  await form.getByLabel('Stage 1 required approvals',{exact:true}).fill('2')
@@ -43,6 +44,7 @@ export async function approvalRoutingJourney({w,browser,owner,cookies}){
  await page.getByRole('button',{name:'Apply reviewed routing',exact:true}).click();await page.waitForURL(/\/app\/approvals\/route_/)
  const routeId=page.url().split('/').pop();proofs.push({kind,routeId,taskId:task.id})
  await expect(page.getByRole('status')).toHaveText('pending')
+ await expect(page.locator('main')).toContainText('Due Jan 3, 2030, 12:00 PM UTC')
  assert.equal((await guestPage.goto(`${w.origin}/app/approvals/${routeId}`)).status(),404,'unshared guest cannot open a direct review route')
  const share=page.getByRole('form',{name:'Share reviewed proof'});await share.getByLabel('Reviewer',{exact:true}).selectOption(client.id);await share.getByLabel('Link expires (UTC)',{exact:true}).fill(new Date(Date.now()+86400000).toISOString().slice(0,16));await share.getByRole('button',{name:'Share reviewed version',exact:true}).click()
  const view=await ok(owner.get('/api/v1/approvals/'+routeId)),link=view.links[0]
