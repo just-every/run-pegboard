@@ -1,3 +1,4 @@
+import {ruleRoutes} from './rule-routes'
 import {bulkRoutes} from './bulk-routes'
 import {templateRoutes} from './template-routes'
 import {duplicateRoutes} from './duplicate-routes'
@@ -69,3 +70,5 @@ templateRoutes(pegboardApi)
 duplicateRoutes(pegboardApi)
 conversionRoutes(pegboardApi)
 templateRuleRoutes(pegboardApi)
+
+ruleRoutes(pegboardApi)

@@ -1,3 +1,9 @@
+import {definitions as ruleDateFields} from '../fields/definitions'
+import {RuleRequestPage} from './pages/rule-request'
+import {RuleSuggestionsPage} from './pages/rule-suggestions'
+import {suggestionView} from '../rules/suggestions'
+import {RulesPage} from './pages/rules'
+import {rulesView,rulePreview} from '../rules/definitions'
 import {TemplatesPage} from './pages/templates'
 import {ConversionsPage} from './pages/conversions'
 import {errorDocument} from './error'
@@ -85,7 +91,7 @@ import { resolveTaskId } from '../references/refs'
 import { board, myTasks } from '../tasks/board'
 import { viewTask } from '../tasks/view'
 import { displayNames, ensureDefaultWorkspace, workspaceRole, workspaceSettings, workspacesOf, actorOf, type Actor } from '../workspace/people'
-import { listProjects, listSections, openProject, previewShare } from '../workspace/projects'
+import { listProjects, listSections, openProject, previewShare, need } from '../workspace/projects'
 import { listTeams, teamMembers } from '../workspace/teams'
 import { AccessReviewPage } from './pages/access-review'
 import { AdminPage } from './pages/admin'
@@ -147,6 +153,13 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
       for(const key of ['taskIds','memberIds','ruleIds','stageIds'])input[key]=url.searchParams.getAll(key+'[]')
       const result=input.result?await duplicateResult(db,actor,id):null
       return page('Duplicate project',h(DuplicatePage,{viewer,input,result,source:result?null:await sourceDuplication(db,actor,id),preview:input.preview?await previewDuplicate(db,actor,id,input):null,review:result&&input.review?await previewDuplicateActivation(db,actor,id,input):null}))
+    }
+    if(section==='projects'&&id&&tail==='request'&&segments.length===4){const opened=await openProject(db,actor,id);need(opened.effective,'edit');return page('Submit project request',h(RuleRequestPage,{viewer,project:opened.project,requestKey:crypto.randomUUID()}))}
+    if(section==='projects'&&id&&tail==='rule-suggestions'&&segments.length===4)return page('Ask your project Admin',h(RuleSuggestionsPage,{viewer,view:await suggestionView(db,actor,id)}))
+    if(section==='projects'&&id&&tail==='rules'&&segments.length===4){
+      const view=await rulesView(db,actor,id)
+      if(url.searchParams.get('review')&&(await rulePreview(db,actor,url.searchParams.get('review')!,Object.fromEntries(url.searchParams))).rule.project_id!==id)throw new PegError(404,'not_found')
+      return page('Work rules',h(RulesPage,{viewer,view,dateFields:(await ruleDateFields(db,id)).filter(f=>f.type==='date').map(f=>({value:f.key,label:f.label})),projects:(await listProjects(db,actor,view.project.workspace_id)).filter(p=>p.level==='admin'&&p.id!==id).map(p=>({value:p.id,label:p.name})),tags:(await tagCatalogue(db,actor,view.project.workspace_id)).filter(t=>!t.archived&&!t.owner_id).map(t=>({value:t.id,label:t.name})),people:await peopleOptions(db,actor,view.project.workspace_id),sections:(await listSections(db,id)).map(s=>({value:s.id,label:s.name})),preview:url.searchParams.get('review')?await rulePreview(db,actor,url.searchParams.get('review')!,Object.fromEntries(url.searchParams)):null}))
     }
     if(section==='projects'&&id&&tail==='template-rules'&&segments.length===4){
       const view=await templateRuleView(db,actor,id)
