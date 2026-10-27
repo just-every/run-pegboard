@@ -283,7 +283,7 @@ Every desk capability retains its original ID: PEG-001–027 are target clauses 
 
 Judged from the code and tests at commit `66db0c24f2180aa3edcc17a73d453c84df3c60b7` (27 October 2026). PEG-004 includes the ct nominee-refusal and keyboard proof repair. This documentation successor preserves every source and test byte of that commit; fresh judgment and the guarded landing records bind the candidate to its exact Verify, Run site and complete publication scan. PEG-027 continues the previous native API and MCP work with read-only personal-list and activated-rule parity repairs; its remaining work and adopted defaults remain explicit in its Gap.
 
-Judged from the code and tests at candidate HEAD (27 October 2026). PEG-036 proof and the exact candidate commit are named in its judge request; pending checks remain in its Status Gap.
+Judged from the code and tests at commit `a286f53fffa941e2e67fb02b546462f685bdd02c` (27 October 2026). PEG-036 proof and the exact candidate commit are named in its judge request; pending checks remain in its Status Gap.
 
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
