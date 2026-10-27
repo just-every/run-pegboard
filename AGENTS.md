@@ -48,3 +48,12 @@ acceptance from a local structural check.
 Run tests for touched public flows and typecheck. Keep the inherited foundation
 tests intact. CI is the full verification wall. Stop only processes you started;
 never use broad kill commands or stop another checkout. Do not print secrets.
+
+## Lander-Regenerate
+
+After changing a contract status row, run
+`node scripts/contract-docs.mjs write PEG-027` then the same command with `check`.
+Supply each changed clause ID as a separate argument. The generator updates
+those acceptance rows and the summary counts from CONTRACT.md, preserves
+unrelated legacy checklist rows, and generates docs/CLAIMS.md from all status
+rows. Regenerate the source lock last, after staging new files.

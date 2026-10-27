@@ -126,8 +126,8 @@ export async function myTasks(db: D1Database, actor: Actor, on?: string) {
     const projects = await all<{ id: string; name: string }>(db, 'SELECT p.id,p.name FROM peg_task_projects tp JOIN peg_projects p ON p.id=tp.project_id WHERE tp.task_id=?', task.id)
     let layout=await first<{section_id:string|null;position:number;today:number}>(db,'SELECT * FROM peg_personal_layout WHERE operator_id=? AND task_id=?',actor.id,task.id)
     const group=taskGroup(task.due_date,!!layout?.today,day,prefs.timezone)
-    // A calendar preview never moves work. Only the live local day runs the person's saved rules.
-    if(!on && access.personal) { await applyRules(db,actor,task,group,day);layout=await first(db,'SELECT * FROM peg_personal_layout WHERE operator_id=? AND task_id=?',actor.id,task.id) }
+    // Calendar previews and external reads show saved layout without moving work.
+    if(!on && access.personal && !actor.apiScope) { await applyRules(db,actor,task,group,day);layout=await first(db,'SELECT * FROM peg_personal_layout WHERE operator_id=? AND task_id=?',actor.id,task.id) }
     out.push({ group, sectionId:layout?.section_id??null, position:layout?.position??0, today:!!layout?.today, createdAt:task.created_at, id: task.id, ref: await currentRef(db, task.id), title: task.title, status: task.status, priority: task.priority, dueDate: task.due_date, personal: access.personal, projects: projects.filter(project => access.contexts.has(project.id)) })
   }
   const groupOrder=['Overdue','Today','Upcoming','Later'], priority=['urgent','high','normal','low']

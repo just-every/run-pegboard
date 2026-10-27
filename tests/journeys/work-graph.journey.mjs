@@ -1,3 +1,4 @@
+import {publicApiJourney} from './public-api.mjs'
 import {guestJourney} from './guests.mjs'
 import { recoveryJourney } from './recovery.mjs'
 import { memberRemovalJourney } from './member-removal.mjs'
@@ -17,7 +18,7 @@ import { planningCanvasJourney } from './planning-canvas.mjs'
 import { portfolioJourney } from './portfolios.mjs'
 import { timelineJourney } from './timeline.mjs'
 
-const journeyNames = ["guests", "core", "recurrence", "approvals", "time-packets", "goals", "engineering", "meetings", "custody", "recovery", "departure", "canvas", "portfolio", "timeline", "register", "bundles"]
+const journeyNames = ["public-api", "guests", "core", "recurrence", "approvals", "time-packets", "goals", "engineering", "meetings", "custody", "recovery", "departure", "canvas", "portfolio", "timeline", "register", "bundles"]
 const selected = new Set(process.env.PEGBOARD_JOURNEY === undefined ? journeyNames : process.env.PEGBOARD_JOURNEY.split(',').map(name => name.trim()))
 for (const name of selected) if (!journeyNames.includes(name)) throw new Error(`Unknown PEGBOARD_JOURNEY: ${name}`)
 
@@ -42,6 +43,7 @@ try {
     usedWorker = true
     return true
   }
+  if(await select('public-api'))await publicApiJourney({w,browser,owner,cookies})
   if(await select('guests'))await guestJourney({w,browser,owner,sizes,cookies})
   if (await select('core')) {
   ok(await owner.post('/api/v1/teams', { name: 'Brand crew', privacy: 'public' }))

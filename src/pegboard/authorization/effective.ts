@@ -55,6 +55,7 @@ export async function teamEffective(db: D1Database, actor: Actor, team: TeamRow)
 }
 
 export async function projectEffective(db: D1Database, actor: Actor, project: ProjectRow): Promise<Effective> {
+  if (actor.apiScope && !actor.apiScope.projects.includes(project.id)) return none(null)
   const role = await workspaceRole(db, actor.id, project.workspace_id)
   if (!role) return none(null)
   const paths: Path[] = []
@@ -97,9 +98,10 @@ export async function taskAccess(db: D1Database, actor: Actor, task: TaskRow, in
   const homes = await all<{ project_id: string }>(db, 'SELECT project_id FROM peg_task_projects WHERE task_id=?', (await rootOf(db, task)).id)
   // A task in no project is its owner's alone: no grant, role or administrative custody makes it browsable.
   if (!homes.length) {
-    if (task.owner_id !== actor.id) return noTask(role)
+    if (task.owner_id !== actor.id || (actor.apiScope && !actor.apiScope.personal)) return noTask(role)
     return { capabilities: new Set(capabilitiesOf('editor')), level: 'editor', contexts: new Map(), personal: true, role }
   }
+  if (actor.apiScope && !homes.some(home => actor.apiScope!.projects.includes(home.project_id))) return noTask(role)
   if (role === 'guest' && task.internal_only) return noTask(role)
   const assigned = task.owner_id === actor.id || !!(await first(db, 'SELECT 1 FROM peg_task_collaborators WHERE task_id=? AND operator_id=?', task.id, actor.id))
   const contexts = new Map<string, Effective>(), caps = new Set<Capability>()
