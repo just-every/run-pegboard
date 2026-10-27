@@ -18,8 +18,9 @@ export async function approvalRoutingJourney({w,browser,owner,cookies}){
  for(const p of [client,delegate])await ok(owner.post('/api/v1/grants',{objectType:'task',objectId:task.id,granteeId:p.id,level:'viewer',scope:'approve'}))
  let subject=task.id
  if(kind==='proof'){
- const file=await ok(owner.post(`/api/v1/tasks/${task.id}/attachments?name=synthetic-pegboard-7304.pdf`,proofDocument('Reviewed PDF v2'),{'content-type':'application/pdf'}))
- await page.goto(`${w.origin}/app/tasks/${task.id}`);await page.getByRole('link',{name:'Proof reviews',exact:true}).click();await page.getByRole('button',{name:'Create proof',exact:true}).click();const listed=await ok(owner.get(`/api/v1/tasks/${task.id}/proofs`));subject=listed.proofs[0].proof.id
+ const file=await ok(owner.post(`/api/v1/tasks/${task.id}/attachments?name=synthetic-pegboard-7304.pdf`,proofDocument('Reviewed PDF v1'),{'content-type':'application/pdf'}))
+ await page.goto(`${w.origin}/app/tasks/${task.id}`);await page.getByRole('link',{name:'Proof reviews',exact:true}).click();await page.getByRole('button',{name:'Create proof',exact:true}).click();await page.waitForURL(`${w.origin}/app/proofs/${task.id}`);const listed=await ok(owner.get(`/api/v1/tasks/${task.id}/proofs`));subject=listed.proofs[0].proof.id
+ const nextFile=await ok(owner.post(`/api/v1/tasks/${task.id}/attachments?name=synthetic-pegboard-7305.pdf`,proofDocument('Reviewed PDF v2'),{'content-type':'application/pdf'}));await page.reload();await page.getByLabel('Replacement file',{exact:true}).selectOption(nextFile.id);await page.getByRole('button',{name:'Add reviewed version',exact:true}).click()
  await page.getByRole('link',{name:'Route proof for review'}).click()
  }else{await page.goto(`${w.origin}/app/tasks/${task.id}`);await page.getByRole('link',{name:'Approval routing',exact:true}).click()}
  const form=page.getByRole('form',{name:'Review routing plan'})

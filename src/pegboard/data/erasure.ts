@@ -58,6 +58,7 @@ export async function erasurePlan(db:D1Database,actor:Actor,workspace:string,typ
     if(await first(db,'SELECT 1 FROM peg_tasks WHERE owner_id=? UNION SELECT 1 FROM peg_projects WHERE owner_id=? UNION SELECT 1 FROM peg_goals WHERE owner_id=?',id,id,id))blockers.push('transfer_owned_work_before_erasure')
     if(await first(db,'SELECT 1 FROM peg_recurrences WHERE created_by=? UNION SELECT 1 FROM peg_work_templates WHERE created_by=?',id,id))blockers.push('review_recurring_work_custody_before_erasure')
     if(await first(db,`SELECT 1 FROM peg_status_drafts WHERE created_by=? OR EXISTS(SELECT 1 FROM json_each(recipients) r WHERE json_extract(r.value,'$.id')=?) UNION SELECT 1 FROM peg_status_revisions WHERE reviewed_by=? OR EXISTS(SELECT 1 FROM json_each(recipients) r WHERE json_extract(r.value,'$.id')=?) UNION SELECT 1 FROM peg_status_comments WHERE author_id=? UNION SELECT 1 FROM peg_status_draft_rejections WHERE rejected_by=?`,id,id,id,id,id,id))blockers.push('review_status_snapshot_custody_before_erasure')
+    if(await first(db,"SELECT 1 FROM peg_approval_routes WHERE created_by=? OR instr(stages,?)>0 UNION SELECT 1 FROM peg_approval_votes WHERE actor_id=?",id,id,id))blockers.push('review_approval_custody_before_erasure')
     if(await first(db,'SELECT 1 FROM peg_proofs WHERE created_by=? UNION SELECT 1 FROM peg_proof_versions WHERE created_by=?',id,id))blockers.push('review_proof_custody_before_erasure')
     if(await first(db,'SELECT 1 FROM peg_time_entries WHERE person_id=?',id))blockers.push('retained_time_records_require_separate_review')
     await take('peg_workspace_members','operator_id=?',[id]);await take('peg_personal_layout','operator_id=?',[id]);await take('peg_personal_moves','operator_id=?',[id]);await take('peg_personal_rules','operator_id=?',[id]);await take('peg_personal_sections','operator_id=?',[id]);await take('peg_personal_settings','operator_id=?',[id])
@@ -72,6 +73,8 @@ export async function erasurePlan(db:D1Database,actor:Actor,workspace:string,typ
     proofs=[...new Set([...proofs,...affected.map(p=>p.id)])]
     if(type==='project'&&affected.some(p=>!tasks.includes(p.task_id)))blockers.push('shared_proof_requires_explicit_proof_erasure')
   }
+  const routes=await all<{id:string}>(db,`SELECT id FROM peg_approval_routes WHERE task_id IN (${placeholders(tasks)}) OR (kind='proof' AND subject_id IN (${placeholders(proofs)}))`,...tasks,...proofs)
+  if(routes.length){const ids=routes.map(r=>r.id),scope=`route_id IN (${placeholders(ids)})`;await take('peg_approval_reminders',`link_id IN (SELECT id FROM peg_approval_links WHERE ${scope})`,ids);await take('peg_approval_links',scope,ids);await take('peg_approval_votes',scope,ids);await take('peg_approval_routes',`id IN (${placeholders(ids)})`,ids)}
   if(proofs.length){
     proofFiles=(await all<{attachment_id:string}>(db,`SELECT attachment_id FROM peg_proof_versions WHERE proof_id IN (${placeholders(proofs)})`,...proofs)).map(r=>r.attachment_id)
     for(const table of ['peg_proof_decisions','peg_proof_versions'])await take(table,`proof_id IN (${placeholders(proofs)})`,proofs)

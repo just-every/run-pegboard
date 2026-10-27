@@ -39,6 +39,7 @@ export function TaskPage({ viewer, task, participants, addable, sections, previe
       {can('edit') && <Form action="/api/v1/tasks" next={here} label="Add a subtask"><input type="hidden" name="parentId" value={task.id} /><div className="inline"><Field label="New subtask" name="title" /><Submit quiet>Add subtask</Submit></div></Form>}
     </Card>
     {decision&&<Card title="Approval decision"><p role="status">{stateLabels[decision.state]}</p>{decision.waiting&&<p>{waiting[decision.waiting]}</p>}<p>The owner is accountable for the work, never its approver. Decisions apply to this exact revision and send nothing outward.</p>
+      {decision.routeId&&<p><a href={`/app/approvals/${decision.routeId}`}>Open routed approval</a></p>}
       {decision.canDecide&&<Form action={`/api/v1/tasks/${task.id}/decision`} next={here} label="Decide approval task"><input type="hidden" name="revision" value={decision.token}/><Pick label="Decision" name="action" options={[{value:'approve',label:'Approve'},{value:'changes',label:'Request changes'},{value:'reject',label:'Reject'}]}/><Area label="Decision reason" name="reason"/><Submit>Record reviewed decision</Submit></Form>}
       <h3>Decision history</h3><ol className="rows">{decision.decisions.map(d=><li key={d.id}>{d.actor} · {stateLabels[d.action==='approve'?'approved':d.action==='reject'?'rejected':'changes_requested']} · {when(d.at)}<p>{d.reason}</p></li>)}</ol>
     </Card>}
