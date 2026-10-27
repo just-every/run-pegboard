@@ -1,3 +1,4 @@
+import {guestJourney} from './guests.mjs'
 import { recoveryJourney } from './recovery.mjs'
 import { memberRemovalJourney } from './member-removal.mjs'
 import {workflowBundleJourney} from './workflow-bundles.mjs'
@@ -16,7 +17,7 @@ import { planningCanvasJourney } from './planning-canvas.mjs'
 import { portfolioJourney } from './portfolios.mjs'
 import { timelineJourney } from './timeline.mjs'
 
-const journeyNames = ["core", "recurrence", "approvals", "time-packets", "goals", "engineering", "meetings", "custody", "recovery", "departure", "canvas", "portfolio", "timeline", "register", "bundles"]
+const journeyNames = ["guests", "core", "recurrence", "approvals", "time-packets", "goals", "engineering", "meetings", "custody", "recovery", "departure", "canvas", "portfolio", "timeline", "register", "bundles"]
 const selected = new Set(process.env.PEGBOARD_JOURNEY === undefined ? journeyNames : process.env.PEGBOARD_JOURNEY.split(',').map(name => name.trim()))
 for (const name of selected) if (!journeyNames.includes(name)) throw new Error(`Unknown PEGBOARD_JOURNEY: ${name}`)
 
@@ -24,7 +25,7 @@ for (const name of selected) if (!journeyNames.includes(name)) throw new Error(`
 const engineering = await startEngineeringServices(), meetings = await startMeetingServices()
 const services = await startTimeServices(), settings = { PEGBOARD_LOCAL_TIME_SERVICE_ORIGINS: services.origins, PEGBOARD_VECTOR_ORIGIN:'https://vector.example.com',PEGBOARD_LOCAL_ENGINEERING_ORIGINS:engineering.origins, PEGBOARD_LOCAL_MEETING_ORIGINS:meetings.origins }
 let w = await startWorker({ settings })
-const browser = await chromium.launch({ headless: true, args: ['--use-mock-keychain', '--password-store=basic'] })
+const browser = await chromium.launch({ headless: true, ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH?{executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH}:{}), args: ['--use-mock-keychain', '--password-store=basic', '--no-sandbox'] })
 const cookies = client => client.cookie.split('; ').map(pair => ({ name: pair.slice(0, pair.indexOf('=')), value: pair.slice(pair.indexOf('=') + 1), url: w.origin }))
 const sizes = [['1440', { width: 1440, height: 900 }], ['390', { width: 390, height: 844 }]]
 try {
@@ -41,6 +42,7 @@ try {
     usedWorker = true
     return true
   }
+  if(await select('guests'))await guestJourney({w,browser,owner,sizes,cookies})
   if (await select('core')) {
   ok(await owner.post('/api/v1/teams', { name: 'Brand crew', privacy: 'public' }))
   for (const [size, viewport] of sizes) {

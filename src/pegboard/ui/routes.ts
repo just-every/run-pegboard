@@ -1,3 +1,6 @@
+import {guestPreview} from '../guests/preview'
+import {taskParticipants} from '../tasks/participants'
+import {openTask} from '../tasks/access'
 import {TemplatesPage} from './pages/templates'
 import {ConversionsPage} from './pages/conversions'
 import {errorDocument} from './error'
@@ -216,11 +219,13 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
       const can = (capability: string) => (data.capabilities as string[]).includes(capability)
       const proposal = Object.fromEntries(['visibility', 'teamId', 'teamLevel', 'workspaceLevel'].flatMap(key => url.searchParams.get(key) ? [[key, url.searchParams.get(key)!]] : []))
       const grants = can('manage_shares') ? await grantsOn(db, actor, 'project', id) : null
+      const guestPeople=[]
+      for(const guestId of new Set((grants??[]).filter(g=>g.grantee_type==='person').map(g=>g.grantee_id)))if(await workspaceRole(db,guestId,(await openProject(db,actor,id)).project.workspace_id)==='guest'){const name=await displayNames(db,[guestId]);guestPeople.push({value:guestId,label:name.get(guestId)??'Guest'})}
       const names = await displayNames(db, grants?.flatMap(grant => [grant.grantee_id, grant.created_by]) ?? [])
       const teams = await teamOptions(db, actor, workspace)
       const teamNames = new Map(teams.map(team => [team.value, team.label]))
       return page('Project settings', h(ProjectSettingsPage, {
-        viewer, id, data,sourceProjects:(await listProjects(db,actor,workspace)).map(p=>({value:p.id,label:p.name})), library:can('manage_fields')?await catalogue(db,actor,workspace):[], fieldPreview:can('manage_fields')&&url.searchParams.get('fieldId')?await changePreview(db,actor,url.searchParams.get('fieldId')!,Object.fromEntries(url.searchParams)):null, people: await peopleOptions(db, actor, workspace), teams, proposal, sectionList: (await listSections(db, id)).map(section => ({ id: section.id, name: section.name, mapsTo: section.maps_to })),
+        viewer, id, data, guestPeople, guestPreview:can('manage_shares')&&url.searchParams.get('recipient')?await guestPreview(db,actor,id,url.searchParams.get('recipient')!):null, sourceProjects:(await listProjects(db,actor,workspace)).map(p=>({value:p.id,label:p.name})), library:can('manage_fields')?await catalogue(db,actor,workspace):[], fieldPreview:can('manage_fields')&&url.searchParams.get('fieldId')?await changePreview(db,actor,url.searchParams.get('fieldId')!,Object.fromEntries(url.searchParams)):null, people: await peopleOptions(db, actor, workspace), teams, proposal, sectionList: (await listSections(db, id)).map(section => ({ id: section.id, name: section.name, mapsTo: section.maps_to })),
         preview: can('manage_shares') && Object.keys(proposal).length ? await previewShare(db, actor, id, proposal).catch(() => null) : null,
         grants: grants && grants.map(grant => ({ id: grant.id, grantee: grant.grantee_type === 'team' ? `Team ${teamNames.get(grant.grantee_id) ?? ''}` : names.get(grant.grantee_id) ?? 'Former member', level: grant.level, scope: grant.scope, source: grant.source, by: names.get(grant.created_by) ?? 'Former member' })),
       }))
@@ -230,7 +235,7 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
       try { task = await viewTask(db, actor, decodeURIComponent(id)) } catch (error) { if (error instanceof PegError && error.status === 404) return refuse(db, actor, viewer, decodeURIComponent(id)); throw error }
       const open = (await listProjects(db, actor, workspace)).filter(project => project.level && ['editor', 'admin'].includes(project.level) && !task.projects.some(own => own.id === project.id))
       const sections = Object.fromEntries(await Promise.all(task.projects.map(async project => [project.id, (await listSections(db, project.id)).map(entry => ({ value: entry.id, label: entry.name }))])))
-      return page('Task', h(TaskPage, { viewer, task, conversionLinks:await listConversionLinks(db,actor,'task',task.id), decision:task.kind==='approval'?await decisionPreview(db,actor,task.id):null, addable: open.map(project => ({ value: project.id, label: project.name })), sections, tagOptions:(await tagCatalogue(db,actor,workspace)).filter(t=>!t.archived).map(t=>({value:t.id,label:t.name})), preview: task.personal && url.searchParams.get('projectId') ? await visibilityPreview(db,actor,task.id,url.searchParams.get('projectId')!) : null }))
+      return page('Task', h(TaskPage, { viewer, task, participants: task.capabilities.includes('edit') ? await taskParticipants(db,actor,(await openTask(db,actor,task.id)).access) : [], conversionLinks:await listConversionLinks(db,actor,'task',task.id), decision:task.kind==='approval'?await decisionPreview(db,actor,task.id):null, addable: open.map(project => ({ value: project.id, label: project.name })), sections, tagOptions:(await tagCatalogue(db,actor,workspace)).filter(t=>!t.archived).map(t=>({value:t.id,label:t.name})), preview: task.personal && url.searchParams.get('projectId') ? await visibilityPreview(db,actor,task.id,url.searchParams.get('projectId')!) : null }))
     }
     if (section === 'my-tasks') { const prefs=await settings(db,actor), on=url.searchParams.get('on')??undefined; const tasks=await myTasks(db,actor,on); return page('My tasks',h(MyTasksPage,{viewer,tasks,workspace,meta:await personalMeta(db,actor),day:on??localDay(Date.now(),prefs.timezone),on})) }
     if (section === 'teams' && !id) return page('Teams', h(TeamsPage, { viewer, teams: (await listTeams(db, actor, workspace, url.searchParams.get('q') ?? '')).teams, query: url.searchParams.get('q') ?? '', workspace, canCreate: ['owner', 'admin', 'manager'].includes((await workspaceRole(db, actor.id, workspace)) as string) }))

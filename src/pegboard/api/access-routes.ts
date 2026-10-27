@@ -1,3 +1,4 @@
+import {guestPreview} from '../guests/preview'
 // /api/v1: grants, the access review, access requests and their one decision door, webhooks.
 import type { Hono } from 'hono'
 import type { Bindings } from '../../auth.server'
@@ -13,6 +14,7 @@ type App = Hono<{ Bindings: Bindings }>
 const array = (value: unknown) => Array.isArray(value) ? value : typeof value === 'string' && value ? value.split(',').map(part => part.trim()) : undefined
 
 export function accessRoutes(app: App) {
+  app.get('/projects/:id/guest-preview',door(({actor,db,params,query})=>guestPreview(db,actor,params.id,query.get('recipient')??'')))
   app.post('/grants', door(({ actor, db, input }) => createGrant(db, actor, { objectType: input.objectType, objectId: input.objectId, granteeType: input.granteeType ?? 'person', granteeId: input.granteeId, level: input.level, scope: input.scope || undefined, scopes: array(input.scopes), expiresAt: input.expiresAt ? Number(input.expiresAt) : null }),
     { next: (_, { input }) => typeof input.objectType === 'string' ? `/app/${input.objectType}s/${input.objectId}` : '/app' }))
   app.get('/grants', door(async ({ actor, db, query }) => {

@@ -157,6 +157,7 @@ async function loggerAccess(db: D1Database, sheet: Sheet) {
   for (const e of await rows(db, sheet.id)) {
     const opened = await openTask(db, person, e.task_id).catch(() => null)
     if (!e.project_id || !opened?.access.contexts.get(e.project_id)?.capabilities.has('edit')) return false
+    if (role === 'guest' && opened.task.owner_id !== person.id && !await first(db, 'SELECT 1 FROM peg_task_collaborators WHERE task_id=? AND operator_id=?', opened.task.id, person.id)) return false
   }
   return true
 }
@@ -216,6 +217,7 @@ async function taskFor(
 ) {
   const opened = await openTask(db, actor, input.taskId)
   require(opened.access, 'edit')
+  if (opened.access.role === 'guest' && opened.task.owner_id !== actor.id && !await first(db, 'SELECT 1 FROM peg_task_collaborators WHERE task_id=? AND operator_id=?', opened.task.id, actor.id)) throw forbidden('assigned_task')
   if (opened.task.workspace_id !== sheet.workspace_id) throw invalid('task')
   const projectId = opened.access.personal
     ? null

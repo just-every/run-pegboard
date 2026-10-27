@@ -1,3 +1,5 @@
+import {projectParticipants,taskParticipants} from '../tasks/participants'
+import {openTask} from '../tasks/access'
 import { visibilityPreview, sharePersonal, saveSettings, section, place, addRule, undoMove, personalMeta } from '../tasks/personal'
 // /api/v1: tasks, their projects, fields, comments and files, and the lists a person starts from.
 import type { Hono } from 'hono'
@@ -14,6 +16,8 @@ const task = (id: string) => `/app/tasks/${id}`
 const filled = (input: Record<string, any>) => Object.fromEntries(Object.entries(input).filter(([key, value]) => !key.startsWith('_') && value !== '' && value !== undefined))
 
 export function taskRoutes(app: App) {
+  app.get('/projects/:id/participants', door(async ({actor,db,params}) => ({participants:await projectParticipants(db,actor,params.id)})))
+  app.get('/tasks/:id/participants', door(async ({actor,db,params}) => {const {access}=await openTask(db,actor,params.id);if(!access.capabilities.has('edit'))return {participants:[]};return {participants:await taskParticipants(db,actor,access)}}))
   app.post('/tasks', door(async ({ actor, db, workspace, input, form }) => {
     const created = await createTask(db, actor, { ...filled(input), workspaceId: workspace, estimateHours: input.estimateHours === undefined || input.estimateHours === '' ? undefined : Number(input.estimateHours), internalOnly: form ? flag(input.internalOnly) : input.internalOnly } as never)
     return { id: created.id, status: created.status }
@@ -41,7 +45,7 @@ export function taskRoutes(app: App) {
     if (!values || typeof values !== 'object') throw invalid('values')
     await setProjectFields(db, actor, params.id, input.projectId, values)
   }, { next: (_, { params }) => task(params.id) }))
-  app.post('/tasks/:id/comments', door(({ actor, db, params, input }) => addComment(db, actor, params.id, input.body), { next: (_, { params }) => task(params.id) }))
+  app.post('/tasks/:id/comments', door(({ actor, db, params, input }) => addComment(db, actor, params.id, input.body, flag(input.internalOnly)), { next: (_, { params }) => task(params.id) }))
   app.post('/tasks/:id/attachments', door(async ({ actor, db, params, request, query }) => {
     const type = request.headers.get('content-type') ?? ''
     if (type.includes('multipart/form-data')) {

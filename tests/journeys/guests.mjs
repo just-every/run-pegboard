@@ -1,0 +1,70 @@
+import assert from 'node:assert/strict'
+import {expect} from '@playwright/test'
+import {mkdir} from 'node:fs/promises'
+
+export async function guestJourney({w,browser,owner,sizes,cookies}) {
+  const ok=async promise=>{const r=await promise;assert.equal(r.status,200,JSON.stringify(r.body));return r.body}
+  const evidence=process.env.PEGBOARD_SCREENSHOTS
+  if(evidence)await mkdir(evidence,{recursive:true})
+  for(const [size,viewport] of sizes){
+    const guest=await w.person(`freelancer-${size}@example.com`,'Freelancer','guest')
+    const peer=await w.person(`client-peer-${size}@example.com`,'Client colleague','guest')
+    const outsider=await w.person(`internal-peer-${size}@example.com`,'Internal colleague')
+    const project=await ok(owner.post('/api/v1/projects',{name:`Client project ${size}`}))
+    for(const person of [guest,peer])await ok(owner.post('/api/v1/grants',{objectType:'project',objectId:project.id,granteeId:person.id,level:'editor'}))
+    const task=await ok(guest.post('/api/v1/tasks',{title:'Client deliverable',projectId:project.id}))
+    const manager=await browser.newContext({viewport})
+    await manager.addCookies(cookies(owner))
+    const managerPage=await manager.newPage()
+    await managerPage.goto(`${w.origin}/app/tasks/${task.id}`)
+    await managerPage.getByRole('form',{name:'Comment',exact:true}).getByLabel('Comment',{exact:true}).fill('Internal margin synthetic-pegboard-907')
+    await managerPage.getByLabel('Internal comment',{exact:true}).check()
+    await managerPage.getByRole('button',{name:'Comment',exact:true}).click()
+    await expect(managerPage.locator('main')).toContainText('Internal margin synthetic-pegboard-907')
+    if(evidence)await managerPage.screenshot({path:`${evidence}/member-task-${size}.png`,fullPage:true})
+    const assignee=await w.person(`assigned-${size}@example.com`,'Assigned freelancer','guest')
+    await managerPage.goto(`${w.origin}/app/projects/${project.id}/settings`)
+    const grantForm=managerPage.getByRole('form',{name:'Give access',exact:true})
+    await grantForm.getByLabel('Person',{exact:true}).selectOption(assignee.id)
+    await grantForm.getByLabel('Level',{exact:true}).selectOption('editor')
+    await grantForm.getByLabel('Work scope').selectOption('assignee')
+    await grantForm.getByRole('button',{name:'Give access',exact:true}).click()
+    assert.equal((await ok(owner.get(`/api/v1/grants?objectType=project&objectId=${project.id}`))).grants.find(g=>g.grantee_id===assignee.id).scope,'assignee')
+    const previewForm=managerPage.getByRole('form',{name:'Preview guest portal'})
+    await previewForm.getByLabel('Guest recipient').selectOption(guest.id)
+    await previewForm.getByRole('button',{name:'Preview guest portal'}).click()
+    const previewCard=managerPage.locator('article').filter({has:managerPage.getByRole('heading',{name:'Guest portal preview',exact:true})})
+    await expect(previewCard).toContainText('Client deliverable')
+    await expect(previewCard).not.toContainText('Internal margin synthetic-pegboard-907')
+    assert.ok(await managerPage.evaluate(()=>document.documentElement.scrollWidth<=innerWidth))
+    if(evidence)await managerPage.screenshot({path:`${evidence}/guest-preview-${size}.png`,fullPage:true})
+    await manager.close()
+    const context=await browser.newContext({viewport})
+    try {
+      await context.addCookies(cookies(guest)); const page=await context.newPage()
+      await page.goto(`${w.origin}/app/tasks/${task.id}`)
+      assert.ok(!(await page.locator('main').innerText()).includes('Internal margin synthetic-pegboard-907'))
+      const form=page.getByRole('form',{name:'Edit task'})
+      const select=form.getByLabel('Assigned to')
+      await expect(select.locator('option')).toHaveText(['Assigned freelancer','Client colleague','Freelancer','Wes Holloway'])
+      assert.equal(await page.locator('main').getByText('Internal colleague',{exact:true}).count(),0)
+      await select.selectOption(peer.id);await form.getByRole('button',{name:'Save',exact:true}).click()
+      await expect(page.locator('.head')).toContainText('Client colleague')
+      assert.equal((await ok(owner.get(`/api/v1/tasks/${task.id}`))).owner.id,peer.id)
+      assert.equal((await page.request.patch(`${w.origin}/api/v1/tasks/${task.id}`,{data:{ownerId:outsider.id},headers:{origin:w.origin}})).status(),403)
+      await page.getByRole('button',{name:'Mark complete',exact:true}).click()
+      await page.getByRole('button',{name:'Reopen',exact:true}).waitFor()
+      assert.equal((await ok(owner.get(`/api/v1/tasks/${task.id}`))).status,'done')
+      assert.equal(await form.getByLabel('Internal notes (members only)').count(),0)
+      assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth))
+      // Every control on this screen has a visible word label; there are no icon-only actions.
+      for(const control of await page.locator('button,a').all()) if(await control.isVisible()) assert.ok((await control.innerText()).trim(),`unlabelled control at ${size}`)
+      if(evidence)await page.screenshot({path:`${evidence}/guest-task-${size}.png`,fullPage:true})
+      const grant=(await ok(owner.get(`/api/v1/grants?objectType=project&objectId=${project.id}`))).grants.find(g=>g.grantee_id===guest.id)
+      await ok(owner.delete(`/api/v1/grants/${grant.id}`))
+      assert.equal((await page.goto(`${w.origin}/app/tasks/${task.id}`)).status(),404)
+      assert.ok(!(await page.locator('main').innerText()).includes('Client deliverable'))
+    }finally{await context.close()}
+  }
+  console.log('Scoped guest task screens passed at 1440 and 390')
+}

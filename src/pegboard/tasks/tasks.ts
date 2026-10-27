@@ -1,3 +1,4 @@
+import {requireGuestParticipant} from './participants'
 import {templateRuleQueueStatements,processTemplateRuleRuns} from '../templates/rule-execution'
 import {bundleQueueStatements} from '../bundles/queue'
 import {setValues} from '../fields/values'
@@ -51,6 +52,8 @@ export async function prepareTask(db: D1Database, actor: Actor, input: TaskInput
     const { project, effective } = await openProject(db, actor, projectId)
     need(effective, 'edit')
     workspaceId = project.workspace_id
+    if (effective.role === 'guest' && (input.internalOnly || input.internalNotes !== undefined)) throw forbidden('internal')
+    await requireGuestParticipant(db, actor, effective.role, input.ownerId ? [input.ownerId] : [], projectId)
     if (input.ownerId && input.ownerId !== actor.id) { if (!(await workspaceRole(db, input.ownerId, workspaceId))) throw invalid('owner'); owner = input.ownerId }
     const section = await sectionFor(db, projectId, parent ? null : input.sectionId)
     if (section?.maps_to && !input.status && !parent) status = section.maps_to
@@ -96,6 +99,7 @@ export async function updateTask(db: D1Database, actor: Actor, idOrRef: string, 
   if (patch.dueDate !== undefined) set('due_date', date(patch.dueDate, 'due_date'))
   if (patch.estimateHours !== undefined) set('estimate_hours', hours(patch.estimateHours))
   if (patch.ownerId !== undefined) {
+    await requireGuestParticipant(db, actor, access.role, [patch.ownerId], undefined, access)
     if (access.personal ? patch.ownerId !== actor.id : !(await workspaceRole(db, patch.ownerId, task.workspace_id))) throw invalid('owner')
     set('owner_id', patch.ownerId)
   }
@@ -104,6 +108,7 @@ export async function updateTask(db: D1Database, actor: Actor, idOrRef: string, 
     if (patch.internalOnly !== undefined) set('internal_only', patch.internalOnly ? 1 : 0)
     if (patch.internalNotes !== undefined) set('internal_notes', String(patch.internalNotes).slice(0, 20000))
   }
+  await requireGuestParticipant(db, actor, access.role, patch.collaborators ?? [], undefined, access)
   if (patch.collaborators?.length && access.personal) throw conflict('visibility_preview_required')
   if (patch.collaborators) for (const id of patch.collaborators) if (!(await workspaceRole(db, id, task.workspace_id))) throw invalid('collaborator')
   if (approval && Object.keys(changes).length && task.status === 'done') set('status','todo')

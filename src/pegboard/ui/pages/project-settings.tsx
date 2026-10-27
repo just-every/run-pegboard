@@ -1,3 +1,4 @@
+import type {guestPreview as readGuestPreview} from '../../guests/preview'
 import type {FieldRow} from '../../model'
 import type {changePreview} from '../../fields/values'
 import {fieldTypes} from '../../fields/definitions'
@@ -9,12 +10,12 @@ import { Area, Card, Field, Form, Pick, Shell, Submit, levelLabel, levelOptions 
 type Board = Awaited<ReturnType<typeof board>>
 export interface Grantee { value: string; label: string }
 export interface GrantLine { id: string; grantee: string; level: string; scope: string; source: string; by: string }
-export interface Props { viewer: Viewer; id: string; data: Board; grants: GrantLine[] | null; people: Grantee[]; teams: Grantee[]; preview: SharePreview | null; proposal: Record<string, string>; sourceProjects:Grantee[];library:FieldRow[];fieldPreview:Awaited<ReturnType<typeof changePreview>>|null;sectionList: { id: string; name: string; mapsTo: string | null }[] }
+export interface Props { viewer: Viewer; id: string; data: Board; guestPeople:Grantee[]; guestPreview:Awaited<ReturnType<typeof readGuestPreview>>|null; grants: GrantLine[] | null; people: Grantee[]; teams: Grantee[]; preview: SharePreview | null; proposal: Record<string, string>; sourceProjects:Grantee[];library:FieldRow[];fieldPreview:Awaited<ReturnType<typeof changePreview>>|null;sectionList: { id: string; name: string; mapsTo: string | null }[] }
 
 const visibilityLabel = (value: string) => value === 'private' ? 'Private to members' : value === 'team' ? 'Team only' : 'Shared with workspace'
 const mapsLabel = (value: string | null) => value === 'todo' ? 'To do' : value === 'doing' ? 'Doing' : value === 'done' ? 'Done' : 'No status'
 
-export function ProjectSettingsPage({ viewer, id, data, grants, people, teams, preview, proposal, sectionList,library,fieldPreview,sourceProjects }: Props) {
+export function ProjectSettingsPage({ viewer, id, data, grants, people, teams, preview, proposal, sectionList,library,fieldPreview,sourceProjects,guestPreview,guestPeople }: Props) {
   const can = (capability: string) => (data.capabilities as string[]).includes(capability)
   const back = `/app/projects/${id}/settings`
   const project = data.project
@@ -65,12 +66,17 @@ export function ProjectSettingsPage({ viewer, id, data, grants, people, teams, p
         {grants.length === 0 && <li>Only the project owner and the workspace administrators.</li>}</ul>
       <Form action="/api/v1/grants" next={back} label="Give access">
         <input type="hidden" name="objectType" value="project" /><input type="hidden" name="objectId" value={id} />
-        <div className="inline"><Pick label="Person" name="granteeId" options={people} blank="Choose a person" /><Pick label="Level" name="level" value="viewer" options={levelOptions()} /><Submit>Give access</Submit></div>
+        <div className="inline"><Pick label="Person" name="granteeId" options={people} blank="Choose a person" /><Pick label="Level" name="level" value="viewer" options={levelOptions()} /><Pick label="Work scope" name="scope" value="full" options={[{value:'full',label:'Full selected level'},{value:'approve',label:'Approve only'},{value:'assignee',label:'Assigned tasks only'}]}/><Submit>Give access</Submit></div>
       </Form>
       <Form action="/api/v1/grants" next={back} label="Give a team access">
         <input type="hidden" name="objectType" value="project" /><input type="hidden" name="objectId" value={id} /><input type="hidden" name="granteeType" value="team" />
         <div className="inline"><Pick label="Team" name="granteeId" options={teams} blank="Choose a team" /><Pick label="Level" name="level" value="viewer" options={levelOptions()} /><Submit>Give the team access</Submit></div>
       </Form>
+    </Card>}
+    {guestPeople.length>0&&<Card title="Guest portal preview">
+      <p>Inspect a current guest share. This preview changes no permissions and sends no message.</p>
+      <form method="get" action={back} className="stack" aria-label="Preview guest portal"><Pick label="Guest recipient" name="recipient" options={guestPeople}/><Submit quiet>Preview guest portal</Submit></form>
+      {guestPreview&&<><h3>{guestPreview.recipient.name}: {guestPreview.project.name}</h3><p>{guestPreview.paths.map(path=>`${levelLabel(path.level)} · ${path.scope}`).join('; ')}</p><ul className="rows">{guestPreview.tasks.map(task=><li key={task.id}><span className="grow"><strong>{task.title}</strong> · {task.status}<p>Owner {task.owner.name}</p>{task.description&&<p>{task.description}</p>}{task.projects.flatMap(p=>p.fields).map(field=><p key={field.id}>{field.label}: {field.display}</p>)}{task.comments.map(comment=><p key={comment.id}>{comment.author}: {comment.body}</p>)}{task.attachments.map(file=><p key={file.id}>File: {file.name}</p>)}</span></li>)}{!guestPreview.tasks.length&&<li>No readable work in this share.</li>}</ul></>}
     </Card>}
     <Card title="Sections and status">
       <ul className="rows">{sectionList.map(section => <li key={section.id}><span className="grow">{section.name}</span><span className="tagline">{mapsLabel(section.mapsTo)}</span>
