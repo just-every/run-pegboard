@@ -544,7 +544,7 @@ describe('Pinned template rules through current Admin review', { concurrency: fa
 })
 
 describe('Reviewed stakeholder status revisions', { concurrency: false }, () => {
-  let worker, human, member, viewer, guest, agent, portfolio, projects, sources, input, revision, clientRevision, guestGrant
+  let worker, human, member, viewer, guest, agent, portfolio, projects, sources, input, revision, clientRevision, clientDraftId, guestGrant
   const call = async (promise, status = 200) => { const response = await promise; assert.equal(response.status, status, JSON.stringify(response.body)); return response.body }
   const publish = async draft => {
     const review = await call(human.post(`/api/v1/status-drafts/${draft.id}/review`, {}))
@@ -623,7 +623,7 @@ describe('Reviewed stakeholder status revisions', { concurrency: false }, () => 
     await call(human.patch(`/api/v1/status-drafts/${clientDraft.id}`, { ...projectInput, version: clientDraft.version, recipients: [{ id: viewer.id, channels: ['in_app'] }] }))
     await call(human.post(`/api/v1/status-drafts/${clientDraft.id}/publish`, { token: review.token }), 409)
     const restored = await call(human.patch(`/api/v1/status-drafts/${clientDraft.id}`, { ...projectInput, version: clientDraft.version + 1 }))
-    clientRevision = await publish(restored)
+    clientRevision = await publish(restored); clientDraftId = restored.id
     const visible = await call(guest.get(`/api/v1/status-revisions/${clientRevision.id}`))
     assert.equal(visible.content.risks, ''); assert.deepEqual(visible.sources.map(s => s.id), [sources[0].id]); assert.ok(!JSON.stringify(visible).includes('Private acquisition'))
     await call(viewer.get(`/api/v1/status-revisions/${clientRevision.id}`), 404)
@@ -639,6 +639,9 @@ describe('Reviewed stakeholder status revisions', { concurrency: false }, () => 
 
   it('retains immutable corrections and revision-bound member and guest threads while hiding internal replies and refusing revoked access', async () => {
     const base = await call(human.get(`/api/v1/status-revisions/${clientRevision.id}`))
+    const replacement = await call(human.post('/api/v1/tasks', { projectId: projects[0].id, title: 'Later source for another draft version' }))
+    const editedDraft = await call(human.get(`/api/v1/status-drafts/${clientDraftId}`))
+    await call(human.patch(`/api/v1/status-drafts/${clientDraftId}`, { ...editedDraft.content, version: editedDraft.version, sourceIds: [replacement.id], recipients: [] }))
     const retained = await call(human.post('/api/v1/data/erasure-preview', { type: 'task', id: sources[0].id }))
     assert.ok(retained.blockers.includes('review_status_snapshot_custody_before_erasure'))
     const erased = await call(human.post('/api/v1/data/erase', { type: retained.type, id: retained.id, token: retained.token, confirm: true }))

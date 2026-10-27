@@ -2515,7 +2515,7 @@
       "executable": false
     },
     "src/pegboard/data/erasure.ts": {
-      "sha256": "e952dfd1ec5dbfe5344dc805136f2e2908e658437fa4443e1da4244c9fc98140",
+      "sha256": "cd68c5093f64cc4d72ca0ab4c4489254f27bb36ad0df1d97fe0850e159aae2e6",
       "executable": false
     },
     "src/pegboard/data/expiry.ts": {
@@ -3271,7 +3271,7 @@
       "executable": false
     },
     "tests/portfolios.test.mjs": {
-      "sha256": "1bbafbc02da4a7cc071067fdb11f60d2be94d81f74a5e2f0d2687e75a3d2d60a",
+      "sha256": "511a2d1e5e09ce27196d20c656d1b863bd8d68c94ea3b126031a4821a717780e",
       "executable": false
     },
     "tests/runtime.mjs": {
