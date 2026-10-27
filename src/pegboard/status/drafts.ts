@@ -77,7 +77,29 @@ export async function saveDraft(db: D1Database, actor: Actor, input: Record<stri
   } else await batch(db, [bound(db, 'INSERT INTO peg_status_drafts(id,workspace_id,subject_type,subject_id,version,content,sources,recipients,corrects_id,created_by,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)', [nextId, workspace, type, subjectId, version, args[0], args[1], args[2], correctsId, actor.id, args[3]])])
   return decode((await draft(db, actor, nextId)))
 }
-export async function readDraft(db: D1Database, actor: Actor, id: string) { return decode(await draft(db, actor, id)) }
+export async function readDraft(db: D1Database, actor: Actor, id: string) {
+  const row = await draft(db,actor,id)
+  const rejection = await first<{rejected_by:string;reason:string;created_at:number}>(db,'SELECT rejected_by,reason,created_at FROM peg_status_draft_rejections WHERE draft_id=? AND version=?',id,row.version)
+  return {...decode(row),rejection}
+}
+export async function rejectDraft(db: D1Database, actor: Actor, id: string, input: Record<string,any>) {
+  const seen=await epoch(db), row=await draft(db,actor,id)
+  await human(db,actor,row.workspace_id)
+  if(Number(input.version)!==row.version)throw conflict('stale_status_draft')
+  const reason=text(input.reason,1000)
+  if(!reason)throw invalid('rejection_reason')
+  if(await first(db,'SELECT 1 FROM peg_status_revisions WHERE draft_id=? AND draft_version=?',id,row.version))throw conflict('status_already_published')
+  if(await first(db,'SELECT 1 FROM peg_status_draft_rejections WHERE draft_id=? AND version=?',id,row.version))throw conflict('status_draft_rejected')
+  try {
+    await batch(db,[
+      bound(db,'INSERT INTO peg_status_review_guards(id,valid) VALUES (?,COALESCE((SELECT CASE WHEN version=? AND (SELECT value FROM peg_epoch WHERE id=1)=? AND NOT EXISTS(SELECT 1 FROM peg_status_revisions WHERE draft_id=? AND draft_version=?) THEN 1 ELSE 0 END FROM peg_status_drafts WHERE id=?),0))',[newId('review'),row.version,seen,id,row.version,id]),
+      bound(db,'INSERT INTO peg_status_draft_rejections(draft_id,version,rejected_by,reason,created_at) VALUES (?,?,?,?,?)',[id,row.version,actor.id,reason,now()]),
+      auditStatement(db,{workspaceId:row.workspace_id,actorId:actor.id,action:'status.draft_rejected',targetType:row.subject_type,targetId:row.subject_id,subjectId:id,detail:{version:row.version}}),
+      bound(db,'DELETE FROM peg_status_review_guards',[]),
+    ])
+  } catch(error) { if(/CHECK constraint|UNIQUE constraint/.test(String(error)))throw conflict('stale_status_draft');throw error }
+  return readDraft(db,actor,id)
+}
 async function recipientActor(db: D1Database, id: string): Promise<Actor> {
   const person = await operatorRow(db, id)
   if (!person || person.status !== 'active') throw notFound()
@@ -94,6 +116,7 @@ async function readable(db: D1Database, actor: Actor, type: string, id: string, 
 export async function reviewDraft(db: D1Database, actor: Actor, id: string) {
   const row = await draft(db, actor, id), view = decode(row), seen = await epoch(db)
   await human(db, actor, row.workspace_id)
+  if(await first(db,'SELECT 1 FROM peg_status_draft_rejections WHERE draft_id=? AND version=?',id,row.version))throw conflict('status_draft_rejected')
   for (const saved of view.sources) if (JSON.stringify(saved) !== JSON.stringify(await source(db, actor, saved.id, row.workspace_id))) throw conflict('stale_status_source')
   for (const recipient of view.recipients) await readable(db, await recipientActor(db, recipient.id), row.subject_type, row.subject_id, view.sources)
   return { ...view, reviewedBy: actor.id, token: await hash({ row, actor: actor.id, epoch: seen }), epoch: seen }
@@ -104,7 +127,7 @@ export async function publishDraft(db: D1Database, actor: Actor, id: string, tok
   const existing = await first<{ id: string }>(db, 'SELECT id FROM peg_status_revisions WHERE draft_id=? AND draft_version=?', id, row.version)
   if (existing) return { id: existing.id, replay: true }
   const revisionId = newId('status'), at = now(), guard = newId('review')
-  const checks = [bound(db, 'INSERT INTO peg_status_review_guards(id,valid) VALUES (?,(SELECT CASE WHEN version=? AND (SELECT value FROM peg_epoch WHERE id=1)=? THEN 1 ELSE 0 END FROM peg_status_drafts WHERE id=?))', [guard, row.version, review.epoch, id])]
+  const checks = [bound(db, 'INSERT INTO peg_status_review_guards(id,valid) VALUES (?,(SELECT CASE WHEN version=? AND (SELECT value FROM peg_epoch WHERE id=1)=? AND NOT EXISTS(SELECT 1 FROM peg_status_draft_rejections WHERE draft_id=? AND version=?) THEN 1 ELSE 0 END FROM peg_status_drafts WHERE id=?))', [guard, row.version, review.epoch, id, row.version, id])]
   for (const s of review.sources) {
     const root = await rootOf(db, (await openTask(db,actor,s.id)).task)
     checks.push(bound(db, 'INSERT INTO peg_status_review_guards(id,valid) VALUES (?,CASE WHEN (SELECT COALESCE(json_group_array(json_object(?,project_id)),?) FROM (SELECT project_id FROM peg_task_projects WHERE task_id=? ORDER BY project_id))=? THEN 1 ELSE 0 END)', [newId('review'), 'project_id', '[]', root.id, s.membership]))
