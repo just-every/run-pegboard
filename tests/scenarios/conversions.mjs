@@ -10,6 +10,13 @@ const work=(client,projectId,n,extra={})=>pass(client.post('/api/v1/tasks',{proj
 const grant=(root,projectId,person,level='editor')=>pass(root.post('/api/v1/grants',{objectType:'project',objectId:projectId,granteeId:person.id,level}))
 const preview=(client,input)=>pass(client.post('/api/v1/conversions/preview',input))
 const apply=(client,input,plan)=>pass(client.post('/api/v1/conversions/apply',{...input,token:plan.token}))
+async function nativeHistory(client,ids,plan){
+  assert.deepEqual(plan.reconciliation.manifest.tasks.map(row=>row.id).sort(),[...ids].sort())
+  const entries=(await Promise.all(ids.map(id=>task(client,id)))).flatMap(row=>row.history.map(entry=>({id:entry.id,taskId:row.id,kind:entry.kind,projectId:entry.projectId})))
+  assert.ok(entries.length>=ids.length,'each native work record has independently readable history')
+  assert.equal(plan.reconciliation.history,entries.length,'preview reconciles the exact native history total')
+  assert.deepEqual(plan.reconciliation.manifest.history.map(row=>({id:row.id,taskId:row.taskId,kind:row.kind,projectId:row.projectId})).sort((a,b)=>a.id-b.id),entries.sort((a,b)=>a.id-b.id))
+}
 const sha=bytes=>createHash('sha256').update(bytes).digest('hex')
 
 function conserved(before,after,addedHistory=before.tasks){
@@ -58,6 +65,7 @@ export function registerConversionTests({test,api}){
     await pass(root.post(`/api/v1/projects/${source.id}/prefix`,{prefix:'CVPB91'}))
     const approved=await approve(root,intake.id,9114),before=await task(root,intake.id)
     const input={kind:'task_to_project',sourceId:intake.id,name:label(9115)},plan=await preview(root,input)
+    await nativeHistory(root,[intake.id,child.id,leaf.id],plan)
     assert.equal(plan.reconciliation.tasks,3);assert.equal(plan.reconciliation.timeSeconds,1837)
     assert.equal(plan.reconciliation.proofVersions,2);assert.equal(plan.reconciliation.files,3)
     assert.ok(plan.reconciliation.manifest.fields.some(row=>row.fieldId===field.id))
@@ -135,6 +143,7 @@ export function registerConversionTests({test,api}){
     await pass(root.post(path+'/adopt',{projectIds:[source.id],keys:[label(9207),label(9208)],revision:adoption.token}))
     const input={kind:'project_to_task',sourceId:source.id,name:label(9209),taskIds:[selected.id],retainIds:[retained.id]}
     const plan=await preview(root,input)
+    await nativeHistory(root,[selected.id,retained.id,child.id],plan)
     assert.equal(plan.mapping.find(row=>row.taskId===selected.id).action,'subtask')
     assert.equal(plan.mapping.find(row=>row.taskId===retained.id).action,'retained_link')
     const result=await apply(root,input,plan);conserved(plan.reconciliation,result.reconciliation)
@@ -169,6 +178,9 @@ export function registerConversionTests({test,api}){
     assert.deepEqual(promotionPlan.memberships.before,[{projectId:source.id,sectionId:before.projects[0].section.id}])
     assert.deepEqual(promotionPlan.memberships.after,promotionPlan.memberships.before)
     assert.deepEqual(promotionPlan.visibility.after,promotionPlan.visibility.before)
+    assert.deepEqual(promotionPlan.visibility.before.map(row=>[row.taskId,row.personId]).sort(),[[child.id,root.id],[child.id,peer.id],[nested.id,root.id],[nested.id,peer.id]].sort())
+    assert.ok(promotionPlan.visibility.before.every(row=>row.capabilities.includes('read')&&row.capabilities.includes('edit')))
+    await nativeHistory(root,[child.id,nested.id],promotionPlan)
     assert.equal(promotionPlan.visibility.expanded,false)
     assert.deepEqual(promotionPlan.mapping.find(row=>row.id===child.id).after,{...promotionPlan.mapping.find(row=>row.id===child.id).before,parentId:null,kind:'task'})
     const promoted=await apply(root,promotion,promotionPlan),after=await task(root,child.id)
@@ -185,6 +197,7 @@ export function registerConversionTests({test,api}){
     assert.deepEqual(await task(root,nested.id),nestedBefore)
     assert.deepEqual(await task(root,parent.id),parentBefore)
     const beforeDemotion=await task(root,child.id),demotionPlan=await preview(root,demotion)
+    await nativeHistory(root,[child.id,nested.id],demotionPlan)
     const demoted=await apply(root,demotion,demotionPlan),afterDemotion=await task(root,child.id)
     conserved(demotionPlan.reconciliation,demoted.reconciliation,1)
     assert.equal(afterDemotion.history.length,beforeDemotion.history.length+1)

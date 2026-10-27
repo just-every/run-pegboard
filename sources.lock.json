@@ -3151,7 +3151,7 @@
       "executable": false
     },
     "tests/scenarios/conversions.mjs": {
-      "sha256": "30d10cf05af60e6e9d4073ec82acd5344b7640e8c8773e0afec31106d61d6695",
+      "sha256": "3a485a486c7d2cb1573fc3c6d055a70f6cb3b0eaa4c34d98c0bba47308e6eec0",
       "executable": false
     },
     "tests/schedule.test.mjs": {
