@@ -1,3 +1,4 @@
+import { createRightsRequest, listRightsRequests, readRightsRequest, actOnRightsRequest } from '../status/rights'
 import { discussionNotices, discussionPreference } from '../status/discussion'
 import type { Hono } from 'hono'
 import type { Bindings } from '../../auth.server'
@@ -5,6 +6,10 @@ import { door } from './door'
 import { saveDraft, readDraft, rejectDraft, reviewDraft, publishDraft, readRevision, statusHistory } from '../status/drafts'
 import { revisionComments, addRevisionComment, changeRevisionComment } from '../status/comments'
 export function statusRoutes(app: Hono<{ Bindings: Bindings }>) {
+  app.get('/status-rights-requests', door(({db,actor,workspace,query}) => listRightsRequests(db,actor,workspace,query.has('at') ? Date.parse(query.get('at')!) : undefined)))
+  app.post('/status-rights-requests', door(({db,actor,workspace,input}) => createRightsRequest(db,actor,workspace,input)))
+  app.get('/status-rights-requests/:id', door(({db,actor,params,query}) => readRightsRequest(db,actor,params.id,query.has('at') ? Date.parse(query.get('at')!) : undefined)))
+  app.post('/status-rights-requests/:id/actions', door(({db,actor,params,input}) => actOnRightsRequest(db,actor,params.id,input)))
   app.get('/status-notices', door(({ db, actor }) => discussionNotices(db,actor)))
   app.get('/status-revisions/:id/preferences', door(({ db, actor, params }) => discussionPreference(db,actor,params.id)))
   app.post('/status-revisions/:id/preferences', door(({ db, actor, params, input }) => discussionPreference(db,actor,params.id,input)))

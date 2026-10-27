@@ -89,3 +89,7 @@ request returns a retained outcome with no deleted rows. This conservative hold
 prevents a false claim of erasure while status copies remain. A reviewed snapshot
 erasure path remains outstanding; this foundation claims no legal retention or
 provider deletion qualification.
+
+Tracked requests, scoped privacy handlers, deadline escalation and the controlled
+manual-resolution procedure are documented in [Status rights](./STATUS-RIGHTS.md).
+This request register does not turn a retained-copy outcome into erasure.
