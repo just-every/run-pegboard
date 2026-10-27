@@ -3283,7 +3283,7 @@
       "executable": false
     },
     "tests/scenarios/public-api.mjs": {
-      "sha256": "ef31fd96cfc0f1237ddba699c216805505e62d5c6a3cb6fe983710df10bb2306",
+      "sha256": "90b0d4bb0fdcda4cce2a6dc00993fe2c9cbcce043e44f87f70ecb3d636d75f2a",
       "executable": false
     },
     "tests/scenarios/readiness.mjs": {
