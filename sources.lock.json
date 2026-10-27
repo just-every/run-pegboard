@@ -199,7 +199,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "ad65b336965f2e05b824e9cfeb07e7b183fdc87113167bc9482adf2106aa6403",
+      "sha256": "d717adc6b5569e77e0a3626f283a535a4553de4760923ecd39b6cd2b38604ae3",
       "executable": false
     },
     "AGENTS.md": {
@@ -215,7 +215,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "057022509c7d724d6323f0f9410bd86212787c0bba2833179f0d54309cda2133",
+      "sha256": "c833d8f112a21c6432a002a716f4e091df02b90b07a48b14c3083f40c227937d",
       "executable": false
     },
     "DEMO.md": {
@@ -239,7 +239,7 @@
       "executable": false
     },
     "docs/CLAIMS.md": {
-      "sha256": "2e32d375d1f39ab79f9d1f0f0333320470415de3ea2fcd018e2cc0493641c7a6",
+      "sha256": "c467dc6d1f6523fe27aff5df4e179c2cf8f20962b45be6947980d0dbccd3fd84",
       "executable": false
     },
     "docs/DATA-CUSTODY.md": {
@@ -3199,7 +3199,7 @@
       "executable": false
     },
     "tests/journeys/approval-routing.mjs": {
-      "sha256": "b02b085416e327f2e7256a80a20da6586a355ca308dc7a98b2c58db0a169bb66",
+      "sha256": "907875ed2b7c446e5ebc32e19ef3d559a1a121f72e425b402ee3e6d3c778aa95",
       "executable": false
     },
     "tests/journeys/conversion-hierarchy.mjs": {
