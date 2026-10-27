@@ -4,8 +4,10 @@ import assert from 'node:assert/strict'
 import { mkdir } from 'node:fs/promises'
 import { join } from 'node:path'
 import { expect } from '@playwright/test'
+import { statusInboxJourney } from './status-inbox.mjs'
 
 export async function portfolioJourney({ w, browser, sizes, ok }) {
+  await statusInboxJourney({ w, browser, sizes, ok })
   const clock = '2026-03-16T12:00'
   for (const [size, viewport] of sizes) {
     const open = async client => { const context = await browser.newContext({ viewport }); await context.addCookies(client.cookie.split('; ').map(pair => ({ name: pair.slice(0, pair.indexOf('=')), value: pair.slice(pair.indexOf('=') + 1), url: client.origin }))); return { context, page: await context.newPage() } }

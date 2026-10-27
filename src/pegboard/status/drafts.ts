@@ -6,11 +6,12 @@ import { operatorRow, workspaceRole, type Actor } from '../workspace/people'
 import { openTask } from '../tasks/access'
 import { rootOf } from '../authorization/effective'
 import { healths } from '../portfolios/portfolios'
+import { statusSubscribers } from './subscriptions'
 
 type Content = { health: string; summary: string; highlights: string; risks: string; decisions: string; nextSteps: string; from: string; to: string }
 type Source = { id: string; title: string; description: string; status: string; updatedAt: number; internalOnly: number; projectIds: string[]; membership: string }
 type Recipient = { id: string; channels: string[] }
-interface Draft { id: string; workspace_id: string; subject_type: string; subject_id: string; version: number; content: string; sources: string; recipients: string; corrects_id: string | null; created_by: string; updated_at: number }
+interface Draft { id: string; workspace_id: string; subject_type: string; subject_id: string; version: number; content: string; sources: string; recipients: string; corrects_id: string | null; created_by: string; updated_at: number; subscriptions: string | null }
 interface Revision { id: string; draft_id: string; draft_version: number; content: string; sources: string; recipients: string; corrects_id: string | null; reviewed_by: string; review_token: string; workspace_id: string; subject_type: string; subject_id: string; published_at: number }
 const text = (value: unknown, max = 4000) => { if (typeof value !== 'string' || value.length > max) throw invalid('status_content'); return value.trim() }
 const date = (value: unknown) => { const out = text(value, 10); if (!/^\d{4}-\d{2}-\d{2}$/.test(out) || !Number.isFinite(Date.parse(out)) || new Date(out).toISOString().slice(0, 10) !== out) throw invalid('status_window'); return out }
@@ -41,7 +42,7 @@ async function source(db: D1Database, actor: Actor, id: string, workspace: strin
     projectIds: [...access.contexts.keys()].sort(), membership: JSON.stringify(await all<{project_id:string}>(db, 'SELECT project_id FROM peg_task_projects WHERE task_id=? ORDER BY project_id', (await rootOf(db,task)).id)) }
 }
 const hash = async (value: unknown) => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(value))))].map(n => n.toString(16).padStart(2, '0')).join('')
-const decode = (row: Draft) => ({ id: row.id, version: row.version, subjectType: row.subject_type, subjectId: row.subject_id, content: JSON.parse(row.content) as Content, sources: JSON.parse(row.sources) as Source[], recipients: JSON.parse(row.recipients) as Recipient[], correctsId: row.corrects_id })
+const decode = (row: Draft) => ({ id: row.id, version: row.version, subjectType: row.subject_type, subjectId: row.subject_id, content: JSON.parse(row.content) as Content, sources: JSON.parse(row.sources) as Source[], recipients: JSON.parse(row.recipients) as Recipient[], correctsId: row.corrects_id, includeSubscribers: row.subscriptions !== null })
 
 /** Saves only a draft. Changing it invalidates every earlier review, without altering a publication. */
 export async function saveDraft(db: D1Database, actor: Actor, input: Record<string, any>, id?: string) {
@@ -64,6 +65,13 @@ export async function saveDraft(db: D1Database, actor: Actor, input: Record<stri
     if (!await workspaceRole(db, recipient.id, workspace)) throw invalid('status_recipient')
     recipients.push({ id: recipient.id, channels: [...new Set<string>(recipient.channels)] })
   }
+  const subscriptions = input.includeSubscribers === true ? await statusSubscribers(db, actor, type, subjectId) : null
+  for (const subscriber of subscriptions ?? []) {
+    const existing = recipients.find(recipient => recipient.id === subscriber.id)
+    if (existing) existing.channels = [...new Set([...existing.channels, ...subscriber.channels])]
+    else recipients.push(subscriber)
+  }
+  if (recipients.length > 100) throw invalid('status_recipients')
   const correctsId = previous?.corrects_id ?? input.correctsId ?? null
   if (correctsId) {
     const corrected = await first<{ subject_type: string; subject_id: string }>(db, 'SELECT subject_type,subject_id FROM peg_status_updates WHERE id=?', correctsId)
@@ -72,9 +80,9 @@ export async function saveDraft(db: D1Database, actor: Actor, input: Record<stri
   const nextId = previous?.id ?? newId('draft'), version = (previous?.version ?? 0) + 1
   const args: Param[] = [JSON.stringify(content), JSON.stringify(sources), JSON.stringify(recipients), now()]
   if (previous) {
-    const result = await bound(db, 'UPDATE peg_status_drafts SET content=?,sources=?,recipients=?,updated_at=?,version=version+1 WHERE id=? AND version=?', [...args, nextId, previous.version]).run()
+    const result = await bound(db, 'UPDATE peg_status_drafts SET content=?,sources=?,recipients=?,updated_at=?,subscriptions=?,version=version+1 WHERE id=? AND version=?', [...args, subscriptions === null ? null : JSON.stringify(subscriptions), nextId, previous.version]).run()
     if (!result.meta.changes) throw conflict('stale_status_draft')
-  } else await batch(db, [bound(db, 'INSERT INTO peg_status_drafts(id,workspace_id,subject_type,subject_id,version,content,sources,recipients,corrects_id,created_by,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)', [nextId, workspace, type, subjectId, version, args[0], args[1], args[2], correctsId, actor.id, args[3]])])
+  } else await batch(db, [bound(db, 'INSERT INTO peg_status_drafts(id,workspace_id,subject_type,subject_id,version,content,sources,recipients,corrects_id,created_by,updated_at,subscriptions) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)', [nextId, workspace, type, subjectId, version, args[0], args[1], args[2], correctsId, actor.id, args[3], subscriptions === null ? null : JSON.stringify(subscriptions)])])
   return readDraft(db,actor,nextId)
 }
 export async function readDraft(db: D1Database, actor: Actor, id: string) {
@@ -117,6 +125,7 @@ async function readable(db: D1Database, actor: Actor, type: string, id: string, 
 async function reviewedDraft(db: D1Database, actor: Actor, id: string) {
   const row = await draft(db, actor, id), view = decode(row), seen = await epoch(db)
   await human(db, actor, row.workspace_id)
+  if (row.subscriptions !== null && row.subscriptions !== JSON.stringify(await statusSubscribers(db, actor, row.subject_type, row.subject_id))) throw conflict('stale_status_subscriptions')
   if(await first(db,'SELECT 1 FROM peg_status_draft_rejections WHERE draft_id=? AND version=?',id,row.version))throw conflict('status_draft_rejected')
   for (const saved of view.sources) if (JSON.stringify(saved) !== JSON.stringify(await source(db, actor, saved.id, row.workspace_id))) throw conflict('stale_status_source')
   for (const recipient of view.recipients) await readable(db, await recipientActor(db, recipient.id), row.subject_type, row.subject_id, view.sources)

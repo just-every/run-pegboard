@@ -1,4 +1,5 @@
 import {pendingRuleSchedulePreview} from '../bundles/pending-schedule'
+import {statusInbox} from '../status/inbox'
 import {availabilityView} from '../schedule/availability'
 import {AvailabilityPage} from './pages/availability'
 import {readinessNotices} from '../notices'
@@ -272,7 +273,7 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
       const approvers = (await all<{ operator_id: string }>(db, "SELECT operator_id FROM peg_approvers WHERE object_type='team' AND object_id=?", id)).map(row => row.operator_id)
       return page(team.name, h(TeamPage, { viewer, people: await peopleOptions(db, actor, workspace), team: { id, name: team.name, description: team.description, privacy: team.privacy, defaultLevel: team.default_level, fallbackId: team.fallback_id, level: effective.level, capabilities: [...effective.capabilities], paths: effective.paths.map(path => ({ via: path.via, level: path.level })), members: await teamMembers(db, actor, id), approvers } }))
     }
-    if (section === 'inbox') return page('Inbox', h(InboxPage, { viewer, toDecide: await pendingFor(db, actor), mine: await myRequests(db, actor),readiness:await readinessNotices(db,actor,workspace) }))
+    if (section === 'inbox') return page('Inbox', h(InboxPage, { viewer, toDecide: await pendingFor(db, actor), mine: await myRequests(db, actor),readiness:await readinessNotices(db,actor,workspace),status:await statusInbox(db,actor) }))
     if (section === 'access-requests' && id) {
       let preview
       try { preview = await previewRequest(db, actor, id) } catch (error) { if (error instanceof PegError && error.status === 404) return refuse(db, actor, viewer, id); throw error }

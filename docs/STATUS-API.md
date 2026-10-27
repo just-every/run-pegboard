@@ -1,9 +1,8 @@
 # Reviewed status drafts and history
 
 The signed-in native API supports manually composed project and portfolio status
-updates. This is a partial PEG-015 foundation. AI drafting, subscriptions,
-provider connectors, authenticated inbound replies and the status browser flow
-remain unimplemented. The existing immediate human summary door remains available
+updates. This is a partial PEG-015 foundation. AI drafting, provider connectors,
+authenticated inbound replies and browser drafting remain unimplemented. The existing immediate human summary door remains available
 for PEG-013; it does not imply a recipient-reviewed client publication.
 
 Create a draft with `POST /api/v1/status-drafts`. Supply `subjectType` (`project`
@@ -12,7 +11,17 @@ or `portfolio`), `subjectId`, `health`, `summary`, `highlights`, `risks`,
 tasks in the subject's projects, and `recipients`, an array of objects with an
 `id` and `channels`. Supported channel names are `in_app`, `slack`, `teams`,
 `nook` and `email`. A recipient list is exact for this publication; it is not a
-standing subscription or a permission grant. Draft creation never sends anything.
+permission grant. Draft creation never sends anything.
+
+Internal members can read or change their own subscription through `GET` or
+`POST /api/v1/status-subscriptions/:type/:id`. A write supplies boolean `enabled`
+and a nonempty `channels` array. Guests and agents cannot opt into internal
+publication policy. Supply `includeSubscribers: true` when saving a draft to
+snapshot active internal subscribers and their channels beside explicit
+recipients. The human reviews the complete resulting audience once. Changing
+subscription intent requires saving the draft and reviewing again; access is
+rechecked before publication. A subscription never publishes a client version,
+grants access or sends an unreviewed draft.
 
 The publisher must be an active internal human with current project settings
 management or portfolio administration. Agents, guests, analysts and weaker
@@ -42,7 +51,7 @@ publication and one set of receipts. Publication remains a named human decision.
 
 `GET /api/v1/status-revisions/:id` returns immutable content, source links,
 reviewer and receipt outcomes. `in_app` is **available** through this authorized
-API read; it does not claim an Inbox notification or a human read. Every external
+API read and in the recipient's native Inbox; it does not claim a human read. Every external
 channel is **blocked**, with reason `connector_not_implemented`; no provider
 request or acknowledgment is fabricated. Current revocation is reflected as a
 revoked receipt on subsequent authorized inspection. Recipients can inspect only
@@ -78,9 +87,16 @@ can notify an unfollowed recipient who has not muted the revision. Notices retai
 the exact revision and comment link, omit internal comments for guests, disappear
 from the recipient's feed after revocation and omit deleted comments. Editing a
 comment does not leave stale body text in a notice. Native notice availability
-does not claim an Inbox screen, digest, external channel delivery or human read.
-Those screens, queued channel notifications, digests and authenticated inbound
-replies remain outstanding acceptance work.
+does not claim external channel delivery or human read. `GET /api/v1/status-inbox`
+and `GET /api/v1/status-digest` return the same permission-filtered publication
+and discussion content. They recheck access, hidden replies and preferences
+instead of retaining a second copy of message bodies. The digest is an
+authenticated native read, not an outbound email job. The existing Inbox shows
+reviewed revisions and their source links, member and guest replies, attributed
+thread history and discussion follow and mute forms. Each form uses the same
+authorized API door. Queued channel notifications, outbound digests,
+authenticated inbound replies and the remaining discussion controls are still
+outstanding acceptance work.
 
 The existing owner erasure preview reports
 `review_status_snapshot_custody_before_erasure` when cited task or project work,

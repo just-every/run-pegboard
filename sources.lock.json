@@ -199,7 +199,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "bfedcf07d88b59b3f1bfbe71c82e7c6d30a627d8b037852e65c76838895415f7",
+      "sha256": "2e069a9b8a26246bc0f57f166a6effa8cddcadf5ec956a84c68e76c1575efff1",
       "executable": false
     },
     "AGENTS.md": {
@@ -215,7 +215,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "569817cb8cd2acdfdb53fc11a9a9c439a542d5c8f6cfed08c5123c16a993a775",
+      "sha256": "59cb6341dd9c5bc941f6102b6892f5aa147da78ff844982b07b93d11c822d98b",
       "executable": false
     },
     "DEMO.md": {
@@ -239,7 +239,7 @@
       "executable": false
     },
     "docs/CLAIMS.md": {
-      "sha256": "40796df4d424696780e75ca42735f4b516f68ac8401656c75eec3370dc7d79f8",
+      "sha256": "0267958a4f43c257cc543f716ea71175bda3507f2219d721e2e1e41fe5a11a78",
       "executable": false
     },
     "docs/DATA-CUSTODY.md": {
@@ -275,7 +275,7 @@
       "executable": false
     },
     "docs/STATUS-API.md": {
-      "sha256": "0f7803d5485103b713f43e1165e5144a83b45f60184ace441c4b86ed9bf9f859",
+      "sha256": "3697ef6fcaeec199455bc7a034357a982b1b1ba3a6734cd5c54abf76e4dcc76f",
       "executable": false
     },
     "docs/TIME-SERVICE-PACKETS.md": {
@@ -560,6 +560,10 @@
     },
     "migrations/core/0065_status_draft_rejections.sql": {
       "sha256": "648076e4a5a53360db64db22172fe83cb92669634b019e91fadf9df603ec62e4",
+      "executable": false
+    },
+    "migrations/core/0066_status_subscriptions.sql": {
+      "sha256": "2c86da526a9ab8847b76ba779c0fa21f8a42608df376ff67530cfb25fdaf7fd9",
       "executable": false
     },
     "ONBOARDING.md": {
@@ -2359,7 +2363,7 @@
       "executable": false
     },
     "src/pegboard/api/status-routes.ts": {
-      "sha256": "4530fa44cb7a69c547e5bc966eafb6d3e7b82fe109059248674db9c8b8599b9f",
+      "sha256": "5c5aa58173c04be7b72945f1e128b0f1df323accef3ab0045c5630c28281a8d2",
       "executable": false
     },
     "src/pegboard/api/task-routes.ts": {
@@ -2735,7 +2739,15 @@
       "executable": false
     },
     "src/pegboard/status/drafts.ts": {
-      "sha256": "2d3752226ba579f24514ccaea915c6831b0f7c1a6a37157d084c56b296bfdbdc",
+      "sha256": "b86776a15aac264611b20c916703d9de1c9a76edd9b11b7580f3ae99db48c7d8",
+      "executable": false
+    },
+    "src/pegboard/status/inbox.ts": {
+      "sha256": "d4524672299d8894d851135dc2d2089f7b3df43f08f6be1ca1e1117ca2dbc19f",
+      "executable": false
+    },
+    "src/pegboard/status/subscriptions.ts": {
+      "sha256": "7e2f261a27b402e5bfb4121f96c587cd788f39812af676bd9a8e5c7fc6c4370e",
       "executable": false
     },
     "src/pegboard/tags/tags.ts": {
@@ -2911,7 +2923,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/inbox.tsx": {
-      "sha256": "88fce65a361ea363eae8a83a50420f40ccde40d64ceac196b16cfc8731a5df6d",
+      "sha256": "52d5059baa71a12e01c58f9bf4d2c6729f97cf05d74e577ad773b6a232ddd2f6",
       "executable": false
     },
     "src/pegboard/ui/pages/member-removal.tsx": {
@@ -3007,7 +3019,7 @@
       "executable": false
     },
     "src/pegboard/ui/routes.ts": {
-      "sha256": "8c6e0614aa76989c15eff3da3007a1501bd6f68d5b37d27982db5aa473235022",
+      "sha256": "6a18509792f99614c5b748e0afd974abf45986c5d17d067b059b92085e73f83e",
       "executable": false
     },
     "src/pegboard/ui/schedule-editor.tsx": {
@@ -3231,7 +3243,7 @@
       "executable": false
     },
     "tests/journeys/portfolios.mjs": {
-      "sha256": "669eeb9c38d305e1e9dd6c38b176d0a2eb858bf51a494318ee0b6052f195b0c1",
+      "sha256": "ab4bed443738de6a1aeacb4699f6a598bffda3ee938872f3418dabaf617eae73",
       "executable": false
     },
     "tests/journeys/project-duplicate.mjs": {
@@ -3244,6 +3256,10 @@
     },
     "tests/journeys/schedule-settings.mjs": {
       "sha256": "0b5266adcb551eca9b42f76486da56664f3d29771923ccf2879a98e8b6633f60",
+      "executable": false
+    },
+    "tests/journeys/status-inbox.mjs": {
+      "sha256": "666f2d739c34a031b55dc11fa1d4627b397b827edf81e82933fdfad6dc0ca4b6",
       "executable": false
     },
     "tests/journeys/template-gallery.mjs": {
@@ -3271,7 +3287,7 @@
       "executable": false
     },
     "tests/portfolios.test.mjs": {
-      "sha256": "1284fca37b43c1526c537f569a25a7dd7e9d3c265680f6765811908166228c85",
+      "sha256": "33294a6530085cf90f5b426b95c06c436b833a1e8f5269c5f4f527dc773a85f5",
       "executable": false
     },
     "tests/runtime.mjs": {
