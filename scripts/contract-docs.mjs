@@ -22,14 +22,14 @@ for(const id of ids){
  const marker='**Acceptance evidence:**',at=definition.indexOf(marker)
  if(at<0)throw Error('Missing acceptance evidence: '+id)
  const evidence=definition.slice(at+marker.length).split('**As built:**')[0].trim()
- const line=`- **${id} — ${clause.title}. Status: ${clause.status}.** ${prose(evidence)} Evidence: ${prose(row[4]||'none')}. Gap: ${prose(row[5])}`
+ const line=`- **${id} — ${clause.title}. Status: ${clause.status}.** ${prose(evidence)} Evidence: ${prose(row[4]||'none')}. Gap: ${prose(row[5]||'None for this clause.')}`
  const pattern=new RegExp('^- \\*\\*'+id+' — .*$', 'm')
  if(!pattern.test(acceptance))throw Error('Missing checklist row: '+id)
  acceptance=acceptance.replace(pattern,line)
 }
 const counts=contract.counts
 acceptance=acceptance.replace(/Of \d+ clauses, \d+ are \*\*done\*\*, \d+ are \*\*partial\*\* and \d+ are \*\*missing\*\*/,`Of ${counts.total} clauses, ${counts.done} are **done**, ${counts.partial} are **partial** and ${counts.missing} are **missing**`)
-const claims='# Product status and proof\n\nGenerated from CONTRACT.md. Acceptance obligations remain in that source.\n\n'+[...rows.values()].map(row=>`- **${row[0].replaceAll('`','')} — ${row[1]}. Status: ${row[3]}.** Evidence: ${prose(row[4]||'none')}. Gap: ${prose(row[5])}`).join('\n\n')+'\n'
+const claims='# Product status and proof\n\nGenerated from CONTRACT.md. Acceptance obligations remain in that source.\n\n'+[...rows.values()].map(row=>`- **${row[0].replaceAll('`','')} — ${row[1]}. Status: ${row[3]}.** Evidence: ${prose(row[4]||'none')}. Gap: ${prose(row[5]||'None for this clause.')}`).join('\n\n')+'\n'
 for(const [path,expected] of [['ACCEPTANCE.md',acceptance],['docs/CLAIMS.md',claims]]){
  if(mode==='write')await writeFile(path,expected)
  else if(await readFile(path,'utf8').catch(()=>null)!==expected)throw Error('Generated document stale: '+path)
