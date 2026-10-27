@@ -1,3 +1,4 @@
+import {approvalRoutes} from './approval-routes'
 import {availabilityRoutes} from './availability-routes'
 import {noticeRoutes} from './notice-routes'
 import {bulkRoutes} from './bulk-routes'
@@ -74,3 +75,5 @@ templateRuleRoutes(pegboardApi)
 
 availabilityRoutes(pegboardApi)
 noticeRoutes(pegboardApi)
+
+approvalRoutes(pegboardApi)

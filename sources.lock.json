@@ -555,7 +555,7 @@
       "executable": false
     },
     "package.json": {
-      "sha256": "332fcd0360a31fb5092cfbe3d24f3e9d2280b1dbb7da26ffc9b1bc0c22f4cc0f",
+      "sha256": "a0e70f2a1d6fa7c48950d2903ab1a8d3a9b660baaaa56352efe2ab197dbbe701",
       "executable": false
     },
     "packaging.json": {
@@ -2299,7 +2299,7 @@
       "executable": false
     },
     "src/pegboard/api/index.ts": {
-      "sha256": "25fd73b3c92be2bac7b36595326614674b49dd2d633a304404db45cbff995950",
+      "sha256": "25596131feb9fda3b2d4826ae8ed89f6b40616c392907fbaa54c9d90a572c2d8",
       "executable": false
     },
     "src/pegboard/api/meeting-routes.ts": {
@@ -2375,7 +2375,7 @@
       "executable": false
     },
     "src/pegboard/authorization/levels.ts": {
-      "sha256": "b893b48914b29fae0e870c7865351cd61abdd0406609ba3f1339e937f779e00a",
+      "sha256": "7ca802e2518e2356d099305b64d6da361f6a485adb53cb0d1c26c12143856afa",
       "executable": false
     },
     "src/pegboard/bundles/action-config.ts": {
@@ -2511,7 +2511,7 @@
       "executable": false
     },
     "src/pegboard/decisions/tasks.ts": {
-      "sha256": "210f6c9549617ff768cf0877b6e8900ebc6c16c65dd74617f71582d14f6d376b",
+      "sha256": "b8304e10f070de369f027f6887e7b43c8b75b3fca5fc20032349397ba1d5f3b2",
       "executable": false
     },
     "src/pegboard/duplication/activation.ts": {
@@ -2587,7 +2587,7 @@
       "executable": false
     },
     "src/pegboard/portability/policy.mjs": {
-      "sha256": "f28e0322a0484cc8da31f388a52d71af6851f5480bc5fd7d3bf44e06477e0e38",
+      "sha256": "a9815da1758d7df3d69d2601ff6cda56966d515a11359a0f9f8c1c39e8036c01",
       "executable": false
     },
     "src/pegboard/portfolios/portfolios.ts": {
@@ -2603,7 +2603,7 @@
       "executable": false
     },
     "src/pegboard/records/custody.ts": {
-      "sha256": "cc2c72cf785aa284d0551364509ae91f591d2536e87979f5bd8a0f9486db75b3",
+      "sha256": "ec4f86a149f325947b1211efb89af394479d65c01c6768d5c9baa14eba86727a",
       "executable": false
     },
     "src/pegboard/recovery/authority.ts": {
@@ -2935,7 +2935,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/task.tsx": {
-      "sha256": "073ef46028c344c3c1881084d26f76ab08d2754c909125142c0fba452c8260f1",
+      "sha256": "8c218570d366068780042fd9bf03bf671738d3dbfd3c3b89074f6e1cbd5f6966",
       "executable": false
     },
     "src/pegboard/ui/pages/team-gate.tsx": {
@@ -2967,7 +2967,7 @@
       "executable": false
     },
     "src/pegboard/ui/routes.ts": {
-      "sha256": "8c6e0614aa76989c15eff3da3007a1501bd6f68d5b37d27982db5aa473235022",
+      "sha256": "9d163f7359bef8ec00479c0362241b07cf6283b0325ff078d3e0cdeaf60cf0c8",
       "executable": false
     },
     "src/pegboard/ui/schedule-editor.tsx": {
@@ -3015,7 +3015,7 @@
       "executable": false
     },
     "src/server.ts": {
-      "sha256": "60cecde46299e951627ec74dede795019e92c428b08dbd2319549121a045245f",
+      "sha256": "0c7281d5a745e8f6aa77bae93f69c574f3bef02c813d88b49fd342e04be9d7f4",
       "executable": false
     },
     "src/site/copy.ts": {
@@ -3223,7 +3223,7 @@
       "executable": false
     },
     "tests/journeys/work-graph.journey.mjs": {
-      "sha256": "4ef33ab0dba4d493ac3680b58a418d764882ecbeb31e5f6cd7d4c256ad12af54",
+      "sha256": "0fe3dfe9605a24cc5b2f4659d3b5ed379b7e8d4e146123d901a63bf78fd78271",
       "executable": false
     },
     "tests/journeys/workflow-bundles.mjs": {
@@ -3283,7 +3283,7 @@
       "executable": false
     },
     "tests/work-graph.test.mjs": {
-      "sha256": "c2fdb9591314b618549511df21b12766fce60eb823766bb31cd6608d56f9708d",
+      "sha256": "f4adfa2c5945c52842d3e3d0d445e5557bea6f73c485d0afc3baa095d3f10eb1",
       "executable": false
     },
     "tsconfig.json": {
