@@ -1,3 +1,4 @@
+import { assertStatusReuse } from './rights'
 import { all, batch, bound, conflict, first, forbidden, invalid, newId, notFound, now, PegError, type Param } from '../db'
 import { auditStatement, epoch } from '../authorization/audit'
 import { openProject, need } from '../workspace/projects'
@@ -32,6 +33,7 @@ async function draft(db: D1Database, actor: Actor, id: string) {
   const row = await first<Draft>(db, 'SELECT * FROM peg_status_drafts WHERE id=?', id)
   if (!row) throw notFound()
   await statusAccess(db, actor, row.subject_type, row.subject_id, true)
+  await assertStatusReuse(db,'draft',id)
   return row
 }
 async function source(db: D1Database, actor: Actor, id: string, workspace: string): Promise<Source> {
@@ -169,6 +171,7 @@ export async function openRevision(db: D1Database, actor: Actor, id: string) {
   try { await statusAccess(db, actor, row.subject_type, row.subject_id, true); manager = ['owner','admin','manager','member'].includes(await workspaceRole(db,actor.id,workspace) ?? '') } catch (error) { if (!(error instanceof PegError && error.status === 403)) throw error }
   if (!manager && !recipients.some(r => r.id === actor.id)) throw notFound()
   await readable(db, actor, row.subject_type, row.subject_id, JSON.parse(row.sources))
+  await assertStatusReuse(db,'revision',id)
   return { row, workspace, manager }
 }
 export async function readRevision(db: D1Database, actor: Actor, id: string) {

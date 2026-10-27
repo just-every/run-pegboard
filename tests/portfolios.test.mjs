@@ -691,3 +691,116 @@ describe('Reviewed stakeholder status revisions', { concurrency: false }, () => 
     assert.equal((await call(human.get(`/api/v1/status-history/project/${projects[0].id}`))).revisions.length, 2)
   })
 })
+
+describe('Status rights request custody', { concurrency: false }, () => {
+ let worker, owner, handler, outsider, guest, source, project, draft, revision, personal, request, cleanDraft
+ const call=async(p,status=200)=>{const r=await p;assert.equal(r.status,status,JSON.stringify(r.body));return r.body}
+ const root='/api/v1/status-rights-requests', day=86400000
+ const act=async(input,who=handler,status=200)=>{const result=await call(who.post(`${root}/${request.id}/actions`,{version:request.version,...input}),status);if(status===200)request=result;return result}
+ before(async()=>{
+  worker=await startWorker();owner=worker.owner
+  handler=await worker.person('synthetic-pegboard-1511@example.com','Privacy Handler')
+  outsider=await worker.person('synthetic-pegboard-1512@example.com','Unassigned Handler')
+  guest=await worker.person('synthetic-pegboard-1513@example.com','Guest Reviewer','guest')
+  project=await call(owner.post('/api/v1/projects',{name:'Private rights subject',visibility:'private'}))
+  source=await call(owner.post('/api/v1/tasks',{projectId:project.id,title:'Sensitive cited employee detail'}))
+  personal=await call(owner.post('/api/v1/tasks',{title:'Unrelated private work'}))
+  const input={subjectType:'project',subjectId:project.id,health:'on_track',summary:'Sensitive attributed status',from:'2026-03-01',to:'2026-03-16',sourceIds:[source.id],recipients:[]}
+  draft=await call(owner.post('/api/v1/status-drafts',input))
+  const review=await call(owner.post(`/api/v1/status-drafts/${draft.id}/review`,{}))
+  revision=await call(owner.post(`/api/v1/status-drafts/${draft.id}/publish`,{token:review.token}))
+ },{timeout:120000})
+ after(()=>worker?.stop())
+ it('tracks the exact structured copies and finite delegated custody without granting browsing or false erasure',async()=>{
+  const until=Date.now()+30*day, input={type:'task',targetId:source.id,receivedAt:'2026-03-16T12:00:00Z',handlerId:handler.id,handlerUntil:until}
+  await call(outsider.post(root,input),403)
+  await call(owner.post(root,{...input,handlerId:guest.id}),403)
+  request=await call(owner.post(root,input))
+  assert.equal(request.received_at,Date.parse('2026-03-16T12:00:00Z'))
+  assert.equal(request.ack_due,Date.parse('2026-03-30T23:59:59.999Z'))
+  assert.equal(request.response_due,Date.parse('2026-04-30T12:00:00Z'))
+  assert.equal(request.handler_id,handler.id);assert.equal(request.handler_until,until)
+  assert.deepEqual(request.copies,[{copy_type:'draft',copy_id:draft.id},{copy_type:'revision',copy_id:revision.id}])
+  assert.deepEqual((await call(handler.get(root))).requests.map(r=>r.id),[request.id])
+  assert.deepEqual((await call(outsider.get(root))).requests,[])
+  assert.equal(request.erasureOutcome,'not_erased');assert.equal(request.custodyBlocker,'review_status_snapshot_custody_before_erasure')
+  const delegated=await call(handler.get(`${root}/${request.id}`))
+  assert.ok(!JSON.stringify(delegated).includes('Sensitive cited employee detail'))
+  await call(handler.get(`/api/v1/tasks/${source.id}`),404)
+  await call(handler.get(`/api/v1/tasks/${personal.id}`),404)
+  await call(outsider.get(`${root}/${request.id}`),403)
+  await call(owner.get(`/api/v1/status-drafts/${draft.id}`),409)
+  await call(owner.get(`/api/v1/status-revisions/${revision.id}`),409)
+  await call(owner.post('/api/v1/status-drafts',{subjectType:'project',subjectId:project.id,health:'on_track',summary:'Reusing disputed data',from:'2026-03-01',to:'2026-03-16',sourceIds:[source.id],recipients:[]}),409)
+  const unrelated=await call(owner.post('/api/v1/tasks',{projectId:project.id,title:'Separate ordinary work'}))
+  const cleanInput={subjectType:'project',subjectId:project.id,health:'on_track',summary:'Unrelated approved content',from:'2026-03-01',to:'2026-03-16',sourceIds:[unrelated.id],recipients:[]}
+  cleanDraft=await call(owner.post('/api/v1/status-drafts',cleanInput))
+  await call(owner.patch(`/api/v1/status-drafts/${cleanDraft.id}`,{...cleanInput,version:cleanDraft.version,sourceIds:[source.id]}),409)
+  assert.equal((await call(owner.get(`/api/v1/status-drafts/${cleanDraft.id}`))).sources[0].id,unrelated.id)
+  await worker.restart()
+  assert.deepEqual((await call(handler.get(`${root}/${request.id}`))).copies,request.copies)
+ })
+ it('escalates acknowledgment and disposition independently at a pinned clock and refuses indefinite or unsupported outcomes',async()=>{
+  const inspect=at=>call(handler.get(`${root}/${request.id}?at=${encodeURIComponent(at)}`))
+  assert.deepEqual((await inspect('2026-03-30T23:59:59.999Z')).escalations,[])
+  assert.deepEqual((await inspect('2026-03-31T00:00:00Z')).escalations,['acknowledgment_overdue'])
+  assert.deepEqual((await inspect('2026-04-30T12:00:00.001Z')).escalations,['acknowledgment_overdue','disposition_overdue'])
+  await act({action:'disposition',state:'justified_retention',reason:'Missing software'},handler,400)
+  await act({action:'acknowledge',notice:'Receipt acknowledged through the verified rights channel'})
+  assert.ok(request.acknowledged_at);assert.equal(request.events.at(-1).actor_id,handler.id)
+  await act({action:'disposition',state:'erased',reason:'Claim success'},handler,400)
+  await act({action:'disposition',state:'justified_retention',reason:'Await software',basisType:'engineering_hold',basis:'Missing implementation',authority:'Engineering',reviewAt:Date.now()+day},handler,400)
+  await act({action:'extend',rule:'Applicable request rule',reason:'Missing implementation',notice:'Wait indefinitely',finalDate:Date.now()+day,permittedUntil:Date.now()+2*day,permitted:true},handler,400)
+  await act({action:'disposition',state:'controlled_resolution_pending',reason:'Owner and handler must reconcile archives and recipients using the controlled procedure',reviewAt:Date.now()+day})
+  assert.equal(request.erasureOutcome,'not_erased');assert.equal(request.state,'controlled_resolution_pending')
+  assert.ok((await inspect(new Date(request.next_review_at+1).toISOString())).escalations.includes('controlled_resolution_review_due'))
+ })
+ it('records justified finite retention separately, requires timely permitted extension and revokes a former handler',async()=>{
+  const receipt=Date.now(), until=receipt+60*day
+  request=await call(owner.post(root,{type:'person',targetId:owner.id,receivedAt:receipt,handlerId:handler.id,handlerUntil:until,applicableDeadline:receipt+5*day}))
+  assert.deepEqual(request.copies,[...([draft.id,cleanDraft.id].sort().map(id=>({copy_type:'draft',copy_id:id}))),{copy_type:'revision',copy_id:revision.id}])
+  await act({action:'acknowledge',notice:'Receipt acknowledged'})
+  await act({action:'extend',rule:'Recorded applicable extension rule',reason:'Necessary identity verification',notice:'Sent definite final response date',finalDate:receipt+8*day,permittedUntil:receipt+7*day,permitted:true},handler,400)
+  await act({action:'extend',rule:'Recorded applicable extension rule',reason:'Necessary identity verification',notice:'Sent definite final response date',finalDate:receipt+7*day,permittedUntil:receipt+7*day,permitted:true})
+  assert.equal(request.final_due,receipt+7*day);assert.ok(request.extension_notified_at<request.response_due)
+  assert.deepEqual((await call(handler.get(`${root}/${request.id}?at=${encodeURIComponent(new Date(receipt+7*day+1).toISOString())}`))).escalations,['disposition_overdue'])
+  await act({action:'disposition',state:'justified_retention',reason:'Specific disputed campaign record required by a recorded preservation order',basisType:'lawful_hold',basis:'Recorded preservation order for this subject only',authority:'Designated records custodian',reviewAt:receipt+10*day})
+  assert.equal(request.state,'justified_retention');assert.equal(request.retention_review_at,receipt+10*day);assert.equal(request.erasureOutcome,'not_erased')
+  const previous=request.version
+  await act({action:'delegate',handlerId:outsider.id,handlerUntil:until},handler,403)
+  await act({action:'delegate',handlerId:outsider.id,handlerUntil:until},owner)
+  await call(handler.get(`${root}/${request.id}`),403)
+  await call(outsider.post(`${root}/${request.id}/actions`,{version:previous,action:'acknowledge',notice:'Stale action'}),409)
+  assert.equal((await call(outsider.get(`${root}/${request.id}`))).handler_id,outsider.id)
+  const exportJob=await call(owner.post('/api/portability/exports',{}),201);let archive
+  for(let part=0;part<100;part++){const progress=await call(owner.post(`/api/portability/exports/${exportJob.id}/advance`,{maxParts:16}));if(progress.phase==='complete'){archive=await call(owner.get(`/api/portability/exports/${exportJob.id}/download`));break}}
+  assert.equal(typeof archive,'string')
+  const archived=archive.split('\n').filter(Boolean).map(line=>JSON.parse(line)).filter(row=>row.kind==='part').flatMap(row=>row.items).filter(row=>row.kind==='row'&&row.table==='peg_status_rights_requests').map(record=>record.row)
+  assert.equal(archived.length,2);assert.ok(archived.every(row=>row.handler_until===0),'archive cannot carry live custody delegation')
+  assert.equal(archived.find(row=>row.id===request.id).received_at,receipt)
+  await worker.sql(`UPDATE peg_status_rights_requests SET handler_until=${receipt-1} WHERE id='${request.id}'`)
+  await call(outsider.get(`${root}/${request.id}`),403)
+  assert.ok((await call(owner.get(`${root}/${request.id}`))).escalations.includes('handler_authority_expired'))
+
+ })
+ it('accepts a departed attributed actor request without reactivating membership or exposing their snapshots',async()=>{
+  const former=await worker.person('synthetic-pegboard-1514@example.com','Departed status author')
+  const p=await call(former.post('/api/v1/projects',{name:'Former author work',visibility:'private'}))
+  const t=await call(former.post('/api/v1/tasks',{projectId:p.id,title:'Former employee source'}))
+  const d=await call(former.post('/api/v1/status-drafts',{subjectType:'project',subjectId:p.id,health:'on_track',summary:'Former employee narrative',from:'2026-03-01',to:'2026-03-16',sourceIds:[t.id],recipients:[]}))
+  const reviewed=await call(former.post(`/api/v1/status-drafts/${d.id}/review`,{}))
+  const published=await call(former.post(`/api/v1/status-drafts/${d.id}/publish`,{token:reviewed.token}))
+  const path=`/api/v1/workspaces/ws_main/people/${former.id}`
+  const removal=await call(owner.get(path+'/removal-preview'))
+  const choices=Object.fromEntries(removal.affected.filter(set=>set.rows.length).map(set=>[set.key,set.mode==='transfer'?owner.id:set.mode]))
+  await call(owner.post(path+'/remove',{token:removal.token,confirm:true,choices}))
+  await call(former.get(`/api/v1/status-drafts/${d.id}`),401)
+  const tracked=await call(owner.post(root,{type:'person',targetId:former.id,receivedAt:Date.now(),handlerId:outsider.id,handlerUntil:Date.now()+day}))
+  assert.deepEqual(tracked.copies,[{copy_type:'draft',copy_id:d.id},{copy_type:'revision',copy_id:published.id}])
+  assert.equal(tracked.erasureOutcome,'not_erased')
+  const scoped=await call(outsider.get(`${root}/${tracked.id}`))
+  assert.ok(!JSON.stringify(scoped).includes('Former employee narrative'))
+  await call(outsider.get(`/api/v1/status-revisions/${published.id}`),404)
+ })
+
+})
