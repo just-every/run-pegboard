@@ -1,3 +1,5 @@
+import {processApprovalReminders} from './pegboard/approvals/routing'
+import {approvalMail} from './pegboard/approvals/mail.mjs'
 import {processBundleJobs} from './pegboard/bundles/queue'
 import { archiveResponse } from './pegboard/api/data-routes'
 import {processRecurrences} from './pegboard/recurrence/recurrence'
@@ -30,7 +32,7 @@ function noTransform(response: Response): Response {
 }
 
 export default withDemo<Bindings, ExportedHandler<Bindings>>({
-  async scheduled(_event, env, execution) { execution.waitUntil(processRecurrences(runtimeBindings(env).DB).then(()=>processBundleJobs(runtimeBindings(env).DB))) },
+  async scheduled(_event, env, execution) { execution.waitUntil(processRecurrences(runtimeBindings(env).DB).then(()=>processBundleJobs(runtimeBindings(env).DB)).then(()=>{const e=runtimeBindings(env);return processApprovalReminders(e.DB,{origin:e.AUTH_ORIGIN,from:e.MAIL_FROM,mail:approvalMail(e)})})) },
   async fetch(request, env, execution) {
     const asset = await staticAssetResponse(request, env)
     if (asset) return asset

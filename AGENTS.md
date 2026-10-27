@@ -48,3 +48,11 @@ acceptance from a local structural check.
 Run tests for touched public flows and typecheck. Keep the inherited foundation
 tests intact. CI is the full verification wall. Stop only processes you started;
 never use broad kill commands or stop another checkout. Do not print secrets.
+
+## Lander-Regenerate
+
+CONTRACT.md is the acceptance and status source. After changing its Status rows,
+run `node scripts/contract-docs.mjs write`, then
+`node scripts/contract-docs.mjs check`. This seed generator preserves the existing
+journey prose and synchronizes status, evidence, gaps and counts, and writes
+`docs/CLAIMS.md`. Regenerate the edition source lock last.

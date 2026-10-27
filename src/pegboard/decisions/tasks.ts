@@ -1,3 +1,4 @@
+import { routeFor } from '../approvals/routing'
 import { all, bound, conflict, first, forbidden, invalid, newId, now } from '../db'
 import { isAdministrator } from '../authorization/levels'
 import { displayNames, workspaceRole, type Actor } from '../workspace/people'
@@ -14,14 +15,16 @@ export async function decisionPreview(db: D1Database, actor: Actor, id: string) 
   const accountable=new Set((await all<{owner_id:string}>(db,'SELECT DISTINCT owner_id FROM peg_approval_owners WHERE task_id=? AND epoch=?',task.id,epoch)).map(r=>r.owner_id)).add(task.owner_id)
   const eligible=access.personal?[]:(await all<{id:string}>(db,"SELECT id FROM oa_operators WHERE status='active' AND role IN ('owner','admin')")).filter(r=>!accountable.has(r.id))
   const waiting=access.personal?'personal_share_required':accountable.has(actor.id)?'you_own_or_owned_this':!eligible.length?'another_decider_needed':!isAdministrator(role)?'administrator_required':null
-  const canDecide=waiting===null
+  const routing=await routeFor(db,'task',task.id)
+  const canDecide=waiting===null&&!routing
   const decisions=await all<{id:string;actor_id:string;at:number;revision:string;action:string;reason:string}>(db,'SELECT * FROM peg_task_decisions WHERE task_id=? ORDER BY at,id',task.id)
   // The revision includes all current work and access changes. Reading it does not approve anything.
   const last=decisions.at(-1),names=await displayNames(db,decisions.map(d=>d.actor_id)),reopen=await first<{at:number}>(db,"SELECT at FROM peg_history WHERE task_id=? AND kind='decision.reopened' ORDER BY id DESC LIMIT 1",task.id)
   const state=task.status==='done'&&last?.action==='approve'?'approved':last?.action==='approve'?'reopened':last?.action==='reject'?'rejected':last?.action==='changes'?'changes_requested':'pending'
-  return {state,reopenedAt:reopen?.at??null,taskId:task.id, title:task.title, canDecide, waiting, anotherDeciderNeeded:!access.personal&&!eligible.length, decisions:decisions.map(d=>({...d,actor:names.get(d.actor_id)??'Former member'})), rev, token:await digest([task,rev])}
+  return {routeId:routing?.id??null,state,reopenedAt:reopen?.at??null,taskId:task.id, title:task.title, canDecide, waiting, anotherDeciderNeeded:!access.personal&&!eligible.length, decisions:decisions.map(d=>({...d,actor:names.get(d.actor_id)??'Former member'})), rev, token:await digest([task,rev])}
 }
 export async function decideTask(db: D1Database, actor: Actor, id: string, input: Record<string,any>) {
+  if(await routeFor(db,'task',id))throw conflict('use_routed_approval')
   const preview=await decisionPreview(db,actor,id)
   if(!preview.canDecide) throw forbidden(preview.waiting??'decision_refused')
   if(input.revision!==preview.token) throw conflict('task_revision_changed')

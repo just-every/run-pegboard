@@ -1,3 +1,4 @@
+import { routeFor,routeView } from '../approvals/routing'
 import { isRecoveryHidden } from '../recovery/visibility'
 // Real native records, authorized by the same current task grants as work itself. No provider or model is emulated.
 import { all, bound, conflict, first, forbidden, invalid, newId, notFound, now } from '../db'
@@ -36,7 +37,8 @@ export async function proofView(db:D1Database,actor:Actor,id:string) {
   if(!visible.some(v=>v.id===proof.current_version))throw notFound()
   const allowed=new Set(visible.map(v=>v.id)),decisions=(await all<{id:string;version_id:string;actor_id:string;action:string;at:number;reason:string}>(db,'SELECT * FROM peg_proof_decisions WHERE proof_id=? ORDER BY at,id',id)).filter(d=>allowed.has(d.version_id))
   const latest=decisions.filter(d=>d.version_id===proof.current_version).at(-1)
-  return {proof,taskId:task.id,versions:visible,decisions,state:latest?.action??'pending',canEdit:access.capabilities.has('edit')&&access.role!=='agent'&&access.role!=='guest'}
+  const route=await routeFor(db,'proof',id),routing=route?await routeView(db,actor,route.id):null
+  return {proof,taskId:task.id,versions:visible,decisions,state:routing?({approved:'approve',rejected:'reject',changes_requested:'changes'}[routing.state]??'pending'):latest?.action??'pending',canEdit:access.capabilities.has('edit')&&access.role!=='agent'&&access.role!=='guest'}
 }
 export async function addProofVersion(db:D1Database,actor:Actor,id:string,input:Record<string,any>) {
   const rev=await revision(db),view=await proofView(db,actor,id);if(!view.canEdit)throw forbidden('proof_edit')
@@ -48,10 +50,11 @@ export async function addProofVersion(db:D1Database,actor:Actor,id:string,input:
 }
 export async function proofDecisionPreview(db:D1Database,actor:Actor,id:string) {
   const rev=await revision(db),view=await proofView(db,actor,id),{task,access}=await openTask(db,actor,view.taskId)
-  const canDecide=isAdministrator(await workspaceRole(db,actor.id,task.workspace_id))&&actor.id!==task.owner_id&&access.role!=='agent'&&access.role!=='guest'
+  const canDecide=!await routeFor(db,'proof',id)&&isAdministrator(await workspaceRole(db,actor.id,task.workspace_id))&&actor.id!==task.owner_id&&access.role!=='agent'&&access.role!=='guest'
   return {...view,canDecide,rev,token:await digest([rev,view.proof,view.versions])}
 }
 export async function decideProof(db:D1Database,actor:Actor,id:string,input:Record<string,any>) {
+  if(await routeFor(db,'proof',id))throw conflict('use_routed_approval')
   const view=await proofDecisionPreview(db,actor,id);if(!view.canDecide)throw forbidden('independent_human_administrator')
   if(input.versionId!==view.proof.current_version||input.token!==view.token)throw conflict('stale_proof_decision')
   if(!['approve','changes','reject'].includes(input.action))throw invalid('proof_decision')
