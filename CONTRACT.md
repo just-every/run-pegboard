@@ -281,13 +281,13 @@ Every desk capability retains its original ID: PEG-001–027 are target clauses 
 
 ## Status
 
-Judged from the code and tests at candidate HEAD (27 October 2026). PEG-036 proof and the exact candidate commit are named in its judge request; pending checks remain in its Status Gap.
+Judged from the code and tests at commit `a286f53fffa941e2e67fb02b546462f685bdd02c` (27 October 2026). PEG-036 proof and the exact candidate commit are named in its judge request; pending checks remain in its Status Gap.
 
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
 | Published | 1 | 0 | 0 | 1 |
-| Target and push further | 18 | 10 | 61 | 89 |
-| All | 19 | 10 | 61 | 90 |
+| Target and push further | 17 | 11 | 61 | 89 |
+| All | 18 | 11 | 61 | 90 |
 
 | Clause | Title | Kind | Status | Evidence | Gap |
 | --- | --- | --- | --- | --- | --- |
