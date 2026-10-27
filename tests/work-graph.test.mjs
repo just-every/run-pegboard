@@ -35,7 +35,7 @@ describe('Work conversions through reviewed public doors',{concurrency:false},()
  let worker,root,peer,guest
  before(async()=>{worker=await startWorker();root=worker.owner;peer=await worker.person('conversion-member@example.com','Mia Studio');guest=await worker.person('conversion-guest@example.com','Gus Client','guest')},{timeout:120000})
  after(()=>worker?.stop())
- registerConversionTests({test:it,api:()=>({root,peer,guest})})
+ registerConversionTests({test:it,api:()=>({root,peer,guest,worker})})
 })
 
 describe('PEG-001 one work graph', { concurrency: false }, () => {

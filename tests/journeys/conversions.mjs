@@ -5,7 +5,7 @@ import {chromium} from '@playwright/test'
 import {startWorker} from '../support/worker.mjs'
 import {projectConversionJourney} from './conversion-projects.mjs'
 import {hierarchyConversionJourney} from './conversion-hierarchy.mjs'
-const w=await startWorker(),browser=await chromium.launch({headless:true,args:['--use-mock-keychain','--password-store=basic']})
+const w=await startWorker(),browser=await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,args:['--no-sandbox','--use-mock-keychain','--password-store=basic']})
 const ok=(r,status=200)=>{assert.equal(r.status,status,JSON.stringify(r.body));return r.body}
 try{
  const producer=await w.person('conversion-producer@example.com','Mia Studio')

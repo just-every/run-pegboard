@@ -2667,7 +2667,7 @@
       "executable": false
     },
     "src/pegboard/tasks/view.ts": {
-      "sha256": "67ee7db2219fe60c66615e0fd61b17bf4200f09ae371b4c04e5ab056ff27c177",
+      "sha256": "c27bef01942403756f6e5168b57141fb0b32fd7e196493533b76c565f7624ca2",
       "executable": false
     },
     "src/pegboard/templates/adoption.ts": {
@@ -3083,15 +3083,15 @@
       "executable": false
     },
     "tests/journeys/conversion-hierarchy.mjs": {
-      "sha256": "966cdca729cfaec12cf4d25257b10557379411d44e73e35c4282ba700ece8876",
+      "sha256": "d3482819ee88f69d374443d441c114cbe56c74bb1f89f33a5007e8530036af0d",
       "executable": false
     },
     "tests/journeys/conversion-projects.mjs": {
-      "sha256": "6593554bdf0deef5abe359bcca7e5f4a441388ca57c1004cfcec9a58f978e524",
+      "sha256": "5dcef4950858da753b623abf553e6cb33ec1a22d624628c76fb94bfde20ac640",
       "executable": false
     },
     "tests/journeys/conversions.mjs": {
-      "sha256": "680aad422c7f1fa21fa58a5fbe36c4c0d1561acadb907e825060c9531674584e",
+      "sha256": "8dc42670ad5ec9a453e2bd840958dad7485948cbc1d5133a051ed8da7347f7cc",
       "executable": false
     },
     "tests/journeys/delivery-register.mjs": {
@@ -3151,7 +3151,7 @@
       "executable": false
     },
     "tests/scenarios/conversions.mjs": {
-      "sha256": "96185658dac7d97eb50b4012109bd26be12e93f4d6f9d700f20997aecd721f54",
+      "sha256": "30d10cf05af60e6e9d4073ec82acd5344b7640e8c8773e0afec31106d61d6695",
       "executable": false
     },
     "tests/schedule.test.mjs": {
@@ -3183,7 +3183,7 @@
       "executable": false
     },
     "tests/work-graph.test.mjs": {
-      "sha256": "712be44a977ac5717684d0189e53e5095f5d3c265abf463ebf04b850e63331e5",
+      "sha256": "c2fdb9591314b618549511df21b12766fce60eb823766bb31cd6608d56f9708d",
       "executable": false
     },
     "tsconfig.json": {
