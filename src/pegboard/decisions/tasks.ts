@@ -1,3 +1,4 @@
+import { routeFor } from '../approvals/routing'
 import { all, bound, conflict, first, forbidden, invalid, newId, now } from '../db'
 import { isAdministrator } from '../authorization/levels'
 import { displayNames, workspaceRole, type Actor } from '../workspace/people'
@@ -22,6 +23,7 @@ export async function decisionPreview(db: D1Database, actor: Actor, id: string) 
   return {state,reopenedAt:reopen?.at??null,taskId:task.id, title:task.title, canDecide, waiting, anotherDeciderNeeded:!access.personal&&!eligible.length, decisions:decisions.map(d=>({...d,actor:names.get(d.actor_id)??'Former member'})), rev, token:await digest([task,rev])}
 }
 export async function decideTask(db: D1Database, actor: Actor, id: string, input: Record<string,any>) {
+  if(await routeFor(db,'task',id))throw conflict('use_routed_approval')
   const preview=await decisionPreview(db,actor,id)
   if(!preview.canDecide) throw forbidden(preview.waiting??'decision_refused')
   if(input.revision!==preview.token) throw conflict('task_revision_changed')

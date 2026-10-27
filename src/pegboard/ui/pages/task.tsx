@@ -26,6 +26,7 @@ export function TaskPage({ viewer, task, participants, addable, sections, previe
     {can('edit')&&viewer.role!=='guest'&&<Card title="Convert work"><p>{task.parentId?<a href={`/app/conversions?kind=promote&sourceId=${task.id}`}>Promote to top-level work</a>:<><a href={`/app/conversions?kind=task_to_project&sourceId=${task.id}`}>Convert to linked project</a> · <a href={`/app/conversions?kind=demote&sourceId=${task.id}`}>Make a subtask</a></>}</p></Card>}
     {can('edit')&&viewer.role!=='guest'&&<Card title="Recovery"><a className="button quiet" href={`/app/recovery?type=task&id=${task.id}&action=trash`}>Review trash</a></Card>}
     <Card title="Task">
+      {can('manage_shares')&&<p><a href={`/app/proofs/${task.id}`}>Proof reviews</a>{decision&&<> · <a href={`/app/approval-routing/${task.id}?kind=task`}>Approval routing</a></>}</p>}
       {can('edit')&&['owner','admin'].includes(viewer.role)&&<p><a href={`/app/engineering/${task.id}`}>Engineering handoff</a></p>}
       <p className="muted">Task ID <code>{task.id}</code>{task.ref && <> · reference <strong>{task.ref}</strong></>}{task.aliases.length > 0 && <> · earlier references {task.aliases.join(', ')}</>}</p>
       {task.description && <p className="task-description">{task.description}</p>}
