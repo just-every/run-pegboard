@@ -2735,7 +2735,7 @@
       "executable": false
     },
     "src/pegboard/status/drafts.ts": {
-      "sha256": "40dcbeae34e4f1d3b1686470b5cd7a4a801870164062939c7275f4e3b89f5ecc",
+      "sha256": "2d3752226ba579f24514ccaea915c6831b0f7c1a6a37157d084c56b296bfdbdc",
       "executable": false
     },
     "src/pegboard/tags/tags.ts": {
@@ -3271,7 +3271,7 @@
       "executable": false
     },
     "tests/portfolios.test.mjs": {
-      "sha256": "511a2d1e5e09ce27196d20c656d1b863bd8d68c94ea3b126031a4821a717780e",
+      "sha256": "1284fca37b43c1526c537f569a25a7dd7e9d3c265680f6765811908166228c85",
       "executable": false
     },
     "tests/runtime.mjs": {
