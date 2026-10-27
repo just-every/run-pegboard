@@ -1,4 +1,5 @@
 import { publicRoutes } from './public-routes'
+import {statusRoutes} from './status-routes'
 import {availabilityRoutes} from './availability-routes'
 import {noticeRoutes} from './notice-routes'
 import {bulkRoutes} from './bulk-routes'
@@ -77,3 +78,4 @@ availabilityRoutes(pegboardApi)
 noticeRoutes(pegboardApi)
 
 publicRoutes(pegboardApi)
+statusRoutes(pegboardApi)
