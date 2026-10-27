@@ -1,5 +1,6 @@
 import {workEffectRows,workUndoPreview,workUndoStatements} from '../bundles/work-actions'
 import {ruleOrigin} from '../bundles/run-history'
+import {coherentSchedule,isRuleScheduleEffects,type RuleScheduleEffects} from '../bundles/schedule-effects'
 import { all, bound, conflict, first, forbidden, invalid, newId, notFound, now, PegError, type Param } from '../db'
 import { rootOf, taskAccess } from '../authorization/effective'
 import { digest, guarded, revision } from '../decisions/revision'
@@ -71,16 +72,27 @@ async function counts(db:D1Database,id:string) {
 }
 const dependency=(db:D1Database,id:string)=>first(db,'SELECT 1 FROM peg_dependencies WHERE predecessor_id=? OR successor_id=? LIMIT 1',id,id)
 
-export async function bulkPreview(db:D1Database,actor:Actor,workspace:string,input:BulkInput) {
+export async function bulkPreview(db:D1Database,actor:Actor,workspace:string,input:BulkInput,schedule?:RuleScheduleEffects) {
  const rev=await revision(db)
  await human(db,actor,workspace)
  const {taskIds,patch}=parse(input),tasks: {id:string;title:string;effects:Effect[];reopensApproval:boolean}[]=[],conflicts:UndoConflict[]=[]
- for(const id of taskIds){
+ if(schedule&&(!isRuleScheduleEffects(schedule)||schedule.workspace!==workspace||schedule.actorId!==actor.id||taskIds.length!==1||taskIds[0]!==schedule.taskId))throw invalid('rule_schedule_validation')
+ const selected=schedule?[...new Set([...taskIds,...schedule.changes.map(c=>c.taskId)])].sort():taskIds
+ for(const id of selected){
   const {task}=await subject(db,actor,workspace,id)
-  if(patch.owner_id!==undefined)await replacement(db,actor,task,patch.owner_id!)
-  const effects=(Object.entries(patch) as [Field,Value][]).filter(([field,value])=>task[field]!==value).map(([field,after])=>({taskId:id,field,before:task[field],after}))
-  if(effects.some(effect=>effect.field==='start_date'||effect.field==='due_date')&&await dependency(db,id))conflicts.push({taskId:id,field:effects.find(effect=>effect.field==='start_date'||effect.field==='due_date')!.field,reason:'dependency_cascade_requires_review'})
-  const start=patch.start_date===undefined?task.start_date:patch.start_date,due=patch.due_date===undefined?task.due_date:patch.due_date
+  const local=taskIds.includes(id)?{...patch}:{}
+  if(schedule){
+   delete local.start_date;delete local.due_date
+   for(const change of schedule.changes.filter(c=>c.taskId===id)){
+    if(task[change.field]!==change.before)throw conflict('rule_schedule_changed')
+    local[change.field]=change.after
+   }
+   if(id===schedule.taskId)for(const field of ['start_date','due_date'] as const)if(patch[field]!==undefined&&(local[field]===undefined?task[field]:local[field])!==patch[field])throw invalid('rule_schedule_validation')
+  }
+  if(local.owner_id!==undefined)await replacement(db,actor,task,local.owner_id!)
+  const effects=(Object.entries(local) as [Field,Value][]).filter(([field,value])=>task[field]!==value).map(([field,after])=>({taskId:id,field,before:task[field],after}))
+  if(!schedule&&effects.some(effect=>effect.field==='start_date'||effect.field==='due_date')&&await dependency(db,id))conflicts.push({taskId:id,field:effects.find(effect=>effect.field==='start_date'||effect.field==='due_date')!.field,reason:'dependency_cascade_requires_review'})
+  const start=local.start_date===undefined?task.start_date:local.start_date,due=local.due_date===undefined?task.due_date:local.due_date
   if(start&&due&&Date.parse(start)>Date.parse(due))throw invalid('bulk_date_order')
   const reopensApproval=!!effects.length&&task.status==='done'&&!!await first(db,'SELECT 1 FROM peg_approval_tasks WHERE task_id=?',id)
   tasks.push({id,title:task.title,effects,reopensApproval})
@@ -143,7 +155,7 @@ export async function undoBulkPreview(db:D1Database,actor:Actor,workspace:string
    else if(task[effect.field]!==after)reason='later_field_value'
    else if(effect.field_generation!==null&&effect.field_generation!==((await first<{generation:number}>(db,'SELECT generation FROM peg_rule_mutation_generations WHERE task_id=? AND kind=?',task.id,effect.field))?.generation??0))reason='later_field_edit'
    else if(history.some(row=>row.id>effect.history_id&&Object.prototype.hasOwnProperty.call(JSON.parse(row.detail),effect.field)))reason='later_field_edit'
-   else if((effect.field==='start_date'||effect.field==='due_date')&&await dependency(db,task.id))reason='dependency_cascade_requires_review'
+   else if((effect.field==='start_date'||effect.field==='due_date')&&await dependency(db,task.id)&&!await ruleOrigin(db,id))reason='dependency_cascade_requires_review'
    else if(effect.field==='owner_id'){
     try{await replacement(db,actor,task,before!)}catch(error){if(error instanceof PegError&&[400,403,404,409].includes(error.status))reason='previous_owner_unavailable';else throw error}
    }
@@ -157,6 +169,10 @@ export async function undoBulkPreview(db:D1Database,actor:Actor,workspace:string
   if(start&&due&&Date.parse(start)>Date.parse(due))for(const effect of selected.filter(effect=>effect.field==='start_date'||effect.field==='due_date')){
    restored.splice(restored.indexOf(effect),1);conflicts.push({effectId:effect.effectId,taskId:task.id,field:effect.field,reason:'later_date_conflict'})
   }
+ }
+ const dateEffects=restored.filter((effect):effect is Effect&{field:'start_date'|'due_date'}=>effect.field==='start_date'||effect.field==='due_date')
+ if(dateEffects.length&&await ruleOrigin(db,id)&&!await coherentSchedule(db,workspace,dateEffects))for(const effect of dateEffects){
+  restored.splice(restored.indexOf(effect),1);conflicts.push({effectId:effect.effectId,taskId:effect.taskId,field:effect.field,reason:'dependency_cascade_requires_review'})
  }
  const work=await workUndoPreview(db,actor,id)
  conflicts.push(...work.conflicts)

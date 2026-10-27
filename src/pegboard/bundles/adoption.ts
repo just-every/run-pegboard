@@ -3,6 +3,7 @@ import {digest,guarded,revision} from '../decisions/revision'
 import {openProject,need} from '../workspace/projects'
 import type {Actor} from '../workspace/people'
 import {bundleView,loadBundle,type Component,type Item} from './definitions'
+import {reviewedScheduleScope} from './schedule-effects'
 export const bundleHistory=(db:D1Database,bundle:string,project:string,actor:string,action:string,detail:unknown)=>bound(db,'INSERT INTO peg_bundle_history VALUES(?,?,?,?,?,?,?)',[newId('bundleevent'),bundle,project,actor,action,JSON.stringify(detail),now()])
 export const ids=(v:unknown)=>{const a=typeof v==='string'?[v]:v;if(!Array.isArray(a)||!a.length||a.length>50||a.some(id=>typeof id!=='string'||!id))throw invalid('selection');return [...new Set<string>(a)]}
 export async function previewBundle(db:D1Database,actor:Actor,id:string,input:Record<string,any>){
@@ -17,9 +18,10 @@ export async function previewBundle(db:D1Database,actor:Actor,id:string,input:Re
     const field=await first<{key:string;version:number;type:string}>(db,'SELECT key,version,type FROM peg_field_definitions WHERE id=? AND workspace_id=?',next.fieldId!,project.workspace_id),local=await first<{field_id:string}>(db,'SELECT field_id FROM peg_project_fields WHERE project_id=? AND key=?',projectId,next.fieldKey!)
     if(!field||field.version!==next.fieldVersion||field.type!==next.fieldType||local&&local.field_id!==next.fieldId){state='incompatible';reason='The field definition changed or its key already has another identity.'}
    }
-   rows.push({key,kind:next.kind,name:next.name,base,current,next,state,reason})
+   const scheduleScope=next.kind==='rule'?await reviewedScheduleScope(db,actor,view.bundle.workspace_id,[projectId,...(next.dependencyProjectIds??[])]):[]
+   rows.push({key,kind:next.kind,name:next.name,base,current,next,state,reason,scheduleScope})
   }
-  for(const item of old.filter(i=>!view.current.components[i.item_key]))rows.push({key:item.item_key,kind:item.kind,name:JSON.parse(item.config).name,base:JSON.parse(item.base),current:JSON.parse(item.config),next:null,state:'retained',reason:'Removed from the new bundle; local configuration and history are retained.'})
+  for(const item of old.filter(i=>!view.current.components[i.item_key]))rows.push({key:item.item_key,kind:item.kind,name:JSON.parse(item.config).name,base:JSON.parse(item.base),current:JSON.parse(item.config),next:null,state:'retained',reason:'Removed from the new bundle; local configuration and history are retained.',scheduleScope:[]})
   projects.push({id:projectId,name:project.name,rows})
  }
  return {bundle:view.bundle,version:view.current.version,projects,token:await digest([rev,view.current,projects]),rev}

@@ -1,3 +1,5 @@
+import type {readinessNotices} from '../../notices'
+import {ReadinessNotices} from './readiness-notices'
 import type { previewRequest } from '../../access-requests/decisions'
 import type { myRequests } from '../../access-requests/requests'
 import type { Viewer } from '../../../ui/viewer'
@@ -33,8 +35,9 @@ export function DecisionCard({ request, next }: { request: Preview; next: string
   </Card>
 }
 
-export function InboxPage({ viewer, toDecide, mine }: { viewer: Viewer; toDecide: Preview[]; mine: Mine[] }) {
-  return <Shell viewer={viewer} current="/app/inbox" title="Inbox" chip={toDecide.length ? `${toDecide.length} TO DECIDE` : 'CLEAR'} facts={[`${toDecide.length} request${toDecide.length === 1 ? '' : 's'} waiting for you`, `${mine.length} you asked`]}>
+export function InboxPage({ viewer, toDecide, mine,readiness }: { viewer: Viewer; toDecide: Preview[]; mine: Mine[];readiness:Awaited<ReturnType<typeof readinessNotices>> }) {
+  return <Shell viewer={viewer} current="/app/inbox" title="Inbox" chip={toDecide.length ? `${toDecide.length} TO DECIDE` : readiness.notices.length ? `${readiness.notices.length} READY` : 'CLEAR'} facts={[`${toDecide.length} request${toDecide.length === 1 ? '' : 's'} waiting for you`, `${mine.length} you asked`]}>
+    <ReadinessNotices readiness={readiness}/>
     {toDecide.map(request => <DecisionCard key={request.id} request={request} next="/app/inbox" />)}
     {toDecide.length === 0 && <Card title="Nothing waiting"><p className="muted">Access requests that need your decision arrive here, and by email.</p></Card>}
     <Card title="Requests you made">

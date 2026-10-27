@@ -7,9 +7,10 @@ import { taskAccess } from '../authorization/effective'
 import { currentRef } from '../references/refs'
 import { openTask } from '../tasks/access'
 import type { TaskRow } from '../model'
-import type { Actor } from '../workspace/people'
+import { displayNames, type Actor } from '../workspace/people'
 import { dstChange, holidaysBetween } from './calendar'
 import { toEdge } from './dependencies'
+import { taskCalendars } from './availability'
 import { propose, stamp, type Node } from './graph'
 
 export interface Move { taskId: string; start?: string | null; due?: string | null }
@@ -34,7 +35,7 @@ export function moveInput(input: unknown): Move[] {
 }
 const marks = (ids: string[]) => ids.map(() => '?').join(',')
 
-export interface PlanShift { id: string; ref: string | null; title: string; moved: boolean; completed: boolean; from: { start: string | null; due: string | null }; to: { start: string | null; due: string | null }; days: number; reason: { predecessor: string; predecessorTitle: string | null; type: string; lag: number } | null; crossed: { date: string; name: string }[]; dst: boolean; link: string }
+export interface PlanShift { id: string; ref: string | null; title: string; owner: string; estimateHours: number; timezone:string; moved: boolean; completed: boolean; calendarAdjusted: boolean; from: { start: string | null; due: string | null }; to: { start: string | null; due: string | null }; days: number; reason: { predecessor: string; predecessorTitle: string | null; type: string; lag: number } | null; crossed: { date: string; name: string }[]; dst: boolean; link: string }
 export interface Plan {
   moves: Move[]; shifts: PlanShift[]; stamp: string
   /** Every moved task is one the person may edit. */
@@ -64,7 +65,8 @@ export async function planChange(db: D1Database, actor: Actor, moves: Move[]): P
   const everyone = new Set([...closure, ...edgeRows.map(row => row.predecessor_id)])
   const tasks = new Map<string, TaskRow>()
   for (const row of await all<TaskRow>(db, `SELECT * FROM peg_tasks WHERE id IN (${marks([...everyone])})`, ...everyone)) tasks.set(row.id, row)
-  const nodes: Node[] = [...tasks.values()].map(t => ({ id: t.id, start: t.start_date, due: t.due_date, done: t.status === 'done' }))
+  const { calendars, fingerprint: calendarFingerprint } = await taskCalendars(db, [...tasks.values()])
+  const nodes: Node[] = [...tasks.values()].map(t => ({ id: t.id, start: t.start_date, due: t.due_date, done: t.status === 'done', calendar: calendars.get(t.id) }))
   const edges = edgeRows.map(toEdge)
   const moveMap = Object.fromEntries(moves.map(m => [m.taskId, { ...(m.start !== undefined ? { start: m.start } : {}), ...(m.due !== undefined ? { due: m.due } : {}) }]))
   const { shifts: raw, cyclic } = propose(nodes, edges, moveMap)
@@ -73,18 +75,20 @@ export async function planChange(db: D1Database, actor: Actor, moves: Move[]): P
   const shifts: PlanShift[] = [], all2: Plan['all'] = []
   for (const shift of raw) {
     const task = tasks.get(shift.id)!, access = await taskAccess(db, actor, task)
-    const to = { start: task.start_date === null ? null : stamp(shift.to.start), due: task.due_date === null ? null : stamp(shift.to.due) }
+    const move = moveMap[task.id], calendar = calendars.get(task.id)!
+    const keepsStart = (move?.start === undefined ? task.start_date : move.start) !== null, keepsDue = (move?.due === undefined ? task.due_date : move.due) !== null
+    const to = { start: keepsStart ? stamp(shift.to.start, calendar.zone) : null, due: keepsDue ? stamp(shift.to.due, calendar.zone) : null }
     const from = { start: task.start_date, due: task.due_date }
     if (shift.completed) blocked = 'impossible_constraint'
     const moved = !!moveMap[shift.id]
     if (!shift.completed) all2.push({ id: shift.id, start: from.start, due: from.due, to })
     if (!access.capabilities.has('read') || (!moved && !access.capabilities.has('edit') && !shift.completed)) { waits = true; if (!access.capabilities.has('read')) continue }
     const pre = shift.reason ? tasks.get(shift.reason.predecessor) : null, preReadable = pre ? (await taskAccess(db, actor, pre)).capabilities.has('read') : false
-    shifts.push({ id: task.id, ref: await currentRef(db, task.id), title: task.title, moved, completed: shift.completed, from, to, days: shift.days,
+    shifts.push({ id: task.id, ref: await currentRef(db, task.id), title: task.title, timezone:calendar.zone, owner: (await displayNames(db, [task.owner_id])).get(task.owner_id) ?? 'Former member', estimateHours: task.estimate_hours, moved, completed: shift.completed, calendarAdjusted: !!shift.calendarAdjusted, from, to, days: shift.days,
       reason: shift.reason ? { predecessor: shift.reason.predecessor, predecessorTitle: preReadable ? pre!.title : null, type: shift.reason.type, lag: shift.reason.lag } : null,
       crossed: shift.from.start && shift.to.start ? holidaysBetween(shift.from.start.day, shift.to.start.day) : [],
-      dst: !!(shift.from.start && shift.to.start && dstChange(shift.from.start, shift.to.start)) || !!(shift.from.due && shift.to.due && dstChange(shift.from.due, shift.to.due)), link: `/app/tasks/${task.id}` })
+      dst: !!(shift.from.start && shift.to.start && dstChange(shift.from.start, shift.to.start, calendar.zone)) || !!(shift.from.due && shift.to.due && dstChange(shift.from.due, shift.to.due, calendar.zone)), link: `/app/tasks/${task.id}` })
   }
-  const fingerprint = await digest([moves, [...tasks.values()].sort((a, b) => a.id.localeCompare(b.id)).map(t => [t.id, t.start_date, t.due_date, t.status, t.updated_at]), edges.map(e => [e.id, e.type, e.lag])])
+  const fingerprint = await digest([moves, [...tasks.values()].sort((a, b) => a.id.localeCompare(b.id)).map(t => [t.id, t.workspace_id, t.owner_id, t.start_date, t.due_date, t.status, t.updated_at]), edges.map(e => [e.id, e.type, e.lag]), calendarFingerprint])
   return { moves, shifts, stamp: fingerprint.slice(0, 24), editable: editableMoves.every(Boolean), waits, blocked, all: all2 }
 }

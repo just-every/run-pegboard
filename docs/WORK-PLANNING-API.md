@@ -144,3 +144,43 @@ partial: Gauge has no approved-time door, and live provider accounts are not
 qualified.
 
 Recurring projects adopt the original shared field definitions, while each new task receives its own copied values. Reviewed definition changes apply to every adopting project and report. If a definition changes after activation, generation is held with `template_definition_changed`; stop that schedule and preview a new template. Audience re-review cannot authorize a different pinned field definition. Existing historical field forks are retained; this change does not rewrite an installation’s prior definitions or values.
+
+
+## Reviewed schedules and working availability
+
+`POST /api/v1/schedule/preview` computes the entire dependency change set. Its
+revision includes affected work, dependency definitions, working hours and
+personal availability revisions. `POST /api/v1/schedule/apply` confirms that
+exact set. Timeline also previews a held horizontal drag before release; List,
+Path, Calendar and Task detail render the same reviewed editor. The preview
+names affected work, owners, planned hours, timezone, dates and conflicts.
+A completed dependant makes the set impossible; preview and refusal write no
+partial schedule. Historical baselines remain unchanged.
+
+Working calendar settings are at `/app/settings/availability`. Owners and
+workspace administrators configure timezone and weekday hours through
+`POST /api/v1/workspaces/:id/working-calendar`. A member records or removes only
+their own full-day or timed leave through the corresponding `time-off` doors.
+No private reason is collected. Colleagues see availability effects only on
+work they already have permission to read. Calendar changes invalidate stale
+schedule previews and leave existing dates unchanged until reviewed.
+
+Existing workflow bundle rules review their exact deterministic dates,
+assignee and allowed dependency projects at adoption. A run applies the whole
+coherent set within that scope and the activating administrator's current
+grant, with one recorded bulk operation for selective undo. An outside cascade
+stays pending without applying its scalar changes or work actions. Its native
+Review pending schedule door previews every effect for a currently authorized
+human; the one-use approval changes only that run, never its standing scope.
+The public preview and approval doors are beneath
+`/api/v1/workflow-bundles/:id/jobs/:jobId` as `schedule-preview` and
+`schedule-approve`. Definition, authority or record changes require fresh review.
+
+`GET /api/v1/notices/readiness` and the native Inbox deliver one current-assignee
+Ready to start card per committed last-blocker transition. All completion
+writers use the same durable graph transition, including concurrent completion.
+Reopening or adding a blocker cancels an obsolete queued transition. Read and
+dispatch check current task access, assignment, mute and timed preferences;
+predecessor identities never appear in a notice. Notice preferences live under
+`/app/settings/readiness`. This is native Inbox evidence; provider delivery and
+its timing qualification remain within PEG-037.

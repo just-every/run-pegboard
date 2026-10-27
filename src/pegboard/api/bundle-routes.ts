@@ -1,3 +1,4 @@
+import {pendingRuleSchedulePreview,approvePendingRuleSchedule} from '../bundles/pending-schedule'
 import {bundleRevisionPreview,restoreBundleRevision} from '../revisions/bundles'
 import type {Hono} from 'hono'
 import type {Bindings} from '../../auth.server'
@@ -19,6 +20,8 @@ export function bundleRoutes(app:Hono<{Bindings:Bindings}>){
  app.post('/workflow-bundles/:id/projects/:project/override',door(({db,actor,params,input})=>overrideRule(db,actor,params.id,params.project,input),{next}))
  app.post('/workflow-bundles/:id/projects/:project/disable',door(({db,actor,params})=>disableBundle(db,actor,params.id,params.project),{next}))
  app.post('/workflow-bundles/:id/jobs/process',door(async({db,actor,params})=>{await loadBundle(db,actor,params.id);return processBundleJobs(db,params.id)},{next}))
+ app.get('/workflow-bundles/:id/jobs/:jobId/schedule-preview',door(({db,actor,params})=>pendingRuleSchedulePreview(db,actor,params.id,params.jobId)))
+ app.post('/workflow-bundles/:id/jobs/:jobId/schedule-approve',door(({db,actor,params,input})=>approvePendingRuleSchedule(db,actor,params.id,params.jobId,input),{next}))
  app.get('/projects/:id/bundle-configuration',door(({db,actor,params})=>bundleConfiguration(db,actor,params.id)))
  app.post('/workflow-bundles/:id/projects/:project/start',door(({db,actor,params,input})=>instantiateBundle(db,actor,params.id,params.project,input),{next:r=>`/app/tasks/${r.taskId}`}))
 }

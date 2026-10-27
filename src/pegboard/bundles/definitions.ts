@@ -3,7 +3,8 @@ import {all,bound,first,forbidden,invalid,newId,notFound,now} from '../db'
 import {guarded,revision} from '../decisions/revision'
 import {workspaceRole,type Actor} from '../workspace/people'
 import {catalogue} from '../fields/definitions'
-export interface Component {kind:'field'|'view'|'rule'|'template'|'stages';name:string;fieldId?:string;fieldKey?:string;fieldVersion?:number;fieldType?:string;status?:string;priority?:string;actions?:WorkAction[];ownerId?:string;startDate?:string;dueDate?:string;title?:string;taskKind?:string;titles?:string[]}
+import {reviewedScheduleScope} from './schedule-effects'
+export interface Component {kind:'field'|'view'|'rule'|'template'|'stages';name:string;fieldId?:string;fieldKey?:string;fieldVersion?:number;fieldType?:string;status?:string;priority?:string;actions?:WorkAction[];ownerId?:string;startDate?:string;dueDate?:string;dependencyProjectIds?:string[];title?:string;taskKind?:string;titles?:string[]}
 export interface Bundle {id:string;workspace_id:string;name:string;created_by:string;created_at:number}
 export interface Item {bundle_id:string;project_id:string;item_key:string;kind:string;base:string;config:string;version:number}
 export const text=(v:unknown,key:string,max=160)=>{if(typeof v!=='string'||!v.trim()||v.length>max)throw invalid(key);return v.trim()}
@@ -41,6 +42,9 @@ export async function versionBundle(db:D1Database,actor:Actor,id:string,input:Re
     component[key]=value
    }
    if(component.startDate&&component.dueDate&&component.startDate>component.dueDate)throw invalid('rule_date_order')
+   const scope=typeof input.dependencyProjectIds==='string'?[input.dependencyProjectIds]:input.dependencyProjectIds??[]
+   if(!Array.isArray(scope)||scope.length>50||scope.some(id=>typeof id!=='string'||!id||id.length>100))throw invalid('rule_dependency_scope')
+   component.dependencyProjectIds=(await reviewedScheduleScope(db,actor,view.bundle.workspace_id,scope)).map(p=>p.id)
    component.actions=workActions(input.actions??[...(input.complete==='yes'?[{kind:'complete'}]:[]),...['comment','collaborator','project','subtask','tag'].filter(key=>input['action_'+key]).map(kind=>({kind,value:input['action_'+kind]}))])
   }
   else if(kind==='template'){component.title=text(input.title,'task_title');if(!['task','milestone'].includes(input.taskKind??'task'))throw invalid('task_kind');component.taskKind=input.taskKind??'task'}

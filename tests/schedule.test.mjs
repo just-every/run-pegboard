@@ -1,3 +1,6 @@
+import {registerCalendarTests} from './scenarios/schedule-calendar.mjs'
+import {registerReadinessTests} from './scenarios/readiness.mjs'
+import {registerScheduleRuleTests} from './scenarios/schedule-rules.mjs'
 // PEG-004 through the public doors: all four dependency types over a US holiday, a weekend and a daylight-saving change, the
 // reviewed knock-on set, cycle and stale-plan refusals, an editor's confirmation (once, attributed, undone), an agent's pending
 // proposal, a viewer's refusal, baselines that stay historical, and work the editor cannot see waiting for its approver.
@@ -5,7 +8,7 @@ import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
 import { startWorker } from './support/worker.mjs'
 
-let w, owner, eli, vic, ava, hal, launch, pairs = {}
+let w, owner, eli, vic, ava, hal, gina, launch, pairs = {}
 const ok = async (promise, status = 200) => { const r = await promise; assert.equal(r.status, status, JSON.stringify(r.body)); return r.body }
 const task = (title, extra) => ok(owner.post('/api/v1/tasks', { title, projectId: launch.id, ...extra }))
 const dates = async id => { const t = await ok(owner.get(`/api/v1/tasks/${id}`)); return [t.startDate ?? t.start_date, t.dueDate ?? t.due_date] }
@@ -17,6 +20,7 @@ describe('PEG-004 dependencies and believable schedules', { concurrency: false }
     w = await startWorker(); owner = w.owner
     eli = await w.person('synthetic-pegboard-004-eli@example.com', 'Eli Editor'); vic = await w.person('synthetic-pegboard-004-vic@example.com', 'Vic Viewer')
     ava = await w.person('synthetic-pegboard-004-ava@example.com', 'Ava Agent', 'agent'); hal = await w.person('synthetic-pegboard-004-hal@example.com', 'Hal Hidden')
+    gina=await w.person('synthetic-pegboard-schedule-guest@example.com','Gina Guest','guest')
     launch = await ok(owner.post('/api/v1/projects', { name: 'Austin launch' }))
     for (const [person, level] of [[eli, 'editor'], [vic, 'viewer'], [ava, 'editor'], [hal, 'viewer']]) await ok(owner.post('/api/v1/grants', { objectType: 'project', objectId: launch.id, granteeId: person.id, level }))
   }, { timeout: 120000 })
@@ -43,7 +47,9 @@ describe('PEG-004 dependencies and believable schedules', { concurrency: false }
     // Nothing moved by previewing.
     assert.deepEqual(await dates(pairs.fs.b.id), ['2026-07-02', '2026-07-02'])
     const before = await ok(owner.get(`/api/v1/projects/${launch.id}/schedule`))
-    assert.ok(before.criticalPath.length > 0 && before.tasks.every(t => t.slack === null || Number.isInteger(t.slack)) && before.baselines[0].id === baseline.id)
+    assert.deepEqual(before.criticalPath.sort(),Object.values(pairs).flatMap(pair=>[pair.a.id,pair.b.id]).sort())
+    assert.deepEqual(['fs','ss','ff','sf'].flatMap(type=>[pairs[type].a,pairs[type].b]).map(task=>before.tasks.find(row=>row.id===task.id).slack),[0,0,1,1,0,0,2,2])
+    assert.equal(before.baselines[0].id,baseline.id)
     const applied = await ok(owner.post('/api/v1/schedule/apply', { moves: [{ taskId: pairs.fs.a.id, due: '2026-07-02' }], revision: fs.stamp }))
     assert.equal(applied.status, 'applied'); assert.deepEqual(await dates(pairs.fs.b.id), ['2026-07-06', '2026-07-06'])
     const after = await ok(owner.get(`/api/v1/projects/${launch.id}/schedule?baseline=${baseline.id}`))
@@ -113,4 +119,33 @@ describe('PEG-004 dependencies and believable schedules', { concurrency: false }
     await ok(owner.post(`/api/v1/schedule/sets/${held.id}/approve`, { revision: mine.revision }))
     assert.equal((await dates(pairs.fs.a.id))[1], '2026-07-10'); assert.deepEqual(await ok(hal.get(`/api/v1/tasks/${hidden.id}`)).then(t => [t.startDate ?? t.start_date, t.dueDate ?? t.due_date]), ['2026-07-13', '2026-07-13'])
   })
+  it('computes exact branching slack, negative lead and milestone dates and refuses an impossible completed-dependent cascade atomically',async()=>{
+    const project=await ok(owner.post('/api/v1/projects',{name:'Chicago retail launch constraints'}))
+    const make=(title,startDate,dueDate,extra={})=>ok(owner.post('/api/v1/tasks',{projectId:project.id,title,startDate,dueDate,...extra}))
+    const a=await make('Approve retail copy','2026-11-03','2026-11-04'),b=await make('Print window cards','2026-11-05','2026-11-06'),c=await make('Prepare dispatch note','2026-11-05','2026-11-05'),milestone=await make('Release milestone','2026-11-04','2026-11-04',{kind:'milestone'})
+    for(const [successor,lag] of [[b,0],[c,0],[milestone,-1]])await ok(owner.post('/api/v1/dependencies',{predecessor:a.id,successor:successor.id,type:'fs',lag}))
+    const view=await ok(owner.get(`/api/v1/projects/${project.id}/schedule`))
+    assert.deepEqual(view.criticalPath.sort(),[a.id,b.id].sort())
+    assert.deepEqual([a,b,c,milestone].map(task=>view.tasks.find(row=>row.id===task.id).slack),[0,0,1,2])
+    assert.equal(view.tasks.find(row=>row.id===milestone.id).kind,'milestone')
+    const moves=[{taskId:a.id,due:'2026-11-06'}],plan=await preview(owner,moves)
+    assert.deepEqual(plan.shifts.map(row=>row.id).sort(),[a.id,b.id,c.id,milestone.id].sort())
+    assert.deepEqual([shiftOf(plan,b.id).to.start,shiftOf(plan,b.id).to.due],['2026-11-09','2026-11-10'])
+    assert.deepEqual([shiftOf(plan,milestone.id).to.start,shiftOf(plan,milestone.id).to.due],['2026-11-06','2026-11-06'])
+    assert.equal(shiftOf(plan,milestone.id).reason.lag,-1)
+    await ok(owner.post('/api/v1/schedule/apply',{moves,revision:plan.stamp}))
+    await ok(owner.patch(`/api/v1/tasks/${b.id}`,{status:'done'}))
+    const heldMoves=[{taskId:a.id,due:'2026-11-09'}],held=await preview(owner,heldMoves),ids=[a.id,b.id,c.id,milestone.id]
+    assert.equal(held.blocked,'impossible_constraint');assert.equal(shiftOf(held,b.id).completed,true)
+    const before=await Promise.all(ids.map(id=>ok(owner.get(`/api/v1/tasks/${id}`))))
+    const refusal=await ok(owner.post('/api/v1/schedule/apply',{moves:heldMoves,revision:held.stamp}),409)
+    assert.equal(refusal.error,'impossible_constraint')
+    assert.deepEqual(await Promise.all(ids.map(id=>ok(owner.get(`/api/v1/tasks/${id}`)))),before)
+  })
+
+  const api=()=>({root:owner,peer:eli,guest:gina,worker:w})
+  registerCalendarTests({test:it,api})
+  registerReadinessTests({test:it,api})
+  registerScheduleRuleTests({test:it,api})
+
 })

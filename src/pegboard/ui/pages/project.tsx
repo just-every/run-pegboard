@@ -1,3 +1,4 @@
+import {ScheduleEditor,type ScheduleEditorProps} from '../schedule-editor'
 import type { board } from '../../tasks/board'
 import type { Viewer } from '../../../ui/viewer'
 import { PathWall, type Station } from '../../../ui/path'
@@ -15,7 +16,7 @@ const chunk = <T,>(list: T[], size: number) => Array.from({ length: Math.ceil(li
 const when = (date: string | null) => !date ? undefined : date.includes('T') ? new Date(date).toLocaleString('en-US',{dateStyle:'medium',timeStyle:'short',timeZone:'UTC'})+' UTC' : new Date(`${date}T12:00:00Z`).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
 
 /** A project's wall: each section hangs as a card on the cord, its tasks as tassels beneath it. */
-export function ProjectPage({ viewer, data, id,conversionLinks=[] }: { viewer: Viewer; data: Board; id: string;conversionLinks?:ConversionView[] }) {
+export function ProjectPage({ viewer, data, id,conversionLinks=[],editor=null }: { viewer: Viewer; data: Board; id: string;conversionLinks?:ConversionView[];editor?:ScheduleEditorProps|null }) {
   const can = (capability: string) => (data.capabilities as string[]).includes(capability)
   const stations: Station[] = data.columns.map((column, index) => ({
     id: `s${index}`,
@@ -27,7 +28,7 @@ export function ProjectPage({ viewer, data, id,conversionLinks=[] }: { viewer: V
     <AppBar viewer={viewer} tabs={homeTabs(viewer, '/app/projects')} crumbs={[{ label: 'Projects', href: '/app/projects' }, { label: data.project.name, href: `/app/projects/${id}`, current: true }]} />
     <main className="board" id="main">
       <Heading title={data.project.name} chip={<Flap text={data.counts.tasks && data.counts.done === data.counts.tasks ? 'DONE' : `${data.counts.tasks} TASKS`} tone={data.counts.tasks && data.counts.done === data.counts.tasks ? 'landed' : 'quiet'} />} facts={[`${data.counts.tasks} tasks`, `${data.counts.done} done`, `Owner ${data.project.owner.name}`, `Your access ${levelLabel(data.level)}`, ...(data.project.prefix ? [`References ${data.project.prefix}-n`] : [])]} />
-      <nav className="page" aria-label="Project planning"><p><a href={`/app/projects/${id}?view=list`}>List</a> · <a href={`/app/projects/${id}/canvas`}>Planning canvas</a> · <a href={`/app/projects/${id}/timeline`}>Timeline</a> · <a href={`/app/projects/${id}/register`}>Delivery register</a></p></nav>
+      <nav className="page" aria-label="Project planning"><p><a href={`/app/projects/${id}?view=list`}>List</a> · <a href={`/app/projects/${id}/canvas`}>Planning canvas</a> · <a href={`/app/projects/${id}/calendar`}>Calendar</a> · <a href={`/app/projects/${id}/timeline`}>Timeline</a> · <a href={`/app/projects/${id}/register`}>Delivery register</a></p></nav>
       {(conversionLinks.length>0||can('manage_settings'))&&<section className="page"><ConversionLinks links={conversionLinks}/>{can('manage_settings')&&<Card title="Convert work"><a href={`/app/conversions?kind=project_to_task&sourceId=${id}`}>Convert to linked parent task</a></Card>}</section>}
       <PathWall label={`${data.project.name}, by section`} rows={chunk(stations, 4)}>
         {(can('edit') || can('manage_settings')) && <div className="page projectbar">
@@ -43,6 +44,7 @@ export function ProjectPage({ viewer, data, id,conversionLinks=[] }: { viewer: V
             <p><a className="button quiet" href={`/app/projects/${id}/settings`}>{can('manage_settings') ? 'Settings, sharing and fields' : 'Who can see this'}</a></p></Card>
         </div>}
       </PathWall>
+      {editor&&<section className="page"><ScheduleEditor {...editor}/></section>}
     </main>
   </>
 }

@@ -1,3 +1,5 @@
+import {availabilityRoutes} from './availability-routes'
+import {noticeRoutes} from './notice-routes'
 import {bulkRoutes} from './bulk-routes'
 import {templateRoutes} from './template-routes'
 import {duplicateRoutes} from './duplicate-routes'
@@ -69,3 +71,6 @@ templateRoutes(pegboardApi)
 duplicateRoutes(pegboardApi)
 conversionRoutes(pegboardApi)
 templateRuleRoutes(pegboardApi)
+
+availabilityRoutes(pegboardApi)
+noticeRoutes(pegboardApi)
