@@ -4,10 +4,10 @@ Work and project management for business teams.
 
 100% free, open source alternative to Asana, monday.com work management, ClickUp, Wrike.
 
-This is the Base foundation for Pegboard. The product is being built toward
-[CONTRACT.md](CONTRACT.md); every target clause is missing. The starting tree
-provides the shared Lobby, owner sign-in, first-run setup, D1 and local operations.
-It contains no sample projects or product features.
+Pegboard implements the work graph, scoped access, reusable projects, scheduling
+and history-preserving conversions on the Base foundation.
+[CONTRACT.md](CONTRACT.md) records the current evidence and remaining gaps for
+each clause. A fresh installation contains no sample projects.
 
 ## Run locally
 
@@ -41,8 +41,8 @@ uses the guarded `.github/workflows/run-site.yml` independently of Verify.
 This checkout pins the published `@runeditrun/rer` package at 0.2.79, Node
 22.20.0 and pnpm 10.12.4. Run `rer check`, `pnpm run build`,
 `pnpm run typecheck` and `pnpm run test:runtime`.
-The foundation's verification workflow is the complete CI wall; no product tests
-or product behavior have been added. Base source and copy custody are recorded
+The verification workflow runs the product API tests and browser journeys as
+well as the foundation checks. Base source and copy custody are recorded
 in edition.json, sources.lock.json and base-copies.json.
 
 Read [AGENTS.md](AGENTS.md), [RUN-LOCALLY.md](RUN-LOCALLY.md),

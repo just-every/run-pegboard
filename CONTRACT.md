@@ -281,7 +281,7 @@ Every desk capability retains its original ID: PEG-001–027 are target clauses 
 
 ## Status
 
-Judged from the code and tests at commit `843bd341356c32721ca5db47b3f6b7bf01d01045` (27 October 2026).
+Status and evidence describe the code and tests in this committed tree. Fresh judgment binds the exact landed commit to its Verify, Run site and complete publication scan records.
 
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
@@ -394,9 +394,9 @@ its state in code. Integration names (Slack, Teams, Outlook, Google Calendar, Ji
 | 01 Hero | Turns briefs and requests into plans that fit everyone's week | PEG-029, PEG-007, PEG-016 | contract, not yet in code | — |
 | 01 Hero | Gets client sign-off on proofs | PEG-011, PEG-019, PEG-036 | contract, not yet in code | — |
 | 01 Hero | Writes the weekly status from real work | PEG-015, PEG-030 | contract, not yet in code | — |
-| 01 Hero | Run Pegboard on your own computer with one command | PEG-055 | partly (Base foundation runs; no product screens) | `/run` (`src/base/run-site.ts`), `src/site/run.json` |
+| 01 Hero | Run Pegboard on your own computer with one command | PEG-055 | partly (native work screens run locally; guided installation acceptance remains open) | `/run` (`src/base/run-site.ts`), `src/site/run.json` |
 | 02 October | Six teams' work with owners, dates and due/done counts per week | PEG-001, PEG-003, PEG-018 | contract, not yet in code | — |
-| 02 October | Work moved to the next working day is shown as moved, not hidden | PEG-004 | contract, not yet in code | — |
+| 02 October | Work moved to the next working day is shown as moved, not hidden | PEG-004 | partial: reviewed working-day shifts and baseline variance | `tests/schedule.test.mjs`; `tests/journeys/timeline.mjs` |
 | 03 Intake | Requests from a form, email and Slack land in one triage queue | PEG-007, PEG-008, PEG-071 | contract, not yet in code | — |
 | 03 Intake | The agent fills in requests, links duplicates, drafts a first pass; a person accepts the triage | PEG-066, PEG-028 | contract, not yet in code | — |
 | 03 Intake | A rule routes holiday requests to a project and shows how often it ran | PEG-012 | contract, not yet in code | — |
