@@ -28,6 +28,12 @@ version is a separate draft that omits internal material and cites only that
 client's readable work; source access alone never approves publication. A changed
 source requires refreshing the draft and a fresh human review.
 
+Reject with `POST /api/v1/status-drafts/:id/reject`, supplying the current
+`version` and a nonempty `reason`. The human and reason remain visible on that
+version, which cannot be reviewed or published. An explicit edit creates a new
+version for a fresh review; an earlier review never resumes. A published decision
+cannot be rejected through the draft door, including a race with publication.
+
 Publish with `POST /api/v1/status-drafts/:id/publish` and the returned `token`.
 The review binds the acting human, draft version, exact content, sources,
 recipients and current permission epoch. The transaction fences concurrent draft,
