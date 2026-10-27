@@ -278,6 +278,10 @@
       "sha256": "a2b83f2196d2308f9d47eee41158348123493f69818d14a7eb9f4dea0380098d",
       "executable": false
     },
+    "docs/STATUS-RIGHTS.md": {
+      "sha256": "91d8f8338847e093037e61b93b3e86c7cee35f45808e69debf20a0317f704375",
+      "executable": false
+    },
     "docs/TIME-SERVICE-PACKETS.md": {
       "sha256": "2dce454d067352aa928ddbaee127d9f98b2c7fc0bac8d55de2f75fe83e01854d",
       "executable": false
@@ -560,6 +564,10 @@
     },
     "migrations/core/0065_status_draft_rejections.sql": {
       "sha256": "648076e4a5a53360db64db22172fe83cb92669634b019e91fadf9df603ec62e4",
+      "executable": false
+    },
+    "migrations/core/0066_status_rights_requests.sql": {
+      "sha256": "0eafd3d9d0e08825162e28e8d80cec826a9fc9a74fe62919a5c02d8544ba9d31",
       "executable": false
     },
     "ONBOARDING.md": {
@@ -2740,6 +2748,10 @@
     },
     "src/pegboard/status/drafts.ts": {
       "sha256": "098e1835de56ac7c713334e576675092ea4644c6b39f122c63cb98baf3cfba75",
+      "executable": false
+    },
+    "src/pegboard/status/rights.ts": {
+      "sha256": "dcdcba9b72129a543fb50503ce075dc8e4e118a070543e560859bd5bec2ce1d8",
       "executable": false
     },
     "src/pegboard/tags/tags.ts": {
