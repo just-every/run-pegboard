@@ -23,7 +23,8 @@ export function definition(input:Record<string,any>):Definition {
 export function compute(d:Definition,source:{startDate:string|null;dueDate:string|null;customDate?:string|null}){
  const value=d.source==='fixed'?d.fixedDate:d.source==='task_start'?source.startDate:d.source==='custom'?source.customDate:source.dueDate
  if(!value)return null
- let day=dayNumber(dateOnly(value.slice(0,10)))
+ if(value.length!==10)throw conflict('source_time_requires_review')
+ let day=dayNumber(dateOnly(value))
  if(d.unit==='days'||d.unit==='weeks')day+=d.offset*(d.unit==='weeks'?7:1)
  else if(d.unit==='months'){const base=new Date(day*86400000),target=new Date(Date.UTC(base.getUTCFullYear(),base.getUTCMonth()+d.offset,1)),last=new Date(Date.UTC(target.getUTCFullYear(),target.getUTCMonth()+1,0)).getUTCDate();target.setUTCDate(Math.min(base.getUTCDate(),last));day=dayNumber(target.toISOString().slice(0,10))}
  else {let left=Math.abs(d.offset);while(left){day+=d.offset<0?-1:1;if(isWorkingDay(day))left--}}

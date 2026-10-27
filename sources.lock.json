@@ -199,7 +199,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "b69bed9fbbe6b5d8f91f564c835f0e4ad8c46c80d09b466e0467329396705c75",
+      "sha256": "0b35b05e5e5cc683fe9e836e35944187b659b60491efc2de619e2d0658a80799",
       "executable": false
     },
     "AGENTS.md": {
@@ -215,7 +215,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "22fbbf95004ba802d38408ce421da88af17f758affeaff17fcb084a8b838b656",
+      "sha256": "54e2da952eb8d6a2655c12537b4a158ea24f326a61415acec54269e1bf0a7f4c",
       "executable": false
     },
     "DEMO.md": {
@@ -2627,11 +2627,11 @@
       "executable": false
     },
     "src/pegboard/rules/definitions.ts": {
-      "sha256": "d56a277aac5200638cdc24daf44ddb1e0aaa011dc5d6bd22d6c4c9f9c577047e",
+      "sha256": "593b0d39bec06aaef3d0049f1271b71ee2c9c1e30219761482b2ea37e89b2c2e",
       "executable": false
     },
     "src/pegboard/rules/execution.ts": {
-      "sha256": "72368fa02b1cd07c4cdf2dadea0d077753722d06d04a338c09d9f92f0fd4c9d9",
+      "sha256": "f27d8c726959243c61015dbbbac8e89d2bb179091be21d99257d70999548ecc6",
       "executable": false
     },
     "src/pegboard/rules/requests.ts": {
@@ -3183,7 +3183,7 @@
       "executable": false
     },
     "tests/portfolios.test.mjs": {
-      "sha256": "570c160748b3123e2edc5b44ffe1183748548addffcdd2e3bd31540c2e02f1e3",
+      "sha256": "5612ed6d979fe9a823e567448e2f7011a2624d8266c762d82ae33e43d95a827c",
       "executable": false
     },
     "tests/runtime.mjs": {

@@ -55,7 +55,7 @@ export async function processLocalRules(db:D1Database,projectId:string){
  if(error.code==='review_changed')continue
  const current=await first<{status:string}>(db,'SELECT status FROM peg_local_rule_runs WHERE id=?',run.id)
  if(current?.status!=='queued')continue
- const reason=['activation_changed','activating_admin_unavailable','source_changed','source_date_missing','ai_source_requires_exact_review','dependency_cascade_requires_review','approval_decision_required','share_review_required','target_scope_changed','source_field_changed','collaborator_existing_access'].includes(error.code)?error.code:'activation_scope_changed'
+ const reason=['activation_changed','activating_admin_unavailable','source_changed','source_date_missing','source_time_requires_review','ai_source_requires_exact_review','dependency_cascade_requires_review','approval_decision_required','share_review_required','target_scope_changed','source_field_changed','collaborator_existing_access'].includes(error.code)?error.code:'activation_scope_changed'
  await guarded(db,rev,[bound(db,"UPDATE peg_local_rule_runs SET status='pending',outcome=?,finished_at=? WHERE id=? AND status='queued'",[reason,now(),run.id])])
  }
  }
