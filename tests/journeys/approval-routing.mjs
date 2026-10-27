@@ -11,6 +11,14 @@ export async function approvalRoutingJourney({w,browser,owner,cookies}){
  await ok(owner.post('/api/v1/grants',{objectType:'project',objectId:project.id,granteeId:author.id,level:'editor'}))
  const context=await browser.newContext({viewport:{width:1440,height:900}});await context.addCookies(cookies(owner));const page=await context.newPage()
  const guestContext=await browser.newContext({viewport:{width:1440,height:900}});await guestContext.addCookies(cookies(client));const guestPage=await guestContext.newPage()
+ const capture=async(kind,state,role,p)=>{
+ for(const width of [1440,390]){
+ await p.setViewportSize({width,height:900})
+ assert.ok(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`${kind} ${state} ${role} reflows at ${width}`)
+ if(process.env.PEGBOARD_PROOF_DIR){await mkdir(process.env.PEGBOARD_PROOF_DIR,{recursive:true});await p.screenshot({path:join(process.env.PEGBOARD_PROOF_DIR,`routing-${kind}-${state}-${role}-${width}.png`),fullPage:true})}
+ }
+ await p.setViewportSize({width:1440,height:900})
+ }
  const proofs=[]
  try{
  for(const kind of ['task','proof']){
@@ -31,6 +39,7 @@ export async function approvalRoutingJourney({w,browser,owner,cookies}){
  await form.getByLabel('Stage 1 required approvals',{exact:true}).fill('2')
  await form.getByRole('button',{name:'Preview routing',exact:true}).click()
  await expect(page.getByRole('heading',{name:'Confirm reviewed routing'})).toBeVisible()
+ await capture(kind,'preview','manager',page)
  await page.getByRole('button',{name:'Apply reviewed routing',exact:true}).click();await page.waitForURL(/\/app\/approvals\/route_/)
  const routeId=page.url().split('/').pop();proofs.push({kind,routeId,taskId:task.id})
  await expect(page.getByRole('status')).toHaveText('pending')
@@ -48,6 +57,7 @@ export async function approvalRoutingJourney({w,browser,owner,cookies}){
  await guestPage.goto(`${w.origin}/app/proof-reviews/${link.id}`)
  await expect(guestPage.getByRole('status')).toHaveText('pending');await expect(guestPage.getByRole('button',{name:'Delegate review'})).toHaveCount(0)
  if(kind==='task'){await reviewedTask(page);await reviewedTask(guestPage)}
+ await capture(kind,'pending','manager',page);await capture(kind,'pending','recipient',guestPage)
  if(kind==='proof'){const download=guestPage.waitForEvent('download');await guestPage.getByRole('link',{name:'Download reviewed proof'}).click();assert.ok(await (await download).path())}
  const decision=guestPage.getByRole('form',{name:'Decide routed approval'});await decision.getByLabel('Decision reason',{exact:true}).fill('Reviewed campaign material');await decision.getByRole('button',{name:'Record reviewed decision',exact:true}).click();await expect(guestPage.getByRole('status')).toHaveText('pending')
  assert.equal((await ok(owner.get('/api/v1/approvals/'+routeId))).stages[0].approved,1)
