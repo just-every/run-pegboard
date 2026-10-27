@@ -199,7 +199,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "e11dcbd739171d25779d974f4413b04a35507249ba001a3ac6d53ab91f6b9be2",
+      "sha256": "a28c0073073868c29487502b704d33baeba852ee70d35889794b97d54994647a",
       "executable": false
     },
     "AGENTS.md": {
@@ -215,7 +215,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "013d3809d91c49268de944e0b8cf37dae9c00f7e1bf6e4399a8141ed6c917b0e",
+      "sha256": "219ca40ebe21a1a9a8d8bc9abf6249ab2a63e6e78081e2dc812c80a858ee0a1c",
       "executable": false
     },
     "DEMO.md": {
@@ -239,7 +239,7 @@
       "executable": false
     },
     "docs/CLAIMS.md": {
-      "sha256": "4912926798ff910b09227a2ed9a6b569e0e9214eb7035c74158ecb5600840812",
+      "sha256": "e6bcd9b61d1baf7241df454961a987711389f47ce7de446e2b9e2cc33a6bda68",
       "executable": false
     },
     "docs/DATA-CUSTODY.md": {
@@ -271,7 +271,7 @@
       "executable": false
     },
     "docs/PUBLIC-WORK-API.md": {
-      "sha256": "9f3577a4fed676a3efd7fc1faecd51f78dd304dd9b73a44787101b84159bb88e",
+      "sha256": "b2d9040c4fe013f43f7890d19c644d1ab5cda91de9684a0fd1c59ddb3c7e7b80",
       "executable": false
     },
     "docs/RECOVERY-API.md": {
@@ -2739,7 +2739,7 @@
       "executable": false
     },
     "src/pegboard/tags/tags.ts": {
-      "sha256": "34ad6f9f8e04c00f3f2d2027816786c889e45faf00ff51b0352a29874e6e773f",
+      "sha256": "096db8ff79bd503b7394edbe1869d7964dfc9f3d23845ac3a2d1e6e18ce66954",
       "executable": false
     },
     "src/pegboard/tasks/access.ts": {
@@ -3287,7 +3287,7 @@
       "executable": false
     },
     "tests/scenarios/public-api.mjs": {
-      "sha256": "bfc4fc138d37b1511c4f1aae55cc52620d51dca80dbf036cbefdd98373d3a04f",
+      "sha256": "46b9f0d0a9f3ba934836333b3a3fd907dda0e5c057071211e2d543dc4dece9a6",
       "executable": false
     },
     "tests/scenarios/readiness.mjs": {

@@ -27,7 +27,7 @@ interface Tag {
   archived: number
 }
 async function readable(db: D1Database, actor: Actor, tag: Tag) {
-  if (tag.owner_id) return tag.owner_id === actor.id
+  if (tag.owner_id) return tag.owner_id === actor.id && (!actor.apiScope || actor.apiScope.personal)
   const role = await workspaceRole(db, actor.id, tag.workspace_id)
   if (
     !role ||

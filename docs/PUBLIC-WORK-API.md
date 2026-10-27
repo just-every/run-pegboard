@@ -36,7 +36,9 @@ no-project tasks. Personal list reads compute current date groups from saved
 layout without applying section rules or recording moves, for both read-only
 and writable credentials. Native My Tasks retains its saved-rule evaluation.
 An installation administrator's key cannot read another
-person's private task. `writable: false` permits reads only.
+person's private task. Private personal tags attached to shared work also
+require personal scope in addition to that work's project scope. A project-only
+key never receives those tag names. `writable: false` permits reads only.
 
 Use the published `task_create`, `task_update`, `task_comment`, `task_read`,
 `project_tasks`, `project_report` and `personal_tasks` operations. Task IDs and
