@@ -558,6 +558,10 @@
       "sha256": "272239bf4a7e55e061dffb988d996d46eff345914221b405627ffba0180f3d25",
       "executable": false
     },
+    "migrations/core/0065_status_draft_rejections.sql": {
+      "sha256": "648076e4a5a53360db64db22172fe83cb92669634b019e91fadf9df603ec62e4",
+      "executable": false
+    },
     "ONBOARDING.md": {
       "sha256": "24b685d6eddeae5480ce4dfbf44c0590e54bcfe83641373de5bba985765380bd",
       "executable": false
