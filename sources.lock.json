@@ -199,7 +199,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "7f1d60ec4107a9d92984730f3a21a74cecf586b9e928a3b00d1d045de89476b4",
+      "sha256": "e0df2bee4fe20c379f7b899c71274f0de01f58ff7d76a34b1a0dbaa6c0d24797",
       "executable": false
     },
     "AGENTS.md": {
@@ -215,7 +215,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "e2200758c6cf3edbc5fe346be31e3cfe5a408b9d1728dca808ecb2424f6e5726",
+      "sha256": "7aae9139d01476ad239d2adbac2eaa4a9bde3e8609177565324809e831f6ba42",
       "executable": false
     },
     "DEMO.md": {
@@ -236,6 +236,10 @@
     },
     "docs/ANALYTICS-EXPORT.md": {
       "sha256": "1dd6c3a06f52a0d291dfe014f99e9765c7695bcd2ac7986fb698a3dcc493223f",
+      "executable": false
+    },
+    "docs/CLAIMS.md": {
+      "sha256": "69e715f352aba542750b8440e0493acc8faed90470de7498ff9c0a3f35123cc3",
       "executable": false
     },
     "docs/DATA-CUSTODY.md": {
@@ -268,6 +272,10 @@
     },
     "docs/RECOVERY-API.md": {
       "sha256": "79c6ca18241ae4200088bfd902d33098e44a7f97d97a449c0723c8178d3dcf13",
+      "executable": false
+    },
+    "docs/STATUS-API.md": {
+      "sha256": "dc608badbcca2e4923121f87838330c3a8321cf1ea536a36fe0201928d25b2d9",
       "executable": false
     },
     "docs/TIME-SERVICE-PACKETS.md": {
@@ -540,6 +548,10 @@
     },
     "migrations/core/0062_rule_schedule_scope.sql": {
       "sha256": "8e6367e5edaaaea7a6e0fa08afc1daed9c004c0dbb39f130a59597901ab9b28f",
+      "executable": false
+    },
+    "migrations/core/0063_status_drafts.sql": {
+      "sha256": "8c24231f2ea41ead80c6565404f4eaf39624438075a1d7a8fed3d313d0f697db",
       "executable": false
     },
     "ONBOARDING.md": {
@@ -1012,6 +1024,10 @@
     },
     "scripts/build-deployment-spec.mjs": {
       "sha256": "4637125950a91ec969a91a7eab59c577e7fb55b3831f28407e813a528d1edd7a",
+      "executable": false
+    },
+    "scripts/contract-docs.mjs": {
+      "sha256": "af0811ea7d8df2eb4d8552aa2b8a9959a0f26cd0ab2e6519a1e35cb0a31c9faa",
       "executable": false
     },
     "scripts/delivery/base/artifact.mjs": {
@@ -2334,6 +2350,10 @@
       "sha256": "cc5516fc9709c14d92736ffaeac2e618ea2dc2901bdafe6cc6834c329d0dc30a",
       "executable": false
     },
+    "src/pegboard/api/status-routes.ts": {
+      "sha256": "a2d37830d460bb560fa7c8bc65eb552ac98e63b44839b48a8e674d6561ef9cb2",
+      "executable": false
+    },
     "src/pegboard/api/task-routes.ts": {
       "sha256": "a48038c944cc4deaa3aa4a27cdbf5b4c64ef23523afc50201dbedd8c6081f8d4",
       "executable": false
@@ -2487,7 +2507,7 @@
       "executable": false
     },
     "src/pegboard/data/erasure.ts": {
-      "sha256": "7f17434520cb6278e1c71e6124aff29b33e4245c17fc69400993f1334fd60183",
+      "sha256": "2736dbc218356b28f92ef32845e5af115da503bfa583b982793f483e4a4b8b52",
       "executable": false
     },
     "src/pegboard/data/expiry.ts": {
@@ -2696,6 +2716,14 @@
     },
     "src/pegboard/schedule/timeline.ts": {
       "sha256": "5c519ce4e44c5d83e26112cf3fad609ea53b2e8247dae76288c024ec7e550f60",
+      "executable": false
+    },
+    "src/pegboard/status/comments.ts": {
+      "sha256": "0b87ea509a1b0fac962749a788e4c3c00e73ceef3b6268cc48e8d99e29f76f17",
+      "executable": false
+    },
+    "src/pegboard/status/drafts.ts": {
+      "sha256": "ccb41e6666688663f0b4c1f4ee82cb844cda68dfe2ddfe9b4556b374fd293995",
       "executable": false
     },
     "src/pegboard/tags/tags.ts": {
@@ -3231,7 +3259,7 @@
       "executable": false
     },
     "tests/portfolios.test.mjs": {
-      "sha256": "3fddd14a6d7557bf7828b13c7f3ddcd295764cfa08999cf0b9278625a867af2b",
+      "sha256": "2b0a0d08bd4de00b19882648719be61ec9708aec503bc5eefba8159ac3ff2c43",
       "executable": false
     },
     "tests/runtime.mjs": {
@@ -3291,7 +3319,7 @@
       "executable": false
     },
     "verification.json": {
-      "sha256": "b2730087c884efdc174b1bb3e43d2c6f378850763ef17d99881918fe57f6fc84",
+      "sha256": "26409fff05df6793d6d9c5ee19d10e9dda2fd1052fc3b189cbc2129285d00e01",
       "executable": false
     },
     "VERIFY-WORKFLOW.md": {

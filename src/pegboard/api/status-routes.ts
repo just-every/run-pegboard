@@ -1,9 +1,13 @@
+import { discussionNotices, discussionPreference } from '../status/discussion'
 import type { Hono } from 'hono'
 import type { Bindings } from '../../auth.server'
 import { door } from './door'
 import { saveDraft, readDraft, reviewDraft, publishDraft, readRevision, statusHistory } from '../status/drafts'
 import { revisionComments, addRevisionComment, changeRevisionComment } from '../status/comments'
 export function statusRoutes(app: Hono<{ Bindings: Bindings }>) {
+  app.get('/status-notices', door(({ db, actor }) => discussionNotices(db,actor)))
+  app.get('/status-revisions/:id/preferences', door(({ db, actor, params }) => discussionPreference(db,actor,params.id)))
+  app.post('/status-revisions/:id/preferences', door(({ db, actor, params, input }) => discussionPreference(db,actor,params.id,input)))
   app.post('/status-drafts', door(({ db, actor, input }) => saveDraft(db, actor, input)))
   app.get('/status-drafts/:id', door(({ db, actor, params }) => readDraft(db, actor, params.id)))
   app.patch('/status-drafts/:id', door(({ db, actor, params, input }) => saveDraft(db, actor, input, params.id)))
