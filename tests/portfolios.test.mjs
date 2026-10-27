@@ -579,9 +579,25 @@ describe('Reviewed stakeholder status revisions', { concurrency: false }, () => 
     const source = await call(human.post('/api/v1/tasks', { projectId: project.id, title: 'Opted-in publication source' }))
     const endpoint = `/api/v1/status-subscriptions/project/${project.id}`
     assert.deepEqual(await call(member.get(endpoint)), { enabled: false, channels: ['in_app'] })
+    await call(member.post(endpoint, { enabled: true, channels: [['in_app']] }), 400)
     await call(guest.post(endpoint, { enabled: true, channels: ['in_app'] }), 403)
     const subscription = { enabled: true, channels: ['in_app','email'] }
     await call(member.post(endpoint, subscription))
+    const erasure = await call(human.post('/api/v1/data/erasure-preview', { type: 'project', id: project.id }))
+    assert.equal(erasure.counts.peg_status_subscriptions, 1, 'reviewed erasure includes subscription settings')
+    await call(member.post(endpoint, subscription))
+    await call(human.post('/api/v1/data/erase', { type: erasure.type, id: erasure.id, token: erasure.token, confirm: true }), 409)
+    assert.equal((await call(member.get(endpoint))).enabled, true)
+    const archiveJob = await call(human.post('/api/portability/exports', {}), 201)
+    let archive
+    for (let attempt = 0; attempt < 30; attempt++) {
+      const progress = await call(human.post(`/api/portability/exports/${archiveJob.id}/advance`, { maxParts: 16 }))
+      if (progress.phase === 'complete') { archive = await call(human.get(`/api/portability/exports/${archiveJob.id}/download`)); break }
+    }
+    assert.equal(typeof archive, 'string', 'the public archive export completes')
+    const archived = archive.split('\n').filter(Boolean).map(line => JSON.parse(line)).filter(record => record.kind === 'part').flatMap(record => record.items).filter(record => record.kind === 'row' && record.table === 'peg_status_subscriptions')
+    assert.equal(archived.length, 1)
+    assert.equal(archived[0].row.enabled, 0, 'an archive cannot activate source subscription intent')
     const content = { ...input, subjectType: 'project', subjectId: project.id, sourceIds: [source.id], recipients: [], includeSubscribers: true }
     let draft = await call(human.post('/api/v1/status-drafts', content))
     assert.deepEqual(draft.recipients, [{ id: member.id, channels: ['email','in_app'] }])

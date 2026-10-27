@@ -1,6 +1,6 @@
 import { all, PegError } from '../db'
-import type { Actor } from '../workspace/people'
-import { readRevision } from './drafts'
+import { displayNames, type Actor } from '../workspace/people'
+import { readRevision, statusAccess } from './drafts'
 import { revisionComments } from './comments'
 import { discussionNotices, discussionPreference } from './discussion'
 
@@ -14,7 +14,13 @@ export async function statusInbox(db: D1Database, actor: Actor) {
     try {
       const revision = await readRevision(db, actor, receipt.revision_id)
       const comments = await revisionComments(db, actor, receipt.revision_id)
-      updates.push({ ...revision, ...comments,
+      const access = await statusAccess(db, actor, revision.subjectType, revision.subjectId)
+      const names = await displayNames(db, [revision.reviewedBy, ...comments.comments.map(comment => comment.author_id)])
+      updates.push({ ...revision, reviewedByName: names.get(revision.reviewedBy) ?? 'Former member', canComment: access.comment,
+        comments: comments.comments.map(comment => ({ ...comment,
+          authorName: names.get(comment.author_id) ?? 'Former member',
+          canEdit: access.comment && comment.author_id === actor.id && !comment.deleted_at })),
+        receipts: revision.receipts.filter(delivery => delivery.recipient_id === actor.id),
         preferences: await discussionPreference(db, actor, receipt.revision_id),
         href: `/app/inbox#status-${receipt.revision_id}` })
     } catch (error) {

@@ -24,5 +24,6 @@ export function statusRoutes(app: Hono<{ Bindings: Bindings }>) {
   app.get('/status-revisions/:id/comments', door(({ db, actor, params }) => revisionComments(db, actor, params.id)))
   app.post('/status-revisions/:id/comments', door(({ db, actor, params, input, form }) => addRevisionComment(db, actor, params.id, form ? { ...input, internalOnly: flag(input.internalOnly) } : input)))
   app.patch('/status-revisions/:id/comments/:comment', door(({ db, actor, params, input }) => changeRevisionComment(db, actor, params.id, params.comment, input)))
+  app.post('/status-revisions/:id/comments/:comment', door(({ db, actor, params, input, form }) => changeRevisionComment(db, actor, params.id, params.comment, form ? { ...input, delete: flag(input.delete) } : input)))
   app.get('/status-history/:type/:id', door(({ db, actor, params }) => statusHistory(db, actor, params.type, params.id)))
 }

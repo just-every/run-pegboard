@@ -93,9 +93,9 @@ and discussion content. They recheck access, hidden replies and preferences
 instead of retaining a second copy of message bodies. The digest is an
 authenticated native read, not an outbound email job. The existing Inbox shows
 reviewed revisions and their source links, member and guest replies, attributed
-thread history and discussion follow and mute forms. Each form uses the same
+thread history, author-only reply edit and delete forms, correction links and discussion follow and mute forms. Each form uses the same
 authorized API door. Queued channel notifications, outbound digests,
-authenticated inbound replies and the remaining discussion controls are still
+authenticated inbound replies, mention controls and portfolio guest discussion are still
 outstanding acceptance work.
 
 The existing owner erasure preview reports
@@ -105,3 +105,8 @@ request returns a retained outcome with no deleted rows. This conservative hold
 prevents a false claim of erasure while status copies remain. A reviewed snapshot
 erasure path remains outstanding; this foundation claims no legal retention or
 provider deletion qualification.
+
+Subscription intent is disabled in installation archives. Reviewed erasure
+includes subscription settings for the selected project or person; a change to
+those settings invalidates an earlier erasure preview. Retained status snapshots
+continue to use the explicit custody hold described above.

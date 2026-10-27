@@ -37,17 +37,23 @@ export function DecisionCard({ request, next }: { request: Preview; next: string
 }
 
 export function InboxPage({ viewer, toDecide, mine,readiness,status }: { viewer: Viewer; toDecide: Preview[]; mine: Mine[];readiness:Awaited<ReturnType<typeof readinessNotices>>;status:Awaited<ReturnType<typeof statusInbox>> }) {
-  return <Shell viewer={viewer} current="/app/inbox" title="Inbox" chip={toDecide.length ? `${toDecide.length} TO DECIDE` : readiness.notices.length ? `${readiness.notices.length} READY` : 'CLEAR'} facts={[`${toDecide.length} request${toDecide.length === 1 ? '' : 's'} waiting for you`, `${mine.length} you asked`]}>
+  return <Shell viewer={viewer} current="/app/inbox" title="Inbox" chip={toDecide.length ? `${toDecide.length} TO DECIDE` : readiness.notices.length ? `${readiness.notices.length} READY` : status.updates.length ? `${status.updates.length} UPDATES` : 'CLEAR'} facts={[`${toDecide.length} request${toDecide.length === 1 ? '' : 's'} waiting for you`, `${mine.length} you asked`, ...(status.updates.length ? [`${status.updates.length} published updates`] : [])]}>
     <ReadinessNotices readiness={readiness}/>
     {status.notices.length > 0 && <Card title="Status discussion notices"><ul className="rows">{status.notices.map(notice => <li key={notice.commentId}><span className="grow"><a href={notice.href}>{notice.body}</a><br /><small>{notice.kind === 'mention' ? 'Mention' : 'Reply'} · {when(notice.createdAt)}</small></span></li>)}</ul></Card>}
     {status.updates.map(update => <Card key={update.id} id={`status-${update.id}`} title={update.content.summary}>
       <p>{update.subjectType === 'portfolio' ? 'Portfolio' : 'Project'} update · {update.content.health.replaceAll('_', ' ')} · {update.content.from} to {update.content.to}</p>
-      <p className="muted">Published {when(update.publishedAt)} · Reviewed by {update.reviewedBy}{update.correctsId ? ' · Correction of an earlier revision' : ''}</p>
+      <p className="muted">Published {when(update.publishedAt)} · Reviewed by {update.reviewedByName}{update.correctsId ? ' · Correction of an earlier revision' : ''}</p>
+      {update.correctsId && status.updates.some(previous => previous.id === update.correctsId) && <p><a href={`#status-${update.correctsId}`}>Earlier published revision</a></p>}
       {(['highlights','risks','decisions','nextSteps'] as const).map(key => update.content[key] && <p key={key}><strong>{({highlights:'Highlights',risks:'Risks',decisions:'Decisions',nextSteps:'Next steps'})[key]}:</strong> {update.content[key]}</p>)}
       <ul className="plain">{update.sources.map(source => <li key={source.id}><a href={source.link}>{source.title}</a></li>)}</ul>
+      <ul className="plain">{update.receipts.map(receipt => <li key={receipt.channel}>{({in_app:'In app',slack:'Slack',teams:'Teams',nook:'Nook',email:'Email'} as Record<string,string>)[receipt.channel]} · {receipt.state === 'available' ? 'In Inbox' : receipt.state === 'revoked' ? 'Access revoked' : 'Connection required'}</li>)}</ul>
       <details><summary>Discussion · {update.comments.length} responses</summary>
-        <ul className="rows">{update.comments.map(comment => <li key={comment.id} id={comment.id}><span className="grow">{comment.deleted_at ? 'Comment deleted' : comment.body}<br /><small>{comment.author_id} · {when(comment.created_at)}{comment.parent_id ? ' · Reply' : ''}{comment.internal_only ? ' · Internal' : ''}{comment.edited_at ? ' · Edited' : ''}</small></span></li>)}</ul>
-        {!['viewer','analyst','agent'].includes(viewer.role) && <Form action={`/api/v1/status-revisions/${update.id}/comments`} next={`/app/inbox#status-${update.id}`} label={`Reply to status ${update.id}`}>
+        <ul className="rows">{update.comments.map(comment => <li key={comment.id} id={comment.id}><span className="grow">{comment.deleted_at ? 'Comment deleted' : comment.body}<br /><small>{comment.authorName} · {when(comment.created_at)}{comment.parent_id ? ' · Reply' : ''}{comment.internal_only ? ' · Internal' : ''}{comment.edited_at ? ' · Edited' : ''}</small>
+          {comment.canEdit && <details><summary>Edit your reply</summary><Form action={`/api/v1/status-revisions/${update.id}/comments/${comment.id}`} next={`/app/inbox#status-${update.id}`} label={`Edit reply ${comment.id}`}>
+            <input type="hidden" name="version" value={comment.edited_at ?? comment.created_at} /><Area label="Reply text" name="body" value={comment.body} /><div className="inline"><Submit quiet>Save reply edit</Submit><button className="button quiet" type="submit" name="delete" value="true">Delete reply</button></div>
+          </Form></details>}
+        </span></li>)}</ul>
+        {update.canComment && <Form action={`/api/v1/status-revisions/${update.id}/comments`} next={`/app/inbox#status-${update.id}`} label={`Reply to status ${update.id}`}>
           <Area label="Your reply" name="body" /><Pick label="Reply to" name="parentId" blank="This update" options={update.comments.filter(comment => !comment.deleted_at).map(comment => ({value:comment.id,label:comment.body.slice(0,80)}))} />
           {viewer.role !== 'guest' && <Check label="Internal reply" name="internalOnly" />}<Submit>Post reply</Submit>
         </Form>}
