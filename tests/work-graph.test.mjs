@@ -2209,7 +2209,8 @@ describe('Approval routing custody', {concurrency:false},()=>{
  const link=await share(route);assert.ok((await external.get(`/api/v1/proof-reviews/${link.id}/material`)).body.includes('Hidden legal material'),'the authorized material custodian can explicitly share the exact bytes')
  })
  it('routes ordered proof stages with independent named humans, delegates, and binds expiring revoked links to the exact replacement bytes',async()=>{
- const f=await fixture(),route=await configure(f,{mode:'ordered',stages:[{name:'Internal review',people:[internal.id],quorum:1},{name:'Client review',people:[external.id],quorum:1}]})
+ const dueAt=Date.now()+86400000,f=await fixture(),route=await configure(f,{mode:'ordered',dueAt,stages:[{name:'Internal review',people:[internal.id],quorum:1},{name:'Client review',people:[external.id],quorum:1}]})
+ assert.equal((await view(root,route)).dueAt,dueAt,'the reviewed routing due date is retained exactly')
  const discovered=(await pass(external.get(`/api/v1/tasks/${f.task.id}`))).history.find(h=>h.kind==='approval.routed').detail.routeId
  assert.equal(discovered,route.id)
  assert.equal((await external.get('/api/v1/approvals/'+discovered)).status,404,'an unshared direct route withholds filename, version and private stage names')
@@ -2248,6 +2249,17 @@ describe('Approval routing custody', {concurrency:false},()=>{
  assert.equal((await root.post(`/api/v1/proofs/${f.subject}/decisions`,{token:old.token,versionId:version.versionId,action:'approve',reason:'Bypass'})).status,409)
  })
  it('requires quorum on an approval task, refuses current and prior owners and agents, and never lets the old decision door bypass named capability checks',async()=>{
+ const owned=await fixture('task'),ownershipRoute=await configure(owned,{mode:'parallel',stages:[{name:'Independent review',people:[internal.id],quorum:1}]})
+ const beforeOwnership=await view(internal,ownershipRoute)
+ assert.equal(beforeOwnership.canDecide,true,'a named independent member can decide with approval permission')
+ await pass(root.patch(`/api/v1/tasks/${owned.task.id}`,{ownerId:internal.id}))
+ assert.equal((await view(internal,ownershipRoute)).canDecide,false,'a reviewer who becomes the work owner loses decision authority')
+ assert.equal((await decide(internal,ownershipRoute,'approve',beforeOwnership)).status,403,'an old decision token cannot let the current owner sign')
+ await pass(root.patch(`/api/v1/tasks/${owned.task.id}`,{ownerId:author.id}))
+ assert.equal((await view(internal,ownershipRoute)).canDecide,false,'transferring ownership away does not restore self-approval')
+ assert.equal((await decide(internal,ownershipRoute,'approve',beforeOwnership)).status,403,'a prior owner cannot sign through the decision door')
+ assert.equal((await view(root,ownershipRoute)).votes.length,0,'refused owners record no approval vote')
+ assert.equal((await pass(root.get(`/api/v1/tasks/${owned.task.id}`))).status,'todo','refused owners leave work pending')
  const f=await fixture('task')
  const bad={mode:'parallel',stages:[{name:'Review',people:[author.id],quorum:1}]}
  assert.equal((await root.post(`/api/v1/approval-routing/task/${f.subject}/preview`,bad)).status,403)
