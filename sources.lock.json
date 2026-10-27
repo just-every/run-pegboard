@@ -199,7 +199,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "1eb9ac485c17d0ecc785c0059371c7cf374b970ea29b2f3b21c589cb7c9da6bb",
+      "sha256": "a7a52d02912a48274fec155031ab510a82ad599fe90cdef78d8b4721d784f527",
       "executable": false
     },
     "AGENTS.md": {
@@ -215,7 +215,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "6eefa13d2f59ab77a75d60875ea16045cdc44f63ab74ca9993b009e4af005a7a",
+      "sha256": "8caa667ab9a0ba19e83dceadd76421471475c3091aec47c249d250fca12b2710",
       "executable": false
     },
     "DEMO.md": {
@@ -3219,7 +3219,7 @@
       "executable": false
     },
     "tests/journeys/timeline.mjs": {
-      "sha256": "1227d8ff1c45b7699b8fd26ee317336bc46a8d55def186fb1a029e7d9e819895",
+      "sha256": "0e0ba5b4823ada0f031bf4893ede7a88bf2479e074b09071bcac94cededf3228",
       "executable": false
     },
     "tests/journeys/work-graph.journey.mjs": {
@@ -3255,7 +3255,7 @@
       "executable": false
     },
     "tests/schedule.test.mjs": {
-      "sha256": "8497525bdc55dbe33688e6649a68a9029cc7d1c0b76d97b1290011623a28781f",
+      "sha256": "e90c3141b0b5646a76f93e414193cff379b8c5253880ab4bd034dd298debe4e2",
       "executable": false
     },
     "tests/support/canvas-restore.mjs": {

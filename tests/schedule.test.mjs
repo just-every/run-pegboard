@@ -89,6 +89,18 @@ describe('PEG-004 dependencies and believable schedules', { concurrency: false }
     // An agent's set is only a proposal, for a named person's exact approval.
     const aplan = await preview(ava, [{ taskId: pairs.fs.a.id, due: '2026-07-08' }])
     await ok(ava.post('/api/v1/schedule/apply', { moves: [{ taskId: pairs.fs.a.id, due: '2026-07-08' }], revision: aplan.stamp }), 400)
+    // Ineligible people cannot be nominated, even with a project Editor grant.
+    const analyst = await w.person('synthetic-pegboard-004-analyst@example.com', 'Ana Analyst', 'analyst')
+    for (const nominee of [analyst, gina]) await ok(owner.post('/api/v1/grants', { objectType: 'project', objectId: launch.id, granteeId: nominee.id, level: 'editor' }))
+    const scheduledDates = async () => (await ok(owner.get(`/api/v1/projects/${launch.id}/schedule`))).tasks.map(row => ({ id: row.id, start: row.start, due: row.due })).sort((a, b) => a.id.localeCompare(b.id))
+    const beforeNomination = await scheduledDates(), pendingBefore = await ok(owner.get('/api/v1/schedule/pending'))
+    assert.deepEqual(aplan.shifts.map(row => row.id).sort(), [pairs.fs.a.id, pairs.fs.b.id].sort())
+    for (const nominee of [analyst, gina]) {
+      const refused = await ok(ava.post('/api/v1/schedule/apply', { moves: [{ taskId: pairs.fs.a.id, due: '2026-07-08' }], revision: aplan.stamp, approverId: nominee.id }), 400)
+      assert.equal(refused.error, 'approver', `${nominee.name} cannot approve an agent schedule`)
+      assert.deepEqual(await scheduledDates(), beforeNomination, 'every schedule date stays unchanged after an unsafe nomination')
+      assert.deepEqual(await ok(owner.get('/api/v1/schedule/pending')), pendingBefore, 'refusal creates no pending proposal')
+    }
     const proposal = await ok(ava.post('/api/v1/schedule/apply', { moves: [{ taskId: pairs.fs.a.id, due: '2026-07-08' }], revision: aplan.stamp, approverId: eli.id }))
     assert.equal(proposal.status, 'pending'); assert.deepEqual(await dates(pairs.fs.a.id), ['2026-06-29', '2026-07-02'])
     await ok(ava.post(`/api/v1/schedule/sets/${proposal.id}/approve`, { revision: aplan.stamp }), 404)
