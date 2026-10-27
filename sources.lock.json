@@ -563,7 +563,7 @@
       "executable": false
     },
     "package.json": {
-      "sha256": "332fcd0360a31fb5092cfbe3d24f3e9d2280b1dbb7da26ffc9b1bc0c22f4cc0f",
+      "sha256": "c68e4ad1a254463f186b5ee45ff8af4758974d95c6dfb40bed9d296b9aa62ccf",
       "executable": false
     },
     "packaging.json": {
@@ -3251,7 +3251,7 @@
       "executable": false
     },
     "tests/journeys/work-graph.journey.mjs": {
-      "sha256": "4ef33ab0dba4d493ac3680b58a418d764882ecbeb31e5f6cd7d4c256ad12af54",
+      "sha256": "869a6674d0e94ab05085800bd0ea5ed306f9691f3e8c23d8df4e67234b61d53f",
       "executable": false
     },
     "tests/journeys/workflow-bundles.mjs": {
