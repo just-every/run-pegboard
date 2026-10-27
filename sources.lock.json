@@ -199,7 +199,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "a291c8c95fab3b7162e0927a54645d8b246a3c4c151d8b3ace77bf0467f7bebc",
+      "sha256": "f1447e50dfa1facf7d2ac3c30ac27b39d268d5e59d02730f2cb4499c110eeb75",
       "executable": false
     },
     "AGENTS.md": {
@@ -215,7 +215,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "c00db5fa2cd1d47c25b0bed2e5753432809c690e33c7523a0fece7068390d5ba",
+      "sha256": "353400d033152e797cf2627d0e3bb3e6403bea4bbcf1669708ea7cc0a5109109",
       "executable": false
     },
     "DEMO.md": {
@@ -275,7 +275,7 @@
       "executable": false
     },
     "docs/WORK-PLANNING-API.md": {
-      "sha256": "92bbd742f4d304831e69c92b0e1918e5234f2ec375fbb200f313433ec518ea86",
+      "sha256": "2f4bf7f6598fb064f20e8a12edfce13320d750ba95a610ab1f66d85a498ed55a",
       "executable": false
     },
     "edition.json": {
@@ -3087,7 +3087,7 @@
       "executable": false
     },
     "tests/journeys/conversion-projects.mjs": {
-      "sha256": "5dcef4950858da753b623abf553e6cb33ec1a22d624628c76fb94bfde20ac640",
+      "sha256": "1d2acd927ef440a117542b7c0f0c6e276caebc750dc4403bacee3148320b467e",
       "executable": false
     },
     "tests/journeys/conversions.mjs": {

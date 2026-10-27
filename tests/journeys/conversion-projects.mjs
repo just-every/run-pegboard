@@ -76,5 +76,29 @@ export async function projectConversionJourney({w,page,proof,size,ok,producer}){
  await page.getByRole('form',{name:'Undo unchanged conversion effects'}).getByRole('button',{name:'Undo unchanged structure',exact:true}).press('Enter');await proof('project-task-undone')
  const restored=ok(await root.get(`/api/v1/tasks/${selected.id}`));assert.equal(restored.parentId,null);assert.equal(restored.title,'Build campaign assets — regional revision')
  await page.goto(`${w.origin}/app/projects/${project.id}`);await proof('project-task-restored')
+ const assignee=await w.person(`conversion-assigned-${size}@example.com`,'Alex Assigned')
+ const scopedProject=ok(await root.post('/api/v1/projects',{name:`Chicago assigned production ${size}`}))
+ ok(await root.post('/api/v1/grants',{objectType:'project',objectId:scopedProject.id,granteeId:assignee.id,level:'editor',scope:'assignee'}))
+ const scopedSource=ok(await root.post('/api/v1/tasks',{projectId:scopedProject.id,title:'Coordinate Chicago production'}))
+ const assignedWork=ok(await root.post('/api/v1/tasks',{parentId:scopedSource.id,title:'Prepare Chicago window artwork',ownerId:assignee.id}))
+ const enter=async client=>{
+  await page.context().clearCookies()
+  await page.context().addCookies(client.cookie.split('; ').map(pair=>({name:pair.slice(0,pair.indexOf('=')),value:pair.slice(pair.indexOf('=')+1),url:w.origin})))
+ }
+ try{
+  await enter(assignee);await page.goto(`${w.origin}/app/tasks/${assignedWork.id}`)
+  await expect(page.getByRole('heading',{name:'Prepare Chicago window artwork',exact:true})).toBeVisible()
+  await expect(page.getByRole('heading',{name:'Delivery register',exact:true})).toHaveCount(0)
+  await proof('assignee-original-work')
+  const request={kind:'task_to_project',sourceId:scopedSource.id,name:`Chicago production project ${size}`}
+  const reviewed=ok(await root.post('/api/v1/conversions/preview',request))
+  const convertedScope=ok(await root.post('/api/v1/conversions/apply',{...request,token:reviewed.token}))
+  await page.reload()
+  await expect(page.getByRole('heading',{name:'Prepare Chicago window artwork',exact:true})).toBeVisible()
+  await expect(page.getByRole('heading',{name:'Delivery register',exact:true})).toHaveCount(0)
+  assert.equal((await assignee.get(`/api/v1/projects/${convertedScope.projectId}`)).status,404)
+  assert.equal((await assignee.get(`/api/v1/tasks/${scopedSource.id}`)).status,404)
+  await proof('assignee-converted-work')
+ }finally{await enter(root)}
  return {project}
 }
