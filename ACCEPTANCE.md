@@ -1854,11 +1854,11 @@ Core · push-further · **missing**
 
 **Acceptance.**
 1. Submit a real launch brief with a holiday, time-off conflict and constrained designer.
-2. Review a complete feasible draft or explicit infeasibility with alternatives, edit role/date choices and approve once through Plan review.
+2. Under the schedule-approval policy, review a complete feasible draft or explicit infeasibility with alternatives, edit role/date choices and approve once through Plan review.
 3. Under the schedule-approval policy, nothing is created before approval; a stale review refuses, and a repeated accepted request produces one project.
-4. For fixed campaign-launch, client-onboarding and event briefs, check required phases/deliverables, every owner/estimate, graph/calendar constraints and aggregate capacity before approval.
-5. One feasible case must fit its deadline; one impossible case must name the shortage and await a human decision to change the brief/capacity.
-6. Compare edited/accepted/rejected plan revisions and ensure an unresolved owner or unapproved deadline change cannot publish.
+4. For fixed campaign-launch, client-onboarding and event briefs, check required phases/deliverables, every owner/estimate, graph/calendar constraints and aggregate capacity in the draft, before the plan is created or approved.
+5. One feasible case must fit its deadline; one impossible case must name the shortage and never be called feasible, and changing the brief or capacity is a standard call with the affected people as facts, which the company’s policy decides (under the schedule-approval policy, a named eligible person decides it).
+6. Compare edited/accepted/rejected plan revisions and ensure an unresolved owner cannot publish and, under the schedule-approval policy, a deadline change no named eligible person approved cannot publish.
 
 **Evidence.** None.
 **Gap.** No implementation exists for plan from a brief within real capacity; the complete behavior and public-door acceptance journey remain required.
@@ -1872,7 +1872,7 @@ Core · push-further · **missing** · Rules D-5, D-6, D-7, D-9
 **Acceptance.**
 1. Under the held policy, make a task stale, approve the agent’s chase and reply through each chat/mail adapter; inspect the attributed update and stopped reminder.
 2. Under the schedule-approval policy, delay its predecessor and review a capacity-checked re-plan waiting for approval.
-3. Open the weekly status draft, follow citations and reject a wrong assertion; no unapproved date/publication change occurs.
+3. Open the weekly status draft, follow citations and reject a wrong assertion; under the held policy no publication occurs before the test person approves it, and under the schedule-approval policy no date change occurs before a named eligible person approves it.
 4. Under the held policy, run an internal stale-task chase that sends without waiting, then the same chase to a client guest, which waits for the test person’s approval.
 5. Check the status draft’s required health/highlights/risks/next-steps sections against its date window and source tasks before the person publishes.
 6. Schedule the same internal chase with Slack, Teams or Gmail/Outlook absent in separate cases; observe the exact missing-provider state and guide plus one retained blocked job and no send.
@@ -1936,7 +1936,7 @@ Core · push-further · **missing**
 **Acceptance.**
 1. Overrun a task while a meeting consumes its next block, lock a focus period and delay a shared milestone.
 2. Under the schedule-approval policy, review alternative plans in Calendar/Timeline, approve one and inspect the provider events and task dates.
-3. Hidden availability, stale proposals and capacity shortfalls remain explicit, with no overwritten lock or unapproved colleague deadline.
+3. Hidden availability, stale proposals and capacity shortfalls remain explicit, with no overwritten lock; under the schedule-approval policy no colleague deadline moves before a named eligible person approves it.
 
 **Evidence.** None.
 **Gap.** No implementation exists for preserve focus while repairing a slipping schedule; the complete behavior and public-door acceptance journey remain required.
@@ -1950,7 +1950,7 @@ Core · push-further · **missing**
 **Acceptance.**
 1. Create a 30-project portfolio where two projects compete for one designer, a qualified alternate has space and a third project has a locked commitment.
 2. Under the schedule-approval policy, run the agent through Portfolio capacity, compare two sourced alternatives, approve reassignment to the alternate and inspect conflict-free total workload, unchanged lock and one attributed application.
-3. Change an estimate during review, remove a project grant and test a portfolio with no feasible staffing; require refreshed review/limited context or an explicit shortage without automatic reassignment or deadline movement.
+3. Under the schedule-approval policy, change an estimate during review, remove a project grant and test a portfolio with no feasible staffing: require refreshed review, limited context or an explicit shortage, with no reassignment or deadline moved before approval; under every policy no infeasible plan is called feasible.
 
 **Evidence.** None.
 **Gap.** No implementation exists for resolve resource conflicts across a portfolio; the complete behavior and public-door acceptance journey remain required.
