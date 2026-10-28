@@ -283,7 +283,7 @@ Every desk capability retains its original ID: PEG-001–027 are target clauses 
 
 ## Status
 
-Judged from the current PEG-127 candidate on branch `cloud/sx-pegboard-peg127fix1`. The 28 October ct ruling retains the inspected access and browser outcomes but requires executed timing proof; timing execution is unestablished. The branch handoff records the immutable candidate commit and exact-SHA execution results.
+Judged from the code and tests at commit `943b0a279587a94f506b4024c6d94124ad97fc7c` (28 October 2026). PEG-127 remains partial under the 28 October ct ruling: timing execution is unestablished. The branch handoff records the immutable candidate commit and exact-SHA execution results.
 
 Judged from the code and tests at commit `66db0c24f2180aa3edcc17a73d453c84df3c60b7` (27 October 2026). PEG-004 includes the ct nominee-refusal and keyboard proof repair. This documentation successor preserves every source and test byte of that commit; fresh judgment and the guarded landing records bind the candidate to its exact Verify, Run site and complete publication scan. PEG-027 continues the previous native API and MCP work with read-only personal-list and activated-rule parity repairs; its remaining work and adopted defaults remain explicit in its Gap.
 
