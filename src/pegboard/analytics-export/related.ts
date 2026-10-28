@@ -39,14 +39,15 @@ export async function relatedRows(db: D1Database, key: AnalystKey, tasks: Set<st
   if (fields.Approvals) for (const taskId of tasks) {
     if (await first(db, 'SELECT 1 FROM peg_approval_tasks WHERE task_id=?', taskId)) {
       const route = await routeFor(db, 'task', taskId), view = route ? await routeView(db, actor, route.id) : await decisionPreview(db, actor, taskId)
-      await add('Approvals', { id: 'task:' + taskId, taskId, kind: 'task', subjectId: taskId, version: route?.version ?? String((await openTask(db, actor, taskId)).task.updated_at), state: view.state }, taskId, null)
+      await add('Approvals', { id: 'task:' + taskId, taskId, kind: 'task', subjectId: taskId, version: route?.version ?? ('decisions' in view ? view.decisions.at(-1)?.revision ?? null : null), state: view.state }, taskId, null)
     }
     for (const proof of await all<{ id: string; current_version: string }>(db, 'SELECT id,current_version FROM peg_proofs WHERE task_id=?', taskId)) {
       const file = await first<{ project_id: string | null }>(db, 'SELECT a.project_id FROM peg_attachments a JOIN peg_proof_versions v ON v.attachment_id=a.id WHERE v.id=?', proof.current_version)
       if (!file?.project_id || !projects.includes(file.project_id)) continue
-      const view = await proofView(db, actor, proof.id)
-      await add('Approvals', { id: 'proof:' + proof.id, taskId, kind: 'proof', subjectId: proof.id, version: proof.current_version,
-        state: ({ approve: 'approved', reject: 'rejected', changes: 'changes_requested' } as Record<string, string>)[view.state] ?? view.state }, taskId, file.project_id)
+      const view = await proofView(db, actor, proof.id), route = await routeFor(db, 'proof', proof.id)
+      const routed = route ? await routeView(db, actor, route.id) : null
+      await add('Approvals', { id: 'proof:' + proof.id, taskId, kind: 'proof', subjectId: proof.id, version: route?.version ?? proof.current_version,
+        state: routed?.state ?? ({ approve: 'approved', reject: 'rejected', changes: 'changes_requested' } as Record<string, string>)[view.state] ?? view.state }, taskId, file.project_id)
     }
   }
 }

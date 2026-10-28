@@ -199,7 +199,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "68ca879acb9ea93da0ead706ce6a459094d626407d08b0f6cfc138a8030bff89",
+      "sha256": "029216e4d95b9123d69582739513423df173a10ebd454300f80d734d1ed0a39a",
       "executable": false
     },
     "AGENTS.md": {
@@ -215,7 +215,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "2d3a283c941e391355d436d1271dc8225e4d7e6bd7ee3d9203ff403c75c147e3",
+      "sha256": "d029212331805ad9b85fac4364160ec612849daa70ee1acb746479d8bfbed303",
       "executable": false
     },
     "DEMO.md": {
@@ -243,7 +243,7 @@
       "executable": false
     },
     "docs/CLAIMS.md": {
-      "sha256": "a3adfc4acb53c5cc4a695468cf39b0bdeb7773724c3e49daa28f0bf1ec746bae",
+      "sha256": "b90469dd7a8881b9d40cb19a09a1ded08d289adc2eb2fad03e1b0f0a21d73490",
       "executable": false
     },
     "docs/DATA-CUSTODY.md": {
@@ -315,7 +315,7 @@
       "executable": false
     },
     "management/integration/deployment-spec.json": {
-      "sha256": "20dcb24c00bf4e7a5951575bed03d3993ad282cbc9accf9d84bf011173fde0b4",
+      "sha256": "4d1ef77b265567aa9d907f3a5126eb718e99cc49b95579347cef99c0c445dfa6",
       "executable": false
     },
     "migrations/core/0001_owner.sql": {
@@ -608,6 +608,10 @@
     },
     "migrations/core/0069_analytics_reports.sql": {
       "sha256": "66616ca8fab4f04a1b9e0752e363dbb70ad8da2d8e89a23ad85c65398238c4fa",
+      "executable": false
+    },
+    "migrations/core/0070_analytics_portfolio_revision.sql": {
+      "sha256": "77115f944bbc37a91a615c58eaf276b8f2e2ccb821636cb44c0f51a6bdf00150",
       "executable": false
     },
     "ONBOARDING.md": {
@@ -2927,7 +2931,7 @@
       "executable": false
     },
     "src/pegboard/analytics-export/related.ts": {
-      "sha256": "8788b43cd499f8e4bf43810b94abb69ccbe53c5a9f0e80579a1e46bca65aa892",
+      "sha256": "43dc70aea28551f588f21df1210f6dd621c0d1742dc46f953752e86b0cea86d2",
       "executable": false
     },
     "src/pegboard/analytics-export/reports.ts": {
@@ -4135,7 +4139,7 @@
       "executable": false
     },
     "tests/scenarios/analytics.mjs": {
-      "sha256": "c167b85f80516f9a411cb9a3e268164596374900b3aacd014043ce7b9efe3566",
+      "sha256": "4ceac80608cf113606166974ec79cc13bceadbc83d9063a883808d1ba69f0e75",
       "executable": false
     },
     "tests/scenarios/calendar-blocks.mjs": {
@@ -4199,7 +4203,7 @@
       "executable": false
     },
     "tests/work-graph.test.mjs": {
-      "sha256": "6081067156279bd61061c543da65d64b364b0a45597d59deecb2d6b8ee31a503",
+      "sha256": "c5dc80a0c25819b4b47b6980c3ce59b79289df9bfd9d18df460191e1328bb7d6",
       "executable": false
     },
     "tsconfig.json": {
