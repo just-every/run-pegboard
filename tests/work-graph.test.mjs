@@ -1,3 +1,5 @@
+import { registerCalendarBlockTests } from './scenarios/calendar-blocks.mjs'
+import { startCalendarServices } from './support/calendar-services.mjs'
 import {registerPublicApiTests,startWebhookEdge} from './scenarios/public-api.mjs'
 // PEG-001, through the public doors (the JSON API and the forms that post to it): one task across projects, what a guest
 // never learns, references that outlive a prefix change, and the PEG-083 join and request journeys on the same graph.
@@ -2357,4 +2359,12 @@ describe('Approval routing custody', {concurrency:false},()=>{
  assert.deepEqual(receipts.map(r=>r.link_id),[link.id]);assert.equal(receipts[0].state,'accepted')
  const review=await pass(external.get('/api/v1/proof-reviews/'+link.id));assert.equal(review.material.version,2);assert.equal(review.state,'pending');assert.ok(!JSON.stringify(review).includes('Hidden internal comment'))
  })
+})
+
+
+describe('Calendar work blocks through provider schema edges', {concurrency:false}, () => {
+ let worker, services
+ before(async () => { services = await startCalendarServices(); worker = await startWorker({settings:{PEGBOARD_LOCAL_CALENDAR_ORIGINS:services.origins}}) }, {timeout:120000})
+ after(async () => { await worker?.stop(); await services?.stop() })
+ registerCalendarBlockTests({test:it,context:()=>({w:worker,services})})
 })
