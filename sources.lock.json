@@ -610,6 +610,10 @@
       "sha256": "a7e27df3438c7ee56a3bd0c59536b54fe60ad2f078180b953ed44cd3fb2d723c",
       "executable": false
     },
+    "migrations/core/0069_portfolio_workspace_authority.sql": {
+      "sha256": "fa4ba5cb34698fb7760b04c0899e71ea9a78b39050fe102a7f2da16982adfe6b",
+      "executable": false
+    },
     "ONBOARDING.md": {
       "sha256": "24b685d6eddeae5480ce4dfbf44c0590e54bcfe83641373de5bba985765380bd",
       "executable": false
@@ -4015,7 +4019,7 @@
       "executable": false
     },
     "tests/access-control.test.mjs": {
-      "sha256": "78141521909c5a8371e113b0fe7f37bf54d20b0e4370de8ae0e2a610a21ce6ba",
+      "sha256": "b4401c6b0f84bdae9e6c6fe8f2f39afa455f002dcda700cd7d49a3c58c6d07bb",
       "executable": false
     },
     "tests/journeys/access-discovery.mjs": {
