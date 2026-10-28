@@ -602,10 +602,6 @@
       "sha256": "b535f4f5dd23aaa6380a83402438a1c02e7930129e23526ac455c703cd368b6e",
       "executable": false
     },
-    "migrations/core/0068_blind_project_requests.sql": {
-      "sha256": "bff760820f0aab51a4d2d5800a066963185a0459fdf73b34f42d4062845d2d0f",
-      "executable": false
-    },
     "migrations/core/0068_calendar_blocks.sql": {
       "sha256": "efe655bd87f6ab35bc95354ad04bc5222df2bb3ec89c7f05a8c5c3896d67f76b",
       "executable": false
@@ -616,6 +612,10 @@
     },
     "migrations/core/0070_analytics_portfolio_revision.sql": {
       "sha256": "77115f944bbc37a91a615c58eaf276b8f2e2ccb821636cb44c0f51a6bdf00150",
+      "executable": false
+    },
+    "migrations/core/0071_blind_project_requests.sql": {
+      "sha256": "bff760820f0aab51a4d2d5800a066963185a0459fdf73b34f42d4062845d2d0f",
       "executable": false
     },
     "ONBOARDING.md": {
