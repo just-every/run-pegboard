@@ -1,3 +1,4 @@
+import {workRulesJourney} from './work-rules.mjs'
 import assert from 'node:assert/strict'
 import {mkdir} from 'node:fs/promises'
 import {join} from 'node:path'
@@ -26,6 +27,7 @@ try{
    const shared=await templateGalleryJourney({w,page,proof,size,ok})
    await projectDuplicateJourney({w,page,proof,size,ok,...shared})
    await templateRuleJourney({w,page,proof,size,ok,...shared})
+   if(width===1440)await workRulesJourney({w,page,proof,size,ok})
    console.log(`Reusable template journey at ${size}px passed`)
   }finally{await context.close()}
  }

@@ -63,6 +63,7 @@ export async function erasurePlan(db:D1Database,actor:Actor,workspace:string,typ
     if(await first(db,'SELECT 1 FROM peg_time_entries WHERE person_id=?',id))blockers.push('retained_time_records_require_separate_review')
     await take('peg_workspace_members','operator_id=?',[id]);await take('peg_personal_layout','operator_id=?',[id]);await take('peg_personal_moves','operator_id=?',[id]);await take('peg_personal_rules','operator_id=?',[id]);await take('peg_personal_sections','operator_id=?',[id]);await take('peg_personal_settings','operator_id=?',[id])
     await take('peg_grants',"grantee_type='person' AND grantee_id=?",[id]);await take('peg_task_collaborators','operator_id=?',[id]);await take('peg_approvers','operator_id=?',[id]);await take('peg_inbox','operator_id=? OR request_id IN(SELECT id FROM peg_access_requests WHERE requester_id=?)',[id,id]);await take('peg_access_requests','requester_id=?',[id])
+    await take('peg_rule_suggestions','requested_by=?',[id])
     await take('peg_comments','author_id=?',[id]);await take('peg_attachments','created_by=?',[id])
     retained.local_auth_material=(await first<{n:number}>(db,'SELECT (SELECT COUNT(*) FROM oa_sessions WHERE operator_id=?)+(SELECT COUNT(*) FROM oa_tokens WHERE operator_id=?)+(SELECT COUNT(*) FROM oa_credentials WHERE operator_id=?)+(SELECT COUNT(*) FROM oa_external_identities WHERE operator_id=?) n',id,id,id,id))!.n
     retained.legacy_access_activity=(await first<{n:number}>(db,'SELECT COUNT(*) n FROM peg_audit WHERE actor_id=? OR subject_id=?',id,id))!.n
@@ -90,6 +91,12 @@ export async function erasurePlan(db:D1Database,actor:Actor,workspace:string,typ
     if(await first(db,`SELECT 1 FROM peg_work_templates WHERE source_id IN (${placeholders(sourceIds)}) OR ${sourceIds.map(()=>"instr(snapshot,?)>0").join(' OR ')}`,...sourceIds,...sourceIds))blockers.push('review_recurring_snapshot_custody_before_erasure')
     if(projects.length&&await first(db,`SELECT 1 FROM peg_field_definitions f WHERE authority_project IN (${placeholders(projects)}) AND EXISTS(SELECT 1 FROM peg_project_fields p WHERE p.field_id=f.id AND p.project_id NOT IN (${placeholders(projects)}))`,...projects,...projects))blockers.push('transfer_shared_field_authority_before_erasure')
     const scoped=(column:string)=>`${column} IN (${placeholders(tasks)})`, projectScoped=(column:string)=>`${column} IN (${placeholders(projects)})`
+    await take('peg_rule_agent_sources',scoped('task_id'),tasks)
+    await take('peg_rule_requests',`${scoped('task_id')} OR ${projectScoped('project_id')}`,[...tasks,...projects])
+    await take('peg_rule_suggestions',projectScoped('project_id'),projects)
+    await take('peg_local_rule_runs',`${scoped('task_id')} OR rule_id IN(SELECT id FROM peg_local_rules WHERE ${projectScoped('project_id')})`,[...tasks,...projects])
+    await take('peg_local_rule_activations',`rule_id IN(SELECT id FROM peg_local_rules WHERE ${projectScoped('project_id')})`,projects)
+    await take('peg_local_rules',projectScoped('project_id'),projects)
     await take('peg_canvas_nodes',`${scoped('task_id')} OR ${projectScoped('project_id')}`,[...tasks,...projects])
     await take('peg_agent_retrieval',`${scoped('task_id')} OR output_id IN(SELECT id FROM peg_agent_outputs WHERE ${projectScoped('project_id')})`,[...tasks,...projects])
     await take('peg_agent_outputs',`${scoped('task_id')} OR ${projectScoped('project_id')}`,[...tasks,...projects])
