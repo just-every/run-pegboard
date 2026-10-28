@@ -199,7 +199,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "e3fa08497bcb01af649b80f57d62c99e73191881cbc2e4b2bd7d2997de5021b8",
+      "sha256": "187c633829df6f0e61e301b9e1c34acfb7fcb757bbce04db4ed49f30d4ad7998",
       "executable": false
     },
     "AGENTS.md": {
@@ -215,7 +215,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "40bdfe31c2315bbf09a73da842f86546d1e85363378ff1f338825ae7effc0ee9",
+      "sha256": "b4673ec4af19a4d044d86ac8f993dc3666c4ce7f278811a0251b53af77168846",
       "executable": false
     },
     "DEMO.md": {
@@ -243,7 +243,7 @@
       "executable": false
     },
     "docs/CLAIMS.md": {
-      "sha256": "b2846d7ac7c90db6f05cadbe9ea1f709f7175d987cde160c6caade8b99125846",
+      "sha256": "aad70f41a8f3e5ada64621ed5b5c7b527bf1d066909d518792e4ba2997e9dc05",
       "executable": false
     },
     "docs/DATA-CUSTODY.md": {
@@ -4047,7 +4047,7 @@
       "executable": false
     },
     "tests/journeys/access-privacy-timing.mjs": {
-      "sha256": "eb64fb84126548d0cbee3ac593e910432059d5349d6d2d6f023952454f7c6ae1",
+      "sha256": "33b791e9d81ac1e3bd716d207138f1a4741c3b3121b3487cfdd30d5f75f8c8fc",
       "executable": false
     },
     "tests/journeys/access-privacy.mjs": {
