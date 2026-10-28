@@ -4043,7 +4043,7 @@
       "executable": false
     },
     "tests/access-control.test.mjs": {
-      "sha256": "06e31b511b284df9bae2c537969decbd1272ab680701e139ade30912aaa713cd",
+      "sha256": "2eb16f13b4a78634fd005dd54ca0c281bae418eea787d72d0723ed08dccbc722",
       "executable": false
     },
     "tests/journeys/access-privacy-timing.mjs": {
@@ -4155,7 +4155,7 @@
       "executable": false
     },
     "tests/scenarios/access-privacy.mjs": {
-      "sha256": "9d32c3d125ef0e437a9b22dd54d15728caabd2b441afd797bf34c4a24ea794dd",
+      "sha256": "1640142ba7d5cb0115f6bbedc1e3589de26044449bf70fa45dff7ea71bda7c60",
       "executable": false
     },
     "tests/scenarios/analytics.mjs": {

@@ -125,7 +125,7 @@ describe('PEG-020 roles, grants and the decision lifecycle', { concurrency: fals
   })
 
   it('walks every access-request path to a grant or to nothing, with exact audit rows', async () => {
-    await accessPrivacyScenario(w)
+    await accessPrivacyScenario(w, {timing:true})
     const stage = async (name, extra = {}) => ok(owner.post('/api/v1/projects', { name, ...extra }))
     const ask = (who, targetId, level = 'viewer', message = '') => ok(who.post('/api/v1/access-requests', { targetId, level, message }))
     // Request-to-join team: the chosen Team Admin (not a workspace administrator) is told, approves Editor; only that scope appears.

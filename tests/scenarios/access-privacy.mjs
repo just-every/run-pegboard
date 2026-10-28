@@ -104,6 +104,6 @@ export async function accessPrivacyScenario(w, {timing = false} = {}) {
     // A broad integration bound catches target resolution or delivery on the response
     // path. Fixed-statement intake supplies the structural timing guarantee.
     for (const result of [medians,receiptMedians]) assert.ok(Math.abs(result.private-result.invalid) < Math.max(50, Math.min(result.private,result.invalid)), JSON.stringify(result))
-    console.log(JSON.stringify({proof:'blind project acknowledgment timing',samples:24,medianMs:medians,receiptMedianMs:receiptMedians,head:process.env.PEGBOARD_PROOF_HEAD}))
+    console.log(JSON.stringify({proof:'blind project acknowledgment timing',samples:24,medianMs:medians,receiptMedianMs:receiptMedians,head:process.env.GITHUB_SHA ?? process.env.PEGBOARD_PROOF_HEAD}))
   }
 }
