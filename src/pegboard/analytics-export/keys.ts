@@ -9,6 +9,12 @@ export interface AnalystKey {
   id: string; workspace_id: string; owner_id: string; owner_version: number; name: string; token_hash: string
   projects: string; fields: string; created_at: number; expires_at: number; revoked_at: number | null
 }
+/** A permanent consent receipt binds the reviewed scope without retaining its contents in the audit. */
+async function scopeDigest(key: Pick<AnalystKey, 'owner_id' | 'workspace_id' | 'projects' | 'fields' | 'expires_at'>) {
+  const fields: Fields = JSON.parse(key.fields)
+  return digest({ issuer: key.owner_id, workspace: key.workspace_id, projects: JSON.parse(key.projects),
+    fields: Object.fromEntries(Object.keys(fields).sort().map(name => [name, fields[name as keyof Fields]])), expiresAt: key.expires_at })
+}
 export const keyActor = (key: AnalystKey): Actor => ({ id: key.owner_id, email: '', displayName: '', baseRole: 'member' })
 export async function standing(db: D1Database, key: AnalystKey) {
   const person = await operatorRow(db, key.owner_id)
@@ -44,15 +50,17 @@ export async function createKey(db: D1Database, actor: Actor, workspace: string,
   const key: AnalystKey = { id: newId('analyst'), workspace_id: workspace, owner_id: actor.id, owner_version: person.version,
     name, token_hash: await digest(secret), projects: JSON.stringify(projects.sort()), fields: JSON.stringify(fields), created_at: now(), expires_at: expiresAt, revoked_at: null }
   await standing(db, key)
+  const consentScope = await scopeDigest(key)
   await guarded(db, rev, [bound(db, 'INSERT INTO peg_analytics_keys VALUES(?,?,?,?,?,?,?,?,?,?,NULL)',
     [key.id, workspace, actor.id, person.version, name, key.token_hash, key.projects, key.fields, key.created_at, expiresAt]),
-    permanentEvent(db, { workspace, actor: actor.id, action: 'analytics.key_authorized', type: 'analyst_key', id: key.id, metadata: { consent: true, expiresAt } })])
-  return { id: key.id, secret, expiresAt, servicePath: `/api/v1/analytics/odata/${key.id}`, notice: 'Save this credential now. It is never shown again.' }
+    permanentEvent(db, { workspace, actor: actor.id, action: 'analytics.key_authorized', type: 'analyst_key', id: key.id, metadata: { consent: true, expiresAt, scopeDigest: consentScope } })])
+  return { id: key.id, secret, expiresAt, scopeDigest: consentScope, servicePath: `/api/v1/analytics/odata/${key.id}`, notice: 'Save this credential now. It is never shown again.' }
 }
 export type ListedKey = Pick<AnalystKey, 'id' | 'name' | 'projects' | 'fields' | 'created_at' | 'expires_at' | 'revoked_at'>
 export async function listKeys(db: D1Database, actor: Actor, workspace: string) {
   if (!await administers(db, actor, workspace)) throw forbidden('administrator_required')
-  return all<ListedKey>(db, 'SELECT id,name,projects,fields,created_at,expires_at,revoked_at FROM peg_analytics_keys WHERE owner_id=? AND workspace_id=? ORDER BY created_at,id', actor.id, workspace)
+  const keys = await all<ListedKey>(db, 'SELECT id,name,projects,fields,created_at,expires_at,revoked_at FROM peg_analytics_keys WHERE owner_id=? AND workspace_id=? ORDER BY created_at,id', actor.id, workspace)
+  return Promise.all(keys.map(async key => ({ ...key, scopeDigest: await scopeDigest({ ...key, owner_id: actor.id, workspace_id: workspace }) })))
 }
 export async function revokeKey(db: D1Database, actor: Actor, workspace: string, id: string) {
   if (!await administers(db, actor, workspace)) throw forbidden('administrator_required')
