@@ -2963,7 +2963,7 @@
       "executable": false
     },
     "src/pegboard/api/door.ts": {
-      "sha256": "4271f092366e1c281b2e6b7fc2f06750b716ebbbb91c4bf5127b93e1314ae415",
+      "sha256": "38e459ebba8a127d78d4e6c814c34cbc73359d7a8c52b951ea2c3fd8d05d4867",
       "executable": false
     },
     "src/pegboard/api/duplicate-routes.ts": {
@@ -3163,7 +3163,7 @@
       "executable": false
     },
     "src/pegboard/connectors/meetings/edge.ts": {
-      "sha256": "73af50ad42dd1dfb81ed9201e5d0bb7d334f18659e44099232753c1477af7bed",
+      "sha256": "ff8e833d047af6a61d0c5bb423f885eb393613a6e4afd8bb3827224dfa5e6e50",
       "executable": false
     },
     "src/pegboard/connectors/meetings/transcript.ts": {
@@ -3339,7 +3339,7 @@
       "executable": false
     },
     "src/pegboard/portfolios/rollup.ts": {
-      "sha256": "00241ef2c10e54be662de52adce87aa34dee7a3090209376524609fc9f412515",
+      "sha256": "0f1e7e97e137cec2bc5ec78f06cd5380b0df0587f69dbc59f09d5ac427c3ba99",
       "executable": false
     },
     "src/pegboard/public-api/credentials.ts": {
@@ -4059,7 +4059,7 @@
       "executable": false
     },
     "tests/portfolios.test.mjs": {
-      "sha256": "d48561c24fcf6a0dd3080c1a78d0a0e9312f50341cb3491dc12bc894ccacc5e4",
+      "sha256": "91380b081f0b6051e30d96503ebc49b53486eac4e91970946b55f5e84c65b6aa",
       "executable": false
     },
     "tests/runtime.mjs": {

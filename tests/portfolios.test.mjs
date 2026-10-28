@@ -23,6 +23,30 @@ describe('PEG-013 portfolios that roll up truthfully', { concurrency: false }, (
   }, { timeout: 120000 })
   after(() => w?.stop())
 
+  it('treats inherited drill metrics like unknown names for a signed-in member', async () => {
+    // Check only status and a boolean body comparison: failures must never print response bodies.
+    const checked = async promise => {
+      const response = await promise
+      assert.equal(response.status, 200, 'fixture request succeeds')
+      return response.body
+    }
+    const portfolio = await checked(owner.post('/api/v1/portfolios', { name: 'Metric name validation' }))
+    const project = await checked(owner.post('/api/v1/projects', { name: 'Metric source', visibility: 'workspace' }))
+    const task = await checked(owner.post('/api/v1/tasks', { projectId: project.id, title: 'Readable metric source' }))
+    await checked(owner.post(`/api/v1/portfolios/${portfolio.id}/projects`, { projectId: project.id }))
+    await checked(owner.post(`/api/v1/portfolios/${portfolio.id}/members`, { operatorId: sam.id, level: 'viewer' }))
+    const path = `/api/v1/portfolios/${portfolio.id}/drill?metric=`
+    const registered = await checked(sam.get(path + 'all'))
+    assert.equal(registered.metric, 'all')
+    assert.ok(registered.tasks.some(row => row.id === task.id), 'registered metric keeps its readable source row')
+    const names = ['unknown-metric', 'constructor', '__proto__']
+    const responses = await Promise.all(names.map(name => sam.get(path + encodeURIComponent(name))))
+    assert.deepEqual(responses.map(response => response.status), [400, 400, 400], 'unknown and inherited metrics use the same client error')
+    for (const response of responses) {
+      assert.ok(JSON.stringify(response.body) === '{"error":"metric"}', 'error body contains only the metric error, with no bindings or environment content')
+    }
+  })
+
   it('rolls up a two-level portfolio of 20 projects, counts shared tasks once and hides a private project from a stakeholder', async () => {
     root = await ok(owner.post('/api/v1/portfolios', { name: 'Spring programs' }))
     retail = await ok(owner.post('/api/v1/portfolios', { name: 'Retail launches', parentId: root.id }))
