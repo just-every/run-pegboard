@@ -199,7 +199,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "ea09f82eb823a1cfe675a89f50f7e8b0844876ce4b1369ab06cae6db36d4495f",
+      "sha256": "4497236e92508b1ab7ab5cd48812f5754c88065fde345736667246a6d6c101e8",
       "executable": false
     },
     "AGENTS.md": {
@@ -215,7 +215,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "62888931ad1ffe0a7b9dbec5145dafd13b010ab4ea502f5bbfe6c02ff21638e1",
+      "sha256": "d9ead3d2fd891b8d8074e8dd4f53913ef826b72070db242ab9ea2b83716845ce",
       "executable": false
     },
     "DEMO.md": {
@@ -239,7 +239,7 @@
       "executable": false
     },
     "docs/CLAIMS.md": {
-      "sha256": "bf6e7e0ec816d7bd0e56a67be84dd1e6a7ad6663734ce41f2f1e76dea1b6148a",
+      "sha256": "46fb828a5666e83935dec5dfbf7caeed793ca0fec849bd35d39656bbe3cdb7d2",
       "executable": false
     },
     "docs/DATA-CUSTODY.md": {
@@ -588,6 +588,10 @@
     },
     "migrations/core/0066_status_rights_requests.sql": {
       "sha256": "0eafd3d9d0e08825162e28e8d80cec826a9fc9a74fe62919a5c02d8544ba9d31",
+      "executable": false
+    },
+    "migrations/core/0067_capacity.sql": {
+      "sha256": "446481ffc5ac84d3c0be546c64ecc3cf45e74a44200f73691fda95ffc2d9a2af",
       "executable": false
     },
     "ONBOARDING.md": {
@@ -2919,7 +2923,7 @@
       "executable": false
     },
     "src/pegboard/api/availability-routes.ts": {
-      "sha256": "f49bb784f920e8d0dab4263bc019cbd0a479da64c5e05baafb1b5a8b89d812f5",
+      "sha256": "a826be907baa96a769e496a33204715ee9d97c57a2e84904b68c713eecd63308",
       "executable": false
     },
     "src/pegboard/api/brief-routes.ts": {
@@ -2936,6 +2940,10 @@
     },
     "src/pegboard/api/canvas-routes.ts": {
       "sha256": "1d2a0e5225422ba46339df540992c9b9c8f4c44f832f36d30f46f5818d9734e9",
+      "executable": false
+    },
+    "src/pegboard/api/capacity-routes.ts": {
+      "sha256": "bdd39d5ee2e0478754f92e836fd24fe478fb1d4af2b81cbeede56895bb6b5b03",
       "executable": false
     },
     "src/pegboard/api/conversion-routes.ts": {
@@ -2967,7 +2975,7 @@
       "executable": false
     },
     "src/pegboard/api/index.ts": {
-      "sha256": "f441e67fa3822f3ecece228d22a11fcf86b9ece1536767cee8290c5badf7605f",
+      "sha256": "f26e48fb06eb9a650d74be25bf6e8839403b7b5ac3b1e1fd9e9a19274bcf65b9",
       "executable": false
     },
     "src/pegboard/api/meeting-routes.ts": {
@@ -3112,6 +3120,22 @@
     },
     "src/pegboard/canvas/nodes.ts": {
       "sha256": "4a4b9b3c40fff4301405c4265d0cbc233a4b51e69ce0ba600e3e2235c07a3a86",
+      "executable": false
+    },
+    "src/pegboard/capacity/allocations.ts": {
+      "sha256": "f68009f42eee4b9d715a6282634e788e6bd0b10067578812cffa8cbd7243310c",
+      "executable": false
+    },
+    "src/pegboard/capacity/profiles.ts": {
+      "sha256": "f215e70dfd9c302524a1ec6df1c168b4aabcf8061f1277a9bed9ddcbaa2fb70a",
+      "executable": false
+    },
+    "src/pegboard/capacity/scenarios.ts": {
+      "sha256": "d580b9a799da028a7cc163708761243f0f13c2db750e2d5bdc0a4c7e2a8188b2",
+      "executable": false
+    },
+    "src/pegboard/capacity/workload.ts": {
+      "sha256": "fe2c2e6c14aa541b88cae2e002a857a0cde44b4bce87716d974d22cd0f60147f",
       "executable": false
     },
     "src/pegboard/connectors/engineering/edge.ts": {
@@ -3399,7 +3423,7 @@
       "executable": false
     },
     "src/pegboard/schedule/availability.ts": {
-      "sha256": "3d24f04fd3a33fe065b3861d357d5b8ca29548fabb067c6fae819638433ca59d",
+      "sha256": "00152cc7272d8183f10bdb758a9ac81758d0696650b8de4f912513c85ab62b10",
       "executable": false
     },
     "src/pegboard/schedule/calendar.ts": {
@@ -3467,7 +3491,7 @@
       "executable": false
     },
     "src/pegboard/tasks/tasks.ts": {
-      "sha256": "172e5a90b442865e1d8fdfa409750902a6c0b07b343a0d10972fa3c1204602e0",
+      "sha256": "f1bf75426fbd44a86fb9f1374f5327e17c38df932937e9562569c1f29967fc47",
       "executable": false
     },
     "src/pegboard/tasks/view.ts": {
@@ -4003,7 +4027,7 @@
       "executable": false
     },
     "tests/portfolios.test.mjs": {
-      "sha256": "ae437b493594de6cb26828f40a7c55c66a70d81efd4076f82fae1ca14ac76222",
+      "sha256": "4a44a4af617b239e59e2dd201d7dd83941b88706d3e7570f86e6c9bacb09f317",
       "executable": false
     },
     "tests/runtime.mjs": {

@@ -917,3 +917,51 @@ describe('Conditional local work rules',{concurrency:false},()=>{
  })
 
 })
+
+describe('Capacity across committed work', { concurrency: false }, () => {
+  let runtime, admin, member, viewer, commitments
+  before(async () => {
+    runtime = await startWorker(); admin = runtime.owner
+    const address = n => `synthetic-pegboard-${n}` + String.fromCharCode(64) + 'example.test'
+    member = await runtime.person(address(1601), 'Casey Capacity')
+    viewer = await runtime.person(address(1602), 'Taylor Viewer')
+    commitments = []
+    for (const name of ['Campaign', 'Launch', 'Operations']) {
+      const p = await ok(admin.post('/api/v1/projects', { name, visibility: 'workspace' }))
+      commitments.push(await ok(admin.post('/api/v1/tasks', { projectId: p.id, title: name + ' delivery', ownerId: member.id, estimateHours: 20, startDate: '2026-11-02', dueDate: '2026-11-06' })))
+    }
+    const hidden = await ok(admin.post('/api/v1/projects', { name: 'Synthetic private program' }))
+    await ok(admin.post('/api/v1/tasks', { projectId: hidden.id, title: 'Synthetic confidential commitment', estimateHours: 8, startDate: '2026-11-02', dueDate: '2026-11-06' }))
+  }, { timeout: 120000 })
+  after(() => runtime?.stop())
+  it('compares a staffing scenario across three projects, retains hidden hours without titles, and applies only an exact current human reassignment', async () => {
+    const path = '/api/v1/workspaces/ws_main', query = '?from=2026-11-02&days=7'
+    const before = await ok(member.get(path + '/workload' + query))
+    const person = before.people.find(p => p.id === member.id)
+    assert.equal(person.hours, 60); assert.equal(person.availableHours, 40)
+    assert.deepEqual(person.days.slice(0, 5).map(d => d.overloadHours), [4, 4, 4, 4, 4])
+    assert.ok(!JSON.stringify(before).includes('Synthetic confidential commitment'))
+    assert.ok(!JSON.stringify(before).includes('Synthetic private program'))
+    assert.equal(before.people.find(p => p.id === admin.id).days[0].otherHours, 1.6)
+    await ok(admin.post(path + '/resource-plans', { role: 'Unfilled designer', hours: 12, start: '2026-11-02', end: '2026-11-06' }))
+    const input = { taskId: commitments[0].id, personId: admin.id, from: '2026-11-02', days: 7 }
+    let preview = await ok(admin.post(path + '/staffing/preview', input))
+    assert.equal(preview.before.people.find(p => p.id === member.id).hours, 60)
+    assert.equal(preview.after.people.find(p => p.id === member.id).hours, 40)
+    assert.ok(preview.after.people.every(p => p.days.every(d => d.overloadHours === 0)))
+    assert.equal(preview.after.tentative[0].role, 'Unfilled designer')
+    assert.equal((await ok(admin.get(`/api/v1/tasks/${commitments[0].id}`))).owner.id, member.id, 'scenario is read only')
+    await ok(viewer.post(path + '/staffing/preview', input), 403)
+    await ok(admin.patch(`/api/v1/tasks/${commitments[0].id}`, { estimateHours: 21 }))
+    await ok(admin.post(path + '/staffing/apply', { ...input, token: preview.token }), 409)
+    assert.equal((await ok(admin.get(`/api/v1/tasks/${commitments[0].id}`))).owner.id, member.id)
+    await ok(admin.patch(`/api/v1/tasks/${commitments[0].id}`, { estimateHours: 20 }))
+    preview = await ok(admin.post(path + '/staffing/preview', input))
+    await ok(admin.post(path + '/staffing/apply', { ...input, token: preview.token }))
+    await ok(admin.post(path + '/staffing/apply', { ...input, token: preview.token }), 400)
+    const after = await ok(admin.get(path + '/workload' + query))
+    assert.equal(after.people.find(p => p.id === member.id).hours, 40)
+    assert.ok(after.people.every(p => p.days.every(d => d.overloadHours === 0)))
+    assert.ok((await ok(admin.get(`/api/v1/tasks/${commitments[0].id}`))).history.some(h => h.kind === 'capacity.reassigned' && h.actor === admin.name))
+  })
+})
