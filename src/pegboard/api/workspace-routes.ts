@@ -1,4 +1,5 @@
 import { removalPreview, removeReviewedPerson } from '../admin/departure/removal'
+import { teammateDirectory, teammateProfile } from '../workspace/profiles'
 import {readableDefinitions} from '../fields/definitions'
 // /api/v1: workspaces, people, teams, projects and their settings.
 import type { Hono } from 'hono'
@@ -46,6 +47,8 @@ export function workspaceRoutes(app: App) {
     return updateSettings(db, actor, params.id, patch)
   }, { next: () => '/app/admin' }))
   app.get('/workspaces/:id/people', door(async ({ actor, db, params }) => ({ people: await listPeople(db, actor, params.id) })))
+  app.get('/workspaces/:id/profiles', door(async ({ actor, db, params }) => ({ people: await teammateDirectory(db, actor, params.id) })))
+  app.get('/workspaces/:id/profiles/:operator', door(({ actor, db, params }) => teammateProfile(db, actor, params.id, params.operator)))
   app.post('/workspaces/:id/people', door(({ actor, db, params, input, invite }) => addPerson(db, actor, params.id, input, invite), { next: () => '/app/admin' }))
   app.patch('/workspaces/:id/people/:operator', door(({ actor, db, params, input }) => setPersonRole(db, actor, params.id, params.operator, input.role)))
   app.post('/workspaces/:id/people/:operator/role', door(({ actor, db, params, input }) => setPersonRole(db, actor, params.id, params.operator, input.role), { next: () => '/app/admin' }))

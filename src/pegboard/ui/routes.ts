@@ -1,4 +1,6 @@
 import { workloadView } from '../capacity/workload'
+import { teammateDirectory, teammateProfile } from '../workspace/profiles'
+import { PeoplePage, ProfilePage } from './pages/profile'
 import { capacityPeople } from '../capacity/profiles'
 import { staffingScenario } from '../capacity/scenarios'
 import { effortPreview } from '../capacity/allocations'
@@ -169,6 +171,9 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
   const editorFor=async(projectId:string,tasks:{value:string;label:string}[],here:string):Promise<ScheduleEditorProps>=>({here,projectId,tasks,people:await peopleOptions(db,actor,workspace),input:scheduleInput,preview:await schedulePreview(db,actor,scheduleInput)})
 
   try {
+    if (section === 'people' && !tail) return id
+      ? page('Teammate profile', h(ProfilePage, { viewer, profile: await teammateProfile(db, actor, workspace, id) }))
+      : page('People', h(PeoplePage, { viewer, people: await teammateDirectory(db, actor, workspace) }))
     if(section==='approvals'&&id)return page('Review approval',h(ApprovalPage,{viewer,view:await routeView(db,actor,id),people:await peopleOptions(db,actor,workspace)}))
     if(section==='proof-reviews'&&id)return page('Review approval',h(ApprovalPage,{viewer,view:await reviewLink(db,actor,id),linkId:id,people:[]}))
     if(section==='approval-routing'&&id){const input:Record<string,any>=Object.fromEntries(url.searchParams);for(const n of [1,2])input['people'+n]=url.searchParams.getAll('people'+n+'[]');const kind=input.kind??'task';const target=kind==='proof'?(await proofView(db,actor,id)).taskId:id;const access=(await openTask(db,actor,target)).access;if(!access.capabilities.has('manage_shares')||access.role==='guest'||access.role==='agent')throw new PegError(403,'forbidden');const existing=await routeFor(db,kind,id);if(existing&&!input.new&&!input.preview)return new Response(null,{status:303,headers:{location:'/app/approvals/'+existing.id}});return page('Approval routing',h(RoutingPage,{viewer,kind,id,people:await peopleOptions(db,actor,workspace),input,preview:input.preview?await previewRoute(db,actor,kind,id,input):null}))}

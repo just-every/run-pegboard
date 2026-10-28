@@ -14,6 +14,7 @@ import { startEngineeringServices, vectorTodo, vectorDone } from './support/engi
 import { startTimeServices } from './support/time-services.mjs'
 import { restoreCanvasInstallation } from './support/canvas-restore.mjs'
 import {registerConversionTests} from './scenarios/conversions.mjs'
+import {profileFixture,profilePath,profileOk} from './support/profiles.mjs'
 
 let w, owner, mia, gus, nina
 const ok = async (promise, status = 200) => { const r = await promise; assert.equal(r.status, status, JSON.stringify(r.body)); return r.body }
@@ -32,6 +33,50 @@ function csvRecords(text) {
   return rows.filter(row=>row.some(value=>value.length))
 }
 let campaign, launch, shared, mkt
+
+describe('Teammate profiles through current work access', { concurrency: false }, () => {
+  let worker
+  before(async () => { worker = await startWorker() }, { timeout: 120000 })
+  after(() => worker?.stop())
+  it('lists permitted assignments once without private work or directory access for guests, and rechecks revocation', async () => {
+    const f = await profileFixture(worker), ok = profileOk, directory = '/api/v1/workspaces/ws_main/profiles', path = profilePath(f.subject)
+    const profile = await ok(f.reader.get(path))
+    assert.deepEqual(profile.assignments.map(task => task.id).sort(), f.visibleIds)
+    assert.deepEqual(Object.keys(profile).sort(), ['assignments', 'availability', 'person'])
+    assert.deepEqual(Object.keys(profile.availability).sort(), ['week', 'zone'])
+    for (const task of profile.assignments) assert.deepEqual(Object.keys(task).sort(), ['dueDate', 'id', 'status', 'title'])
+    const serialized = JSON.stringify(profile)
+    for (const value of [f.hidden.id, f.hidden.title, f.privateTask.id, f.privateTask.title, f.privateChild.id, f.privateChild.title, f.projects[2].id, f.projects[2].name]) assert.ok(!serialized.includes(value))
+    for (const client of [f.subject, f.owner]) {
+      const seen = await ok(client.get(path))
+      assert.ok(!JSON.stringify(seen).includes(f.privateTask.id), 'personal work stays out even for the subject and administrator')
+    }
+    const people = (await ok(f.reader.get(directory))).people
+    assert.deepEqual(people.map(p => p.id).sort(), [f.owner.id, f.reader.id, f.subject.id].sort())
+    for (const person of people) assert.deepEqual(Object.keys(person).sort(), ['id', 'name'])
+    for (const url of [directory, path, profilePath(f.guest), `${directory}/synthetic-pegboard-699`]) assert.equal((await f.guest.get(url)).status, 404)
+    assert.equal((await f.reader.get('/api/v1/workspaces/ws_main/people')).status, 403, 'people administration stays restricted')
+    assert.equal((await f.reader.post('/api/v1/workspaces/ws_main/people', {})).status, 403)
+    assert.equal((await f.reader.get('/api/v1/workspaces/synthetic-pegboard-699/profiles')).status, 404)
+    assert.equal((await f.reader.get(`${directory}/synthetic-pegboard-699`)).status, 404)
+    const removed = await worker.person(['synthetic-pegboard-604', 'example.com'].join('@'), 'Removed teammate')
+    assert.ok((await ok(f.reader.get(directory))).people.some(person => person.id === removed.id))
+    await ok(f.owner.post(`/api/v1/workspaces/ws_main/people/${removed.id}/account`, { status: 'inactive' }))
+    assert.ok(!(await ok(f.reader.get(directory))).people.some(person => person.id === removed.id))
+    assert.equal((await f.reader.get(profilePath(removed))).status, 404)
+    const erasure = await ok(f.owner.post('/api/v1/data/erasure-preview', { type: 'person', id: removed.id }))
+    assert.deepEqual(erasure.blockers, [])
+    await ok(f.owner.post('/api/v1/data/erase', { type: 'person', id: removed.id, token: erasure.token, confirm: true }))
+    assert.equal((await f.reader.get(profilePath(removed))).status, 404)
+    assert.equal((await removed.get(path)).status, 401, 'an erased session cannot retrieve a captured profile URL')
+    for (const grant of f.grants) await ok(f.owner.delete(`/api/v1/grants/${grant.id}`))
+    assert.deepEqual((await ok(f.reader.get(path))).assignments, [])
+    assert.equal((await f.reader.get(`/api/v1/tasks/${f.shared.id}`)).status, 404)
+    await ok(f.owner.post(`/api/v1/workspaces/ws_main/people/${f.reader.id}/role`, { role: 'guest' }))
+    assert.equal((await f.reader.get(directory)).status, 404)
+    assert.equal((await f.reader.get(path)).status, 404)
+  })
+})
 
 describe('Work conversions through reviewed public doors',{concurrency:false},()=>{
  let worker,root,peer,guest

@@ -31,6 +31,7 @@ export const homeTabs = (viewer: Viewer, current = '/app'): Tab[] => [
   { label: 'Goals', href: '/app/goals' },
   { label: 'Recurring work', href: '/app/recurrences' },
   { label: 'Teams', href: '/app/teams' },
+  ...(['guest', 'agent'].includes(viewer.role) ? [] : [{ label: 'People', href: '/app/people' }]),
   { label: 'Inbox', href: '/app/inbox' },
   ...(viewer.role === 'member' ? [] : [{ label: 'Access', href: '/app/access-review' }, { label: 'Admin', href: '/app/admin' }]),
   ...(viewer.role === 'owner' ? [{ label: 'Settings', href: settingsPath }] : []),
