@@ -15,6 +15,7 @@ export function DecisionCard({ request, next }: { request: Preview; next: string
     <ul className="rows">
       <li><span className="grow">Requester</span><span>{request.requester.name}{'email' in request.requester && request.requester.email ? ` (${request.requester.email})` : ''}</span></li>
       <li><span className="grow">Asking for</span><span>{request.targetName ?? `${request.targetType} (administrative request)`}</span></li>
+      {request.targetType === 'portfolio' && <li><span className="grow">Scope</span><span>Portfolio membership only; no project access</span></li>}
       <li><span className="grow">Requested level</span><span className="tagline">{levelLabel(request.level)}</span></li>
       {request.message && <li><span className="grow">Message</span><span>{request.message}</span></li>}
       <li><span className="grow">Expires</span><span>{when(request.expiresAt)}</span></li>

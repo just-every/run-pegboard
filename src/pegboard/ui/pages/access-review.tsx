@@ -20,6 +20,10 @@ export function AccessReviewPage({ viewer, review }: { viewer: Viewer; review: R
         <form method="post" action={`/api/v1/grants/${grant.id}/revoke`}><input type="hidden" name="_next" value="/app/access-review" /><button className="button quiet" type="submit">Revoke</button></form></li>)}
         {review.grants.length === 0 && <li>No grants yet.</li>}</ul>
     </Card>
+    <Card title="Portfolio memberships">
+      <ul className="rows" aria-label="Portfolio memberships">{review.portfolioMemberships.map(row => <li key={`${row.portfolioId}:${row.operatorId}`}><span className="grow"><strong>{row.member}</strong> on {row.portfolio}<br /><small>{row.requestId ? 'Approved request' : 'Granted'} by {row.by} · {when(row.at)} · No project access</small></span><span className="tagline">{levelLabel(row.level)}</span><form method="post" action={`/api/v1/portfolios/${row.portfolioId}/members`}><input type="hidden" name="_next" value="/app/access-review" /><input type="hidden" name="operatorId" value={row.operatorId} /><input type="hidden" name="level" value="none" /><button className="button quiet" type="submit">Revoke</button></form></li>)}
+        {review.portfolioMemberships.length === 0 && <li>No portfolio memberships.</li>}</ul>
+    </Card>
     <Card title="Access requests">
       <ul className="rows" aria-label="Access requests">{review.requests.map(request => <li key={request.id}><span className="grow">{request.requester} asked for {levelLabel(request.level)} on {request.target_type}<br /><small>{when(request.created_at)}</small></span><span className={request.status === 'approved' ? 'tagline on' : 'tagline'}>{request.status}{request.granted_level ? `: ${levelLabel(request.granted_level)}` : ''}</span></li>)}
         {review.requests.length === 0 && <li>No requests.</li>}</ul>

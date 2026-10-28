@@ -1,21 +1,24 @@
 // Who may decide an access request and up to which level, and who is told. Always computed from current grants:
 // a revoked approver or an inactive person has no authority, whatever once was delivered to them.
 import { all, first } from '../db'
+import { loadPortfolio, portfolioAdministrators, portfolioLevel, portfolioAccessRevision, type PortfolioRow } from '../portfolios/portfolios'
 import type { GrantRow, ProjectRow, RequestRow, TaskRow, TeamRow } from '../model'
 import { activeGrants, projectEffective, teamEffective } from '../authorization/effective'
 import { loadProject, loadTask, loadTeam } from '../authorization/grants'
 import { maxLevel, type Level } from '../authorization/levels'
 import { workspaceRole, type Actor } from '../workspace/people'
 
-export type Target = { type: 'team'; row: TeamRow } | { type: 'project'; row: ProjectRow } | { type: 'task'; row: TaskRow }
+export type Target = { type: 'team'; row: TeamRow } | { type: 'project'; row: ProjectRow } | { type: 'task'; row: TaskRow } | { type: 'portfolio'; row: PortfolioRow }
 export async function loadTarget(db: D1Database, type: RequestRow['target_type'], id: string): Promise<Target | null> {
+  if (type === 'portfolio') { const row = await loadPortfolio(db, id); return row ? { type, row } : null }
   if (type === 'team') { const row = await loadTeam(db, id); return row ? { type, row } : null }
   if (type === 'project') { const row = await loadProject(db, id); return row ? { type, row } : null }
   const row = await loadTask(db, id)
   return row ? { type, row } : null
 }
-export const targetTypeOf = (id: string): RequestRow['target_type'] | null => id.startsWith('team_') ? 'team' : id.startsWith('prj_') ? 'project' : id.startsWith('tsk_') ? 'task' : null
+export const targetTypeOf = (id: string): RequestRow['target_type'] | null => id.startsWith('pf_') ? 'portfolio' : id.startsWith('team_') ? 'team' : id.startsWith('prj_') ? 'project' : id.startsWith('tsk_') ? 'task' : null
 export const policyRevOf = async (db: D1Database, target: Target): Promise<number> => {
+  if (target.type === 'portfolio') return portfolioAccessRevision(db, target.row)
   if (target.type === 'team' || target.type === 'project') return target.row.policy_rev
   // A task's policy is its projects': any sharing change in one of them moves it.
   return (await first<{ n: number }>(db, 'SELECT COALESCE(SUM(p.policy_rev),0) n FROM peg_task_projects tp JOIN peg_projects p ON p.id=tp.project_id WHERE tp.task_id=?', target.row.id))!.n
@@ -63,7 +66,9 @@ async function projectFallback(db: D1Database, project: ProjectRow): Promise<Set
 /** The people a request is delivered to: the object's own approvers, or only when none remain, its configured fallback. */
 export async function recipients(db: D1Database, target: Target, requesterId: string): Promise<{ kind: 'request' | 'fallback'; ids: string[] }> {
   let primary = new Set<string>(), fallback = new Set<string>()
-  if (target.type === 'team') {
+  if (target.type === 'portfolio') {
+    primary = new Set(await portfolioAdministrators(db, target.row))
+  } else if (target.type === 'team') {
     primary = await approvers(db, 'team', target.row.id, target.row.workspace_id)
     if (!primary.size) primary = await teamAdmins(db, target.row)
     if (target.row.fallback_id && await activeIn(db, target.row.fallback_id, target.row.workspace_id)) fallback.add(target.row.fallback_id)
@@ -88,6 +93,7 @@ export async function authorityOver(db: D1Database, actorId: string, target: Tar
   const role = await workspaceRole(db, actorId, workspaceId)
   if (!role || actorId === requesterId) return null
   const stub = actorOf(actorId)
+  if (target.type === 'portfolio') return await portfolioLevel(db, stub, target.row) === 'admin' ? { ceiling: 'viewer', via: role === 'owner' || role === 'admin' ? 'administrator' : 'admin' } : null
   let best: Level | null = null
   const consider = (level: Level | null) => { best = maxLevel(best, level) }
   if (target.type === 'team') {
