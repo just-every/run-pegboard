@@ -1,3 +1,5 @@
+import { processProjectRequests } from './pegboard/access-requests/requests'
+import { operatorMail } from './mail.server.mjs'
 import {processApprovalReminders} from './pegboard/approvals/routing'
 import {approvalMail} from './pegboard/approvals/mail.mjs'
 import {processBundleJobs} from './pegboard/bundles/queue'
@@ -32,7 +34,7 @@ function noTransform(response: Response): Response {
 }
 
 export default withDemo<Bindings, ExportedHandler<Bindings>>({
-  async scheduled(_event, env, execution) { execution.waitUntil(processRecurrences(runtimeBindings(env).DB).then(()=>processBundleJobs(runtimeBindings(env).DB)).then(()=>{const e=runtimeBindings(env);return processApprovalReminders(e.DB,{origin:e.AUTH_ORIGIN,from:e.MAIL_FROM,mail:approvalMail(e)})})) },
+  async scheduled(_event, env, execution) { execution.waitUntil(processProjectRequests(runtimeBindings(env).DB, {origin:env.AUTH_ORIGIN,from:env.MAIL_FROM,mail:operatorMail(runtimeBindings(env))}).then(()=>processRecurrences(runtimeBindings(env).DB)).then(()=>processBundleJobs(runtimeBindings(env).DB)).then(()=>{const e=runtimeBindings(env);return processApprovalReminders(e.DB,{origin:e.AUTH_ORIGIN,from:e.MAIL_FROM,mail:approvalMail(e)})})) },
   async fetch(request, env, execution) {
     const asset = await staticAssetResponse(request, env)
     if (asset) return asset
