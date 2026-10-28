@@ -36,7 +36,7 @@ export async function availabilityView(db: D1Database, actor: Actor, workspace: 
   return { workspace: { id: workspace, name: workspaceRow.name }, canConfigure: isAdministrator(role),
     zone: calendar.zone, week: calendar.week, revision: row?.revision ?? 0,
     days: calendar.week.map((hours, weekday) => ({ weekday, start: hours ? clock(hours.start) : '', end: hours ? clock(hours.end) : '' })),
-    timeOff: own.filter(l=>l.source==='self').map(leave => ({ id: leave.id, start: leave.start_date, end: leave.end_date,delegateId:leave.delegate_id,source:'self-declared' })) }
+    timeOff: own.filter(l=>l.source==='self').map(leave => ({ id: leave.id, start: leave.start_date, end: leave.end_date })) }
 }
 
 export async function setWorkingCalendar(db: D1Database, actor: Actor, workspace: string, input: Record<string, unknown>) {

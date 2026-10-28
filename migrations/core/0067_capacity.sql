@@ -17,7 +17,7 @@ CREATE TABLE peg_availability_history (
 CREATE TABLE peg_capacity_feeds (
  id TEXT PRIMARY KEY, workspace_id TEXT NOT NULL REFERENCES peg_workspaces(id) ON DELETE CASCADE,
  service TEXT NOT NULL, origin TEXT NOT NULL, account TEXT NOT NULL,
- mapping TEXT NOT NULL, fetched_at INTEGER, active INTEGER NOT NULL DEFAULT 1,
+ mapping TEXT NOT NULL, fetched_at INTEGER, from_date TEXT, through_date TEXT, active INTEGER NOT NULL DEFAULT 1,
  issuer_id TEXT NOT NULL, revision INTEGER NOT NULL DEFAULT 1
 );
 CREATE TABLE peg_effort_mappings (
@@ -46,3 +46,30 @@ CREATE TRIGGER peg_capacity_feed_update AFTER UPDATE ON peg_capacity_feeds BEGIN
 CREATE TRIGGER peg_effort_insert AFTER INSERT ON peg_effort_allocations BEGIN UPDATE peg_personal_revision SET value=value+1 WHERE id=1; END;
 CREATE TRIGGER peg_effort_update AFTER UPDATE ON peg_effort_allocations BEGIN UPDATE peg_personal_revision SET value=value+1 WHERE id=1; END;
 CREATE TRIGGER peg_effort_delete AFTER DELETE ON peg_effort_allocations BEGIN UPDATE peg_personal_revision SET value=value+1 WHERE id=1; END;
+
+-- Opaque source IDs prevent a fresh provider read from resurrecting an erased person.
+CREATE TABLE peg_capacity_erased_sources (feed_id TEXT NOT NULL REFERENCES peg_capacity_feeds(id) ON DELETE CASCADE,source_person TEXT NOT NULL,PRIMARY KEY(feed_id,source_person));
+CREATE TRIGGER peg_capacity_custody_peg_capacity_profiles_insert AFTER INSERT ON peg_capacity_profiles BEGIN UPDATE peg_data_revision SET value=value+1 WHERE id=1; END;
+CREATE TRIGGER peg_capacity_custody_peg_capacity_profiles_update AFTER UPDATE ON peg_capacity_profiles BEGIN UPDATE peg_data_revision SET value=value+1 WHERE id=1; END;
+CREATE TRIGGER peg_capacity_custody_peg_capacity_profiles_delete AFTER DELETE ON peg_capacity_profiles BEGIN UPDATE peg_data_revision SET value=value+1 WHERE id=1; END;
+CREATE TRIGGER peg_capacity_custody_peg_availability_history_insert AFTER INSERT ON peg_availability_history BEGIN UPDATE peg_data_revision SET value=value+1 WHERE id=1; END;
+CREATE TRIGGER peg_capacity_custody_peg_availability_history_update AFTER UPDATE ON peg_availability_history BEGIN UPDATE peg_data_revision SET value=value+1 WHERE id=1; END;
+CREATE TRIGGER peg_capacity_custody_peg_availability_history_delete AFTER DELETE ON peg_availability_history BEGIN UPDATE peg_data_revision SET value=value+1 WHERE id=1; END;
+CREATE TRIGGER peg_capacity_custody_peg_capacity_feeds_insert AFTER INSERT ON peg_capacity_feeds BEGIN UPDATE peg_data_revision SET value=value+1 WHERE id=1; END;
+CREATE TRIGGER peg_capacity_custody_peg_capacity_feeds_update AFTER UPDATE ON peg_capacity_feeds BEGIN UPDATE peg_data_revision SET value=value+1 WHERE id=1; END;
+CREATE TRIGGER peg_capacity_custody_peg_capacity_feeds_delete AFTER DELETE ON peg_capacity_feeds BEGIN UPDATE peg_data_revision SET value=value+1 WHERE id=1; END;
+CREATE TRIGGER peg_capacity_custody_peg_effort_mappings_insert AFTER INSERT ON peg_effort_mappings BEGIN UPDATE peg_data_revision SET value=value+1 WHERE id=1; END;
+CREATE TRIGGER peg_capacity_custody_peg_effort_mappings_update AFTER UPDATE ON peg_effort_mappings BEGIN UPDATE peg_data_revision SET value=value+1 WHERE id=1; END;
+CREATE TRIGGER peg_capacity_custody_peg_effort_mappings_delete AFTER DELETE ON peg_effort_mappings BEGIN UPDATE peg_data_revision SET value=value+1 WHERE id=1; END;
+CREATE TRIGGER peg_capacity_custody_peg_effort_allocations_insert AFTER INSERT ON peg_effort_allocations BEGIN UPDATE peg_data_revision SET value=value+1 WHERE id=1; END;
+CREATE TRIGGER peg_capacity_custody_peg_effort_allocations_update AFTER UPDATE ON peg_effort_allocations BEGIN UPDATE peg_data_revision SET value=value+1 WHERE id=1; END;
+CREATE TRIGGER peg_capacity_custody_peg_effort_allocations_delete AFTER DELETE ON peg_effort_allocations BEGIN UPDATE peg_data_revision SET value=value+1 WHERE id=1; END;
+CREATE TRIGGER peg_capacity_custody_peg_resource_plans_insert AFTER INSERT ON peg_resource_plans BEGIN UPDATE peg_data_revision SET value=value+1 WHERE id=1; END;
+CREATE TRIGGER peg_capacity_custody_peg_resource_plans_update AFTER UPDATE ON peg_resource_plans BEGIN UPDATE peg_data_revision SET value=value+1 WHERE id=1; END;
+CREATE TRIGGER peg_capacity_custody_peg_resource_plans_delete AFTER DELETE ON peg_resource_plans BEGIN UPDATE peg_data_revision SET value=value+1 WHERE id=1; END;
+CREATE TRIGGER peg_capacity_custody_peg_time_off_insert AFTER INSERT ON peg_time_off BEGIN UPDATE peg_data_revision SET value=value+1 WHERE id=1; END;
+CREATE TRIGGER peg_capacity_custody_peg_time_off_update AFTER UPDATE ON peg_time_off BEGIN UPDATE peg_data_revision SET value=value+1 WHERE id=1; END;
+CREATE TRIGGER peg_capacity_custody_peg_time_off_delete AFTER DELETE ON peg_time_off BEGIN UPDATE peg_data_revision SET value=value+1 WHERE id=1; END;
+CREATE TRIGGER peg_capacity_custody_peg_capacity_erased_sources_insert AFTER INSERT ON peg_capacity_erased_sources BEGIN UPDATE peg_data_revision SET value=value+1 WHERE id=1; END;
+CREATE TRIGGER peg_capacity_custody_peg_capacity_erased_sources_update AFTER UPDATE ON peg_capacity_erased_sources BEGIN UPDATE peg_data_revision SET value=value+1 WHERE id=1; END;
+CREATE TRIGGER peg_capacity_custody_peg_capacity_erased_sources_delete AFTER DELETE ON peg_capacity_erased_sources BEGIN UPDATE peg_data_revision SET value=value+1 WHERE id=1; END;

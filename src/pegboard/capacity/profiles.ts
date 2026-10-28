@@ -27,7 +27,7 @@ export async function capacityPeople(db:D1Database,actor:Actor,workspace:string)
  const rows=await all<{id:string;display_name:string;zone:string|null;week:string|null;skills:string|null}>(db,`SELECT DISTINCT o.id,o.display_name,p.zone,p.week,p.skills FROM oa_operators o
  LEFT JOIN peg_workspace_members m ON m.operator_id=o.id AND m.workspace_id=?
  LEFT JOIN peg_capacity_profiles p ON p.person_id=o.id AND p.workspace_id=?
- WHERE o.status='active' AND (o.role IN ('owner','admin') OR m.role NOT IN ('guest','agent')) ORDER BY o.display_name,o.id`,workspace,workspace)
+ WHERE o.status='active' AND NOT EXISTS(SELECT 1 FROM peg_erased_people e WHERE e.operator_id=o.id) AND (o.role IN ('owner','admin') OR m.role NOT IN ('guest','agent')) ORDER BY o.display_name,o.id`,workspace,workspace)
  return rows.map(r=>({id:r.id,name:r.display_name,zone:r.zone??base.zone,week:r.week?JSON.parse(r.week):base.week,skills:r.skills??''}))
 }
 export async function saveCapacityProfile(db:D1Database,actor:Actor,workspace:string,input:Record<string,any>) {
@@ -41,6 +41,7 @@ export async function saveCapacityProfile(db:D1Database,actor:Actor,workspace:st
  const minute=(v:unknown)=>{if(typeof v==='number')return v;if(typeof v!=='string'||!/^\d{2}:\d{2}$/.test(v))throw invalid('working_hours');const [h,m]=v.split(':').map(Number);if(h>23||m>59)throw invalid('working_hours');return h*60+m}
  if(!Array.isArray(raw)||raw.length!==7)throw invalid('working_hours')
  const week=raw.map(v=>{if(v===null)return null;const start=minute(v?.start),end=minute(v?.end);if(!Number.isInteger(start)||!Number.isInteger(end)||start<0||end>1439||start>=end)throw invalid('working_hours');return {start,end}})
+ if(!week.some(Boolean))throw invalid('working_hours')
  await batch(db,[bound(db,`INSERT INTO peg_capacity_profiles VALUES(?,?,?,?,?) ON CONFLICT(workspace_id,person_id) DO UPDATE SET zone=excluded.zone,week=excluded.week,skills=excluded.skills`,[workspace,person,zone,JSON.stringify(week),String(input.skills??'').slice(0,300)])])
  return {personId:person,zone,week}
 }

@@ -38,6 +38,8 @@ export interface Bindings {
  PEGBOARD_LOCAL_ENGINEERING_ORIGINS?: string
  /** Local meeting provider schema edges only. */
  PEGBOARD_LOCAL_MEETING_ORIGINS?: string
+ /** Local native availability schema edges only. */
+ PEGBOARD_LOCAL_CAPACITY_ORIGINS?: string
  /** Local runtimes only: the checkout's key gate and dev identity switch. Deploy refuses both. */
  RER_MODELS_SERVICE?: string
  RER_MODELS_KEY?: string

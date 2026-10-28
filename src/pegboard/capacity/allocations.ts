@@ -7,6 +7,7 @@ import { capacityMember, capacityPeople, effortHours } from './profiles'
 
 export function effortInput(input:Record<string,any>):Record<string,any> {
  let people=input.people
+ if(people===undefined&&Array.isArray(input.selected))people=input.selected.map((id:string)=>({personId:id,sourcePerson:input['sourcePerson:'+id],hours:input['hours:'+id]}))
  if(typeof people==='string'){try{people=JSON.parse(people)}catch{throw invalid('effort_people')}}
  return {...input,people}
 }

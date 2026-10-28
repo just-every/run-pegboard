@@ -5,6 +5,7 @@ import { workloadView, addResourcePlan } from '../capacity/workload'
 import { saveCapacityProfile } from '../capacity/profiles'
 import { applyStaffing, staffingScenario, capacityPlan } from '../capacity/scenarios'
 import { applyEffort, effortPreview } from '../capacity/allocations'
+import { configureFeed, refreshFeed, revokeFeed, feedSettings } from '../capacity/feeds'
 
 export function capacityRoutes(app:Hono<{Bindings:Bindings}>) {
  const next=(_:unknown,{params}:{params:Record<string,string>})=>'/app/workload?workspace='+encodeURIComponent(params.id)
@@ -16,4 +17,8 @@ export function capacityRoutes(app:Hono<{Bindings:Bindings}>) {
  app.post('/workspaces/:id/staffing/apply',door(({db,actor,params,input})=>applyStaffing(db,actor,params.id,input),{next}))
  app.post('/tasks/:id/effort/preview',door(({db,actor,params,input})=>effortPreview(db,actor,params.id,input)))
  app.post('/tasks/:id/effort/apply',door(({db,actor,params,input})=>applyEffort(db,actor,params.id,input),{next:(_,d)=>'/app/workload'}))
+ app.get('/workspaces/:id/capacity-feeds',door(({db,actor,params})=>feedSettings(db,actor,params.id)))
+ app.post('/workspaces/:id/capacity-feeds',door(({db,actor,params,input})=>configureFeed(db,actor,params.id,input),{next:()=>'/app/settings/capacity'}))
+ app.post('/workspaces/:id/capacity-feeds/:feed/refresh',door(({env,db,actor,params,input})=>refreshFeed(env,db,actor,params.id,params.feed,input),{next:()=>'/app/settings/capacity'}))
+ app.post('/workspaces/:id/capacity-feeds/:feed/revoke',door(({db,actor,params})=>revokeFeed(db,actor,params.id,params.feed),{next:()=>'/app/settings/capacity'}))
 }
