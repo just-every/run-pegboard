@@ -4023,7 +4023,7 @@
       "executable": false
     },
     "tests/journeys/profiles.mjs": {
-      "sha256": "e772cf2c6a75cf388abd5d1a339385754600c208c4926b17be5501ac7aaace4d",
+      "sha256": "3feaef4de02b14ff298e2e772abf4fa0b8d1ad97e4eeadaee9a1157736704b55",
       "executable": false
     },
     "tests/journeys/project-duplicate.mjs": {
@@ -4123,7 +4123,7 @@
       "executable": false
     },
     "tests/support/profiles.mjs": {
-      "sha256": "d4512b19acf2f301490ece6b2b93b65fc98521fa9d266a82b835d2291c848a1d",
+      "sha256": "0b354f7a19e9af6b957c90995e1623c071394ba9be6dc0b8ca624f2e8a78e8df",
       "executable": false
     },
     "tests/support/time-services.mjs": {

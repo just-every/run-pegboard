@@ -52,11 +52,14 @@ export async function profilesJourney({ w, browser }) {
   }
   for (const grant of f.grants) await ok(f.owner.delete(`/api/v1/grants/${grant.id}`))
   assert.deepEqual((await ok(f.reader.get(profilePath(f.subject)))).assignments, [])
-  const revoked = await open(f.reader, 1440)
-  try {
-    await revoked.page.goto(`${w.origin}/app/people/${f.subject.id}`)
-    await expect(revoked.page.getByText('No shared assignments available to you.', { exact: true })).toBeVisible()
-    assert.equal(await revoked.page.getByRole('list', { name: 'Permitted assignments' }).getByRole('link').count(), 0)
-  } finally { await revoked.context.close() }
+  for (const width of sizes) {
+    const revoked = await open(f.reader, width)
+    try {
+      await revoked.page.goto(`${w.origin}/app/people/${f.subject.id}`)
+      await expect(revoked.page.getByText('No shared assignments available to you.', { exact: true })).toBeVisible()
+      assert.equal(await revoked.page.getByRole('list', { name: 'Permitted assignments' }).getByRole('link').count(), 0)
+      if (process.env.PEGBOARD_PROOF_DIR) await revoked.page.screenshot({ path: join(process.env.PEGBOARD_PROOF_DIR, `profiles-revoked-${width}.png`), fullPage: true })
+    } finally { await revoked.context.close() }
+  }
   console.log('Teammate profiles: permitted work, keyboard navigation, private-work exclusion and revocation passed')
 }
