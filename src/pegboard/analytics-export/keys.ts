@@ -1,6 +1,6 @@
 import { all, batch, bound, first, forbidden, invalid, newId, now, PegError } from '../db'
 import { digest, guarded, revision } from '../decisions/revision'
-import { openProject } from '../workspace/projects'
+import { listProjects, openProject } from '../workspace/projects'
 import { administers, operatorRow, workspaceSettings, type Actor } from '../workspace/people'
 import { permanentEvent } from '../audit/search'
 import { datasets, schema, type Fields } from './schema'
@@ -46,12 +46,13 @@ export async function createKey(db: D1Database, actor: Actor, workspace: string,
   await standing(db, key)
   await guarded(db, rev, [bound(db, 'INSERT INTO peg_analytics_keys VALUES(?,?,?,?,?,?,?,?,?,?,NULL)',
     [key.id, workspace, actor.id, person.version, name, key.token_hash, key.projects, key.fields, key.created_at, expiresAt]),
-    permanentEvent(db, { workspace, actor: actor.id, action: 'analytics.key_authorized', type: 'analyst_key', id: key.id, metadata: { consent: true } })])
+    permanentEvent(db, { workspace, actor: actor.id, action: 'analytics.key_authorized', type: 'analyst_key', id: key.id, metadata: { consent: true, expiresAt } })])
   return { id: key.id, secret, expiresAt, servicePath: `/api/v1/analytics/odata/${key.id}`, notice: 'Save this credential now. It is never shown again.' }
 }
+export type ListedKey = Pick<AnalystKey, 'id' | 'name' | 'projects' | 'fields' | 'created_at' | 'expires_at' | 'revoked_at'>
 export async function listKeys(db: D1Database, actor: Actor, workspace: string) {
   if (!await administers(db, actor, workspace)) throw forbidden('administrator_required')
-  return all(db, 'SELECT id,name,projects,fields,created_at,expires_at,revoked_at FROM peg_analytics_keys WHERE owner_id=? AND workspace_id=? ORDER BY created_at,id', actor.id, workspace)
+  return all<ListedKey>(db, 'SELECT id,name,projects,fields,created_at,expires_at,revoked_at FROM peg_analytics_keys WHERE owner_id=? AND workspace_id=? ORDER BY created_at,id', actor.id, workspace)
 }
 export async function revokeKey(db: D1Database, actor: Actor, workspace: string, id: string) {
   if (!await administers(db, actor, workspace)) throw forbidden('administrator_required')
@@ -71,4 +72,23 @@ export async function authenticate(db: D1Database, id: string, request: Request)
   if (!key || !secret || key.token_hash !== await digest(secret)) throw new PegError(401, 'analyst_key_unavailable')
   await standing(db, key)
   return key
+}
+
+/** Settings uses the same current export authority as issuance, and never loads a credential hash. */
+export async function analystSettings(db: D1Database, actor: Actor, workspace: string) {
+  const keys = await listKeys(db, actor, workspace)
+  const projects: { id: string; name: string }[] = []
+  for (const project of await listProjects(db, actor, workspace)) {
+    const opened = await openProject(db, actor, project.id)
+    if (opened.effective.capabilities.has('export')) projects.push({ id: project.id, name: project.name })
+  }
+  const person = (await operatorRow(db, actor.id))!
+  const versions = new Map((await all<{ id: string; owner_version: number }>(db, 'SELECT id,owner_version FROM peg_analytics_keys WHERE owner_id=? AND workspace_id=?', actor.id, workspace)).map(key => [key.id, key.owner_version]))
+  const enabled = (await workspaceSettings(db, workspace)).integrationsEnabled
+  return { projects, enabled, keys: keys.map(key => {
+    const selected = JSON.parse(key.projects) as string[]
+    const unavailable = !enabled || versions.get(key.id) !== person.version || selected.some(id => !projects.some(p => p.id === id))
+    return { ...key, projects: selected, fields: JSON.parse(key.fields) as Fields,
+      status: key.revoked_at !== null ? 'Revoked' : key.expires_at <= now() ? 'Expired' : unavailable ? 'Unavailable' : 'Active' }
+  }) }
 }

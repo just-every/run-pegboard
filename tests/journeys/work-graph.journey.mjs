@@ -1,3 +1,4 @@
+import {analystJourney} from './analytics.mjs'
 import {capacityJourney} from './capacity.mjs'
 import {startCapacityServices} from '../support/capacity-services.mjs'
 import {publicApiJourney} from './public-api.mjs'
@@ -21,7 +22,7 @@ import { planningCanvasJourney } from './planning-canvas.mjs'
 import { portfolioJourney } from './portfolios.mjs'
 import { timelineJourney } from './timeline.mjs'
 
-const journeyNames = ["capacity", "public-api", "approval-routing", "guests", "core", "recurrence", "approvals", "time-packets", "goals", "engineering", "meetings", "custody", "recovery", "departure", "canvas", "portfolio", "timeline", "register", "bundles"]
+const journeyNames = ["analytics", "capacity", "public-api", "approval-routing", "guests", "core", "recurrence", "approvals", "time-packets", "goals", "engineering", "meetings", "custody", "recovery", "departure", "canvas", "portfolio", "timeline", "register", "bundles"]
 const selected = new Set(process.env.PEGBOARD_JOURNEY === undefined ? journeyNames : process.env.PEGBOARD_JOURNEY.split(',').map(name => name.trim()))
 for (const name of selected) if (!journeyNames.includes(name)) throw new Error(`Unknown PEGBOARD_JOURNEY: ${name}`)
 
@@ -47,6 +48,7 @@ try {
     usedWorker = true
     return true
   }
+  if(await select('analytics'))await analystJourney({w,browser,owner,ok})
   if(await select('capacity'))await capacityJourney({w,browser,services:capacityServices,ok})
   if(await select('public-api'))await publicApiJourney({w,browser,owner,cookies})
   if(await select('approval-routing'))await approvalRoutingJourney({w,browser,owner,cookies})

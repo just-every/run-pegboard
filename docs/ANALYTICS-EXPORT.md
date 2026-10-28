@@ -2,13 +2,21 @@
 
 PEG-044 is partial. The first export service provides an OData 4.0 read subset
 for projects, tasks, task placements and approved time. Native Tableau and
-Power BI connector qualification, the analyst management screen, portfolios,
+Power BI connector qualification, portfolios,
 goals, requests, approvals and scheduled-report reconciliation remain unproved.
 No connected BI client or live provider qualification is claimed.
 
 ## Authorize a key
 
-An authenticated owner or administrator calls `POST /api/v1/analytics/keys` with
+Open **Work settings → Analyst access** from Administration to manage your own
+keys. Select projects, dataset fields and a lifetime of 1, 7 or 30 days, then
+explicitly consent to the recorded scope. No project, field or consent checkbox
+is selected by default. The issued credential appears only in the current page;
+dismissal, reload and navigation clear it. The list shows scope, expiry and
+revocation state without a recoverable secret. Revoke from that list to refuse
+all new fetches, including saved pagination and refresh links.
+
+The same native API is available: an authenticated owner or administrator calls `POST /api/v1/analytics/keys` with
 `name`, an explicit `projects` array, a `fields` object, a millisecond `expiresAt`
 and `consent: true`. Every selected project must currently permit export.
 Expiry must be in the future and no more than 30 days away. The response contains
@@ -86,7 +94,7 @@ that either client has completed PEG-044. Verify metadata negotiation, all pages
 shared-snapshot selection, incremental removal handling and workbook refresh in
 each real client before marking that acceptance point complete.
 
-Default adopted pending CT: owner or administrator self-custody; explicit audited
+CT-approved under RL-103 (28 October 2026), retaining the 23 October riders: owner or administrator self-custody; explicit audited
 consent to project and field scope; deny by default; finite key and snapshot fetch
 lifetimes; no automatic outbound or product write authority. PEG-018 and PEG-027
 inherit these dataset definitions and current-access checks when their report and

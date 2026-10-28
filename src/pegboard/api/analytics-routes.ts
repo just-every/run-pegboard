@@ -1,15 +1,30 @@
 import type { Context, Hono } from 'hono'
 import { runtimeBindings, type Bindings } from '../../auth.server'
-import { door, describe, json } from './door'
+import { door, describe, flag, json } from './door'
 import { authenticate, createKey, listKeys, revokeKey } from '../analytics-export/keys'
 import { datasets, metadata, type Dataset, type Fields } from '../analytics-export/schema'
 import { feed, guard } from '../analytics-export/snapshots'
+import { invalid, now } from '../db'
 import { dataRevision } from '../data/settings'
 
 export function analyticsRoutes(app: Hono<{ Bindings: Bindings }>) {
-  app.post('/analytics/keys', door(({ db, actor, workspace, input }) => createKey(db, actor, workspace, input)))
+  app.post('/analytics/keys', door(async ({ db, actor, workspace, input, form }) => {
+    if (form) {
+      const days = Number(input.expiryDays), fields: Record<string, string[]> = {}
+      if (!Number.isSafeInteger(days) || days < 1 || days > 30) throw invalid('analyst_scope_and_expiry')
+      for (const selected of input.fields ?? []) {
+        const [dataset, field, extra] = String(selected).split('.')
+        if (!field || extra) throw invalid('analyst_fields')
+        ;(fields[dataset] ??= []).push(field)
+      }
+      input = { ...input, projects: input.projects ?? [], fields, expiresAt: now() + days * 86400000, consent: flag(input.consent) }
+    }
+    const result = await createKey(db, actor, workspace, input)
+    // A form submitted with fetch keeps the credential only in the current document, never in a URL or session.
+    return json(result)
+  }))
   app.get('/analytics/keys', door(async ({ db, actor, workspace }) => ({ keys: await listKeys(db, actor, workspace) })))
-  app.post('/analytics/keys/:id/revoke', door(({ db, actor, workspace, params }) => revokeKey(db, actor, workspace, params.id)))
+  app.post('/analytics/keys/:id/revoke', door(({ db, actor, workspace, params }) => revokeKey(db, actor, workspace, params.id), { next: (_, context) => '/app/settings/analytics?workspace=' + encodeURIComponent(context.workspace) }))
   const read = async (c: Context<{ Bindings: Bindings }>) => {
     const headers = { 'odata-version': '4.0', 'cache-control': 'private, no-store', 'vary': 'Authorization', 'x-content-type-options': 'nosniff' }
     try {
