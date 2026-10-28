@@ -3,6 +3,12 @@ export const schema = {
   Projects: { id: 'String', name: 'String', status: 'String' },
   Tasks: { id: 'String', title: 'String', status: 'String', estimateHours: 'Double' },
   TaskProjects: { id: 'String', taskId: 'String', projectId: 'String' },
+  Portfolios: { id: 'String', name: 'String', parentId: 'String', taskCount: 'Int64', doneCount: 'Int64', estimateHours: 'Double' },
+  PortfolioProjects: { id: 'String', portfolioId: 'String', projectId: 'String' },
+  Goals: { id: 'String', title: 'String', kind: 'String', mode: 'String', unit: 'String', progressPercent: 'Double', state: 'String', observedAt: 'Int64' },
+  GoalLinks: { id: 'String', goalId: 'String', sourceType: 'String', sourceId: 'String', weight: 'Double' },
+  Requests: { id: 'String', taskId: 'String', projectId: 'String', createdAt: 'Int64', status: 'String' },
+  Approvals: { id: 'String', taskId: 'String', kind: 'String', subjectId: 'String', version: 'String', state: 'String' },
   TimeEntries: { id: 'String', taskId: 'String', projectId: 'String', sheetId: 'String', seconds: 'Int64', adjustmentOf: 'String' },
 } as const
 export type Dataset = keyof typeof schema

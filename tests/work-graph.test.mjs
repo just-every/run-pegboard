@@ -1,3 +1,4 @@
+import { analystDatasetScenario } from './scenarios/analytics.mjs'
 import { registerCalendarBlockTests } from './scenarios/calendar-blocks.mjs'
 import { startCalendarServices } from './support/calendar-services.mjs'
 import {registerPublicApiTests,startWebhookEdge} from './scenarios/public-api.mjs'
@@ -1748,12 +1749,19 @@ describe('Analyst exports', {concurrency:false}, () => {
     assert.deepEqual(consent.metadata,{consent:true,expiresAt:input.expiresAt,scopeDigest:expectedScope},'the permanent consent receipt binds the exact issuer, project, fields and expiry')
     assert.equal(delegated.scopeDigest,expectedScope)
     assert.equal((await ok(admin.get('/api/v1/analytics/keys'))).keys[0].scopeDigest,expectedScope,'own-key listing reconciles with the original authorization')
+    const authorizedReport=await ok(admin.post(`/api/v1/analytics/keys/${delegated.id}/reports`,{}))
+    assert.equal((await owner.get(`/api/v1/analytics/keys/${delegated.id}/reports?snapshot=${authorizedReport.snapshot}`)).status,403)
     const different=await ok(admin.post('/api/v1/analytics/keys',{...input,fields:{Tasks:['title']}}))
     assert.notEqual(different.scopeDigest,delegated.scopeDigest,'different consent cannot reuse the original scope receipt')
     assert.ok(!JSON.stringify(consent).includes(p.id)&&!JSON.stringify(consent).includes('Tasks'),'permanent audit retains no project or field contents')
     assert.ok(!JSON.stringify(audit).includes(delegated.secret))
     await ok(owner.post('/api/v1/workspaces/ws_main/people/'+admin.id+'/account',{role:'member'}))
     assert.equal((await read(delegated.servicePath+'/Tasks',delegated.secret)).status,401)
+    assert.equal((await admin.get(`/api/v1/analytics/keys/${delegated.id}/reports?snapshot=${authorizedReport.snapshot}`)).status,401)
+  })
+
+  it('reconciles reviewed portfolio, goal, request and approval datasets with local scheduled reports', async () => {
+    await analystDatasetScenario({ w, owner, mia, ok, csvRecords })
   })
 
   it('keeps analyst credentials and cached export payloads out of native archives', async () => {
@@ -1763,6 +1771,8 @@ describe('Analyst exports', {concurrency:false}, () => {
     const feed=await fetch(new URL(key.servicePath+'/Tasks',w.origin),{headers:{authorization:'Bearer '+key.secret}})
     assert.equal(feed.status,200)
     const snapshot=(await feed.json())['@pegboard.snapshot']
+    await ok(owner.post(`/api/v1/analytics/keys/${key.id}/schedule`,{hours:24,consent:true}))
+    await ok(owner.post('/api/v1/analytics/reports/run-due',{}))
     const created=await ok(owner.post('/api/portability/exports',{}),201)
     let archive
     for(let page=0;page<100;page++){
