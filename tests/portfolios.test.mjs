@@ -61,7 +61,10 @@ describe('PEG-013 portfolios that roll up truthfully', { concurrency: false }, (
     await ok(owner.post(`/api/v1/tasks/${shared.id}/projects`, { projectId: projects[1].id }))
     await ok(owner.post(`/api/v1/tasks/${shared.id}/projects`, { projectId: projects[12].id }))
     const secret = await task(privateProject.id, 'Negotiate acquisition terms', { dueDate: '2026-04-30' })
-    await ok(owner.post(`/api/v1/portfolios/${root.id}/members`, { operatorId: sam.id, level: 'viewer' }))
+    await ok(sam.post('/api/v1/access-requests', { targetId: root.id, level: 'viewer' }))
+    const request = (await ok(owner.get('/api/v1/access-requests'))).toDecide.find(row => row.targetId === root.id)
+    await ok(owner.post(`/api/v1/access-requests/${request.id}/decision`, { decision: 'approve', revision: request.revision, level: 'viewer' }))
+    assert.deepEqual((await ok(owner.get('/api/v1/admin/access-review'))).portfolioMemberships.filter(row => row.portfolioId === root.id).map(row => [row.operatorId, row.level, row.requestId]), [[sam.id, 'viewer', request.id]])
 
     const full = await view(owner, root.id)
     assert.equal(full.summary.projects, 20)

@@ -16,7 +16,7 @@ export function RefusalPage({ viewer, target, canAsk, asked }: { viewer: Viewer;
             <p>Choose the level you need and add a message. Asking shares nothing; a person who can decide will see the exact grant before approving it.</p>
             <Form action="/api/v1/access-requests" next={`/app/link/${encodeURIComponent(target)}?asked=1`} label="Request access">
               <input type="hidden" name="targetId" value={target} />
-              <Pick label="Level you are asking for" name="level" value="viewer" options={levelOptions(['viewer', 'commenter', 'editor'])} />
+              <Pick label="Level you are asking for" name="level" value="viewer" options={levelOptions(target.startsWith('pf_') ? ['viewer'] : ['viewer', 'commenter', 'editor'])} />
               <Area label="Message (optional)" name="message" />
               <Submit>Request access</Submit>
             </Form>

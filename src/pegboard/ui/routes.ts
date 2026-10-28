@@ -68,7 +68,7 @@ import {TimelinePage} from './pages/timeline'
 import {scheduleView} from '../schedule/timeline'
 import {moveInput,planChange} from '../schedule/plan'
 import {PortfolioPage} from './pages/portfolio'
-import {listPortfolios} from '../portfolios/portfolios'
+import {listPortfolios,openPortfolio} from '../portfolios/portfolios'
 import {portfolioRollup,portfolioDrill} from '../portfolios/rollup'
 import {canvasView} from '../canvas/nodes'
 import {ProjectListPage} from './pages/project-list'
@@ -321,9 +321,9 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
       const target = decodeURIComponent(id)
       if (url.searchParams.get('asked')) return refuse(db, actor, viewer, target, true)
       const taskId = await resolveTaskId(db, target)
-      for (const [type, where] of [['tasks', taskId], ['projects', target.startsWith('prj_') ? target : null], ['teams', target.startsWith('team_') ? target : null]] as const) {
+      for (const [type, where] of [['tasks', taskId], ['projects', target.startsWith('prj_') ? target : null], ['teams', target.startsWith('team_') ? target : null], ['portfolios', target.startsWith('pf_') ? target : null]] as const) {
         if (!where) continue
-        const opened = type === 'tasks' ? await viewTask(db, actor, where).then(() => true, () => false) : type === 'projects' ? await openProject(db, actor, where).then(() => true, () => false) : await teamEffective(db, actor, (await loadTeam(db, where))!).then(effective => effective.capabilities.has('read'), () => false)
+        const opened = type === 'tasks' ? await viewTask(db, actor, where).then(() => true, () => false) : type === 'projects' ? await openProject(db, actor, where).then(() => true, () => false) : type === 'portfolios' ? await openPortfolio(db, actor, where).then(() => true, () => false) : await teamEffective(db, actor, (await loadTeam(db, where))!).then(effective => effective.capabilities.has('read'), () => false)
         if (opened) return new Response(null, { status: 303, headers: { location: `/app/${type}/${where}`, 'cache-control': 'no-store' } })
       }
       return refuse(db, actor, viewer, target)
