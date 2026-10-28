@@ -1,5 +1,8 @@
 import { analystSettings } from '../analytics-export/keys'
 import { AnalyticsPage } from './pages/analytics'
+import { calendarChoices, projectBlocks, blockPreview } from '../calendars/blocks'
+import { calendarSettings } from '../calendars/connections'
+import { CalendarSettingsPage } from './pages/calendar-settings'
 import { workloadView } from '../capacity/workload'
 import { capacityPeople } from '../capacity/profiles'
 import { staffingScenario } from '../capacity/scenarios'
@@ -181,10 +184,11 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
       headers.set('content-security-policy', headers.get('content-security-policy') + "; connect-src 'self'")
       return new Response((await response.text()).replace('</body>', '<script src="/look/analytics.js" defer></script></body>'), { status: response.status, headers })
     }
-    if(section==='settings'&&!id)return page('Work settings',h(Shell,{viewer,current:'/auth/settings/identity',title:'Work settings',children:h(Card,{title:'Scheduling and notices',children:h('p',null,h('a',{href:'/app/settings/availability'},'Working calendar'), ' · ',h('a',{href:'/app/settings/readiness'},'Readiness notices'), ' · ',h('a',{href:'/app/settings/capacity'},'Capacity sources and tentative staffing'), ' · ',h('a',{href:'/app/account/availability'},'My availability'), ...(['owner','admin'].includes(viewer.role)?[' · ',h('a',{href:'/app/settings/analytics'},'Analyst access')]:[]))})}))
+    if(section==='settings'&&!id)return page('Work settings',h(Shell,{viewer,current:'/auth/settings/identity',title:'Work settings',children:h(Card,{title:'Scheduling and notices',children:h('p',null,h('a',{href:'/app/settings/availability'},'Working calendar'), ' · ',h('a',{href:'/app/settings/calendars'},'Calendar connections'), ' · ',h('a',{href:'/app/settings/readiness'},'Readiness notices'), ' · ',h('a',{href:'/app/settings/capacity'},'Capacity sources and tentative staffing'), ' · ',h('a',{href:'/app/account/availability'},'My availability'), ...(['owner','admin'].includes(viewer.role)?[' · ',h('a',{href:'/app/settings/analytics'},'Analyst access')]:[]))})}))
     if(section==='workload'&&!id){const input={...Object.fromEntries(url.searchParams),selected:url.searchParams.getAll('selected[]')},view=await workloadView(db,actor,workspace,input);return page('Workload',h(WorkloadPage,{viewer,view,scenario:url.searchParams.has('taskId')?await staffingScenario(db,actor,workspace,input):null,effort:url.searchParams.has('reviewEffort')?await effortPreview(db,actor,url.searchParams.get('effortTask')!,input):null,effortTask:url.searchParams.get('effortTask'),canConfigure:isAdministrator(await workspaceRole(db,actor.id,workspace))}))}
     if(section==='account'&&id==='availability')return page('My availability',h(AccountAvailabilityPage,{viewer,view:await accountAvailability(db,actor,workspace)}))
     if(section==='settings'&&id==='capacity')return page('Capacity settings',h(CapacitySettingsPage,{viewer,workspace,feeds:await feedSettings(db,actor,workspace),people:await capacityPeople(db,actor,workspace)}))
+    if(section==='settings'&&id==='calendars')return page('Calendar connections',h(CalendarSettingsPage,{viewer,view:await calendarSettings(db,actor,workspace)}))
     if(section==='settings'&&id==='availability')return page('Working calendar',h(AvailabilityPage,{viewer,view:await availabilityView(db,actor,url.searchParams.get('workspace')??workspace)}))
     if(section==='settings'&&id==='readiness')return page('Readiness notice settings',h(Shell,{viewer,current:'/auth/settings/identity',title:'Readiness notice settings',children:h(ReadinessPreferences,{readiness:await readinessNotices(db,actor,workspace)})}))
 
@@ -227,7 +231,7 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
     if(section==='projects'&&id&&tail==='register'&&segments.length===4){const data=await board(db,actor,id);return page('Delivery register',h(RegisterPage,{viewer,view:await registerView(db,actor,id),people:await peopleOptions(db,actor,workspace),tasks:data.columns.flatMap(c=>c.tasks.map(t=>({value:t.id,label:t.title})))}))}
     if(section==='projects'&&id&&tail==='calendar'&&segments.length===4){
       const view=await scheduleView(db,actor,id),here=`/app/projects/${id}/calendar`
-      return page('Calendar',h(CalendarPage,{viewer,view,editor:view.project.canEdit?await editorFor(id,view.tasks.filter(t=>t.inProject).map(t=>({value:t.id,label:t.title})),here):null}))
+      return page('Calendar',h(CalendarPage,{viewer,view,blocks:{here,connections:await calendarChoices(db,actor,workspace),tasks:view.tasks.filter(t=>t.inProject).map(t=>({id:t.id,title:t.title})),blocks:await projectBlocks(db,actor,id),preview:url.searchParams.get('calendarPreview')?await blockPreview(db,actor,url.searchParams.get('calendarPreview')!):null},editor:view.project.canEdit?await editorFor(id,view.tasks.filter(t=>t.inProject).map(t=>({value:t.id,label:t.title})),here):null}))
     }
     if(section==='projects'&&id&&tail==='timeline'&&segments.length===4){
       const input=Object.fromEntries(url.searchParams) as Record<string,string>

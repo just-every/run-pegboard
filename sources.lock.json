@@ -199,7 +199,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "adee6abdebc114798d7db90743bacd2a584ac1019be507e901cd56ee69c51f1c",
+      "sha256": "0ec63f78bc399cfebe64c5a400bae237662143f8c3adbe7b871f950e989acd65",
       "executable": false
     },
     "AGENTS.md": {
@@ -215,7 +215,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "d29e736716e4c1d6717d91272cd6699942ca922c8a53fb8ec0a01aa0d1cac14f",
+      "sha256": "9ac18492336e0ed6fb6fc1d2e21d2b48053d1f622172b2e32c2797ea924d4f06",
       "executable": false
     },
     "DEMO.md": {
@@ -238,8 +238,12 @@
       "sha256": "0f2588c6741b86334fc98bb887dbb6bb61a695f0cabc4fe886f1372855dd132a",
       "executable": false
     },
+    "docs/CALENDAR-BLOCKS.md": {
+      "sha256": "faeb2c0144cb5ddf5f3050c40854b1d05502eb1faa409774ea6487c8d0bb36d4",
+      "executable": false
+    },
     "docs/CLAIMS.md": {
-      "sha256": "2cb02cf0d405a64ab40c0376522cfef3fb477b04133f6326a4e2ccfd253f6cc8",
+      "sha256": "868b9eef481b14dc023e4ba813b108126e6befe0b738575d2f0ece677c7caf80",
       "executable": false
     },
     "docs/DATA-CUSTODY.md": {
@@ -598,6 +602,10 @@
       "sha256": "b535f4f5dd23aaa6380a83402438a1c02e7930129e23526ac455c703cd368b6e",
       "executable": false
     },
+    "migrations/core/0068_calendar_blocks.sql": {
+      "sha256": "efe655bd87f6ab35bc95354ad04bc5222df2bb3ec89c7f05a8c5c3896d67f76b",
+      "executable": false
+    },
     "ONBOARDING.md": {
       "sha256": "24b685d6eddeae5480ce4dfbf44c0590e54bcfe83641373de5bba985765380bd",
       "executable": false
@@ -611,7 +619,7 @@
       "executable": false
     },
     "package.json": {
-      "sha256": "cdadb509bf41337c944607dab3d84f17fed2114c7e3bd83f3f8468ead2e140a1",
+      "sha256": "e4a1478cbbc5bd9462d28b7fda8215f656e626b9ba3aaf3ac000af620ebf2774",
       "executable": false
     },
     "packaging.json": {
@@ -1803,7 +1811,7 @@
       "executable": false
     },
     "src/auth.server.ts": {
-      "sha256": "526abc8398346d2c3a35a0044ebbdeda6091d995bee7c7cb2db737dd3bacd36e",
+      "sha256": "9f81729b145e8ba093a23903d4e189883347860c72c8661d9efb1ca76b148b20",
       "executable": false
     },
     "src/base/actor.ts": {
@@ -2950,6 +2958,10 @@
       "sha256": "0e81996bb3346ef6dac57022d4ce0b8840112b0667f6d73a65c103dfe4a9aace",
       "executable": false
     },
+    "src/pegboard/api/calendar-routes.ts": {
+      "sha256": "f995a4810356878193ae1e5664589487647c71eb6ecf6bcc26dc3263d508692f",
+      "executable": false
+    },
     "src/pegboard/api/canvas-routes.ts": {
       "sha256": "1d2a0e5225422ba46339df540992c9b9c8f4c44f832f36d30f46f5818d9734e9",
       "executable": false
@@ -2987,7 +2999,7 @@
       "executable": false
     },
     "src/pegboard/api/index.ts": {
-      "sha256": "f26e48fb06eb9a650d74be25bf6e8839403b7b5ac3b1e1fd9e9a19274bcf65b9",
+      "sha256": "9f18711ba70071ed81b1f15c9f20616cddcd3bc5090ba3ae8b103489871bf86a",
       "executable": false
     },
     "src/pegboard/api/meeting-routes.ts": {
@@ -3130,6 +3142,14 @@
       "sha256": "6ca65ee736b02a9c6151fd379cfa5e7d619e2c15007197187094280082106ff5",
       "executable": false
     },
+    "src/pegboard/calendars/blocks.ts": {
+      "sha256": "812669711a99f76e59a1ec9358044c9e178733d92eb829d283d58f043ccf24c6",
+      "executable": false
+    },
+    "src/pegboard/calendars/connections.ts": {
+      "sha256": "043a55ac6296e25d266935e318f1ce784bfa343e2e9277ab631a291342f86263",
+      "executable": false
+    },
     "src/pegboard/canvas/nodes.ts": {
       "sha256": "4a4b9b3c40fff4301405c4265d0cbc233a4b51e69ce0ba600e3e2235c07a3a86",
       "executable": false
@@ -3160,6 +3180,10 @@
     },
     "src/pegboard/capacity/workload.ts": {
       "sha256": "ce481d86f648e6f4db90dc1368a22b2e055f7de02deac8f1717ef0f56e36f407",
+      "executable": false
+    },
+    "src/pegboard/connectors/calendars/edge.ts": {
+      "sha256": "d743a25eaf37cc60d8dbf75201aba075abd41328455354bfe8035f488a3b6e28",
       "executable": false
     },
     "src/pegboard/connectors/engineering/edge.ts": {
@@ -3331,7 +3355,7 @@
       "executable": false
     },
     "src/pegboard/portability/policy.mjs": {
-      "sha256": "4213a3932a768b0cc672a92d99eacd101ff6490fe4c51d519a82cebc5fb42843",
+      "sha256": "da51fc3b9a4d1050c83704afefb05d27316c67bf970a9692626be3a1cb4f521d",
       "executable": false
     },
     "src/pegboard/portfolios/portfolios.ts": {
@@ -3451,7 +3475,7 @@
       "executable": false
     },
     "src/pegboard/schedule/calendar.ts": {
-      "sha256": "3b19ec4f88ac6591bac21f250358e42d4ad2cd0e425378ebfaf575a2b43c2381",
+      "sha256": "9b13860f8f22df6423c25a9b5356bd8575908e92846e85822dba1c92ff3c803e",
       "executable": false
     },
     "src/pegboard/schedule/changes.ts": {
@@ -3634,8 +3658,16 @@
       "sha256": "71a5abd81e5969dc583ca3106e8dec765c44c925c1ba6648527e914677284288",
       "executable": false
     },
+    "src/pegboard/ui/pages/calendar-blocks.tsx": {
+      "sha256": "e4cd4629a8de2bd8082ce3a513ad72202ec098dc60d1719d2151a45cbbf7ce0c",
+      "executable": false
+    },
+    "src/pegboard/ui/pages/calendar-settings.tsx": {
+      "sha256": "28c29a306362ff72c07f9174aa496e2726ee98a6faa5b2f5e5ee0edb7c20977a",
+      "executable": false
+    },
     "src/pegboard/ui/pages/calendar.tsx": {
-      "sha256": "40c4588ad087245b92297f3097c9f1d1b9c81d8ca6713105d6f3c4d1d075a573",
+      "sha256": "c5618b97620db8506c46405d988196bdfb385432a389c7fd8829e558d22fdd2b",
       "executable": false
     },
     "src/pegboard/ui/pages/capacity-settings.tsx": {
@@ -3787,7 +3819,7 @@
       "executable": false
     },
     "src/pegboard/ui/routes.ts": {
-      "sha256": "65ed03f337c27148a4c37806b0605c311cf0044c50084b40d0f199002688d53f",
+      "sha256": "2f1e9807229e3e67993445cef804c96624e6d05567bbf3309aa5f151ce581d04",
       "executable": false
     },
     "src/pegboard/ui/schedule-editor.tsx": {
@@ -3990,6 +4022,10 @@
       "sha256": "e315a56821ebef5366b218150978be3681e3fcff7fb2e671cf2e86f4b81980b7",
       "executable": false
     },
+    "tests/journeys/calendar-blocks.mjs": {
+      "sha256": "6320da3e226873fda5ce19619195f1167287ae62aff7f60464ca31f2dda7ae6a",
+      "executable": false
+    },
     "tests/journeys/capacity.mjs": {
       "sha256": "c6c2dd62f6dca3fa61e1e05abc63fbc7982b9c1cc98b8b9275ccbc26c48761f2",
       "executable": false
@@ -4059,7 +4095,7 @@
       "executable": false
     },
     "tests/journeys/work-graph.journey.mjs": {
-      "sha256": "28468ecffeeb9cd800d1f437793136ee959430ba335a72caeab27f25ee3cda66",
+      "sha256": "3df6cc81de3c7ab77e8c8bfb508770faa448829d46d673e8dd741cff6e84c9a6",
       "executable": false
     },
     "tests/journeys/work-rules.mjs": {
@@ -4076,6 +4112,10 @@
     },
     "tests/runtime.mjs": {
       "sha256": "5291d667e96aa2db36b630971cfc40dcdd84b812061d3bea10e323be10f1d2c2",
+      "executable": false
+    },
+    "tests/scenarios/calendar-blocks.mjs": {
+      "sha256": "53b4a06bc710be0df6aad93f2020b06f6b6254f899a752c28bd9bae6cdc3a1e3",
       "executable": false
     },
     "tests/scenarios/conversions.mjs": {
@@ -4100,6 +4140,10 @@
     },
     "tests/schedule.test.mjs": {
       "sha256": "e90c3141b0b5646a76f93e414193cff379b8c5253880ab4bd034dd298debe4e2",
+      "executable": false
+    },
+    "tests/support/calendar-services.mjs": {
+      "sha256": "9532cb0b44c84a1189f33c348b1387cfce456cb3edf6e5770f57630160cb7ce4",
       "executable": false
     },
     "tests/support/canvas-restore.mjs": {
@@ -4131,7 +4175,7 @@
       "executable": false
     },
     "tests/work-graph.test.mjs": {
-      "sha256": "3cbb396c9da2a67804ee6ef98bdcdcdb49dbb656b60d2a5431b5221cfbe2be0b",
+      "sha256": "edd425b026cdbb1c914424d70e322ab2cf5ed3638ad961876fa0b9638643bbde",
       "executable": false
     },
     "tsconfig.json": {
@@ -4139,7 +4183,7 @@
       "executable": false
     },
     "verification.json": {
-      "sha256": "e6c7ff5ae081700b31a10e8dcc24fe77a1f40b734e881e7d041712d943244b91",
+      "sha256": "60197c20881bddb80f90291c255bdbb6bbeb324d1a1dc712b88140dd20118f67",
       "executable": false
     },
     "VERIFY-WORKFLOW.md": {
