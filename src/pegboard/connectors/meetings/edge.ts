@@ -3,8 +3,9 @@ import {invalid,PegError} from '../../db'
 export async function meetingArtifact(env:Bindings,service:string,resource:string,credential:unknown){
   if(typeof credential!=='string'||!credential.trim()||credential.length>4096||/[\r\n]/.test(credential))throw invalid('meeting_credential_required')
   const official:Record<string,string>={zoom:'https://api.zoom.us',meet:'https://meet.googleapis.com',teams:'https://graph.microsoft.com'}
-  if(!official[service])throw invalid('meeting_service_invalid')
-  const local=env.AUTH_LOCAL==='true'&&env.PEGBOARD_LOCAL_MEETING_ORIGINS?JSON.parse(env.PEGBOARD_LOCAL_MEETING_ORIGINS)[service]:null
+  if(!Object.hasOwn(official,service))throw invalid('meeting_service_invalid')
+  const localOrigins=env.AUTH_LOCAL==='true'&&env.PEGBOARD_LOCAL_MEETING_ORIGINS?JSON.parse(env.PEGBOARD_LOCAL_MEETING_ORIGINS):null
+  const local=localOrigins&&Object.hasOwn(localOrigins,service)?localOrigins[service]:null
   const origin=local?new URL(local).origin:official[service]
   const parts=resource.split('/');if(parts.some(p=>!p||!/^[A-Za-z0-9_+=-]+$/.test(p)))throw invalid('meeting_source_resource_invalid')
   const encoded=parts.map(encodeURIComponent).join('/')

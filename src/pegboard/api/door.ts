@@ -29,7 +29,7 @@ async function readInput(request: Request): Promise<{ input: Record<string, any>
   const type = request.headers.get('content-type') ?? ''
   if (type.includes('application/json')) { try { const body = await request.json(); return { input: body && typeof body === 'object' && !Array.isArray(body) ? body as Record<string, any> : {}, form: false } } catch { throw new PegError(400, 'invalid_json') } }
   if (type.includes('application/x-www-form-urlencoded') || type.includes('multipart/form-data')) {
-    const data = await request.formData(), input: Record<string, any> = {}
+    const data = await request.formData(), input: Record<string, any> = Object.create(null)
     for (const [key, value] of data.entries()) { if (typeof value !== 'string') continue; if (key.endsWith('[]')) (input[key.slice(0, -2)] ??= []).push(value); else input[key] = value }
     return { input, form: true }
   }

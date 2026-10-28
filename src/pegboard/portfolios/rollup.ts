@@ -179,6 +179,6 @@ export async function portfolioRollup(db: D1Database, actor: Actor, id: string, 
 export async function portfolioDrill(db: D1Database, actor: Actor, id: string, query: { metric: string; projectId?: string; at?: number }) {
   const view = await portfolioRollup(db, actor, id, { at: query.at })
   const metrics: Record<string, (t: (typeof view.tasks)[number]) => boolean> = { all: () => true, open: t => t.status !== 'done' && t.kind !== 'milestone', done: t => t.status === 'done' && t.kind !== 'milestone', overdue: t => t.overdue && t.kind !== 'milestone', milestones: t => t.kind === 'milestone' }
-  if (!metrics[query.metric]) throw invalid('metric')
+  if (!Object.hasOwn(metrics, query.metric)) throw invalid('metric')
   return { metric: query.metric, evaluatedAt: view.evaluatedAt, tasks: view.tasks.filter(t => (!query.projectId || t.projects.some(p => p.id === query.projectId)) && metrics[query.metric](t)) }
 }
