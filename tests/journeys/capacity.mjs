@@ -75,16 +75,25 @@ export async function capacityJourney({ w, browser, services, ok }) {
     await proof(own.page, 'assignment-and-mention')
 
     const willow = ok(await owner.post(api + '/capacity-feeds', { service: 'willow', origin: 'https://willow.synthetic.test', mapping: { 'synthetic-pegboard-willow-person': member.id } }))
-    services.rows.willow = [{ id: 'synthetic-pegboard-1612', personId: 'synthetic-pegboard-willow-person', name: 'Casey Capacity', startDate: '2026-11-03', endDate: '2026-11-04', status: 'approved' }]
+    services.rows.willow = [
+      { id: 'synthetic-pegboard-1613', personId: 'synthetic-pegboard-outside', name: 'Outside colleague', startDate: '2026-11-03', endDate: '2026-11-04', status: 'approved', reason: 'Synthetic private outside context' },
+      { id: 'synthetic-pegboard-1612', personId: 'synthetic-pegboard-willow-person', name: 'Casey Capacity', startDate: '2026-11-03', endDate: '2026-11-05', status: 'approved' },
+    ]
     await own.page.goto(w.origin + '/app/settings/capacity')
     const feed = own.page.getByRole('form', { name: 'Read approved leave ' + willow.id })
     await feed.getByLabel('Source credential for this read').fill('synthetic-pegboard-1600')
     await feed.getByLabel('Read from').fill('2026-11-02'); await feed.getByLabel('Read through').fill('2026-11-08')
     await feed.getByRole('button', { name: 'Read approved leave', exact: true }).click()
-    assert.deepEqual((await workload()).people.find(p => p.id === member.id).days.slice(0, 5).map(d => d.availableHours), [0, 0, 0, 4, 8])
+    const approved = await workload(), mapped = approved.people.find(p => p.id === member.id)
+    assert.equal(approved.feeds.find(f => f.id === willow.id).freshness, 'current')
+    assert.deepEqual(mapped.days.slice(0, 5).map(d => d.availableHours), [0, 0, 0, 0, 8])
+    assert.equal(mapped.days[3].unknown, false)
+    for (const privateValue of ['Outside colleague', 'Synthetic private outside context', 'synthetic-pegboard-outside']) assert.ok(!(await own.page.content()).includes(privateValue))
     await proof(own.page, 'approved-source')
     assert.equal((await workload()).people.find(p => p.id === owner.id).hours, 5, 'existing private commitment remains in the receiving owner capacity')
     await own.page.goto(url)
+    await expect(own.page.getByText('willow · Current feed', { exact: true })).toBeVisible()
+    await expect(own.page.getByRole('region', { name: 'Capacity for Casey Capacity' }).locator('.rows > li').filter({ hasText: '2026-11-05' })).toContainText('0 h available')
     await expect(own.page.getByText('Campaign designer · Unfilled role', { exact: false })).toBeVisible()
     await expect(own.page.getByText('Overload 6 h', { exact: true }).first()).toBeVisible()
     await proof(own.page, 'overloaded')

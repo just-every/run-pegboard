@@ -3143,7 +3143,7 @@
       "executable": false
     },
     "src/pegboard/capacity/feeds.ts": {
-      "sha256": "133f4b1990f15338d3b3e2937011f0dcb66cb493b1f4d977549990f411cc9e09",
+      "sha256": "8785d291b578610c6b4f4831ff1322d392337dd847700ff67705d6db66fba556",
       "executable": false
     },
     "src/pegboard/capacity/profiles.ts": {
@@ -3979,7 +3979,7 @@
       "executable": false
     },
     "tests/journeys/capacity.mjs": {
-      "sha256": "24e1bfe005cb7fc3bb87cc9baa24568327fef071f0dc84653c730a38822cdc0e",
+      "sha256": "c6c2dd62f6dca3fa61e1e05abc63fbc7982b9c1cc98b8b9275ccbc26c48761f2",
       "executable": false
     },
     "tests/journeys/conversion-hierarchy.mjs": {
@@ -4059,7 +4059,7 @@
       "executable": false
     },
     "tests/portfolios.test.mjs": {
-      "sha256": "30cfdcb4ee79f00e33164d898c54338579d9ced39c037929d36835ee528aff6c",
+      "sha256": "451c54a96179a29df7730428fde288d84068a70a699292f6352ee294c4ec7a2c",
       "executable": false
     },
     "tests/runtime.mjs": {

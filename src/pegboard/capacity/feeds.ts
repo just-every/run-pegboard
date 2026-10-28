@@ -51,7 +51,8 @@ export async function refreshFeed(env:Bindings,db:D1Database,actor:Actor,workspa
     if(!approved)continue
     const sourcePerson=String(feed.service==='bamboohr'?row.employeeId:row.personId),person=mapping[sourcePerson]
     if(await first(db,'SELECT 1 FROM peg_capacity_erased_sources WHERE feed_id=? AND source_person=?',id,sourcePerson))continue
-    if(!person)throw conflict('capacity_feed_unmapped_person')
+    // Company calendars also contain people outside this workspace's explicit mapping.
+    if(!person)continue
     if(!(await capacityPeople(db,actor,workspace)).some(p=>p.id===person))throw conflict('capacity_feed_person_ended')
     const start=calendarDate(feed.service==='bamboohr'?row.start:row.startDate),end=calendarDate(feed.service==='bamboohr'?row.end:row.endDate)
     if(start>end||typeof row.id!=='string'&&typeof row.id!=='number')throw invalid('capacity_feed_schema')
