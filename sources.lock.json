@@ -2899,7 +2899,7 @@
       "executable": false
     },
     "src/pegboard/access-requests/requests.ts": {
-      "sha256": "a1fcf95794857d4c8d7b9c0a36cc2740de51b67342f39471559b0be54e7a4990",
+      "sha256": "512c711a3bc603d8582ac1ea0cddc2da8c80d02321b0686cf0e6e0b598d9474f",
       "executable": false
     },
     "src/pegboard/admin/departure/removal.ts": {
@@ -4015,7 +4015,7 @@
       "executable": false
     },
     "tests/access-control.test.mjs": {
-      "sha256": "ad077f385b45868360f97f09f3f513a58fd68a2334c004e3f78bbe01831055fd",
+      "sha256": "78141521909c5a8371e113b0fe7f37bf54d20b0e4370de8ae0e2a610a21ce6ba",
       "executable": false
     },
     "tests/journeys/access-discovery.mjs": {
