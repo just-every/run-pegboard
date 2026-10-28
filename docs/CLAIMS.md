@@ -140,6 +140,8 @@ Generated from CONTRACT.md. Acceptance obligations remain in that source.
 
 - **PEG-055 — Owner-run Cloudflare installation through Base. Status: missing.** Evidence: none. Gap: No implementation exists for owner-run cloudflare installation through base; the complete behavior and public-door acceptance journey remain required.
 
+- **PEG-092 — Access-request acknowledgments never reveal whether a private project exists. Status: missing.** Evidence: —. Gap: Blind acknowledgment, receipt privacy, uniform response path and owner decision proof remain required.
+
 - **PEG-084 — Authenticated mail and a cutover that reaches inboxes. Status: missing.** Evidence: none. Gap: No implementation exists for authenticated mail and a cutover that reaches inboxes; the complete behavior and public-door acceptance journey remain required.
 
 - **PEG-086 — Mail-independent owner recovery and team continuity. Status: missing.** Evidence: none. Gap: No implementation exists for mail-independent owner recovery and team continuity; the complete behavior and public-door acceptance journey remain required.

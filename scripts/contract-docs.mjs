@@ -24,8 +24,7 @@ for(const id of ids){
  const evidence=definition.slice(at+marker.length).split('**As built:**')[0].trim()
  const line=`- **${id} — ${clause.title}. Status: ${clause.status}.** ${prose(evidence)} Evidence: ${prose(row[4]||'none')}. Gap: ${prose(row[5]||'None for this clause.')}`
  const pattern=new RegExp('^- \\*\\*'+id+' — .*$', 'm')
- if(!pattern.test(acceptance))throw Error('Missing checklist row: '+id)
- acceptance=acceptance.replace(pattern,line)
+ acceptance=pattern.test(acceptance)?acceptance.replace(pattern,line):acceptance.trimEnd()+'\n\n'+line+'\n'
 }
 const counts=contract.counts
 acceptance=acceptance.replace(/Of \d+ clauses, \d+ are \*\*done\*\*, \d+ are \*\*partial\*\* and \d+ are \*\*missing\*\*/,`Of ${counts.total} clauses, ${counts.done} are **done**, ${counts.partial} are **partial** and ${counts.missing} are **missing**`)
