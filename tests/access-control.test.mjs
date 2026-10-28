@@ -262,6 +262,13 @@ describe('PEG-020 roles, grants and the decision lifecycle', { concurrency: fals
     assert.deepEqual(await ask(who.member, pf.id, 'admin'), absent)
     assert.equal(await preview(owner, pf.id), undefined, 'a portfolio request cannot request Admin')
     assert.deepEqual(await ask(who.member, pf.id), absent)
+    const ownReceipts = (await ok(who.member.get('/api/v1/access-requests'))).mine
+    const blind = id => ownReceipts.filter(row => row.targetId === id).map(({ id, targetId, createdAt, expiresAt, ...row }) => ({ ...row, lifetime: expiresAt-createdAt }))
+    assert.deepEqual(blind(pf.id), blind('pf_synthetic-pegboard-8300'), 'pending receipts cannot enumerate private portfolio existence')
+    assert.equal(blind(pf.id).length, 1)
+    const unknown = ownReceipts.find(row => row.targetId === 'pf_synthetic-pegboard-8300')
+    assert.equal((await owner.get(`/api/v1/access-requests/${unknown.id}`)).status, 404)
+    assert.equal((await decide(owner, unknown, { decision: 'approve' })).status, 404)
     await Promise.all([1, 2, 3].map(() => ask(who.member, pf.id)))
     assert.equal((await waiting(owner)).filter(row => row.targetId === pf.id).length, 1)
     const request = await preview(owner, pf.id)
