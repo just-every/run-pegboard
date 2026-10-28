@@ -450,6 +450,12 @@
       "name": "0070_analytics_portfolio_revision.sql",
       "sha256": "77115f944bbc37a91a615c58eaf276b8f2e2ccb821636cb44c0f51a6bdf00150",
       "sql": "-- Portfolio membership and names participate in the same snapshot watermark as work.\nCREATE TRIGGER peg_analytics_portfolio_insert AFTER INSERT ON peg_portfolios BEGIN UPDATE peg_data_revision SET value=value+1 WHERE id=1; END;\nCREATE TRIGGER peg_analytics_portfolio_update AFTER UPDATE ON peg_portfolios BEGIN UPDATE peg_data_revision SET value=value+1 WHERE id=1; END;\nCREATE TRIGGER peg_analytics_portfolio_delete AFTER DELETE ON peg_portfolios BEGIN UPDATE peg_data_revision SET value=value+1 WHERE id=1; END;\nCREATE TRIGGER peg_analytics_portfolio_project_insert AFTER INSERT ON peg_portfolio_projects BEGIN UPDATE peg_data_revision SET value=value+1 WHERE id=1; END;\nCREATE TRIGGER peg_analytics_portfolio_project_update AFTER UPDATE ON peg_portfolio_projects BEGIN UPDATE peg_data_revision SET value=value+1 WHERE id=1; END;\nCREATE TRIGGER peg_analytics_portfolio_project_delete AFTER DELETE ON peg_portfolio_projects BEGIN UPDATE peg_data_revision SET value=value+1 WHERE id=1; END;\n"
+    },
+    {
+      "binding": "DB",
+      "name": "0071_blind_project_requests.sql",
+      "sha256": "bff760820f0aab51a4d2d5800a066963185a0459fdf73b34f42d4062845d2d0f",
+      "sql": "-- Private and invalid project names take the same durable intake path.\n-- Intake is resolved only by the scheduler or an authorized project reviewer.\nCREATE TABLE peg_project_request_intake (\n  id TEXT PRIMARY KEY,\n  requester_id TEXT NOT NULL,\n  requester_version INTEGER NOT NULL,\n  target_id TEXT NOT NULL,\n  level TEXT NOT NULL,\n  message TEXT NOT NULL,\n  created_at INTEGER NOT NULL\n);\nCREATE INDEX peg_project_request_intake_target ON peg_project_request_intake(target_id,created_at);\nCREATE TRIGGER peg_data_revision_project_request_intake_insert AFTER INSERT ON peg_project_request_intake\nBEGIN UPDATE peg_data_revision SET value=value+1 WHERE id=1; END;\nCREATE TRIGGER peg_data_revision_project_request_intake_delete AFTER DELETE ON peg_project_request_intake\nBEGIN UPDATE peg_data_revision SET value=value+1 WHERE id=1; END;\n"
     }
   ],
   "compatibilityDate": "2026-09-08",

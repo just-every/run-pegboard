@@ -2113,7 +2113,7 @@ describe('Direct project duplication through reviewed public doors', { concurren
     ruleId = `${bundle.id}:priority`
     observer = await worker.person('synthetic-pegboard-6104@example.com', 'Campaign observer')
     await call(observer.post('/api/v1/access-requests', { targetId: source.id, level: 'viewer', message: 'Read campaign progress' }))
-    const request = (await call(observer.get('/api/v1/access-requests'))).mine[0]
+    const request = (await call(human.get('/api/v1/access-requests'))).toDecide.find(row => row.targetId === source.id && row.requester.id === observer.id)
     const requestReview = await call(human.get(`/api/v1/access-requests/${request.id}`))
     await call(human.post(`/api/v1/access-requests/${request.id}/decision`, { decision: 'approve', level: 'viewer', scope: 'full', revision: requestReview.revision }))
     noticesBefore = (await call(observer.get('/api/v1/access-requests'))).notices

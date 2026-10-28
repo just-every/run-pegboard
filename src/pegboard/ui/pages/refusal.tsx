@@ -11,7 +11,7 @@ export function RefusalPage({ viewer, target, canAsk, asked }: { viewer: Viewer;
     <main className="board" id="main">
       <Heading title="You can’t open this" facts={['It may not exist, or it may not be shared with you']} />
       <section className="page">
-        {asked ? <Card title="Request sent"><p>If this can be shared with you, the people who decide have been told. You will see their answer in your inbox.</p><p><a className="button quiet" href="/app/inbox">Open your inbox</a></p></Card>
+        {asked ? <Card title="Request sent"><p>If this can be shared with you, the people who decide have been told. Approved access will appear in your inbox.</p><p><a className="button quiet" href="/app/inbox">Open your inbox</a></p></Card>
           : canAsk ? <Card title="Ask for access">
             <p>Choose the level you need and add a message. Asking shares nothing; a person who can decide will see the exact grant before approving it.</p>
             <Form action="/api/v1/access-requests" next={`/app/link/${encodeURIComponent(target)}?asked=1`} label="Request access">
