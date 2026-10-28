@@ -2,7 +2,7 @@ import { discussionRecipients } from './discussion'
 import { all, batch, bound, conflict, first, forbidden, invalid, newId, notFound, now } from '../db'
 import { auditStatement } from '../authorization/audit'
 import { workspaceRole, type Actor } from '../workspace/people'
-import { openRevision, statusAccess } from './drafts'
+import { openRevision, revisionCanComment } from './drafts'
 interface Comment { id: string; revision_id: string; parent_id: string | null; author_id: string; body: string; internal_only: number; created_at: number; edited_at: number | null; deleted_at: number | null }
 export async function revisionComments(db: D1Database, actor: Actor, id: string) {
   const { workspace } = await openRevision(db, actor, id), guest = await workspaceRole(db, actor.id, workspace) === 'guest'
@@ -11,8 +11,7 @@ export async function revisionComments(db: D1Database, actor: Actor, id: string)
 }
 export async function addRevisionComment(db: D1Database, actor: Actor, id: string, input: Record<string, any>) {
   const { row, workspace } = await openRevision(db, actor, id)
-  const access = await statusAccess(db, actor, row.subject_type, row.subject_id)
-  if (!access.comment) throw forbidden('comment')
+  if (!await revisionCanComment(db,actor,id)) throw forbidden('comment')
   const guest = await workspaceRole(db, actor.id, workspace) === 'guest', internal = input.internalOnly === true
   if (guest && internal) throw forbidden('internal_comment')
   if (typeof input.body !== 'string' || !input.body.trim() || input.body.length > 4000) throw invalid('comment_body')
@@ -29,7 +28,7 @@ export async function addRevisionComment(db: D1Database, actor: Actor, id: strin
 }
 export async function changeRevisionComment(db: D1Database, actor: Actor, id: string, commentId: string, input: Record<string, any>) {
   const { workspace, row } = await openRevision(db, actor, id)
-  if (!(await statusAccess(db, actor, row.subject_type, row.subject_id)).comment) throw forbidden('comment')
+  if (!await revisionCanComment(db,actor,id)) throw forbidden('comment')
   const comment = await first<Comment>(db, 'SELECT * FROM peg_status_comments WHERE id=? AND revision_id=?', commentId, id)
   if (!comment || (comment.internal_only && await workspaceRole(db, actor.id, workspace) === 'guest')) throw notFound()
   if (comment.author_id !== actor.id) throw forbidden('comment_author')

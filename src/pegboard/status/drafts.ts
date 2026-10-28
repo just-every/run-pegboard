@@ -121,11 +121,15 @@ async function recipientActor(db: D1Database, id: string): Promise<Actor> {
   return { id, email: person.email, displayName: person.display_name, baseRole: person.role === 'owner' || person.role === 'admin' ? person.role : 'member' }
 }
 async function readable(db: D1Database, actor: Actor, type: string, id: string, sources: Source[]) {
-  await statusAccess(db, actor, type, id)
+  const workspace = type === 'portfolio' ? (await first<{workspace_id:string}>(db,'SELECT workspace_id FROM peg_portfolios WHERE id=?',id))?.workspace_id : (await statusAccess(db,actor,type,id)).workspace
+  if(!workspace) throw notFound()
+  const guest = await workspaceRole(db,actor.id,workspace) === 'guest'
+  // A reviewed client version uses existing project shares, never access to portfolio rollups.
+  if(!(type === 'portfolio' && guest && sources.length)) await statusAccess(db, actor, type, id)
   for (const s of sources) {
-    const current = await statusSource(db, actor, s.id, (await statusAccess(db, actor, type, id)).workspace)
+    const current = await statusSource(db, actor, s.id, workspace)
     // Historical source text is never disclosed after a source's visibility becomes narrower.
-    if ((current.internalOnly || s.internalOnly) && await workspaceRole(db, actor.id, (await statusAccess(db, actor, type, id)).workspace) === 'guest') throw notFound()
+    if ((current.internalOnly || s.internalOnly) && guest) throw notFound()
   }
 }
 async function reviewedDraft(db: D1Database, actor: Actor, id: string) {
@@ -178,14 +182,23 @@ export async function publishDraft(db: D1Database, actor: Actor, id: string, tok
 export async function openRevision(db: D1Database, actor: Actor, id: string) {
   const row = await first<Revision>(db, 'SELECT r.*,s.workspace_id,s.subject_type,s.subject_id,s.published_at FROM peg_status_revisions r JOIN peg_status_updates s ON s.id=r.id WHERE r.id=?', id)
   if (!row) throw notFound()
-  const { workspace } = await statusAccess(db, actor, row.subject_type, row.subject_id)
+  const workspace = row.workspace_id
   const recipients = JSON.parse(row.recipients) as Recipient[]
   let manager = false
-  try { await statusAccess(db, actor, row.subject_type, row.subject_id, true); manager = ['owner','admin','manager','member'].includes(await workspaceRole(db,actor.id,workspace) ?? '') } catch (error) { if (!(error instanceof PegError && error.status === 403)) throw error }
+  try { await statusAccess(db, actor, row.subject_type, row.subject_id, true); manager = ['owner','admin','manager','member'].includes(await workspaceRole(db,actor.id,workspace) ?? '') } catch (error) { if (!(error instanceof PegError && [403,404].includes(error.status))) throw error }
   if (!manager && !recipients.some(r => r.id === actor.id)) throw notFound()
   await readable(db, actor, row.subject_type, row.subject_id, JSON.parse(row.sources))
   await assertStatusReuse(db,'revision',id)
   return { row, workspace, manager }
+}
+export async function revisionCanComment(db:D1Database,actor:Actor,id:string) {
+  const {row,workspace,manager}=await openRevision(db,actor,id)
+  if(row.subject_type === 'project') return (await statusAccess(db,actor,row.subject_type,row.subject_id)).comment
+  if(manager) return true
+  if(await workspaceRole(db,actor.id,workspace) !== 'guest') return false
+  const sources=JSON.parse(row.sources) as Source[]
+  for(const source of sources) if(!(await openTask(db,actor,source.id)).access.capabilities.has('comment')) return false
+  return sources.length > 0
 }
 export async function readRevision(db: D1Database, actor: Actor, id: string) {
   const { row, manager, workspace } = await openRevision(db, actor, id)
@@ -199,6 +212,6 @@ export async function readRevision(db: D1Database, actor: Actor, id: string) {
 export async function statusHistory(db: D1Database, actor: Actor, type: string, id: string) {
   await statusAccess(db, actor, type, id)
   const rows = await all<{ id: string }>(db, 'SELECT r.id FROM peg_status_revisions r JOIN peg_status_updates s ON s.id=r.id WHERE s.subject_type=? AND s.subject_id=? ORDER BY s.published_at,r.id', type, id), revisions = []
-  for (const row of rows) try { revisions.push(await readRevision(db, actor, row.id)) } catch (error) { if (!(error instanceof PegError && [403,404].includes(error.status))) throw error }
+  for (const row of rows) try { revisions.push(await readRevision(db, actor, row.id)) } catch (error) { if (!(error instanceof PegError && ([403,404].includes(error.status) || error.code === 'status_rights_custody_review'))) throw error }
   return { revisions }
 }

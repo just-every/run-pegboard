@@ -55,6 +55,7 @@ export function InboxPage({ viewer, toDecide, mine,readiness,status }: { viewer:
         </span></li>)}</ul>
         {update.canComment && <Form action={`/api/v1/status-revisions/${update.id}/comments`} next={`/app/inbox#status-${update.id}`} label={`Reply to status ${update.id}`}>
           <Area label="Your reply" name="body" /><Pick label="Reply to" name="parentId" blank="This update" options={update.comments.filter(comment => !comment.deleted_at).map(comment => ({value:comment.id,label:comment.body.slice(0,80)}))} />
+          {update.mentions.length>0 && <fieldset><legend>Mention recipients</legend>{update.mentions.map(person=><Check key={person.id} label={`Mention ${person.name}`} name="mentions[]" value={person.id}/>)}</fieldset>}
           {viewer.role !== 'guest' && <Check label="Internal reply" name="internalOnly" />}<Submit>Post reply</Submit>
         </Form>}
         <Form action={`/api/v1/status-revisions/${update.id}/preferences`} next={`/app/inbox#status-${update.id}`} label={`Discussion preferences ${update.id}`}>

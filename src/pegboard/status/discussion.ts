@@ -39,6 +39,6 @@ export async function discussionNotices(db: D1Database, actor: Actor) {
     if (preferences.muted || !preferences.following && row.kind!=='mention') continue
     const comment = (await revisionComments(db,actor,row.revision_id)).comments.find(c=>c.id===row.comment_id)
     if (comment) notices.push({revisionId:row.revision_id,commentId:row.comment_id,kind:row.kind,body:comment.body,authorId:comment.author_id,createdAt:row.created_at,href:comment.link})
-  } catch(error) { if (!(error instanceof PegError && [403,404].includes(error.status))) throw error }
+  } catch(error) { if (!(error instanceof PegError && ([403,404].includes(error.status)||error.code==='status_rights_custody_review'))) throw error }
   return { notices }
 }

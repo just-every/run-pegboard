@@ -70,6 +70,7 @@ export async function erasurePlan(db:D1Database,actor:Actor,workspace:string,typ
     retained.legacy_access_activity=(await first<{n:number}>(db,'SELECT COUNT(*) n FROM peg_audit WHERE actor_id=? OR subject_id=?',id,id))!.n
     // Identity values are replaced only after authority is explicitly deactivated. Permanent audit IDs remain opaque.
   }
+  if((type==='person' || type==='project') && await first(db,`SELECT 1 FROM peg_announcements WHERE workspace_id=? AND ${type==='person'?'author_id=?':"subject_type='project' AND subject_id=?"}`,workspace,id))blockers.push('review_announcement_custody_before_erasure')
   if(tasks.length||projects.length||type==='attachment'){
     const affected=await all<{id:string;task_id:string}>(db,`SELECT DISTINCT p.id,p.task_id FROM peg_proofs p JOIN peg_proof_versions v ON v.proof_id=p.id JOIN peg_attachments a ON a.id=v.attachment_id WHERE p.task_id IN (${placeholders(tasks)}) OR a.project_id IN (${placeholders(projects)}) OR a.id=?`,...tasks,...projects,type==='attachment'?id:'')
     proofs=[...new Set([...proofs,...affected.map(p=>p.id)])]

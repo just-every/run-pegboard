@@ -130,7 +130,7 @@ Structured output must cite selected source IDs on every assertion. The result i
 a private draft with no recipients, with original model, source assertions and
 bounded numerical usage retained as provenance. Reject or edit through the same
 draft door, then review and publish as a human. The model cannot approve its output,
-select recipients or publish a client version. No connection produces the named
+select recipients or publish a client version. When no model is connected, the door returns the named
 no-model response; unavailable credentials produce a recoverable typed cause.
 The complete shared connection and recovery experience remains PEG-055 and PEG-074.
 
@@ -139,3 +139,30 @@ actual-model receipt. The explicit qualification command is
 `node tests/journeys/status-model-qualification.mjs`, with held credentials injected
 privately and an exact model configured. Its output records only synthetic source
 facts, generated assertions, usage and observed human publication outcomes.
+
+## Scoped portfolio discussion and announcements
+
+A client portfolio status version does not grant portfolio browsing. Its exact
+reviewed recipient must still read every cited source through existing project
+shares, with private and internal sources excluded. A guest needs comment authority
+on every cited source to reply. An internal portfolio Viewer remains read-only.
+Mentions select only already reviewed recipients with current access; a guest's
+chooser reveals only recipients already visible as public conversation authors.
+Internal replies remain internal even when they mention a guest.
+
+Project and team announcement threads appear beside status history. Native routes
+`GET` and `POST /api/v1/announcements/:type/:id` use current project or team rights.
+Only a human administrator publishes a top-level announcement; a current commenter
+can reply. Replies retain their parent, actor and timestamp, and inherit internal
+visibility. A guest cannot guess an internal parent or obtain a team thread outside
+its team share. Custody review restricts inventoried announcements; erasure previews
+hold affected announcements explicitly rather than claiming their content erased.
+Full PEG-010 editing and deletion custody remains separate unfinished scope.
+
+External channel deliveries are still blocked. In particular, Nook's documented
+integration token and Slack-compatible API provide channel-scoped posting without
+channel-member lookup or inbound events. An unqualified channel audience is not a
+safe per-recipient destination. A qualified receiving integration under PEG-080
+must establish current audience authority and authenticated reply identity before
+this status path can claim that boundary. No connected-provider or delivery result
+is inferred from a native Inbox read.

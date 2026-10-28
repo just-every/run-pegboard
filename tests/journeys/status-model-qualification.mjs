@@ -1,9 +1,24 @@
 // Explicit held-credential qualification; never selected by ordinary push Verify.
 import assert from 'node:assert/strict'
+import { execFileSync } from 'node:child_process'
+import { createServer } from 'node:http'
 import { startWorker } from '../support/worker.mjs'
 
 if(!process.env.AI_API_KEY || !process.env.AI_MODEL) throw Error('Authorized model configuration required')
-const w=await startWorker({settings:{AI_ENABLED:'true',AI_API_KEY:process.env.AI_API_KEY,AI_MODEL:process.env.AI_MODEL,AI_PROCESSOR:'status-model',AI_BASE_URL:'https://api.openai.com/v1'}})
+// Workerd does not consume the VM's HTTP proxy settings. This loopback-only transport
+// forwards the unchanged request and real response through Node's session proxy.
+// It is not a provider double; it never creates, repairs or substitutes an answer.
+const transport=createServer(async(request,response)=>{
+  if(request.method!=='POST' || request.url!=='/v1/chat/completions'){response.writeHead(404).end();return}
+  try {
+    const chunks=[];for await(const chunk of request)chunks.push(chunk)
+    const upstream=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',headers:{authorization:request.headers.authorization,'content-type':'application/json'},body:Buffer.concat(chunks),redirect:'error',signal:AbortSignal.timeout(60000)})
+    response.writeHead(upstream.status,{'content-type':upstream.headers.get('content-type')??'application/json'})
+    response.end(Buffer.from(await upstream.arrayBuffer()))
+  } catch {response.writeHead(502,{'content-type':'application/json'}).end(JSON.stringify({error:{code:'qualification_transport_unavailable'}}))}
+})
+await new Promise(resolve=>transport.listen(0,'127.0.0.1',resolve))
+const w=await startWorker({settings:{AI_ENABLED:'true',AI_API_KEY:process.env.AI_API_KEY,AI_MODEL:process.env.AI_MODEL,AI_PROCESSOR:'status-model',AI_BASE_URL:`http://127.0.0.1:${transport.address().port}/v1`}})
 const call=async(p,status=200)=>{const result=await p;assert.equal(result.status,status,JSON.stringify(result.body));return result.body}
 try {
   const owner=w.owner,member=await w.person('synthetic-pegboard-model-3'+'@'+'example.com','Internal Status Reviewer')
@@ -16,6 +31,7 @@ try {
   }
   await call(owner.post('/api/v1/data/processors',{processor:'status-model',approved:true,sharing:true,training:false,confirm:true}))
   await w.sql(`UPDATE peg_tasks SET updated_at=${Date.parse('2026-10-15T12:00:00Z')} WHERE id IN (${sources.map(source=>`'${source.id}'`).join(',')})`)
+  await call(owner.post(`/api/v1/portfolios/${portfolio.id}/members`,{operatorId:member.id,level:'viewer'}))
   const receipts=[]
   for(const [type,id,selected] of [['project',projects[0].id,[sources[0]]],['portfolio',portfolio.id,sources]]) {
     const input={subjectType:type,subjectId:id,sourceIds:selected.map(source=>source.id),from:'2026-10-01',to:'2026-10-31',modelConsent:true}
@@ -39,5 +55,5 @@ try {
     assert.ok((await call(member.get('/api/v1/status-inbox'))).updates.some(update=>update.id===published.id))
     receipts.push({subjectType:type,model:draft.generation.model,processor:draft.generation.processor,window:[draft.content.from,draft.content.to],sourceFacts:selected.map(source=>({id:source.id,title:source.title,description:source.description,status:source.status})),generated:draft.content,assertions,usage:JSON.parse(draft.generation.usage),humanPublished:true,replayOnce:true,clientPending:true})
   }
-  console.log(JSON.stringify({qualification:'actual-model',receipts},null,2))
-} finally {await w.stop()}
+  console.log(JSON.stringify({qualification:'actual-model',head:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),receipts},null,2))
+} finally {await w.stop();await new Promise(resolve=>{transport.close(resolve);transport.closeAllConnections()})}

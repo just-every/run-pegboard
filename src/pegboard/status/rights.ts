@@ -35,6 +35,8 @@ async function inventory(db: D1Database, workspace: string, type: string, id: st
   for (const c of comments) { copies.push({type:'comment',id:c.id}); if (!copies.some(r=>r.type==='revision'&&r.id===c.revision_id)) copies.push({type:'revision',id:c.revision_id}) }
   for (const r of await all<{draft_id:string}>(db,'SELECT DISTINCT r.draft_id FROM peg_status_draft_rejections r JOIN peg_status_drafts d ON d.id=r.draft_id WHERE r.rejected_by=? AND d.workspace_id=?',id,workspace)) if (!copies.some(c=>c.type==='draft'&&c.id===r.draft_id)) copies.push({type:'draft',id:r.draft_id})
  }
+ if(type==='project'||type==='person')for(const announcement of await all<{id:string}>(db,`SELECT id FROM peg_announcements WHERE workspace_id=? AND ${type==='person'?'author_id=?':"subject_type='project' AND subject_id=?"}`,workspace,id))copies.push({type:'announcement',id:announcement.id})
+ for(const copy of [...copies].filter(copy=>copy.type==='draft'))if(await first(db,'SELECT 1 FROM peg_status_model_drafts WHERE draft_id=?',copy.id))copies.push({type:'model_draft',id:copy.id})
  return copies
 }
 export async function createRightsRequest(db: D1Database, actor: Actor, workspace: string, input: Record<string,any>) {

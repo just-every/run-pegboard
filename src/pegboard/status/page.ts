@@ -1,3 +1,4 @@
+import {statusAnnouncements} from './announcements'
 import { all, notFound, PegError } from '../db'
 import type { Actor } from '../workspace/people'
 import { workspaceRole, displayNames } from '../workspace/people'
@@ -36,5 +37,5 @@ export async function statusPage(db: D1Database, actor: Actor, type: string, id:
   const role = await workspaceRole(db,actor.id,workspace)
   const subscription = ['owner','admin','manager','member'].includes(role ?? '') ? await statusSubscription(db,actor,type,id) : null
   const names = await displayNames(db,[...history.revisions.flatMap(r=>[r.reviewedBy,...r.receipts.map(p=>p.recipient_id)]),...(selected?.recipients.map(r=>r.id) ?? [])])
-  return {type,id,workspace,manage,history:history.revisions,sources,drafts,selected,review,correction,subscription,names:Object.fromEntries(names)}
+  return {type,id,workspace,manage,announcements:await statusAnnouncements(db,actor,type,id),history:history.revisions,sources,drafts,selected,review,correction,subscription,names:Object.fromEntries(names)}
 }
