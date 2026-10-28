@@ -51,9 +51,11 @@ never use broad kill commands or stop another checkout. Do not print secrets.
 
 ## Lander-Regenerate
 
-After changing a contract status row, run
-`node scripts/contract-docs.mjs write PEG-027` then the same command with `check`.
-Supply each changed clause ID as a separate argument. The generator updates
-those acceptance rows and the summary counts from CONTRACT.md, preserves
-unrelated legacy checklist rows, and generates docs/CLAIMS.md from all status
-rows. Regenerate the source lock last, after staging new files.
+CONTRACT.md is the only acceptance text and status source; ACCEPTANCE.md, docs/CLAIMS.md and the
+Status summary counts are generated from it. After any CONTRACT.md change, and after a rebase or
+merge that touches it, run these in order, then `node src/base/contract-docs.mjs check`:
+
+Lander-Regenerate: node src/base/contract-docs.mjs write
+Lander-Regenerate: node scripts/edition-authoring/cli.mjs lock
+
+Commit the generated files with CONTRACT.md, and regenerate the source lock last, after staging new files.

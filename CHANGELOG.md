@@ -1,5 +1,35 @@
 # Changelog
 
+## 28 October 2026 — contract cleanup to the RER contract standard
+
+CONTRACT.md was rewritten to the RER contract standard from main `e51882460cea77b75572431eefbf465cadbdb365` with Base `contract-docs.mjs` at `0fe27af9a5cb1bd9dc5e41da024784082e609010`. Nothing was cut and no status was promoted; `docs/contract/COVERAGE.json` places every old sentence, `docs/contract/ID-MAP.json` maps every old id and `docs/contract/DONE-AUDIT.md` proves every carried done point.
+
+- Oversized clauses were split into one-capability parts: PEG-012, PEG-015, PEG-037, PEG-046, PEG-047, PEG-048, PEG-055, PEG-056, PEG-061, PEG-071, PEG-074, PEG-080, PEG-081, PEG-082, PEG-083, PEG-084 and PEG-086 (new parts PEG-091 to PEG-126).
+- The acceptance conventions and the rules repeated across clauses became door rules D-1 to D-13; rulings moved to RULINGS.md (RL-1 to RL-6 from the contract, RL-101 to RL-106 from ct's ruling pass); the "As built" notes moved to `docs/contract/as-built.md`, an adopted default awaiting ct to `docs/contract/adopted-defaults.md`, and the hand-written ACCEPTANCE.md is kept as `docs/contract/acceptance-before-cleanup.md`.
+- Real-world-only proof moved to the Field proof register (R-1 to R-10); Base restatements were replaced by citations.
+- The Agent surface (SURFACE-001 to SURFACE-007) was added, and sentences that preset approval for an agent were reworded as the risk class the step carries.
+- The carried-done audit demoted PEG-020 (a formula-response refusal not asserted in its cited files) and PEG-032 (queued sends not asserted) to partial.
+- The earlier PEG-036 judgement line ("Judged from ... `66db0c24f2180aa3edcc17a73d453c84df3c60b7`") is recorded below; the Status section keeps the later judgement at `0938de871d6a662b15d0af02fba6ba7e1d1918d9`.
+
+### Status notes moved from done rows
+
+- PEG-001: None for this clause. Slack and Teams unfurls of a refused link belong to PEG-071.
+- PEG-002: None for this clause.
+- PEG-006: None for this clause’s acceptance. Workload impact shows added effort and existing readable work; configured availability remains PEG-016. Template-created work and direct copies carry no prior proof decisions, outbound notices or automatic shares. Broader deterministic triggers and computed dates remain PEG-012; template conversion remains PEG-087; application trash, recovery and undo remain PEG-064; retained snapshot erasure and processor custody remain PEG-065.
+- PEG-087: Broader application recovery remains PEG-064; retained evidence expiry and processor custody remain PEG-065.
+- PEG-033: None for PEG-033’s acceptance. The canvas uses current project and task permissions, revision-fenced human edits and exact reviewed task promotion. Placement changes no dates, duplicates no task and approves no work. Canvas JSON is an inspection snapshot; the native installation archive restores the full graph and keeps old grants inactive. PEG-003 and PEG-024 inherit single task identity and portable, permission-scoped representations; PEG-062 and PEG-074 inherit any future autonomous canvas execution.
+- PEG-034: None for this clause. PEG-003 inherits richer saved views, PEG-012 the wider deterministic rule catalogue and PEG-036 configurable approval authority and quorum.
+- PEG-035: None for this clause. PEG-036 inherits configurable approval stages; PEG-064 inherits undo for delivery changes.
+- PEG-039: None for PEG-039's authorized import and reviewed-adoption acceptance. Current agent callers are denied source context before and after revocation. PEG-038 and PEG-080 inherit shared connection custody, automatic revocation discovery and live tenant qualification; PEG-062 and PEG-074 inherit any future approved agent source reader; PEG-065 inherits broader retention integration.
+- PEG-013: None for this clause. PEG-015 inherits the published-status door and owns drafts, review and client publication; PEG-004 inherits the dependency links for shifts, baselines and approvals; PEG-003 inherits saved views beyond portfolio filters.
+- PEG-014: None for PEG-014's acceptance evidence. The receipts prove the native documented schema, not any unnamed external provider's qualification. Freshness intervals remain engineering settings, not contract policy.
+- PEG-020: None for this clause. Reactions (PEG-010), rules (PEG-012), templates (PEG-006), approvals and signed webhook delivery (PEG-027) must check the capabilities named here when their doors land.
+- PEG-073: None for this clause.
+- PEG-032: None for currently implemented sets. Installation administrators review an installation-wide departure; replacements already hold installation administration, private work is unassigned without disclosure, and source authority stops rather than being copied. Already dispatched outside messages and historical decisions are never retracted or impersonated.
+- PEG-057: No DONE promotion before CT disposition.
+- PEG-059: No DONE promotion before CT disposition.
+- PEG-065: No DONE promotion before CT disposition.
+
 ## Contract source before e51882460cea77b75572431eefbf465cadbdb365
 
 # CONTRACT.md — Pegboard

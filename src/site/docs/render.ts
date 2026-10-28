@@ -66,7 +66,9 @@ export function renderDoc(doc: Doc, docs: Doc[]): Body {
       return `<div class="docs-table"><table><thead><tr>${header}</tr></thead><tbody>${rows}</tbody></table></div>`
     },
   } })
-  return { html: marked.parse(doc.markdown, { async: false }), contents, ids, links }
+  // Generated files open with a whole-line marker comment; the escaping html renderer would show it as text.
+  const markdown = doc.markdown.replace(/^[ \t]*<!--.*-->[ \t]*$/gm, '')
+  return { html: marked.parse(markdown, { async: false }), contents, ids, links }
 }
 
 export function validateDocLinks(docs: Doc[], bodies: Map<string, Body>): void {
