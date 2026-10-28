@@ -3,6 +3,7 @@ import {registerPublicApiTests,startWebhookEdge} from './scenarios/public-api.mj
 // never learns, references that outlive a prefix change, and the PEG-083 join and request journeys on the same graph.
 import {createServer as createMailServer} from 'node:http'
 import assert from 'node:assert/strict'
+import {createHash} from 'node:crypto'
 import {execFileSync,spawnSync} from 'node:child_process'
 import {mkdtemp,readFile,writeFile,mkdir,symlink,rm} from 'node:fs/promises'
 import {tmpdir} from 'node:os'
@@ -1740,7 +1741,14 @@ describe('Analyst exports', {concurrency:false}, () => {
     assert.equal((await mia.post(`/api/v1/analytics/keys/${delegated.id}/revoke`,{})).status,403)
     assert.equal((await read(delegated.servicePath+'/Tasks',delegated.secret)).status,200,'failed cross-administrator revocation changes nothing')
     const audit=await ok(admin.get('/api/v1/admin/audit?action=analytics.key_authorized'))
-    assert.ok(audit.events.some(e=>e.target_id===delegated.id&&e.actor_id===admin.id&&e.metadata.consent===true&&e.metadata.expiresAt===input.expiresAt))
+    const expectedScope=createHash('sha256').update(JSON.stringify({issuer:admin.id,workspace:'ws_main',projects:[p.id],fields:{Tasks:['id','status']},expiresAt:input.expiresAt})).digest('hex')
+    const consent=audit.events.find(e=>e.target_id===delegated.id&&e.actor_id===admin.id)
+    assert.deepEqual(consent.metadata,{consent:true,expiresAt:input.expiresAt,scopeDigest:expectedScope},'the permanent consent receipt binds the exact issuer, project, fields and expiry')
+    assert.equal(delegated.scopeDigest,expectedScope)
+    assert.equal((await ok(admin.get('/api/v1/analytics/keys'))).keys[0].scopeDigest,expectedScope,'own-key listing reconciles with the original authorization')
+    const different=await ok(admin.post('/api/v1/analytics/keys',{...input,fields:{Tasks:['title']}}))
+    assert.notEqual(different.scopeDigest,delegated.scopeDigest,'different consent cannot reuse the original scope receipt')
+    assert.ok(!JSON.stringify(consent).includes(p.id)&&!JSON.stringify(consent).includes('Tasks'),'permanent audit retains no project or field contents')
     assert.ok(!JSON.stringify(audit).includes(delegated.secret))
     await ok(owner.post('/api/v1/workspaces/ws_main/people/'+admin.id+'/account',{role:'member'}))
     assert.equal((await read(delegated.servicePath+'/Tasks',delegated.secret)).status,401)
@@ -1764,6 +1772,8 @@ describe('Analyst exports', {concurrency:false}, () => {
     assert.ok(!archive.includes(snapshot),'the export cache cannot travel')
     const rows=archive.trim().split('\n').map(line=>JSON.parse(line)).filter(part=>part.kind==='part').flatMap(part=>part.items).filter(item=>item.kind==='row')
     assert.ok(rows.some(item=>item.table==='peg_tasks'&&item.row.title==='Archived ordinary task'))
+    const consent=rows.find(item=>item.table==='peg_permanent_audit'&&item.row.action==='analytics.key_authorized'&&item.row.target_id===key.id)
+    assert.equal(JSON.parse(consent.row.detail).scopeDigest,key.scopeDigest,'the redacted consent receipt survives native export without the credential store')
     assert.ok(!rows.some(item=>item.table.startsWith('peg_analytics_')),'neither credential hashes nor temporary material travel')
   })
 

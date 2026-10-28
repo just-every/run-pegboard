@@ -11,6 +11,7 @@ export function auditMetadata(detail: Record<string, unknown> = {}) {
     else if (idKeys.has(key) && typeof value === 'string' && /^(?:(?:person|team|project|task):)?(?:[a-z]+_[a-f0-9]{20}|[a-f0-9-]{36})$/.test(value)) clean[key]=value
     else if(numberKeys.has(key) && typeof value==='number' && Number.isFinite(value)) clean[key]=value
     else if(boolKeys.has(key) && typeof value==='boolean') clean[key]=value
+    else if(key==='scopeDigest' && typeof value==='string' && /^[a-f0-9]{64}$/.test(value)) clean[key]=value
   }
   return clean
 }
