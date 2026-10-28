@@ -86,7 +86,7 @@ export async function createTask(db: D1Database, actor: Actor, input: TaskInput)
 }
 
 export interface TaskPatch { title?: string; description?: string; status?: string; priority?: string; startDate?: string | null; dueDate?: string | null; ownerId?: string; estimateHours?: number; internalOnly?: boolean; internalNotes?: string; collaborators?: string[] }
-export async function updateTask(db: D1Database, actor: Actor, idOrRef: string, patch: TaskPatch, fence?: Awaited<ReturnType<typeof revision>>): Promise<TaskRow> {
+export async function updateTask(db: D1Database, actor: Actor, idOrRef: string, patch: TaskPatch, fence?: Awaited<ReturnType<typeof revision>>, extraStatements: D1PreparedStatement[] = []): Promise<TaskRow> {
   const localRevision=fence??await revision(db)
   const { task, access } = await openTask(db, actor, idOrRef)
   require(access, 'edit')
@@ -127,7 +127,7 @@ export async function updateTask(db: D1Database, actor: Actor, idOrRef: string, 
   }
   if (patch.collaborators) statements.push(reopenGuard(db,task.id,actor.id,'collaborators',patch.collaborators.length?'1':'EXISTS(SELECT 1 FROM peg_task_collaborators WHERE task_id=t.id)'),bound(db, 'DELETE FROM peg_task_collaborators WHERE task_id=?', [task.id]), ...[...new Set(patch.collaborators)].map(id => bound(db, 'INSERT INTO peg_task_collaborators(task_id,operator_id) VALUES (?,?)', [task.id, id])), historyStatement(db, task.id, null, actor.id, 'collaborators.changed', { count: new Set(patch.collaborators).size }))
   const queued=changes.status?await localRuleQueue(db,task.id,'status',actor.id):[]
-  statements.push(...queued)
+  statements.push(...queued,...extraStatements)
   if (statements.length){if(fence||queued.length)await guarded(db,localRevision,statements);else await batch(db, statements)}
   if(changes.status)for(const projectId of access.contexts.keys())await processLocalRules(db,projectId)
   return (await first<TaskRow>(db, 'SELECT * FROM peg_tasks WHERE id=?', task.id))!
