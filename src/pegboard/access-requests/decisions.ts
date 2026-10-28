@@ -1,7 +1,7 @@
 // The one public decision door: preview the exact requester, scope and grant, then approve or deny. Authority, expiry,
 // the requester's standing and the policy previewed are all rechecked inside the write itself; a stale, replayed or
 // unauthorised decision changes nothing.
-import { all, batch, bound, conflict, first, forbidden, invalid, newId, notFound, now } from '../db'
+import { all, batch, bound, conflict, first, forbidden, invalid, newId, notFound, now, placeholders } from '../db'
 import type { RequestRow } from '../model'
 import { epoch } from '../authorization/audit'
 import { taskAccess } from '../authorization/effective'
@@ -9,7 +9,9 @@ import { isLevel, levels, rank, type Level } from '../authorization/levels'
 import { loadProject } from '../authorization/grants'
 import { operatorRow, type Actor } from '../workspace/people'
 import { authorityOver, loadTarget, policyRevOf, workspaceOf, type Authority, type Target } from './authority'
-import { expireDue } from './requests'
+import { expireDue, processProjectRequests } from './requests'
+import { receiptProjects } from './visibility'
+import type { Delivery } from './notify'
 
 const stamp = async (text: string) => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text)))].slice(0, 12).map(byte => byte.toString(16).padStart(2, '0')).join('')
 
@@ -44,15 +46,19 @@ export async function previewRequest(db: D1Database, actor: Actor, requestId: st
   }
 }
 
-export async function pendingFor(db: D1Database, actor: Actor) {
-  await expireDue(db)
-  const rows = await all<{ request_id: string; kind: string }>(db, `SELECT i.request_id,i.kind FROM peg_inbox i JOIN peg_access_requests r ON r.id=i.request_id WHERE i.operator_id=? AND i.kind IN ('request','fallback') AND r.status='pending' GROUP BY i.request_id ORDER BY MAX(i.created_at) DESC`, actor.id)
+export async function pendingFor(db: D1Database, actor: Actor, delivery: Delivery) {
+  const projects = await receiptProjects(db, actor)
+  await processProjectRequests(db, delivery, projects.filter(project => project.level === 'admin').map(project => project.id))
+  const rows = await all<{ request_id: string; kind: string }>(db, `SELECT i.request_id,i.kind FROM peg_inbox i JOIN peg_access_requests r ON r.id=i.request_id WHERE i.operator_id=? AND i.kind IN ('request','fallback') AND r.status='pending' AND r.expires_at>? GROUP BY i.request_id ORDER BY MAX(i.created_at) DESC`, actor.id, now())
   const out = []
   for (const row of rows) { try { out.push(await previewRequest(db, actor, row.request_id)) } catch { /* authority since revoked: it no longer lists */ } }
   return out
 }
 export async function decisionNotices(db: D1Database, actor: Actor) {
-  return all<{ request_id: string; created_at: number }>(db, "SELECT request_id,created_at FROM peg_inbox WHERE operator_id=? AND kind='decision' ORDER BY created_at DESC LIMIT 50", actor.id)
+  const projects = (await receiptProjects(db, actor)).map(project => project.id)
+  return all<{ request_id: string; created_at: number }>(db, `SELECT i.request_id,i.created_at FROM peg_inbox i JOIN peg_access_requests r ON r.id=i.request_id
+    WHERE i.operator_id=? AND i.kind='decision' AND (r.target_type<>'project' OR r.target_id IN (${placeholders(projects)}))
+    ORDER BY i.created_at DESC LIMIT 50`, actor.id, ...projects)
 }
 
 export interface Decision { decision?: unknown; level?: unknown; scope?: unknown; reason?: unknown; revision?: unknown }

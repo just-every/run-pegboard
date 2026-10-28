@@ -33,7 +33,7 @@ export function accessRoutes(app: App) {
   app.get('/admin/access-review', door(({ actor, db, workspace, query }) => accessReview(db, actor, workspace, { action: query.get('action') ?? undefined, subjectId: query.get('subject') ?? undefined })))
 
   app.post('/access-requests', door(({ actor, db, delivery, input }) => submitRequest(db, delivery, actor, input), { next: (_, { input }) => `/app/link/${encodeURIComponent(String(input.targetId ?? ''))}?asked=1` }))
-  app.get('/access-requests', door(async ({ actor, db }) => ({ mine: await myRequests(db, actor), toDecide: await pendingFor(db, actor), notices: await decisionNotices(db, actor) })))
+  app.get('/access-requests', door(async ({ actor, db, delivery }) => ({ mine: await myRequests(db, actor), toDecide: await pendingFor(db, actor, delivery), notices: await decisionNotices(db, actor) })))
   app.get('/access-requests/:id', door(({ actor, db, params }) => previewRequest(db, actor, params.id)))
   app.post('/access-requests/:id/decision', door(({ actor, db, params, input }) => decideRequest(db, actor, params.id, input), { next: () => '/app/inbox' }))
 

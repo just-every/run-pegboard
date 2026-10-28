@@ -1,3 +1,4 @@
+import {accessPrivacyScenario} from './scenarios/access-privacy.mjs'
 import {startEngineeringServices} from './support/engineering-services.mjs'
 // PEG-020 and PEG-083's decision lifecycle, through real sign-in and the public doors: a role matrix over the project,
 // task, export, webhook and admin doors; capability changes seen at once; and every way an access request can fail to grant.
@@ -124,6 +125,7 @@ describe('PEG-020 roles, grants and the decision lifecycle', { concurrency: fals
   })
 
   it('walks every access-request path to a grant or to nothing, with exact audit rows', async () => {
+    await accessPrivacyScenario(w)
     const stage = async (name, extra = {}) => ok(owner.post('/api/v1/projects', { name, ...extra }))
     const ask = (who, targetId, level = 'viewer', message = '') => ok(who.post('/api/v1/access-requests', { targetId, level, message }))
     // Request-to-join team: the chosen Team Admin (not a workspace administrator) is told, approves Editor; only that scope appears.
@@ -147,18 +149,27 @@ describe('PEG-020 roles, grants and the decision lifecycle', { concurrency: fals
     const [denyIt] = await waiting(who.projadmin)
     assert.equal((await ok(decide(who.projadmin, denyIt, { decision: 'deny', reason: 'Not this quarter' }))).status, 'denied')
     assert.equal((await who.member.get(`/api/v1/projects/${secret}`)).status, 404)
+    const denialRead = await grant(secret, who.member, 'viewer')
     assert.equal((await ok(who.member.get('/api/v1/access-requests'))).mine.find(r => r.id === denyIt.id).reason, 'Not this quarter')
+    await ok(owner.delete('/api/v1/grants/'+denialRead.id))
+    assert.ok(!(await ok(who.member.get('/api/v1/access-requests'))).mine.some(r => r.id === denyIt.id))
     for (const body of [{ decision: 'approve' }, { decision: 'deny' }]) assert.equal((await ok(decide(who.projadmin, denyIt, body), 409)).error, 'already_decided')
 
     // Concurrent duplicates make one pending request.
     const busy = (await stage('Busy project')).id
     await Promise.all([1, 2, 3, 4, 5].map(() => ask(who.member, busy, 'viewer')))
     assert.equal((await waiting(owner)).filter(r => r.targetId === busy).length, 1)
+    const pendingRead = await grant(busy, who.member, 'viewer')
     assert.equal((await ok(who.member.get('/api/v1/access-requests'))).mine.filter(r => r.targetId === busy && r.status === 'pending').length, 1)
 
+    await ok(owner.delete('/api/v1/grants/'+pendingRead.id))
     // Expiry: a request past its time grants nothing.
     const [late] = (await waiting(owner)).filter(r => r.targetId === busy)
     await w.sql(`UPDATE peg_access_requests SET expires_at=1 WHERE id='${late.id}'`)
+    const expiryRead = await grant(busy, who.member, 'viewer')
+    assert.equal((await ok(who.member.get('/api/v1/access-requests'))).mine.find(r => r.id === late.id).status, 'expired')
+    assert.ok(!(await waiting(owner)).some(r => r.id === late.id))
+    await ok(owner.delete('/api/v1/grants/'+expiryRead.id))
     assert.equal((await ok(decide(owner, late, { decision: 'approve' }), 409)).error, 'expired')
     assert.equal((await who.member.get(`/api/v1/projects/${busy}`)).status, 404)
     assert.ok((await audit()).some(r => r.action === 'request.expired' && r.detail.requestId === late.id))
