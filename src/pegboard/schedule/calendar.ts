@@ -174,3 +174,16 @@ export function addWorkingTime(stamp: Stamp, milliseconds: number, calendar: Wor
   }
 }
 export const compareStamp = (a: Stamp, b: Stamp): number => a.day - b.day || (a.wallMs === null || b.wallMs === null ? 0 : a.wallMs - b.wallMs)
+
+/** Reserve elapsed effort inside local working intervals, subtracting every opaque provider meeting. */
+export function freeTimeSlots(date: string, calendar: WorkingCalendar, busy: { start: string; end: string }[], minutes: number) {
+  const slots: { start: string; end: string }[] = [], duration = minutes * 60000
+  for (const [lo, hi] of availableIntervals(dayNumber(date), calendar)) {
+    const close = instantOf(date, hi, calendar.zone)
+    for (let at = instantOf(date, lo, calendar.zone); at + duration <= close; at += 15 * 60000) {
+      if (busy.some(b => Date.parse(b.start) < at + duration && Date.parse(b.end) > at)) continue
+      slots.push({ start: new Date(at).toISOString(), end: new Date(at + duration).toISOString() })
+    }
+  }
+  return slots
+}
