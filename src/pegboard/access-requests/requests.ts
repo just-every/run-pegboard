@@ -1,5 +1,6 @@
 // Access requests (PEG-083): a blind, deduplicated ask from an active member, delivered to the people who can decide it.
 // Requests create no share and no invitation. A private no-project task is never a target.
+import { portfolioLevel } from '../portfolios/portfolios'
 import { all, batch, bound, first, forbidden, invalid, newId, now } from '../db'
 import type { RequestRow } from '../model'
 import { auditStatement } from '../authorization/audit'
@@ -25,8 +26,10 @@ export async function expireDue(db: D1Database): Promise<void> {
 export async function submitRequest(db: D1Database, delivery: Delivery, actor: Actor, input: { targetId?: unknown; level?: unknown; message?: unknown }): Promise<typeof acknowledgment> {
   await expireDue(db)
   // Only an active, ordinary workspace member can ask. Everyone else is refused whatever they name.
-  const roles = await Promise.all((await workspacesOf(db, actor)).map(id => workspaceRole(db, actor.id, id)))
-  if (!roles.some(role => role && role !== 'guest' && role !== 'agent')) throw forbidden()
+  const spaces = await workspacesOf(db, actor)
+  const roles = await Promise.all(spaces.map(id => workspaceRole(db, actor.id, id)))
+  const internal = roles.findIndex(role => role && role !== 'guest' && role !== 'agent')
+  if (internal < 0) throw forbidden()
   const level = input.level === undefined || input.level === '' ? 'viewer' : input.level
   if (!isLevel(level)) throw invalid('level')
   const message = typeof input.message === 'string' ? input.message.trim().slice(0, 1000) : ''
@@ -35,15 +38,20 @@ export async function submitRequest(db: D1Database, delivery: Delivery, actor: A
   const targetId = refPattern.test(named.toUpperCase()) ? await resolveTaskId(db, named) ?? '' : named
   const type = targetTypeOf(targetId)
   if (!type) return acknowledgment
-  const target = await loadTarget(db, type, targetId)
-  if (!target) return acknowledgment
-  const workspaceId = workspaceOf(target), role = await workspaceRole(db, actor.id, workspaceId)
-  if (!role || role === 'guest' || role === 'agent') return acknowledgment
+  const loaded = await loadTarget(db, type, targetId)
+  const role = loaded ? await workspaceRole(db, actor.id, workspaceOf(loaded)) : null
+  const target = role && role !== 'guest' && role !== 'agent' ? loaded : null
+  // A portfolio submission is a blind receipt even when there is no eligible target. Otherwise the
+  // requester's own Inbox would disclose existence. Such receipts have no recipient or grant authority.
+  if (type === 'portfolio' && level !== 'viewer') return acknowledgment
+  if (!target && type !== 'portfolio') return acknowledgment
+  const workspaceId = target ? workspaceOf(target) : spaces[internal]
   // Never a private personal task; never something already held at the level asked.
   let held: Level | null = null, askable = true
-  if (target.type === 'team') { held = (await teamEffective(db, actor, target.row)).level; askable = target.row.privacy !== 'public' }
-  else if (target.type === 'project') held = (await projectEffective(db, actor, target.row)).level
-  else {
+  if (target?.type === 'portfolio') { held = await portfolioLevel(db, actor, target.row); askable = level === 'viewer' }
+  else if (target?.type === 'team') { held = (await teamEffective(db, actor, target.row)).level; askable = target.row.privacy !== 'public' }
+  else if (target?.type === 'project') held = (await projectEffective(db, actor, target.row)).level
+  else if (target) {
     const access = await taskAccess(db, actor, target.row)
     const homes = await first<{ n: number }>(db, 'SELECT COUNT(*) n FROM peg_task_projects WHERE task_id=?', target.row.id)
     askable = homes!.n > 0 && level !== 'admin'
@@ -52,18 +60,20 @@ export async function submitRequest(db: D1Database, delivery: Delivery, actor: A
   if (!askable || rank(held) >= rank(level)) return acknowledgment
   const id = newId('req'), at = now(), operator = await operatorRow(db, actor.id)
   const expires = at + (await workspaceSettings(db, workspaceId)).requestExpiryDays * 86_400_000
-  const policyRev = await policyRevOf(db, target)
+  const policyRev = target ? await policyRevOf(db, target) : -1
   const [inserted] = await batch(db, [bound(db, `INSERT INTO peg_access_requests(id,workspace_id,requester_id,requester_version,target_type,target_id,level,message,status,policy_rev,expires_at,created_at)
-    VALUES (?,?,?,?,?,?,?,?,'pending',?,?,?) ON CONFLICT(requester_id,target_type,target_id) WHERE status='pending' DO NOTHING`, [id, workspaceId, actor.id, operator!.version, target.type, target.row.id, level, message, policyRev, expires, at])])
+    VALUES (?,?,?,?,?,?,?,?,'pending',?,?,?) ON CONFLICT(requester_id,target_type,target_id) WHERE status='pending' DO NOTHING`, [id, workspaceId, actor.id, operator!.version, type, targetId, level, message, policyRev, expires, at])])
   if (!inserted.meta.changes) {
-    await batch(db, [bound(db, "UPDATE peg_access_requests SET duplicates=duplicates+1 WHERE requester_id=? AND target_type=? AND target_id=? AND status='pending'", [actor.id, target.type, target.row.id]),
-      auditStatement(db, { workspaceId, actorId: actor.id, action: 'request.deduplicated', targetType: target.type, targetId: target.row.id, detail: { requestedLevel: level } })])
+    await batch(db, [bound(db, "UPDATE peg_access_requests SET duplicates=duplicates+1 WHERE requester_id=? AND target_type=? AND target_id=? AND status='pending'", [actor.id, type, targetId]),
+      auditStatement(db, { workspaceId, actorId: actor.id, action: 'request.deduplicated', targetType: type, targetId, detail: { requestedLevel: level } })])
     return acknowledgment
   }
   const created = (await first<RequestRow>(db, 'SELECT * FROM peg_access_requests WHERE id=?', id))!
-  await batch(db, [auditStatement(db, { workspaceId, actorId: actor.id, action: 'request.created', targetType: target.type, targetId: target.row.id, detail: { requestId: id, requestedLevel: level, message: message || undefined, expiresAt: expires } })])
-  const to = await recipients(db, target, actor.id)
-  await deliver(db, delivery, created, to.kind, to.ids)
+  await batch(db, [auditStatement(db, { workspaceId, actorId: actor.id, action: 'request.created', targetType: type, targetId, detail: { requestId: id, requestedLevel: level, message: message || undefined, expiresAt: expires } })])
+  if (target) {
+    const to = await recipients(db, target, actor.id)
+    await deliver(db, delivery, created, to.kind, to.ids)
+  }
   return acknowledgment
 }
 

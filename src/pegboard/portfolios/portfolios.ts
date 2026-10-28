@@ -10,7 +10,7 @@ import { openProject } from '../workspace/projects'
 import { workspaceRole, type Actor } from '../workspace/people'
 import { defaultPolicy, policyInput, type Policy } from './risk'
 
-export interface PortfolioRow { id: string; workspace_id: string; parent_id: string | null; name: string; description: string; owner_id: string; created_by: string; created_at: number }
+export interface PortfolioRow { id: string; workspace_id: string; parent_id: string | null; name: string; description: string; owner_id: string; access_rev: number; created_by: string; created_at: number }
 export type PortfolioLevel = 'admin' | 'viewer'
 const text = (value: unknown, max: number, code: string) => { if (typeof value !== 'string' || !value.trim() || value.length > max) throw invalid(code); return value.trim() }
 export const loadPortfolio = (db: D1Database, id: string) => first<PortfolioRow>(db, 'SELECT * FROM peg_portfolios WHERE id=?', id)
@@ -31,6 +31,22 @@ export async function portfolioLevel(db: D1Database, actor: Actor, portfolio: Po
     current = current.parent_id ? await loadPortfolio(db, current.parent_id) : null
   }
   return level
+}
+/** Current owner and Admin recipients, including inherited portfolio and workspace authority. */
+export async function portfolioAdministrators(db: D1Database, portfolio: PortfolioRow): Promise<string[]> {
+  const candidates = await all<{ id: string }>(db, "SELECT id FROM oa_operators WHERE status='active'")
+  const out: string[] = []
+  for (const { id } of candidates) if (await portfolioLevel(db, { id, email: '', displayName: '', baseRole: 'member' }, portfolio) === 'admin') out.push(id)
+  return out
+}
+/** Sharing revision of this portfolio and its ancestors, independent of project access. */
+export async function portfolioAccessRevision(db: D1Database, portfolio: PortfolioRow): Promise<number> {
+  let revision = portfolio.access_rev, current: PortfolioRow | null = portfolio
+  for (let depth = 0; current && depth <= maxDepth; depth++) {
+    revision = Math.max(revision, current.access_rev)
+    current = current.parent_id ? await loadPortfolio(db, current.parent_id) : null
+  }
+  return revision
 }
 /** A portfolio the person can read, or not found: a refusal never says whether it exists. */
 export async function openPortfolio(db: D1Database, actor: Actor, id: string) {
@@ -106,7 +122,7 @@ export async function setMember(db: D1Database, actor: Actor, id: string, operat
   }
   if (level !== 'viewer' && level !== 'admin') throw invalid('level')
   if (!sharesWithWorkspace(await workspaceRole(db, operatorId, portfolio.workspace_id))) throw invalid('member')
-  await batch(db, [bound(db, 'INSERT INTO peg_portfolio_members(portfolio_id,operator_id,level,added_by,added_at) VALUES (?,?,?,?,?) ON CONFLICT(portfolio_id,operator_id) DO UPDATE SET level=excluded.level', [id, operatorId, level, actor.id, now()]), auditStatement(db, { workspaceId: portfolio.workspace_id, actorId: actor.id, action: 'portfolio.member_set', targetType: 'portfolio', targetId: id, subjectId: operatorId, detail: { level } })])
+  await batch(db, [bound(db, 'INSERT INTO peg_portfolio_members(portfolio_id,operator_id,level,added_by,added_at) VALUES (?,?,?,?,?) ON CONFLICT(portfolio_id,operator_id) DO UPDATE SET level=excluded.level,added_by=excluded.added_by,added_at=excluded.added_at,request_id=NULL', [id, operatorId, level, actor.id, now()]), auditStatement(db, { workspaceId: portfolio.workspace_id, actorId: actor.id, action: 'portfolio.member_set', targetType: 'portfolio', targetId: id, subjectId: operatorId, detail: { level } })])
   return { portfolioId: id, operatorId, level }
 }
 
