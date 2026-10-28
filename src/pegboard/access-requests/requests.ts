@@ -86,7 +86,8 @@ export async function myRequests(db: D1Database, actor: Actor) {
   const projects = (await receiptProjects(db, actor)).map(project => project.id)
   const rows = await all<RequestRow>(db, `SELECT * FROM peg_access_requests WHERE requester_id=?
     AND (target_type<>'project' OR target_id IN (${placeholders(projects)})) ORDER BY created_at DESC LIMIT 100`, actor.id, ...projects)
-  return rows.map(row => ({ id: row.id, targetType: row.target_type, targetId: row.target_id, level: row.level, status: row.status, message: row.message, createdAt: row.created_at, expiresAt: row.expires_at, decidedAt: row.decided_at, reason: row.decision_reason, grantedLevel: row.granted_level }))
+  const at = now()
+  return rows.map(row => ({ id: row.id, targetType: row.target_type, targetId: row.target_id, level: row.level, status: row.status === 'pending' && row.expires_at <= at ? 'expired' : row.status, message: row.message, createdAt: row.created_at, expiresAt: row.expires_at, decidedAt: row.decided_at, reason: row.decision_reason, grantedLevel: row.granted_level }))
 }
 
 // Durable intake survives restarts, but never an identity change or a restored archive.

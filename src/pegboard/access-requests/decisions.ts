@@ -49,7 +49,7 @@ export async function previewRequest(db: D1Database, actor: Actor, requestId: st
 export async function pendingFor(db: D1Database, actor: Actor, delivery: Delivery) {
   const projects = await receiptProjects(db, actor)
   await processProjectRequests(db, delivery, projects.filter(project => project.level === 'admin').map(project => project.id))
-  const rows = await all<{ request_id: string; kind: string }>(db, `SELECT i.request_id,i.kind FROM peg_inbox i JOIN peg_access_requests r ON r.id=i.request_id WHERE i.operator_id=? AND i.kind IN ('request','fallback') AND r.status='pending' GROUP BY i.request_id ORDER BY MAX(i.created_at) DESC`, actor.id)
+  const rows = await all<{ request_id: string; kind: string }>(db, `SELECT i.request_id,i.kind FROM peg_inbox i JOIN peg_access_requests r ON r.id=i.request_id WHERE i.operator_id=? AND i.kind IN ('request','fallback') AND r.status='pending' AND r.expires_at>? GROUP BY i.request_id ORDER BY MAX(i.created_at) DESC`, actor.id, now())
   const out = []
   for (const row of rows) { try { out.push(await previewRequest(db, actor, row.request_id)) } catch { /* authority since revoked: it no longer lists */ } }
   return out

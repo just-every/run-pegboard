@@ -166,6 +166,10 @@ describe('PEG-020 roles, grants and the decision lifecycle', { concurrency: fals
     // Expiry: a request past its time grants nothing.
     const [late] = (await waiting(owner)).filter(r => r.targetId === busy)
     await w.sql(`UPDATE peg_access_requests SET expires_at=1 WHERE id='${late.id}'`)
+    const expiryRead = await grant(busy, who.member, 'viewer')
+    assert.equal((await ok(who.member.get('/api/v1/access-requests'))).mine.find(r => r.id === late.id).status, 'expired')
+    assert.ok(!(await waiting(owner)).some(r => r.id === late.id))
+    await ok(owner.delete('/api/v1/grants/'+expiryRead.id))
     assert.equal((await ok(decide(owner, late, { decision: 'approve' }), 409)).error, 'expired')
     assert.equal((await who.member.get(`/api/v1/projects/${busy}`)).status, 404)
     assert.ok((await audit()).some(r => r.action === 'request.expired' && r.detail.requestId === late.id))

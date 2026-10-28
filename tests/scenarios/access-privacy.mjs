@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict'
 
-const ok = async promise => {
+const ok = async (promise, status = 200) => {
   const response = await promise
-  assert.equal(response.status, 200, JSON.stringify(response.body))
+  assert.equal(response.status, status, JSON.stringify(response.body))
   return response.body
 }
 const address = number => `synthetic-pegboard-${number}@${'example.test'}`
@@ -28,7 +28,7 @@ export async function accessPrivacyScenario(w, {timing = false} = {}) {
   await snapshot(owner)
   const baseline = await snapshot(requester)
   assert.equal(baseline.mine.length, 1, 'compare a populated receipt list, not an empty-list shortcut')
-  const responses = [], samples = {private:[],invalid:[]}
+  const responses = [], samples = {private:[],invalid:[]}, receiptSamples = {private:[],invalid:[]}
   for (let index = 0; index < (timing ? 24 : 1); index++) {
     for (const [kind, target] of (index % 2 ? [['invalid',invalid],['private',hidden.id]] : [['private',hidden.id],['invalid',invalid]])) {
       const start = performance.now()
@@ -37,7 +37,10 @@ export async function accessPrivacyScenario(w, {timing = false} = {}) {
       assert.equal(response.status, 200)
       responses.push(response.body)
       assert.equal(response.headers.get('cache-control'), 'no-store')
-      assert.deepEqual(await snapshot(requester), baseline, 'shape, count, receipts, decisions and notices must remain identical')
+      const readStart = performance.now()
+      const receipts = await snapshot(requester)
+      receiptSamples[kind].push(performance.now() - readStart)
+      assert.deepEqual(receipts, baseline, 'shape, count, receipts, decisions and notices must remain identical')
     }
   }
   for (const response of responses) assert.deepEqual(response, responses[0])
@@ -74,6 +77,16 @@ export async function accessPrivacyScenario(w, {timing = false} = {}) {
   const ended = await w.person(address(9205), 'Ended requester')
   await ok(ended.post('/api/v1/access-requests', {targetId:hidden.id}))
   await ok(owner.post('/api/v1/workspaces/ws_main/people/'+ended.id+'/account', {status:'inactive'}))
+  const exported = await ok(owner.post('/api/portability/exports', {}), 201)
+  let archive
+  for (let index = 0; index < 100; index++) {
+    const status = await ok(owner.post('/api/portability/exports/'+exported.id+'/advance', {maxParts:16}))
+    if (status.phase === 'complete') { archive = await ok(owner.get('/api/portability/exports/'+exported.id+'/download')); break }
+  }
+  assert.equal(typeof archive, 'string', 'the native archive must complete')
+  const rows = archive.trim().split('\n').map(line=>JSON.parse(line)).filter(record=>record.kind==='part').flatMap(record=>record.items).filter(record=>record.kind==='row')
+  assert.ok(rows.some(record=>record.table==='peg_projects' && record.row.id===hidden.id), 'the archive contains the real project')
+  assert.ok(!rows.some(record=>record.table==='peg_project_request_intake'), 'a restored capture must not replay blind intake authority')
   const erase = await ok(owner.post('/api/v1/data/erasure-preview', {type:'person',id:ended.id}))
   assert.deepEqual(erase.blockers, [])
   assert.equal(erase.counts.peg_project_request_intake, 1, 'erasure reviews the unresolved blind intake')
@@ -87,9 +100,10 @@ export async function accessPrivacyScenario(w, {timing = false} = {}) {
   if (timing) {
     const median = values => [...values].sort((a,b)=>a-b)[Math.floor(values.length/2)]
     const medians = Object.fromEntries(Object.entries(samples).map(([kind,values])=>[kind,median(values)]))
+    const receiptMedians = Object.fromEntries(Object.entries(receiptSamples).map(([kind,values])=>[kind,median(values)]))
     // A broad integration bound catches target resolution or delivery on the response
     // path. Fixed-statement intake supplies the structural timing guarantee.
-    assert.ok(Math.abs(medians.private-medians.invalid) < Math.max(50, Math.min(medians.private,medians.invalid)), JSON.stringify(medians))
-    console.log(JSON.stringify({proof:'blind project acknowledgment timing',samples:24,medianMs:medians,head:process.env.PEGBOARD_PROOF_HEAD}))
+    for (const result of [medians,receiptMedians]) assert.ok(Math.abs(result.private-result.invalid) < Math.max(50, Math.min(result.private,result.invalid)), JSON.stringify(result))
+    console.log(JSON.stringify({proof:'blind project acknowledgment timing',samples:24,medianMs:medians,receiptMedianMs:receiptMedians,head:process.env.PEGBOARD_PROOF_HEAD}))
   }
 }

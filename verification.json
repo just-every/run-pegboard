@@ -6,7 +6,7 @@
       "hosted": false,
       "commands": [
         "pnpm run check --profile first-party",
-        "node scripts/contract-docs.mjs check PEG-027 PEG-015 PEG-036 PEG-012 PEG-016 PEG-044 PEG-025"
+        "node scripts/contract-docs.mjs check PEG-027 PEG-015 PEG-036 PEG-012 PEG-016 PEG-044 PEG-025 PEG-092"
       ]
     },
     {
