@@ -3,6 +3,7 @@ import { isRecoveryHidden } from '../recovery/visibility'
 import {registerView} from '../register/records'
 import {taskFields} from '../fields/values'
 import {taskTags} from '../tags/tags'
+import {availabilityChoices} from '../capacity/availability'
 // What a person sees of a task: its own shared record, and of each project it hangs in only the ones they may read,
 // with the values, files and history those projects keep. Nothing of an unreadable project leaves this module.
 import { all, batch, bound, first, forbidden, invalid, newId, notFound, now } from '../db'
@@ -39,6 +40,7 @@ export async function viewTask(db: D1Database, actor: Actor, idOrRef: string) {
   const names = await displayNames(db, [task.owner_id, ...collaborators, ...history.map(entry => entry.actor_id), ...comments.map(comment => comment.author_id), ...files.map(file => file.created_by)])
   const name = (id: string) => names.get(id) ?? 'Former member'
   const internal = access.role !== 'guest'
+  const mentionChoices=await availabilityChoices(db,actor,task.workspace_id,[task.owner_id,...collaborators].filter((v,i,a)=>a.indexOf(v)===i).map(id=>({value:id,label:name(id)})),task.start_date,task.due_date)
   const visibleHistory=await Promise.all(history.map(async entry=>{const detail=shareHistory(entry.detail,readable);if(entry.kind.startsWith('dependency.'))for(const key of ['predecessor','successor'])if(typeof detail[key]==='string'){const linked=await openTask(db,actor,detail[key] as string).catch(()=>null);if(!linked)delete detail[key]}return {...entry,detail}}))
   return {
     id: task.id, ref: await currentRef(db, task.id), aliases: await aliases(db, task.id), title: task.title, description: task.description, kind: await first(db,'SELECT 1 FROM peg_approval_tasks WHERE task_id=?',task.id) ? 'approval' : task.kind, parentId: task.parent_id,
@@ -47,7 +49,7 @@ export async function viewTask(db: D1Database, actor: Actor, idOrRef: string) {
     ...(internal ? { internalOnly: !!task.internal_only, internalNotes: task.internal_notes } : {}),
     // An assigned-work grant opens this task, without opening the project's delivery register.
     deliveryRecords:(await Promise.all(projects.filter(p=>access.contexts.get(p.id)!.paths.some(path=>path.scope!=='assignee'&&path.capabilities.includes('read'))).map(async p=>(await registerView(db,actor,p.id)).records.filter(r=>r.task_id===task.id).map(r=>({id:r.id,title:r.title,link:`/app/projects/${p.id}/register#${r.id}`}))))).flat(),
-    tags:await taskTags(db,actor,task.id), capabilities: [...access.capabilities], level: access.level, projects, subtasks,
+    mentionChoices,tags:await taskTags(db,actor,task.id), capabilities: [...access.capabilities], level: access.level, projects, subtasks,
     meetingCitations: await all<{meetingId:string;segmentIndex:number}>(db,`SELECT m.id AS meetingId,p.segment_index AS segmentIndex FROM peg_meeting_proposals p JOIN peg_meetings m ON m.id=p.meeting_id JOIN oa_operators o ON o.id=m.created_by WHERE p.task_id=? AND m.created_by=? AND m.revoked_at IS NULL AND o.status='active' AND o.role IN ('owner','admin')`,task.id,actor.id),
     history: visibleHistory.filter(entry => internal || (!entry.kind.startsWith('internal.') && !(entry.kind === 'comment.added' && entry.project_id === null))).map(entry => ({ id: entry.id, at: entry.at, actor: name(entry.actor_id), kind: entry.kind, projectId: entry.project_id, detail: entry.kind==='fields.changed'?{}:shareHistory(entry.detail, readable) })),
     comments: comments.map(comment => ({ id: comment.id, author: name(comment.author_id), body: comment.body, at: comment.created_at })),
