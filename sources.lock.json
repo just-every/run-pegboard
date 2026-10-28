@@ -2911,7 +2911,7 @@
       "executable": false
     },
     "src/pegboard/access-requests/requests.ts": {
-      "sha256": "d6f908bb4e81e4173cb3b00ed19596f47bb18e259f5f017a76b71cd23185e5b8",
+      "sha256": "2f799d17ab89433530406478e2cd48b504dbd95b8c277da322a72795ba722751",
       "executable": false
     },
     "src/pegboard/access-requests/visibility.ts": {
@@ -4047,7 +4047,7 @@
       "executable": false
     },
     "tests/access-control.test.mjs": {
-      "sha256": "734d5dfdd005ab39b244bf5bc1fa5ca63bb2a36285fa1ab6ad1d9a38e92aa85c",
+      "sha256": "f47b04ed3e2c7a1e7e7f9d9e900d6ceccf5a694309f9269bc2e79409c92b21a9",
       "executable": false
     },
     "tests/journeys/access-discovery.mjs": {
