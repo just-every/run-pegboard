@@ -283,7 +283,7 @@ Every desk capability retains its original ID: PEG-001–027 are target clauses 
 
 ## Status
 
-Judged from the code and tests at commit `dd55a8343c67dacebff3b566c1a84de51c5cba23` (28 October 2026). PEG-127 retains that implementation and browser proof, with added native archive, expiry and receipt-read timing assertions in this candidate. Its branch handoff supplies the full candidate SHA, separate timing receipt and exact-SHA Verify run.
+Judged from the current PEG-127 candidate on branch `cloud/sx-pegboard-peg127fix1`. The 28 October ct ruling retains the inspected access and browser outcomes but requires executed timing proof; timing execution is unestablished. The branch handoff records the immutable candidate commit and exact-SHA execution results.
 
 Judged from the code and tests at commit `66db0c24f2180aa3edcc17a73d453c84df3c60b7` (27 October 2026). PEG-004 includes the ct nominee-refusal and keyboard proof repair. This documentation successor preserves every source and test byte of that commit; fresh judgment and the guarded landing records bind the candidate to its exact Verify, Run site and complete publication scan. PEG-027 continues the previous native API and MCP work with read-only personal-list and activated-rule parity repairs; its remaining work and adopted defaults remain explicit in its Gap.
 
@@ -294,8 +294,8 @@ PEG-016 candidate provenance: judged from the code and sanity journeys in this e
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
 | Published | 1 | 0 | 0 | 1 |
-| Target and push further | 20 | 14 | 56 | 90 |
-| All | 21 | 14 | 56 | 91 |
+| Target and push further | 19 | 15 | 56 | 90 |
+| All | 20 | 15 | 56 | 91 |
 
 | Clause | Title | Kind | Status | Evidence | Gap |
 | --- | --- | --- | --- | --- | --- |
@@ -368,7 +368,7 @@ PEG-016 candidate provenance: judged from the code and sanity journeys in this e
 | `PEG-053` | kanban-board source, grid-based source and spreadsheet migration | target | missing |  | No implementation exists for kanban-board source, grid-based source and spreadsheet migration; the complete behavior and public-door acceptance journey remain required. |
 | `PEG-054` | Mid-stream cutover, reconciliation and rollback | target | missing |  | No implementation exists for mid-stream cutover, reconciliation and rollback; the complete behavior and public-door acceptance journey remain required. |
 | `PEG-055` | Owner-run Cloudflare installation through Base | target | missing |  | No implementation exists for owner-run cloudflare installation through base; the complete behavior and public-door acceptance journey remain required. |
-| `PEG-127` | Access-request acknowledgments never reveal whether a private project exists | target | done | Durable blind intake schema: `migrations/core/0071_blind_project_requests.sql`. Acknowledgments, own receipts, identical response shape and count, legitimate owner and administrator decisions, current-access revocation and replay refusal: `tests/access-control.test.mjs` “walks every access-request path to a grant or to nothing, with exact audit rows”, using `tests/scenarios/access-privacy.mjs` “accessPrivacyScenario”. Blind POST and receipt-read timing: `tests/journeys/access-privacy-timing.mjs` “accessPrivacyScenario timing”, run separately on the exact candidate. Both targets through rendered public doors, matching refusals and acknowledgments, owner approval and revoked receipts: `tests/journeys/access-privacy.mjs` “accessPrivacyJourney”, registered in push Verify through `tests/journeys/work-graph.journey.mjs`. Browser assertions run once at 1440, with proof screens at 1440 and 390. | |
+| `PEG-127` | Access-request acknowledgments never reveal whether a private project exists | target | partial | Durable blind intake schema: `migrations/core/0071_blind_project_requests.sql`. Acknowledgments, own receipts, identical response shape and count, legitimate owner and administrator decisions, current-access revocation and replay refusal: `tests/access-control.test.mjs` “walks every access-request path to a grant or to nothing, with exact audit rows”, using `tests/scenarios/access-privacy.mjs` “accessPrivacyScenario”. Blind POST and receipt-read timing: `tests/journeys/access-privacy-timing.mjs` “accessPrivacyScenario timing”, available as a separate command; execution is not yet established. Both targets through rendered public doors, matching refusals and acknowledgments, owner approval and revoked receipts: `tests/journeys/access-privacy.mjs` “accessPrivacyJourney”, registered in push Verify through `tests/journeys/work-graph.journey.mjs`. Browser assertions run once at 1440, with proof screens at 1440 and 390. | timing execution unestablished |
 | `PEG-084` | Authenticated mail and a cutover that reaches inboxes | target | missing |  | No implementation exists for authenticated mail and a cutover that reaches inboxes; the complete behavior and public-door acceptance journey remain required. |
 | `PEG-086` | Mail-independent owner recovery and team continuity | target | missing |  | No implementation exists for mail-independent owner recovery and team continuity; the complete behavior and public-door acceptance journey remain required. |
 | `PEG-056` | Native sign-in and accountable sessions | target | missing |  | No implementation exists for native sign-in and accountable sessions; the complete behavior and public-door acceptance journey remain required. |
