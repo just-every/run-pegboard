@@ -34,6 +34,14 @@ explicit scope. It never grants a signed-in application session or write access.
 its cached snapshots. Rotate by issuing a new key and revoking the old one.
 No other administrator can retrieve or reuse the original secret.
 
+New authorizations also return a non-secret `scopeDigest`, reproduced by the
+own-key list and recorded with consent and expiry in `analytics.key_authorized`.
+This SHA-256 receipt binds the issuer, workspace, sorted project IDs, dataset
+fields and expiry. It lets an administrator reconcile the selected scope with
+the permanent audit even after the temporary credential store is excluded from
+an archive. The audit contains neither project names nor field contents nor
+credentials. Earlier audit events are preserved without retroactive receipts.
+
 ## Read contract, version 1
 
 Authenticate with HTTP Basic: username is the key ID and password is its secret.

@@ -20,15 +20,15 @@ export async function analystJourney({ w, browser, owner, ok }) {
     return { context, page: await context.newPage() }
   }
   const { context, page } = await open(owner)
-  const proof = async name => {
+  const proof = async (name, screen = page) => {
     // Assertions run at one width. The same live state supplies the release screenshots at both widths.
     if (!process.env.PEGBOARD_PROOF_DIR) return
     await mkdir(process.env.PEGBOARD_PROOF_DIR, { recursive: true })
     for (const [width, height] of [[1440, 900], [390, 844]]) {
-      await page.setViewportSize({ width, height })
-      await page.screenshot({ path: join(process.env.PEGBOARD_PROOF_DIR, `analytics-${name}-${width}.png`), fullPage: true, mask: [page.locator('[data-analytics-secret]')] })
+      await screen.setViewportSize({ width, height })
+      await screen.screenshot({ path: join(process.env.PEGBOARD_PROOF_DIR, `analytics-${name}-${width}.png`), fullPage: true, mask: [screen.locator('[data-analytics-secret]')] })
     }
-    await page.setViewportSize({ width: 1440, height: 900 })
+    await screen.setViewportSize({ width: 1440, height: 900 })
   }
   const read = async (path, secret) => {
     const response = await fetch(new URL(path, w.origin), { headers: { authorization: 'Bearer ' + secret, prefer: 'odata.maxpagesize=1' } })
@@ -62,6 +62,7 @@ export async function analystJourney({ w, browser, owner, ok }) {
     assert.equal(listed.length, 1)
     assert.deepEqual(JSON.parse(listed[0].projects), [project.id])
     assert.deepEqual(JSON.parse(listed[0].fields), { Tasks: ['id', 'title'] })
+    assert.equal(listed[0].scopeDigest, issued.scopeDigest)
     assert.ok(listed[0].expires_at > Date.now() && listed[0].expires_at <= listed[0].created_at + 30 * 86400000)
     assert.ok(!JSON.stringify(listed).includes(issued.secret) && !JSON.stringify(listed).includes('token_hash'))
     assert.deepEqual(await page.evaluate(() => [localStorage.length, sessionStorage.length]), [0, 0])
@@ -87,7 +88,7 @@ export async function analystJourney({ w, browser, owner, ok }) {
     await expect(row).toContainText('Active')
     await proof('listed')
     const audit = await pass(owner.get('/api/v1/admin/audit?action=analytics.key_authorized'))
-    assert.ok(audit.events.some(e => e.target_id === issued.id && e.actor_id === owner.id && e.metadata.consent === true))
+    assert.ok(audit.events.some(e => e.target_id === issued.id && e.actor_id === owner.id && e.metadata.consent === true && e.metadata.scopeDigest === issued.scopeDigest))
     assert.ok(!JSON.stringify(audit).includes(issued.secret))
     for (const client of [member, admin]) {
       const other = await open(client)
@@ -115,6 +116,35 @@ export async function analystJourney({ w, browser, owner, ok }) {
     await expect(page.locator(`[data-analyst-key="${expired.id}"]`)).toContainText('Expired')
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
     assert.equal(await page.locator('button,a').evaluateAll(nodes => nodes.filter(e => !e.textContent.trim() && e.querySelector('svg,img')).length), 0, 'all controls have visible text')
+    const administrator = await open(admin)
+    try {
+      await administrator.page.goto(`${w.origin}/app/settings/analytics`)
+      const adminForm = administrator.page.getByRole('form', { name: 'Authorize analyst key' })
+      await adminForm.getByLabel('Credential name').fill('Administrator analyst review')
+      await adminForm.getByLabel('Reviewed analyst project', { exact: true }).check()
+      await adminForm.getByLabel('Tasks: Status', { exact: true }).check()
+      await adminForm.getByLabel('Credential lifetime').selectOption('1')
+      await adminForm.getByLabel('I consent to read-only export', { exact: false }).check()
+      const response = administrator.page.waitForResponse(r => r.url().endsWith('/api/v1/analytics/keys') && r.request().method() === 'POST')
+      await adminForm.getByRole('button', { name: 'Authorize analyst key' }).click()
+      const authorization = await response
+      assert.equal(authorization.status(), 200)
+      const delegated = await authorization.json()
+      assert.ok(await administrator.page.locator('[data-analytics-secret]').textContent() === delegated.secret)
+      assert.ok(delegated.expiresAt <= Date.now() + 86400000)
+      assert.deepEqual(Object.keys((await read(delegated.servicePath + '/Tasks', delegated.secret)).body.value[0]).sort(), ['id', 'status'])
+      const consent = await pass(admin.get('/api/v1/admin/audit?action=analytics.key_authorized'))
+      assert.ok(consent.events.some(e => e.target_id === delegated.id && e.actor_id === admin.id && e.metadata.scopeDigest === delegated.scopeDigest))
+      await proof('administrator-issued', administrator.page)
+      await administrator.page.getByRole('link', { name: 'I saved it; hide credential' }).click()
+      assert.ok(!(await administrator.page.content()).includes(delegated.secret))
+      await expect(administrator.page.locator(`[data-analyst-key="${delegated.id}"]`)).toContainText('Active')
+      await pass(owner.post(`/api/v1/analytics/keys/${delegated.id}/revoke`, {}), 403)
+      assert.equal((await read(delegated.servicePath + '/Tasks', delegated.secret)).status, 200, 'owner cannot revoke another administrator’s credential')
+      await administrator.page.locator(`[data-analyst-key="${delegated.id}"]`).getByRole('button', { name: 'Revoke key' }).click()
+      await expect(administrator.page.locator(`[data-analyst-key="${delegated.id}"]`)).toContainText('Revoked')
+      assert.equal((await read(delegated.servicePath + '/Tasks', delegated.secret)).status, 401)
+    } finally { await administrator.context.close() }
     console.log('Analyst self-custody, explicit consent, once-shown credentials, finite expiry and saved-fetch revocation passed at 1440px')
   } finally { await context.close() }
 }

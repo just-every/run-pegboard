@@ -199,7 +199,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "a6775bc2966c80086abbf235b276a7188d71a92ae678928239d482525508a71b",
+      "sha256": "5b00c2300372da8c845fc1ba6357ee1381c3332148028c26b1800961ae3620a0",
       "executable": false
     },
     "AGENTS.md": {
@@ -215,7 +215,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "72151427a9ad90a9f7a5f0b6c0322c4f93689368fcb3d22638185ba73934c615",
+      "sha256": "845f7e63332eee70d16c7edb9cfe58ea4d361d7a6594db2a5a4df3b0a92d4ae6",
       "executable": false
     },
     "DEMO.md": {
@@ -235,7 +235,7 @@
       "executable": false
     },
     "docs/ANALYTICS-EXPORT.md": {
-      "sha256": "0f2588c6741b86334fc98bb887dbb6bb61a695f0cabc4fe886f1372855dd132a",
+      "sha256": "824428f60f2e4772f6abef6190a92d268a44919402962e206a2eaddd87f2ba00",
       "executable": false
     },
     "docs/CALENDAR-BLOCKS.md": {
@@ -243,7 +243,7 @@
       "executable": false
     },
     "docs/CLAIMS.md": {
-      "sha256": "423f9f0fbd43f1073969d4c9a467fddebed8ec1c8044133ab876abc55d8a74a4",
+      "sha256": "815b39eb134f829ea4c60b192507a33625cb2ac9d87a0c85f24eee23401bcae6",
       "executable": false
     },
     "docs/DATA-CUSTODY.md": {
@@ -2927,7 +2927,7 @@
       "executable": false
     },
     "src/pegboard/analytics-export/keys.ts": {
-      "sha256": "2d0e1f8076b43e1cb04b623608624c118aaa90e2ec750f004cba3e030c74c50b",
+      "sha256": "716513af8a5d1eab9a7ac0765b4ce704b097340a58072620427efcb1a9e037a3",
       "executable": false
     },
     "src/pegboard/analytics-export/schema.ts": {
@@ -3091,7 +3091,7 @@
       "executable": false
     },
     "src/pegboard/audit/metadata.ts": {
-      "sha256": "6d40b9ba73ee14e5feff2b6b03b7dddecfbd90ec381218945a64c7d36cf42589",
+      "sha256": "34a266268de9322084e895e7c64dda5ebbc7ea91a03c2312b5b08fa7f58f741e",
       "executable": false
     },
     "src/pegboard/audit/search.ts": {
@@ -4031,7 +4031,7 @@
       "executable": false
     },
     "tests/journeys/analytics.mjs": {
-      "sha256": "f87eef5897e3b95fa7a63572cdd49e11d9819f726981b58f8d503d9a8ad338e3",
+      "sha256": "363d89001be92164236699a3523943e52b8e6e008be416ab5ca33c662eba243f",
       "executable": false
     },
     "tests/journeys/approval-routing.mjs": {
@@ -4195,7 +4195,7 @@
       "executable": false
     },
     "tests/work-graph.test.mjs": {
-      "sha256": "edd425b026cdbb1c914424d70e322ab2cf5ed3638ad961876fa0b9638643bbde",
+      "sha256": "bae492622353df76281d0056686b4c421f340fbd20026185039dedcd91e61be8",
       "executable": false
     },
     "tsconfig.json": {
