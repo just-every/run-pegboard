@@ -944,17 +944,19 @@ describe('Conditional local work rules',{concurrency:false},()=>{
 })
 
 describe('Capacity across committed work', { concurrency: false }, () => {
-  let runtime, admin, member, viewer, commitments, capacityServices
+  let runtime, admin, member, viewer, planningAgent, commitments, capacityServices
   before(async () => {
     capacityServices = await startCapacityServices()
     runtime = await startWorker({ settings: { PEGBOARD_LOCAL_CAPACITY_ORIGINS: capacityServices.origins } }); admin = runtime.owner
     const address = n => `synthetic-pegboard-${n}` + String.fromCharCode(64) + 'example.test'
     member = await runtime.person(address(1601), 'Casey Capacity')
     viewer = await runtime.person(address(1602), 'Taylor Viewer')
+    planningAgent = await runtime.person(address(1603), 'Capacity Agent', 'agent')
     commitments = []
     for (const name of ['Campaign', 'Launch', 'Operations']) {
       const p = await ok(admin.post('/api/v1/projects', { name, visibility: 'workspace' }))
       commitments.push(await ok(admin.post('/api/v1/tasks', { projectId: p.id, title: name + ' delivery', ownerId: member.id, estimateHours: 20, startDate: '2026-11-02', dueDate: '2026-11-06' })))
+      await ok(admin.post('/api/v1/grants', { objectType: 'project', objectId: p.id, granteeId: planningAgent.id, level: 'editor' }))
     }
     const hidden = await ok(admin.post('/api/v1/projects', { name: 'Synthetic private program' }))
     await ok(admin.post('/api/v1/tasks', { projectId: hidden.id, title: 'Synthetic confidential commitment', estimateHours: 8, startDate: '2026-11-02', dueDate: '2026-11-06' }))
@@ -978,6 +980,10 @@ describe('Capacity across committed work', { concurrency: false }, () => {
     assert.equal(preview.after.tentative[0].role, 'Unfilled designer')
     assert.equal((await ok(admin.get(`/api/v1/tasks/${commitments[0].id}`))).owner.id, member.id, 'scenario is read only')
     await ok(viewer.post(path + '/staffing/preview', input), 403)
+    await ok(planningAgent.get('/api/v1/tasks/' + commitments[0].id))
+    await ok(planningAgent.post(path + '/staffing/preview', input), 403)
+    await ok(planningAgent.post(path + '/staffing/apply', { ...input, token: preview.token }), 403)
+    assert.equal((await ok(admin.get('/api/v1/tasks/' + commitments[0].id))).owner.id, member.id)
     await ok(admin.patch(`/api/v1/tasks/${commitments[0].id}`, { estimateHours: 21 }))
     await ok(admin.post(path + '/staffing/apply', { ...input, token: preview.token }), 409)
     assert.equal((await ok(admin.get(`/api/v1/tasks/${commitments[0].id}`))).owner.id, member.id)
@@ -996,7 +1002,7 @@ describe('Capacity across committed work', { concurrency: false }, () => {
     const half = await ok(member.post(path + '/time-off', { localStart: '2026-11-05T09:00', localEnd: '2026-11-05T13:00', zone: 'America/New_York' }))
     const own = async () => (await ok(member.get(path + '/workload' + query))).people.find(p => p.id === member.id)
     assert.deepEqual((await own()).days.slice(0, 5).map(d => d.availableHours), [0, 0, 0, 4, 8])
-    const plan = await ok(admin.get(path + '/capacity-plan' + query + '&hours=1'))
+    const plan = await ok(planningAgent.get(path + '/capacity-plan' + query + '&hours=1'))
     assert.ok(!plan.candidates.some(p => p.personId === member.id && p.date <= '2026-11-04'))
     await ok(admin.post(path + '/time-off/' + declaration.id + '/extend', { end: '2026-11-05' }), 404)
     await ok(member.post(path + '/time-off', { start: '2026-11-02', end: '2026-11-02', reason: 'Synthetic private reason' }), 400)
