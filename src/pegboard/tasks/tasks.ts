@@ -1,4 +1,6 @@
+import {guarded,revision} from '../decisions/revision'
 import {requireGuestParticipant} from './participants'
+import {localRuleQueue,processLocalRules} from '../rules/execution'
 import {templateRuleQueueStatements,processTemplateRuleRuns} from '../templates/rule-execution'
 import {bundleQueueStatements} from '../bundles/queue'
 import {setValues} from '../fields/values'
@@ -84,7 +86,8 @@ export async function createTask(db: D1Database, actor: Actor, input: TaskInput)
 }
 
 export interface TaskPatch { title?: string; description?: string; status?: string; priority?: string; startDate?: string | null; dueDate?: string | null; ownerId?: string; estimateHours?: number; internalOnly?: boolean; internalNotes?: string; collaborators?: string[] }
-export async function updateTask(db: D1Database, actor: Actor, idOrRef: string, patch: TaskPatch): Promise<TaskRow> {
+export async function updateTask(db: D1Database, actor: Actor, idOrRef: string, patch: TaskPatch, fence?: Awaited<ReturnType<typeof revision>>): Promise<TaskRow> {
+  const localRevision=fence??await revision(db)
   const { task, access } = await openTask(db, actor, idOrRef)
   require(access, 'edit')
   const approval = await first(db,'SELECT 1 FROM peg_approval_tasks WHERE task_id=?',task.id)
@@ -123,7 +126,10 @@ export async function updateTask(db: D1Database, actor: Actor, idOrRef: string, 
     if (hidden) statements.push(historyStatement(db, task.id, null, actor.id, 'internal.changed', {}))
   }
   if (patch.collaborators) statements.push(reopenGuard(db,task.id,actor.id,'collaborators',patch.collaborators.length?'1':'EXISTS(SELECT 1 FROM peg_task_collaborators WHERE task_id=t.id)'),bound(db, 'DELETE FROM peg_task_collaborators WHERE task_id=?', [task.id]), ...[...new Set(patch.collaborators)].map(id => bound(db, 'INSERT INTO peg_task_collaborators(task_id,operator_id) VALUES (?,?)', [task.id, id])), historyStatement(db, task.id, null, actor.id, 'collaborators.changed', { count: new Set(patch.collaborators).size }))
-  if (statements.length) await batch(db, statements)
+  const queued=changes.status?await localRuleQueue(db,task.id,'status',actor.id):[]
+  statements.push(...queued)
+  if (statements.length){if(fence||queued.length)await guarded(db,localRevision,statements);else await batch(db, statements)}
+  if(changes.status)for(const projectId of access.contexts.keys())await processLocalRules(db,projectId)
   return (await first<TaskRow>(db, 'SELECT * FROM peg_tasks WHERE id=?', task.id))!
 }
 
@@ -180,6 +186,7 @@ export async function removeFromProject(db: D1Database, actor: Actor, idOrRef: s
 
 /** Move within a project: the section decides the one shared status when it maps to one. */
 export async function setSection(db: D1Database, actor: Actor, idOrRef: string, projectId: string, sectionId: string) {
+  const localRevision=await revision(db)
   const { task, access } = await openTask(db, actor, idOrRef)
   const context = access.contexts.get(projectId)
   if (!context) throw notFound()
@@ -191,7 +198,11 @@ export async function setSection(db: D1Database, actor: Actor, idOrRef: string, 
   if (section!.maps_to && section!.maps_to !== task.status) statements.push(
     bound(db, 'UPDATE peg_tasks SET status=?,completed_at=?,updated_at=? WHERE id=?', [section!.maps_to, section!.maps_to === 'done' ? now() : null, now(), task.id]),
     historyStatement(db, task.id, null, actor.id, 'status.changed', { status: { from: task.status, to: section!.maps_to }, via: 'section' }))
-  await batch(db, statements)
+  const previous=await first<{section_id:string|null}>(db,'SELECT section_id FROM peg_task_projects WHERE task_id=? AND project_id=?',task.id,projectId)
+  const queued=[...(section!.maps_to&&section!.maps_to!==task.status?await localRuleQueue(db,task.id,'status',actor.id):[]),...(previous?.section_id!==section!.id?await localRuleQueue(db,task.id,'section',actor.id,projectId):[])]
+  statements.push(...queued)
+  if(queued.length)await guarded(db,localRevision,statements);else await batch(db, statements)
+  for(const id of access.contexts.keys())await processLocalRules(db,id)
 }
 
 /** A project's own values on a task. Each field names who may read and who may write it. */

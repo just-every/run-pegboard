@@ -40,6 +40,7 @@ const landing = (input: Record<string, any>, fallback: string) => typeof input._
 
 export function describe(error: unknown): PegError {
   if (error instanceof PegError) return error
+  if (error instanceof Error && error.message.includes('status_rights_custody_review')) return new PegError(409, 'status_rights_custody_review')
   if (error instanceof Error && error.message.includes('approval_decision_required')) return new PegError(409, 'approval_decision_required')
   if (error instanceof Error && error.name === 'AuthError') { const { code, status } = error as Error & { code: string; status: number }; return new PegError(status, code) }
   console.error(error)

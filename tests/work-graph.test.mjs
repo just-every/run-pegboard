@@ -1,5 +1,7 @@
+import {registerPublicApiTests,startWebhookEdge} from './scenarios/public-api.mjs'
 // PEG-001, through the public doors (the JSON API and the forms that post to it): one task across projects, what a guest
 // never learns, references that outlive a prefix change, and the PEG-083 join and request journeys on the same graph.
+import {createServer as createMailServer} from 'node:http'
 import assert from 'node:assert/strict'
 import {execFileSync,spawnSync} from 'node:child_process'
 import {mkdtemp,readFile,writeFile,mkdir,symlink,rm} from 'node:fs/promises'
@@ -2160,4 +2162,184 @@ describe('Direct project duplication through reviewed public doors', { concurren
     await call(creative.get(`/api/v1/projects/${copy.project.id}`), 404)
     const result = await call(human.get(`/api/v1/projects/${copy.project.id}/duplicate-result`)); assert.ok(result.staged.every(s => s.activated_at === null))
   })
+})
+
+ describe('Public API and MCP', {concurrency:false}, () => {
+ let worker,root,peer,guest,webhookEdge
+ before(async()=>{webhookEdge=await startWebhookEdge();worker=await startWorker({settings:{PEGBOARD_LOCAL_WEBHOOK_ORIGIN:webhookEdge.origin}});root=worker.owner;peer=await worker.person('api-member@example.com','API Member');guest=await worker.person('api-guest@example.com','API Guest','guest')},{timeout:120000})
+ after(async()=>{await worker?.stop();await webhookEdge?.stop()})
+ registerPublicApiTests({test:it,api:()=>({worker,root,peer,guest,webhookEdge})})
+ })
+
+describe('Approval routing custody', {concurrency:false},()=>{
+ let worker,root,author,internal,external,delegate,stranger,agent,mailServer,messages=[]
+ const pass=async promise=>{const r=await promise;assert.equal(r.status,200,JSON.stringify(r.body));return r.body}
+ before(async()=>{mailServer=createMailServer(async(req,res)=>{let text='';for await(const chunk of req)text+=chunk;messages.push({body:JSON.parse(text),key:req.headers['idempotency-key']});res.writeHead(200,{'content-type':'application/json'});res.end(JSON.stringify({id:'synthetic-pegboard-7401'}))});await new Promise(resolve=>mailServer.listen(0,'127.0.0.1',resolve));worker=await startWorker({settings:{PEGBOARD_LOCAL_APPROVAL_MAIL_ORIGIN:'http://127.0.0.1:'+mailServer.address().port}});root=worker.owner;author=await worker.person('synthetic-pegboard-7201@example.com','Creative author');internal=await worker.person('synthetic-pegboard-7202@example.com','Internal reviewer');external=await worker.person('synthetic-pegboard-7203@example.com','External reviewer','guest');delegate=await worker.person('synthetic-pegboard-7204@example.com','Review delegate','guest');stranger=await worker.person('synthetic-pegboard-7205@example.com','Uninvited reviewer');agent=await worker.person('synthetic-pegboard-7206@example.com','Review agent','agent')},{timeout:120000})
+ after(async()=>{await worker?.stop();await new Promise(resolve=>mailServer.close(resolve))})
+ const fixture=async(kind='proof')=>{
+ const project=await pass(root.post('/api/v1/projects',{name:'Creative approval work'}))
+ await pass(root.post('/api/v1/grants',{objectType:'project',objectId:project.id,granteeId:author.id,level:'editor'}))
+ const task=await pass(root.post('/api/v1/tasks',{projectId:project.id,title:'Review creative work',ownerId:author.id,...(kind==='task'?{kind:'approval'}:{})}))
+ for(const person of [internal,external,delegate])await pass(root.post('/api/v1/grants',{objectType:'task',objectId:task.id,granteeId:person.id,level:'viewer',scope:'approve'}))
+ let subject=task.id,proof
+ if(kind==='proof'){const f=await pass(root.post(`/api/v1/tasks/${task.id}/attachments?name=synthetic-pegboard-7207.pdf`,proofDocument('Reviewed PDF v1'),{'content-type':'application/pdf'}));proof=await pass(root.post(`/api/v1/tasks/${task.id}/proofs`,{attachmentId:f.id}));subject=proof.id}
+ return {project,task,subject,proof,kind}
+ }
+ const configure=async(f,config)=>{const p=await pass(root.post(`/api/v1/approval-routing/${f.kind}/${f.subject}/preview`,config));return pass(root.post(`/api/v1/approval-routing/${f.kind}/${f.subject}`,{...config,token:p.token}))}
+ const view=(person,route)=>pass(person.get('/api/v1/approvals/'+route.id))
+ const decide=async(person,route,action='approve',stale)=>{const v=stale??await view(person,route);return person.post(`/api/v1/approvals/${route.id}/decision`,{token:v.token,version:v.version,action,reason:'Reviewed exact shared material'})}
+ const share=async(route,recipient=external)=>{const v=await view(root,route);return pass(root.post(`/api/v1/approvals/${route.id}/share`,{recipientId:recipient.id,token:v.token,expiresAt:Date.now()+3600000}))}
+ it('refuses routing and sharing proof bytes from an unreadable project context',async()=>{
+ const f=await fixture(),hidden=await pass(root.post('/api/v1/projects',{name:'Private legal review'}))
+ await pass(root.post(`/api/v1/tasks/${f.task.id}/projects`,{projectId:hidden.id}))
+ const file=await pass(root.post(`/api/v1/tasks/${f.task.id}/attachments?projectId=${hidden.id}&name=synthetic-pegboard-7210.pdf`,proofDocument('Hidden legal material'),{'content-type':'application/pdf'}))
+ const proof=await pass(root.post(`/api/v1/tasks/${f.task.id}/proofs`,{attachmentId:file.id})),target={...f,subject:proof.id}
+ await pass(root.post('/api/v1/grants',{objectType:'project',objectId:f.project.id,granteeId:stranger.id,level:'admin'}))
+ const config={mode:'parallel',stages:[{name:'Private legal sign-off',people:[external.id],quorum:1}]}
+ const route=await configure(target,config),management=await view(root,route)
+ assert.equal((await stranger.get('/api/v1/proofs/'+proof.id)).status,404)
+ assert.equal((await stranger.get('/api/v1/attachments/'+file.id)).status,404)
+ assert.equal((await stranger.post(`/api/v1/approval-routing/proof/${proof.id}/preview`,config)).status,404,'routing preview requires proof context authority')
+ assert.equal((await stranger.post(`/api/v1/approval-routing/proof/${proof.id}`,{...config,token:management.token})).status,404,'configuration requires proof context authority')
+ assert.equal((await stranger.post(`/api/v1/approvals/${route.id}/share`,{recipientId:external.id,token:management.token,expiresAt:Date.now()+3600000})).status,404,'sharing requires proof context authority')
+ const permit=await pass(root.post('/api/v1/grants',{objectType:'project',objectId:hidden.id,granteeId:stranger.id,level:'admin'}))
+ const authorized=await pass(stranger.post(`/api/v1/approval-routing/proof/${proof.id}/preview`,config))
+ await pass(root.post('/api/v1/grants/'+permit.id+'/revoke',{}))
+ assert.equal((await stranger.post(`/api/v1/approval-routing/proof/${proof.id}`,{...config,token:authorized.token})).status,404,'an earlier material preview cannot survive revoked authority')
+ const link=await share(route);assert.ok((await external.get(`/api/v1/proof-reviews/${link.id}/material`)).body.includes('Hidden legal material'),'the authorized material custodian can explicitly share the exact bytes')
+ })
+ it('routes ordered proof stages with independent named humans, delegates, and binds expiring revoked links to the exact replacement bytes',async()=>{
+ const dueAt=Date.now()+86400000,f=await fixture(),route=await configure(f,{mode:'ordered',dueAt,stages:[{name:'Internal review',people:[internal.id],quorum:1},{name:'Client review',people:[external.id],quorum:1}]})
+ assert.equal((await view(root,route)).dueAt,dueAt,'the reviewed routing due date is retained exactly')
+ const discovered=(await pass(external.get(`/api/v1/tasks/${f.task.id}`))).history.find(h=>h.kind==='approval.routed').detail.routeId
+ assert.equal(discovered,route.id)
+ assert.equal((await external.get('/api/v1/approvals/'+discovered)).status,404,'an unshared direct route withholds filename, version and private stage names')
+ const link=await share(route)
+ assert.equal((await view(external,route)).canDecide,false)
+ assert.equal((await decide(external,route)).status,403)
+ assert.equal((await stranger.get('/api/v1/approvals/'+route.id)).status,404)
+ assert.equal((await stranger.get('/api/v1/proof-reviews/'+link.id)).status,404)
+ assert.equal((await root.get('/api/v1/proof-reviews/'+link.id)).status,404,'a forwarded link does not impersonate its recipient')
+ assert.equal((await pass(external.get('/api/v1/proof-reviews/'+link.id))).state,'pending')
+ assert.ok((await external.get(`/api/v1/proof-reviews/${link.id}/material`)).body.includes('Reviewed PDF v1'))
+ assert.equal((await external.get('/api/v1/projects/'+f.project.id)).status,404)
+ assert.equal((await external.get('/api/v1/proofs/'+f.subject)).status,404,'ordinary proof listing cannot reveal unshared versions')
+ const first=await pass(decide(internal,route));assert.equal(first.state,'pending')
+ const stale=await view(external,route),management=await view(root,route)
+ await pass(root.post(`/api/v1/approvals/${route.id}/change`,{token:management.token,action:'delegate',stage:1,from:external.id,to:delegate.id}))
+ assert.equal((await external.get('/api/v1/proof-reviews/'+link.id)).status,404)
+ assert.equal((await decide(external,route,'approve',stale)).status,404)
+ const delegatedLink=await share(route,delegate),d=await view(delegate,route)
+ await pass(delegate.post(`/api/v1/proof-reviews/${delegatedLink.id}/decision`,{token:d.token,version:d.version,action:'changes',reason:'Adjust the heading'}))
+ assert.equal((await view(root,route)).state,'changes_requested')
+ const votes=(await view(root,route)).votes;assert.deepEqual(votes.map(v=>[v.actor_id,v.action,v.version]),[[internal.id,'approve',f.proof.versionId],[delegate.id,'changes',f.proof.versionId]]);assert.ok(votes.every(v=>v.at>0))
+ const file=await pass(root.post(`/api/v1/tasks/${f.task.id}/attachments?name=synthetic-pegboard-7208.pdf`,proofDocument('Reviewed PDF v2'),{'content-type':'application/pdf'}))
+ const version=await pass(root.post(`/api/v1/proofs/${f.subject}/versions`,{attachmentId:file.id,currentVersion:f.proof.versionId}))
+ assert.equal((await delegate.get('/api/v1/proof-reviews/'+delegatedLink.id)).status,404)
+ assert.equal((await decide(delegate,route,'approve',d)).status,404)
+ const next=await configure(f,{mode:'parallel',stages:[{name:'Client review',people:[external.id,delegate.id],quorum:2}]})
+ const expires=await share(next),revoked=await share(next,delegate)
+ await worker.sql(`UPDATE peg_approval_links SET expires_at=1 WHERE id='${expires.id}'`)
+ assert.equal((await external.get('/api/v1/proof-reviews/'+expires.id)).status,404)
+ await pass(root.post(`/api/v1/proof-reviews/${revoked.id}/revoke`,{}))
+ assert.equal((await delegate.get('/api/v1/proof-reviews/'+revoked.id)).status,404)
+ assert.equal((await delegate.get('/api/v1/approvals/'+next.id)).status,404,'a revoked direct route withholds all material metadata');assert.equal((await delegate.post(`/api/v1/approvals/${next.id}/decision`,{token:d.token,version:d.version,action:'approve',reason:'Revoked review'})).status,404,'revocation also fences the direct decision API')
+ assert.equal((await view(root,next)).version,version.versionId);assert.equal((await view(root,route)).votes.length,2,'a new routing plan retains the prior attributed review')
+ const old=await pass(root.get(`/api/v1/proofs/${f.subject}/decision-preview`))
+ assert.equal((await root.post(`/api/v1/proofs/${f.subject}/decisions`,{token:old.token,versionId:version.versionId,action:'approve',reason:'Bypass'})).status,409)
+ const separate=await fixture(),parallel=await configure(separate,{mode:'parallel',stages:[{name:'Brand review',people:[external.id],quorum:1},{name:'Legal review',people:[delegate.id],quorum:1}]})
+ await share(parallel,external);await share(parallel,delegate)
+ assert.equal((await view(delegate,parallel)).canDecide,true,'a later parallel stage can decide before the first stage')
+ assert.equal((await pass(decide(delegate,parallel))).state,'pending','one complete parallel stage does not finish the other')
+ assert.deepEqual((await view(root,parallel)).stages.map(stage=>stage.approved),[0,1],'parallel stages keep separate quorum counts')
+ assert.equal((await pass(decide(external,parallel))).state,'approved','both independent stages are required')
+ assert.deepEqual((await view(root,parallel)).votes.map(v=>v.actor_id).sort(),[external.id,delegate.id].sort())
+ })
+ it('requires quorum on an approval task, refuses current and prior owners and agents, and never lets the old decision door bypass named capability checks',async()=>{
+ const owned=await fixture('task'),ownershipRoute=await configure(owned,{mode:'parallel',stages:[{name:'Independent review',people:[internal.id],quorum:1}]})
+ const beforeOwnership=await view(internal,ownershipRoute)
+ assert.equal(beforeOwnership.canDecide,true,'a named independent member can decide with approval permission')
+ await pass(root.patch(`/api/v1/tasks/${owned.task.id}`,{ownerId:internal.id}))
+ assert.equal((await view(internal,ownershipRoute)).canDecide,false,'a reviewer who becomes the work owner loses decision authority')
+ assert.equal((await decide(internal,ownershipRoute,'approve',beforeOwnership)).status,403,'an old decision token cannot let the current owner sign')
+ await pass(root.patch(`/api/v1/tasks/${owned.task.id}`,{ownerId:author.id}))
+ assert.equal((await view(internal,ownershipRoute)).canDecide,false,'transferring ownership away does not restore self-approval')
+ assert.equal((await decide(internal,ownershipRoute,'approve',beforeOwnership)).status,403,'a prior owner cannot sign through the decision door')
+ assert.equal((await view(root,ownershipRoute)).votes.length,0,'refused owners record no approval vote')
+ assert.equal((await pass(root.get(`/api/v1/tasks/${owned.task.id}`))).status,'todo','refused owners leave work pending')
+ const f=await fixture('task')
+ await pass(root.post('/api/v1/grants',{objectType:'task',objectId:f.task.id,granteeId:author.id,level:'viewer',scope:'approve'}))
+ const bad={mode:'parallel',stages:[{name:'Review',people:[author.id],quorum:1}]}
+ assert.equal((await root.post(`/api/v1/approval-routing/task/${f.subject}/preview`,bad)).status,403)
+ await pass(root.patch(`/api/v1/tasks/${f.task.id}`,{ownerId:internal.id}))
+ await pass(root.patch(`/api/v1/tasks/${f.task.id}`,{ownerId:author.id}))
+ assert.equal((await root.post(`/api/v1/approval-routing/task/${f.subject}/preview`,{...bad,stages:[{name:'Review',people:[internal.id],quorum:1}]})).status,403,'prior owners cannot be nominated')
+ assert.equal((await root.post(`/api/v1/approval-routing/task/${f.subject}/preview`,{...bad,stages:[{name:'Review',people:[agent.id],quorum:1}]})).status,403,'agents never decide')
+ const route=await configure(f,{mode:'parallel',stages:[{name:'Client quorum',people:[external.id,delegate.id],quorum:2}]})
+ await share(route,external);await share(route,delegate)
+ const beforeCapability=await view(external,route),grants=await pass(root.get(`/api/v1/grants?objectType=task&objectId=${f.task.id}`)),permission=grants.grants.find(g=>g.grantee_id===external.id)
+ await pass(root.delete('/api/v1/grants/'+permission.id));await pass(root.post('/api/v1/grants',{objectType:'task',objectId:f.task.id,granteeId:external.id,level:'viewer'}))
+ assert.equal((await view(external,route)).canDecide,false,'read permission never substitutes for approval permission');assert.equal((await decide(external,route,'approve',beforeCapability)).status,403)
+ await pass(root.post('/api/v1/grants',{objectType:'task',objectId:f.task.id,granteeId:external.id,level:'viewer',scope:'approve'}))
+ const wrong=await pass(root.get(`/api/v1/tasks/${f.task.id}/decision-preview`))
+ assert.equal((await root.post(`/api/v1/tasks/${f.task.id}/decision`,{revision:wrong.token,action:'approve',reason:'Bypass'})).status,409)
+ const previews=await Promise.all([view(external,route),view(delegate,route)]),attempts=await Promise.all([decide(external,route,'approve',previews[0]),decide(delegate,route,'approve',previews[1])]);assert.deepEqual(attempts.map(r=>r.status).sort(),[200,409],'concurrent decisions serialize against the reviewed quorum')
+ const winner=attempts[0].status===200?external:delegate,loser=winner===external?delegate:external,first=attempts.find(r=>r.status===200).body;assert.equal(first.state,'pending');assert.equal((await pass(root.get(`/api/v1/tasks/${f.task.id}`))).status,'todo')
+ assert.equal((await decide(winner,route)).status,403,'one person cannot supply quorum twice')
+ const second=await pass(decide(loser,route));assert.equal(second.state,'approved');assert.equal((await pass(root.get(`/api/v1/tasks/${f.task.id}`))).status,'done')
+ assert.equal((await view(root,route)).state,'approved');assert.deepEqual((await view(root,route)).votes.map(v=>v.actor_id).sort(),[external.id,delegate.id].sort())
+ await pass(author.patch(`/api/v1/tasks/${f.task.id}`,{description:'Replacement brief'}))
+ assert.equal((await view(root,route)).state,'stale');const staleRouteStatus=(await delegate.get('/api/v1/approvals/'+route.id)).status
+ const rerouted=await configure(f,{mode:'parallel',stages:[{name:'Fresh sign-off',people:[external.id],quorum:1}]});await share(rerouted);await pass(decide(external,rerouted))
+ const reopened=await configure(f,{mode:'ordered',stages:[{name:'Renewed review',people:[external.id],quorum:1}]})
+ const routingHistory=(await pass(root.get(`/api/v1/tasks/${f.task.id}`))).history.filter(h=>h.kind==='decision.reopened'&&h.detail.cause==='approval_rerouted')
+ assert.equal(routingHistory.length,1,'routing a signed-off task writes one reopening entry');assert.equal(routingHistory[0].actor,root.name,'routing reopening names the actual writer')
+ await share(reopened,external);await pass(decide(external,reopened));assert.equal((await pass(root.get(`/api/v1/tasks/${f.task.id}`))).status,'done')
+ const obsolete=await view(root,rerouted),beforeObsolete=await pass(root.get(`/api/v1/tasks/${f.task.id}`))
+ assert.equal((await root.post(`/api/v1/approvals/${rerouted.id}/change`,{action:'withdraw',token:obsolete.token})).status,409,'a superseded route cannot withdraw a newer sign-off')
+ const afterObsolete=await pass(root.get(`/api/v1/tasks/${f.task.id}`));assert.equal(afterObsolete.status,'done');assert.deepEqual(afterObsolete.history,beforeObsolete.history);assert.equal((await view(root,reopened)).state,'approved')
+ const withdrawal=await view(root,reopened);await pass(root.post(`/api/v1/approvals/${reopened.id}/change`,{action:'withdraw',token:withdrawal.token}));assert.equal((await view(root,reopened)).state,'withdrawn')
+ const withdrawnTask=await pass(root.get(`/api/v1/tasks/${f.task.id}`));assert.equal(withdrawnTask.status,'todo');assert.equal((await external.get('/api/v1/approvals/'+reopened.id)).status,404)
+ assert.equal(staleRouteStatus,404,'changed task material withholds the old guest route')
+ const withdrawalHistory=withdrawnTask.history.filter(h=>h.kind==='decision.reopened'&&h.detail.cause==='approval_withdrawn')
+ assert.equal(withdrawalHistory.length,1,'withdrawing sign-off writes one reopening entry');assert.equal(withdrawalHistory[0].actor,root.name,'withdrawal reopening names the actual writer')
+ const again=await view(root,reopened);assert.equal((await root.post(`/api/v1/approvals/${reopened.id}/change`,{action:'withdraw',token:again.token})).status,409)
+ assert.deepEqual((await pass(root.get(`/api/v1/tasks/${f.task.id}`))).history,withdrawnTask.history,'repeated withdrawal creates no history')
+ for(const change of ['tags','collaborators']){
+ const changed=await fixture('task'),tag=change==='tags'?await pass(root.post('/api/v1/tags',{projectId:changed.project.id,name:'Review scope'})):null
+ const edit=present=>change==='tags'?root.post(`/api/v1/tasks/${changed.task.id}/tags`,{tagId:tag.id,remove:!present}):root.patch(`/api/v1/tasks/${changed.task.id}`,{collaborators:present?[stranger.id]:[]})
+ const config={mode:'parallel',stages:[{name:'Material review',people:[internal.id],quorum:1}]}
+ const signed=await configure(changed,config),preview=await view(internal,signed)
+ await pass(decide(internal,signed));assert.equal((await view(root,signed)).state,'approved')
+ await pass(edit(true))
+ assert.equal((await pass(root.get(`/api/v1/tasks/${changed.task.id}`))).status,'todo',`${change} reopens the signed task`)
+ assert.equal((await view(root,signed)).state,'stale',`${change} invalidates counted votes`)
+ assert.equal((await decide(internal,signed,'approve',preview)).status,403,`${change} refuses the earlier decision token`)
+ assert.deepEqual((await view(root,signed)).votes.map(v=>[v.actor_id,v.version]),[[internal.id,signed.version]],'prior votes remain attributed history')
+ await pass(edit(false))
+ assert.equal((await view(root,signed)).state,'stale',`restoring ${change} cannot resurrect prior sign-off`)
+ await pass(edit(true))
+ const fresh=await configure(changed,config)
+ assert.notEqual(fresh.version,signed.version,`${change} requires a fresh reviewed revision`)
+ await pass(decide(internal,fresh));assert.equal((await pass(root.get(`/api/v1/tasks/${changed.task.id}`))).status,'done','fresh human review can complete the changed task')
+ await pass(edit(false))
+ assert.equal((await view(root,fresh)).state,'stale',`removing ${change} invalidates the fresh votes`)
+ assert.equal((await pass(root.get(`/api/v1/tasks/${changed.task.id}`))).status,'todo',`removing ${change} reopens the task`)
+ }
+ })
+ it('sends a reviewed PDF-v2 reminder once through the mail seam without comments or an implicit approval and respects muted preferences',async()=>{
+ const f=await fixture(),file=await pass(root.post(`/api/v1/tasks/${f.task.id}/attachments?name=synthetic-pegboard-7209.pdf`,proofDocument('Reviewed PDF v2 reminder'),{'content-type':'application/pdf'}))
+ const v2=await pass(root.post(`/api/v1/proofs/${f.subject}/versions`,{attachmentId:file.id,currentVersion:f.proof.versionId}))
+ await pass(root.post(`/api/v1/tasks/${f.task.id}/comments`,{body:'Hidden internal comment',internalOnly:true}))
+ const route=await configure(f,{mode:'parallel',stages:[{name:'Client',people:[external.id,delegate.id],quorum:1}],reminderAt:Date.now()+600000}),link=await share(route),mutedLink=await share(route,delegate)
+ assert.equal((await pass(root.post(`/api/v1/approvals/${route.id}/reminders`,{}))).sent,0)
+ await pass(delegate.post('/api/v1/notices/readiness/preferences',{muted:true}))
+ await worker.sql(`UPDATE peg_approval_routes SET reminder_at=1 WHERE id='${route.id}'`)
+ assert.equal((await pass(root.post(`/api/v1/approvals/${route.id}/reminders`,{}))).sent,1)
+ assert.equal((await pass(root.post(`/api/v1/approvals/${route.id}/reminders`,{}))).sent,0)
+ assert.equal(messages.length,1);assert.ok(messages[0].body.html.includes(v2.versionId),'HTML reminder identifies the reviewed version');assert.ok(messages[0].body.html.includes(`href="${worker.origin}/app/proof-reviews/${link.id}"`),'HTML reminder opens the recipient review');assert.equal(messages[0].body.text,`Proof approval reminder. Reviewed version ${v2.versionId}. Sign in to review: ${worker.origin}/app/proof-reviews/${link.id}`);assert.deepEqual(messages[0].body.to,[external.email]);assert.equal(messages[0].body.subject,'Proof approval reminder');assert.ok(messages[0].body.text.includes('/app/proof-reviews/'+link.id));assert.ok(!JSON.stringify(messages).includes('Hidden internal comment'));assert.ok(!JSON.stringify(messages).includes(delegate.email));assert.equal(messages[0].key,'proof-reminder-'+link.id)
+ const receipts=JSON.parse(await worker.sql(`SELECT link_id,state FROM peg_approval_reminders WHERE link_id IN ('${link.id}','${mutedLink.id}')`))[0].results
+ assert.deepEqual(receipts.map(r=>r.link_id),[link.id]);assert.equal(receipts[0].state,'accepted')
+ const review=await pass(external.get('/api/v1/proof-reviews/'+link.id));assert.equal(review.material.version,2);assert.equal(review.state,'pending');assert.ok(!JSON.stringify(review).includes('Hidden internal comment'))
+ })
 })

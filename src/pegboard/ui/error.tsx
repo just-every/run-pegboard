@@ -2,6 +2,10 @@ import { appDocument } from '../../ui/document.server'
 import { AppBar } from '../../ui/bar'
 
 const sayings: Record<string, string> = {
+  approval_revision_changed:'The material, reviewers or access changed. Open a fresh review before deciding.',
+  approval_review_changed:'The routing plan or material changed. Preview the plan again.',
+  use_routed_approval:'This work uses named review stages. Open its routed approval to decide.',
+  approval_stage:'Choose at least one reviewer and a quorum within the selected group.',
   conversion_preview_changed:'This work or its audience changed. Open a fresh conversion preview before applying it.',
   conversion_review_changed:'This work or its audience changed. Open a fresh conversion preview before applying it.',
   conversion_undo_preview_changed:'The work changed after this undo preview. Review undo again to preserve the latest human edits.',

@@ -1,8 +1,9 @@
 # Reviewed status drafts and history
 
 The signed-in native API supports manually composed project and portfolio status
-updates. This is a partial PEG-015 foundation. AI drafting, provider connectors,
-authenticated inbound replies and browser drafting remain unimplemented. The existing immediate human summary door remains available
+updates and date-bounded model drafts. This is a partial PEG-015 implementation.
+External channel connectors, authenticated inbound replies, announcement history
+and complete retained-copy erasure remain unimplemented. The existing immediate human summary door remains available
 for PEG-013; it does not imply a recipient-reviewed client publication.
 
 Create a draft with `POST /api/v1/status-drafts`. Supply `subjectType` (`project`
@@ -11,17 +12,7 @@ or `portfolio`), `subjectId`, `health`, `summary`, `highlights`, `risks`,
 tasks in the subject's projects, and `recipients`, an array of objects with an
 `id` and `channels`. Supported channel names are `in_app`, `slack`, `teams`,
 `nook` and `email`. A recipient list is exact for this publication; it is not a
-permission grant. Draft creation never sends anything.
-
-Internal members can read or change their own subscription through `GET` or
-`POST /api/v1/status-subscriptions/:type/:id`. A write supplies boolean `enabled`
-and a nonempty `channels` array. Guests and agents cannot opt into internal
-publication policy. Supply `includeSubscribers: true` when saving a draft to
-snapshot active internal subscribers and their channels beside explicit
-recipients. The human reviews the complete resulting audience once. Changing
-subscription intent requires saving the draft and reviewing again; access is
-rechecked before publication. A subscription never publishes a client version,
-grants access or sends an unreviewed draft.
+standing subscription or a permission grant. Draft creation never sends anything.
 
 The publisher must be an active internal human with current project settings
 management or portfolio administration. Agents, guests, analysts and weaker
@@ -51,7 +42,7 @@ publication and one set of receipts. Publication remains a named human decision.
 
 `GET /api/v1/status-revisions/:id` returns immutable content, source links,
 reviewer and receipt outcomes. `in_app` is **available** through this authorized
-API read and in the recipient's native Inbox; it does not claim a human read. Every external
+API read; it does not claim an Inbox notification or a human read. Every external
 channel is **blocked**, with reason `connector_not_implemented`; no provider
 request or acknowledgment is fabricated. Current revocation is reflected as a
 revoked receipt on subsequent authorized inspection. Recipients can inspect only
@@ -87,16 +78,9 @@ can notify an unfollowed recipient who has not muted the revision. Notices retai
 the exact revision and comment link, omit internal comments for guests, disappear
 from the recipient's feed after revocation and omit deleted comments. Editing a
 comment does not leave stale body text in a notice. Native notice availability
-does not claim external channel delivery or human read. `GET /api/v1/status-inbox`
-and `GET /api/v1/status-digest` return the same permission-filtered publication
-and discussion content. They recheck access, hidden replies and preferences
-instead of retaining a second copy of message bodies. The digest is an
-authenticated native read, not an outbound email job. The existing Inbox shows
-reviewed revisions and their source links, member and guest replies, attributed
-thread history, author-only reply edit and delete forms, correction links and discussion follow and mute forms. Each form uses the same
-authorized API door. Queued channel notifications, outbound digests,
-authenticated inbound replies, mention controls and portfolio guest discussion are still
-outstanding acceptance work.
+does not claim an Inbox screen, digest, external channel delivery or human read.
+Those screens, queued channel notifications, digests and authenticated inbound
+replies remain outstanding acceptance work.
 
 The existing owner erasure preview reports
 `review_status_snapshot_custody_before_erasure` when cited task or project work,
@@ -106,7 +90,52 @@ prevents a false claim of erasure while status copies remain. A reviewed snapsho
 erasure path remains outstanding; this foundation claims no legal retention or
 provider deletion qualification.
 
-Subscription intent is disabled in installation archives. Reviewed erasure
-includes subscription settings for the selected project or person; a change to
-those settings invalidates an earlier erasure preview. Retained status snapshots
-continue to use the explicit custody hold described above.
+Tracked requests, scoped privacy handlers, deadline escalation and the controlled
+manual-resolution procedure are documented in [Status rights](./STATUS-RIGHTS.md).
+This request register does not turn a retained-copy outcome into erasure.
+
+## Browser drafting and native subscriptions
+
+Open a project's or portfolio's status page from its existing publishing area.
+Compose a draft, select its cited work, exact recipients and channels, then save.
+Reject with an attributed reason, or edit and review the complete replacement.
+The review shows exact content, cited records and recipients before publication.
+A changed source or audience invalidates an earlier review. A correction starts a
+new draft linked to the immutable original; conversations remain on their revision.
+
+Internal members choose their own subscription under the status page's Settings.
+An explicit draft choice snapshots opted-in recipients and channels for the human's
+one exact review. Changed subscription intent requires saving and reviewing again.
+Guests cannot opt into internal policy, and a subscription grants no work access.
+The native Inbox and authenticated digest recheck current access and comment
+visibility. External channels remain blocked without a connector submission.
+
+## Requested model drafts
+
+`POST /api/v1/status-drafts/generate` accepts the subject, ISO date window,
+`sourceIds` and `modelConsent: true`. A current internal human with subject
+management authority must select sources and consent. The configured processor
+must have owner-approved sharing and training must be off. Every source must be
+readable, inside the subject and updated within the inclusive requested window.
+Known disputed sources refuse before inference. Authority, sources and processor
+consent are checked again after inference; a changed set is refused.
+
+The installation operator configures `AI_ENABLED`, `AI_MODEL`, `AI_PROCESSOR` and
+one Base AI transport: direct `AI_API_KEY` and optional `AI_BASE_URL`, or the linked
+`RER_MODELS_SERVICE` and `RER_MODELS_KEY`. Secrets belong in private runtime
+configuration. They never enter a draft, receipt, archive or error. There is one
+bounded provider attempt, no substitute model and no automatic retry.
+
+Structured output must cite selected source IDs on every assertion. The result is
+a private draft with no recipients, with original model, source assertions and
+bounded numerical usage retained as provenance. Reject or edit through the same
+draft door, then review and publish as a human. The model cannot approve its output,
+select recipients or publish a client version. No connection produces the named
+no-model response; unavailable credentials produce a recoverable typed cause.
+The complete shared connection and recovery experience remains PEG-055 and PEG-074.
+
+`tests/support/status-model.mjs` is an OpenAI Chat Completions schema-fake, not an
+actual-model receipt. The explicit qualification command is
+`node tests/journeys/status-model-qualification.mjs`, with held credentials injected
+privately and an exact model configured. Its output records only synthetic source
+facts, generated assertions, usage and observed human publication outcomes.

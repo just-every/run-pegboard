@@ -34,7 +34,7 @@ export async function startWorker({ settings = {}, restoredPersist } = {}) {
   const port = probe.address().port
   await new Promise(resolve => probe.close(resolve))
   const persist = restoredPersist ?? await mkdtemp(join(tmpdir(), 'pegboard-graph-'))
-  execFileSync(process.execPath, [...wrangler, 'd1', 'migrations', 'apply', 'foundation', '--local', '--persist-to', persist, '--config', 'wrangler.jsonc'], { stdio: 'pipe', env: quiet })
+  execFileSync(process.execPath, [...wrangler, 'd1', 'migrations', 'apply', 'foundation', '--local', '--persist-to', persist, '--config', 'wrangler.jsonc'], { stdio: 'pipe', env: quiet, maxBuffer: 16 * 1024 * 1024 })
   // Store edits run from a scratch folder: wrangler writes its temp files beside its config, and the dev server restarts when they appear in the checkout.
   const scratch = await mkdtemp(join(tmpdir(), 'pegboard-sql-'))
   await writeFile(join(scratch, 'wrangler.json'), JSON.stringify({ name: 'sql', d1_databases: [{ binding: 'DB', database_name: 'foundation', database_id: 'local-foundation-only' }] }))

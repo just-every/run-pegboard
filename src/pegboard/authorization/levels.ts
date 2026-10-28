@@ -12,7 +12,7 @@ const byLevel: Record<Level, Capability[]> = {
   viewer: ['read', 'export'],
   commenter: ['read', 'export', 'comment'],
   editor: ['read', 'export', 'comment', 'edit'],
-  admin: ['read', 'export', 'comment', 'edit', 'manage_settings', 'manage_fields', 'manage_rules', 'manage_templates', 'manage_shares', 'delegate_admin'],
+  admin: ['read', 'export', 'comment', 'edit', 'manage_settings', 'manage_fields', 'manage_rules', 'manage_templates', 'manage_shares', 'delegate_admin', 'approve'],
 }
 export const capabilitiesOf = (level: Level): Capability[] => byLevel[level]
 export const capabilityNames: readonly string[] = capabilities

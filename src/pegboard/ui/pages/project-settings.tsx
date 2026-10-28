@@ -23,11 +23,12 @@ export function ProjectSettingsPage({ viewer, id, data, grants, people, teams, p
     crumbs={[{ label: 'Projects', href: '/app/projects' }, { label: project.name, href: `/app/projects/${id}` }, { label: 'Settings', href: back, current: true }]}>
     {can('manage_settings')&&<Card title="Recovery"><a className="button quiet" href={`/app/recovery?type=project&id=${project.id}&action=archive`}>Review archive</a> <a className="button quiet" href={`/app/projects/${project.id}/brief`}>Project brief</a></Card>}
     {can('manage_settings')&&<Card title="Reusable work"><p><a href="/app/templates?manage=1">Template library</a></p><p><a href={`/app/projects/${id}/duplicate`}>Duplicate project</a></p><p><a href={`/app/templates?targetProjectId=${id}`}>Add work from a template</a></p>{can('manage_rules')&&<p><a href={`/app/projects/${id}/template-rules`}>Template rules</a></p>}{['owner','admin'].includes(viewer.role)&&<p><a href="/app/workflow-bundles">Reusable workflow bundles</a></p>}</Card>}
+    {can('edit')&&<Card title="Work rules"><p><a href={`/app/projects/${id}/request`}>Submit project request</a></p>{can('manage_rules')&&<p><a href={`/app/projects/${id}/rules`}>Conditional work rules</a></p>}<a href={`/app/projects/${id}/rule-suggestions`}>Ask your project Admin</a></Card>}
     <Card title="How you have access">
       <ul className="rows">{data.paths.length ? data.paths.map((path, i) => <li key={i}><span className="grow">{path.via}</span><span className="tagline">{levelLabel(path.level)}</span>{path.scope !== 'full' && <span className="tagline">{path.scope === 'approve' ? 'Approve only' : 'Assigned tasks'}</span>}</li>) : <li>No grant gives you access.</li>}</ul>
     </Card>
     {can('manage_settings') && <Card title="Publish a status">
-      <Form action="/api/v1/status-updates" next={back} label="Publish project status"><input type="hidden" name="subjectType" value="project" /><input type="hidden" name="subjectId" value={id} />
+      <p><a href={`/app/projects/${id}/status`}>Draft and review stakeholder updates</a></p><Form action="/api/v1/status-updates" next={back} label="Publish project status"><input type="hidden" name="subjectType" value="project" /><input type="hidden" name="subjectId" value={id} />
         <Pick label="Health" name="health" options={[{ value: 'on_track', label: 'On track' }, { value: 'at_risk', label: 'At risk' }, { value: 'off_track', label: 'Off track' }]} /><Area label="Status summary" name="summary" />
         <p className="muted">A published status is your own statement; portfolios show it beside what the work computes and never replace one with the other.</p><Submit>Publish status</Submit></Form>
     </Card>}

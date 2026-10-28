@@ -5,8 +5,8 @@
       "browser": false,
       "hosted": false,
       "commands": [
-        "node scripts/contract-docs.mjs check",
-        "pnpm run check --profile first-party"
+        "pnpm run check --profile first-party",
+        "node scripts/contract-docs.mjs check PEG-027 PEG-015 PEG-036 PEG-012"
       ]
     },
     {

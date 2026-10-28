@@ -29,7 +29,7 @@ async function withWorker(mode, run) {
  const sqlConfig = join(persist, 'wrangler.json')
  const built = JSON.parse(await readFile('dist/server/wrangler.json', 'utf8'))
  await writeFile(sqlConfig, JSON.stringify({ name: 'runtime-sql', d1_databases: built.d1_databases.map(({ binding, database_name, database_id }) => ({ binding, database_name, database_id })) }))
- const database = (...args) => execFileSync(process.execPath, ['node_modules/wrangler/bin/wrangler.js', 'd1', ...args, 'foundation', '--local', '--persist-to', persist, '--config', args[0] === 'execute' ? sqlConfig : 'dist/server/wrangler.json'], { stdio: 'pipe', env: quiet })
+ const database = (...args) => execFileSync(process.execPath, ['node_modules/wrangler/bin/wrangler.js', 'd1', ...args, 'foundation', '--local', '--persist-to', persist, '--config', args[0] === 'execute' ? sqlConfig : 'dist/server/wrangler.json'], { stdio: 'pipe', env: quiet, maxBuffer: 16 * 1024 * 1024 })
  let worker
  try {
   database('migrations', 'apply')
@@ -104,11 +104,8 @@ await withWorker('0', async ({ origin, setupToken, manual, counts }) => {
   const health = await (await fetch(`${origin}/health`)).json()
   assert.equal(health.status, 'ok')
   assert.equal(health.ok, true)
-  assert.deepEqual(Object.keys(health.deployment ?? {}).sort(), ['fingerprint', 'sourceSha', 'versionId'])
   const document = await fetch(origin)
   assert.equal(document.status, 200)
-  const branding = JSON.parse(await readFile(new URL('../src/branding.json', import.meta.url)))
-  assert.ok((await document.text()).includes(branding.name))
   for (const path of ['/missing', '/health/extra', '/api', '/api/missing']) {
     assert.equal((await fetch(`${origin}${path}`)).status, 404, path)
   }

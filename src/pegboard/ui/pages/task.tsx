@@ -26,6 +26,7 @@ export function TaskPage({ viewer, task, participants, addable, sections, previe
     {can('edit')&&viewer.role!=='guest'&&<Card title="Convert work"><p>{task.parentId?<a href={`/app/conversions?kind=promote&sourceId=${task.id}`}>Promote to top-level work</a>:<><a href={`/app/conversions?kind=task_to_project&sourceId=${task.id}`}>Convert to linked project</a> · <a href={`/app/conversions?kind=demote&sourceId=${task.id}`}>Make a subtask</a></>}</p></Card>}
     {can('edit')&&viewer.role!=='guest'&&<Card title="Recovery"><a className="button quiet" href={`/app/recovery?type=task&id=${task.id}&action=trash`}>Review trash</a></Card>}
     <Card title="Task">
+      {can('manage_shares')&&<p><a href={`/app/proofs/${task.id}`}>Proof reviews</a>{decision&&<> · <a href={`/app/approval-routing/${task.id}?kind=task`}>Approval routing</a></>}</p>}
       {can('edit')&&['owner','admin'].includes(viewer.role)&&<p><a href={`/app/engineering/${task.id}`}>Engineering handoff</a></p>}
       <p className="muted">Task ID <code>{task.id}</code>{task.ref && <> · reference <strong>{task.ref}</strong></>}{task.aliases.length > 0 && <> · earlier references {task.aliases.join(', ')}</>}</p>
       {task.description && <p className="task-description">{task.description}</p>}
@@ -38,6 +39,7 @@ export function TaskPage({ viewer, task, participants, addable, sections, previe
       {can('edit') && <Form action="/api/v1/tasks" next={here} label="Add a subtask"><input type="hidden" name="parentId" value={task.id} /><div className="inline"><Field label="New subtask" name="title" /><Submit quiet>Add subtask</Submit></div></Form>}
     </Card>
     {decision&&<Card title="Approval decision"><p role="status">{stateLabels[decision.state]}</p>{decision.waiting&&<p>{waiting[decision.waiting]}</p>}<p>The owner is accountable for the work, never its approver. Decisions apply to this exact revision and send nothing outward.</p>
+      {decision.routeId&&<p><a href={`/app/approvals/${decision.routeId}`}>Open routed approval</a></p>}
       {decision.canDecide&&<Form action={`/api/v1/tasks/${task.id}/decision`} next={here} label="Decide approval task"><input type="hidden" name="revision" value={decision.token}/><Pick label="Decision" name="action" options={[{value:'approve',label:'Approve'},{value:'changes',label:'Request changes'},{value:'reject',label:'Reject'}]}/><Area label="Decision reason" name="reason"/><Submit>Record reviewed decision</Submit></Form>}
       <h3>Decision history</h3><ol className="rows">{decision.decisions.map(d=><li key={d.id}>{d.actor} · {stateLabels[d.action==='approve'?'approved':d.action==='reject'?'rejected':'changes_requested']} · {when(d.at)}<p>{d.reason}</p></li>)}</ol>
     </Card>}

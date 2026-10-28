@@ -1,3 +1,4 @@
+import { assertStatusReuse } from './rights'
 import { all, batch, bound, conflict, first, forbidden, invalid, newId, notFound, now, PegError, type Param } from '../db'
 import { auditStatement, epoch } from '../authorization/audit'
 import { openProject, need } from '../workspace/projects'
@@ -33,13 +34,22 @@ async function draft(db: D1Database, actor: Actor, id: string) {
   const row = await first<Draft>(db, 'SELECT * FROM peg_status_drafts WHERE id=?', id)
   if (!row) throw notFound()
   await statusAccess(db, actor, row.subject_type, row.subject_id, true)
+  await assertStatusReuse(db,'draft',id)
   return row
 }
-async function source(db: D1Database, actor: Actor, id: string, workspace: string): Promise<Source> {
+export async function statusSource(db: D1Database, actor: Actor, id: string, workspace: string): Promise<Source> {
   const { task, access } = await openTask(db, actor, id)
   if (task.workspace_id !== workspace) throw invalid('status_source')
   return { id: task.id, title: task.title, description: task.description, status: task.status, updatedAt: task.updated_at, internalOnly: task.internal_only,
     projectIds: [...access.contexts.keys()].sort(), membership: JSON.stringify(await all<{project_id:string}>(db, 'SELECT project_id FROM peg_task_projects WHERE task_id=? ORDER BY project_id', (await rootOf(db,task)).id)) }
+}
+export async function statusSources(db: D1Database, actor: Actor, type: string, id: string, ids: unknown) {
+  const {workspace} = await statusAccess(db,actor,type,id,true)
+  if (!Array.isArray(ids) || !ids.length || ids.length > 50 || ids.some(value=>typeof value !== 'string')) throw invalid('status_sources')
+  const sources = await Promise.all([...new Set<string>(ids)].map(sourceId=>statusSource(db,actor,sourceId,workspace)))
+  const allowedProjects = type === 'project' ? [id] : (await all<{ project_id: string }>(db, `WITH RECURSIVE family(id) AS (SELECT ? UNION ALL SELECT p.id FROM peg_portfolios p JOIN family f ON p.parent_id=f.id) SELECT DISTINCT project_id FROM peg_portfolio_projects WHERE portfolio_id IN (SELECT id FROM family)`, id)).map(p=>p.project_id)
+  if(sources.some(source=>!source.projectIds.some(project=>allowedProjects.includes(project)))) throw invalid('status_source_scope')
+  return sources
 }
 const hash = async (value: unknown) => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(value))))].map(n => n.toString(16).padStart(2, '0')).join('')
 const decode = (row: Draft) => ({ id: row.id, version: row.version, subjectType: row.subject_type, subjectId: row.subject_id, content: JSON.parse(row.content) as Content, sources: JSON.parse(row.sources) as Source[], recipients: JSON.parse(row.recipients) as Recipient[], correctsId: row.corrects_id, includeSubscribers: row.subscriptions !== null })
@@ -53,11 +63,7 @@ export async function saveDraft(db: D1Database, actor: Actor, input: Record<stri
   if (previous && Number(input.version) !== previous.version) throw conflict('stale_status_draft')
   const content: Content = { health: input.health, summary: text(input.summary), highlights: text(input.highlights ?? ''), risks: text(input.risks ?? ''), decisions: text(input.decisions ?? ''), nextSteps: text(input.nextSteps ?? ''), from: date(input.from), to: date(input.to) }
   if (!healths.includes(content.health as typeof healths[number]) || !content.summary || content.to < content.from) throw invalid('status_content')
-  if (!Array.isArray(input.sourceIds) || !input.sourceIds.length || input.sourceIds.length > 50 || input.sourceIds.some((v: unknown) => typeof v !== 'string')) throw invalid('status_sources')
-  const sources: Source[] = []
-  for (const sourceId of [...new Set<string>(input.sourceIds)]) sources.push(await source(db, actor, sourceId, workspace))
-  const allowedProjects = type === 'project' ? [subjectId] : (await all<{ project_id: string }>(db, `WITH RECURSIVE family(id) AS (SELECT ? UNION ALL SELECT p.id FROM peg_portfolios p JOIN family f ON p.parent_id=f.id) SELECT DISTINCT project_id FROM peg_portfolio_projects WHERE portfolio_id IN (SELECT id FROM family)`, subjectId)).map(p => p.project_id)
-  if (sources.some(s => !s.projectIds.some(p => allowedProjects.includes(p)))) throw invalid('status_source_scope')
+  const sources = await statusSources(db,actor,type,subjectId,input.sourceIds)
   if (!Array.isArray(input.recipients) || input.recipients.length > 100) throw invalid('status_recipients')
   const recipients: Recipient[] = []
   for (const recipient of input.recipients) {
@@ -89,7 +95,7 @@ export async function readDraft(db: D1Database, actor: Actor, id: string) {
   const row = await draft(db,actor,id)
   const rejection = await first<{rejected_by:string;reason:string;created_at:number}>(db,'SELECT rejected_by,reason,created_at FROM peg_status_draft_rejections WHERE draft_id=? AND version=?',id,row.version)
   const view=decode(row)
-  return {...view,sources:await publicSources(db,actor,row.workspace_id,view.sources),rejection}
+  return {...view,sources:await publicSources(db,actor,row.workspace_id,view.sources),rejection,generation:await first<{version:number;model:string;processor:string;assertions:string;usage:string}>(db,'SELECT version,model,processor,assertions,usage FROM peg_status_model_drafts WHERE draft_id=?',id)}
 }
 export async function rejectDraft(db: D1Database, actor: Actor, id: string, input: Record<string,any>) {
   const seen=await epoch(db), row=await draft(db,actor,id)
@@ -117,7 +123,7 @@ async function recipientActor(db: D1Database, id: string): Promise<Actor> {
 async function readable(db: D1Database, actor: Actor, type: string, id: string, sources: Source[]) {
   await statusAccess(db, actor, type, id)
   for (const s of sources) {
-    const current = await source(db, actor, s.id, (await statusAccess(db, actor, type, id)).workspace)
+    const current = await statusSource(db, actor, s.id, (await statusAccess(db, actor, type, id)).workspace)
     // Historical source text is never disclosed after a source's visibility becomes narrower.
     if ((current.internalOnly || s.internalOnly) && await workspaceRole(db, actor.id, (await statusAccess(db, actor, type, id)).workspace) === 'guest') throw notFound()
   }
@@ -127,13 +133,13 @@ async function reviewedDraft(db: D1Database, actor: Actor, id: string) {
   await human(db, actor, row.workspace_id)
   if (row.subscriptions !== null && row.subscriptions !== JSON.stringify(await statusSubscribers(db, actor, row.subject_type, row.subject_id))) throw conflict('stale_status_subscriptions')
   if(await first(db,'SELECT 1 FROM peg_status_draft_rejections WHERE draft_id=? AND version=?',id,row.version))throw conflict('status_draft_rejected')
-  for (const saved of view.sources) if (JSON.stringify(saved) !== JSON.stringify(await source(db, actor, saved.id, row.workspace_id))) throw conflict('stale_status_source')
+  for (const saved of view.sources) if (JSON.stringify(saved) !== JSON.stringify(await statusSource(db, actor, saved.id, row.workspace_id))) throw conflict('stale_status_source')
   for (const recipient of view.recipients) await readable(db, await recipientActor(db, recipient.id), row.subject_type, row.subject_id, view.sources)
   return { ...view, reviewedBy: actor.id, token: await hash({ row, actor: actor.id, epoch: seen }), epoch: seen }
 }
 async function publicSources(db:D1Database,actor:Actor,workspace:string,sources:Source[]) {
   const visible=[]
-  for(const saved of sources){const {membership:_membership,...fields}=saved;visible.push({...fields,projectIds:(await source(db,actor,saved.id,workspace)).projectIds})}
+  for(const saved of sources){const {membership:_membership,...fields}=saved;visible.push({...fields,projectIds:(await statusSource(db,actor,saved.id,workspace)).projectIds})}
   return visible
 }
 export async function reviewDraft(db:D1Database,actor:Actor,id:string) {
@@ -178,6 +184,7 @@ export async function openRevision(db: D1Database, actor: Actor, id: string) {
   try { await statusAccess(db, actor, row.subject_type, row.subject_id, true); manager = ['owner','admin','manager','member'].includes(await workspaceRole(db,actor.id,workspace) ?? '') } catch (error) { if (!(error instanceof PegError && error.status === 403)) throw error }
   if (!manager && !recipients.some(r => r.id === actor.id)) throw notFound()
   await readable(db, actor, row.subject_type, row.subject_id, JSON.parse(row.sources))
+  await assertStatusReuse(db,'revision',id)
   return { row, workspace, manager }
 }
 export async function readRevision(db: D1Database, actor: Actor, id: string) {
@@ -186,7 +193,7 @@ export async function readRevision(db: D1Database, actor: Actor, id: string) {
   // Re-evaluate authority on every read, including an old receipt after revocation.
   for (const receipt of receipts) try { await readable(db, await recipientActor(db, receipt.recipient_id), row.subject_type, row.subject_id, JSON.parse(row.sources)) } catch (error) { if (!(error instanceof PegError && [403,404].includes(error.status))) throw error; receipt.state = 'revoked'; receipt.reason = 'access_revoked' }
   const sources = []
-  for (const saved of JSON.parse(row.sources) as Source[]) { const {membership: _membership, ...visible} = saved; sources.push({ ...visible, projectIds: (await source(db, actor, saved.id, workspace)).projectIds, link: `/app/tasks/${saved.id}` }) }
+  for (const saved of JSON.parse(row.sources) as Source[]) { const {membership: _membership, ...visible} = saved; sources.push({ ...visible, projectIds: (await statusSource(db, actor, saved.id, workspace)).projectIds, link: `/app/tasks/${saved.id}` }) }
   return { id: row.id, subjectType: row.subject_type, subjectId: row.subject_id, content: JSON.parse(row.content), sources, correctsId: row.corrects_id, publishedAt: row.published_at, reviewedBy: row.reviewed_by, receipts }
 }
 export async function statusHistory(db: D1Database, actor: Actor, type: string, id: string) {

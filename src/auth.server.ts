@@ -18,6 +18,8 @@ import { listProjects } from './pegboard/workspace/projects'
 const theme = { href: '/rer-theme.css', productName: branding.name, accentColor: branding.primaryColor }
 
 export interface Bindings {
+ /** Local native webhook schema receiver. Never selected in deployed mode. */
+ PEGBOARD_LOCAL_WEBHOOK_ORIGIN?: string
  DB: D1Database
  /** Built browser files; hosted deploys run the Worker first (staticAssetResponse). */
  ASSETS?: Fetcher

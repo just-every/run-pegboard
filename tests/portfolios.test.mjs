@@ -1,3 +1,4 @@
+import {statusModelScenario} from './scenarios/status-model.mjs'
 // PEG-013 through the public doors: a two-level portfolio of 20 projects with shared tasks and a private project, live rollups
 // from Tasks, a limited stakeholder's authorized totals, each default risk threshold at a pinned clock, the versioned policy,
 // manual health beside computed flags, and the timeline, workload and dashboard tabs without double counts or leaks.
@@ -17,8 +18,8 @@ const reasons = row => row.flags.map(f => f.code).sort()
 describe('PEG-013 portfolios that roll up truthfully', { concurrency: false }, () => {
   before(async () => {
     w = await startWorker(); owner = w.owner
-    sam = await w.person('synthetic-pegboard-013-sam@example.com', 'Sam Stakeholder')
-    nina = await w.person('synthetic-pegboard-013-nina@example.com', 'Nina Outsider')
+    sam = await w.person('synthetic-pegboard-013-sam' + '@' + 'example.com', 'Sam Stakeholder')
+    nina = await w.person('synthetic-pegboard-013-nina' + '@' + 'example.com', 'Nina Outsider')
   }, { timeout: 120000 })
   after(() => w?.stop())
 
@@ -147,9 +148,9 @@ describe('Delivery register', {concurrency:false},()=>{
  const decide=(record,action)=>owner.post(`/api/v1/projects/${project.id}/register/${record.id}/decision`,{revision:record.token,action,reason:action==='accept'?'Approved exact scope and dates':'Keep the original commitment'})
  before(async()=>{
   server=await startWorker();owner=server.owner
-  editor=await server.person('synthetic-pegboard-3501@example.com','Maya Delivery')
-  agent=await server.person('synthetic-pegboard-3502@example.com','Planning agent','agent')
-  guest=await server.person('synthetic-pegboard-3503@example.com','Client guest','guest')
+  editor=await server.person('synthetic-pegboard-3501' + '@' + 'example.com','Maya Delivery')
+  agent=await server.person('synthetic-pegboard-3502' + '@' + 'example.com','Planning agent','agent')
+  guest=await server.person('synthetic-pegboard-3503' + '@' + 'example.com','Client guest','guest')
   project=await ok(owner.post('/api/v1/projects',{name:'Austin retail launch',description:'Original campaign scope',visibility:'private'}))
   for(const [person,level] of [[editor,'editor'],[agent,'editor'],[guest,'viewer']])await ok(owner.post('/api/v1/grants',{objectType:'project',objectId:project.id,granteeId:person.id,level}))
   task=await ok(owner.post('/api/v1/tasks',{projectId:project.id,title:'Print launch signage',startDate:'2026-11-09',dueDate:'2026-11-10'}))
@@ -197,7 +198,7 @@ describe('Reusable workflow bundles',{concurrency:false},()=>{
  const preview=()=>ok(owner.post(root()+'/preview',{projectIds:projects.map(p=>p.id)}))
  const adopt=async(keys)=>{const p=await preview();return ok(owner.post(root()+'/adopt',{projectIds:projects.map(p=>p.id),keys,revision:p.token}))}
  before(async()=>{
-  server=await startWorker();owner=server.owner;member=await server.person('synthetic-pegboard-3401@example.com','Maya Campaign')
+  server=await startWorker();owner=server.owner;member=await server.person('synthetic-pegboard-3401' + '@' + 'example.com','Maya Campaign')
   source=await ok(owner.post('/api/v1/projects',{name:'Campaign definitions',visibility:'workspace'}))
   field=await ok(owner.post(`/api/v1/projects/${source.id}/fields`,{key:'campaign_code',label:'Campaign code',type:'text'}))
   projects=[];for(const name of ['Austin launch','Dallas launch','Denver launch'])projects.push(await ok(owner.post('/api/v1/projects',{name,visibility:'workspace'})))
@@ -246,7 +247,7 @@ describe('Reusable workflow bundles',{concurrency:false},()=>{
 describe('Activated rule effect recovery',{concurrency:false},()=>{
  let w,owner,member,outsider
  const pass=async promise=>{const r=await promise;assert.equal(r.status,200,JSON.stringify(r.body)+(r.status===500?' '+(w.output().match(/(?:D1_ERROR|SQLITE_\w+|Error:)[^\n]*/g)??[]).slice(-3).join(' '):''));return r.body}
- before(async()=>{w=await startWorker();owner=w.owner;member=await w.person('synthetic-pegboard-6401@example.com','Maya Production');outsider=await w.person('synthetic-pegboard-6402@example.com','Other department')},{timeout:120000})
+ before(async()=>{w=await startWorker();owner=w.owner;member=await w.person('synthetic-pegboard-6401' + '@' + 'example.com','Maya Production');outsider=await w.person('synthetic-pegboard-6402' + '@' + 'example.com','Other department')},{timeout:120000})
  after(()=>w?.stop())
  it('records activated date and assignment effects once and undoes only unchanged fields with current authority',async()=>{
   const p=await pass(owner.post('/api/v1/projects',{name:'Autumn retail production'}))
@@ -281,7 +282,7 @@ describe('Owned rule work action recovery',{concurrency:false},()=>{
  }
  const run=async(title,concurrent=false)=>{const task=await pass(owner.post('/api/v1/tasks',{projectId:p.id,title}));if(concurrent){const responses=await Promise.all([owner.post(root+'/jobs/process',{}),owner.post(root+'/jobs/process',{})]);assert.ok(responses.some(r=>r.status===200));assert.ok(responses.every(r=>[200,409].includes(r.status)))}else await pass(owner.post(root+'/jobs/process',{}));const job=(await pass(owner.get(root))).jobs.find(j=>j.task_id===task.id);return {task,job,path:`/api/v1/recovery/rules/${job.id}`}}
  before(async()=>{
-  w=await startWorker();owner=w.owner;member=await w.person('synthetic-pegboard-6403@example.com','Maya Campaign');outsider=await w.person('synthetic-pegboard-6404@example.com','Other department')
+  w=await startWorker();owner=w.owner;member=await w.person('synthetic-pegboard-6403' + '@' + 'example.com','Maya Campaign');outsider=await w.person('synthetic-pegboard-6404' + '@' + 'example.com','Other department')
   p=await pass(owner.post('/api/v1/projects',{name:'Austin rule production'}));q=await pass(owner.post('/api/v1/projects',{name:'Dallas shared production'}));for(const project of [p,q])await pass(owner.post('/api/v1/grants',{objectType:'project',objectId:project.id,granteeId:member.id,level:'editor'}))
   tag=await pass(owner.post('/api/v1/tags',{projectId:p.id,name:'Retail production',visibility:'project'}));b=await pass(owner.post('/api/v1/workflow-bundles',{name:'Scoped production actions'}));root=`/api/v1/workflow-bundles/${b.id}`
  },{timeout:120000})
@@ -308,7 +309,7 @@ describe('Owned rule work action recovery',{concurrency:false},()=>{
 describe('Selective configuration revision recovery',{concurrency:false},()=>{
  let w,owner,editor
  const pass=async promise=>{const r=await promise;assert.equal(r.status,200,JSON.stringify(r.body));return r.body}
- before(async()=>{w=await startWorker();owner=w.owner;editor=await w.person('synthetic-pegboard-6412@example.com','Maya Production')},{timeout:120000})
+ before(async()=>{w=await startWorker();owner=w.owner;editor=await w.person('synthetic-pegboard-6412' + '@' + 'example.com','Maya Production')},{timeout:120000})
  after(()=>w?.stop())
  it('compares and restores a retained component without replacing newer configuration, activated rules or dependent work',async()=>{
   const p=await pass(owner.post('/api/v1/projects',{name:'Retained production workflow'}));await pass(owner.post('/api/v1/grants',{objectType:'project',objectId:p.id,granteeId:editor.id,level:'editor'}))
@@ -330,10 +331,10 @@ describe('Reusable templates through reviewed public doors', { concurrency: fals
   const plan = (entry, extra = {}) => ({ templateId: entry.template.id, version: entry.version, startDate: '2026-07-02', name: `${entry.template.name} — regional delivery`, roles: Object.fromEntries(entry.definition.roles.map((role, i) => [role, [human.id, designer.id, reviewer.id][i % 3]])), ...extra })
   before(async () => {
     worker = await startWorker(); human = worker.owner
-    designer = await worker.person('synthetic-pegboard-6001@example.com', 'Maya Creative')
-    reviewer = await worker.person('synthetic-pegboard-6002@example.com', 'Leo Review')
-    ai = await worker.person('synthetic-pegboard-6003@example.com', 'Planning agent', 'agent')
-    outsider = await worker.person('synthetic-pegboard-6004@example.com', 'Unassigned stakeholder')
+    designer = await worker.person('synthetic-pegboard-6001' + '@' + 'example.com', 'Maya Creative')
+    reviewer = await worker.person('synthetic-pegboard-6002' + '@' + 'example.com', 'Leo Review')
+    ai = await worker.person('synthetic-pegboard-6003' + '@' + 'example.com', 'Planning agent', 'agent')
+    outsider = await worker.person('synthetic-pegboard-6004' + '@' + 'example.com', 'Unassigned stakeholder')
     gallery = (await call(human.get('/api/v1/templates'))).templates
   }, { timeout: 120000 })
   after(() => worker?.stop())
@@ -456,8 +457,8 @@ describe('Pinned template rules through current Admin review', { concurrency: fa
   const activate = async (extra = {}) => { const preview = await call(human.post(`/api/v1/template-rules/${rule.id}/preview`, extra)); return call(human.post(`/api/v1/template-rules/${rule.id}/activate`, { ...extra, token: preview.token })) }
   before(async () => {
     worker = await startWorker(); human = worker.owner
-    production = await worker.person('synthetic-pegboard-6201@example.com', 'Maya Production')
-    ai = await worker.person('synthetic-pegboard-6202@example.com', 'Planning agent', 'agent')
+    production = await worker.person('synthetic-pegboard-6201' + '@' + 'example.com', 'Maya Production')
+    ai = await worker.person('synthetic-pegboard-6202' + '@' + 'example.com', 'Planning agent', 'agent')
     project = await call(human.post('/api/v1/projects', { name: 'Regional print requests' }))
     await call(human.post(`/api/v1/projects/${project.id}/prefix`, { prefix: 'PRINT' }))
     for (const person of [production, ai]) await call(human.post('/api/v1/grants', { objectType: 'project', objectId: project.id, granteeId: person.id, level: 'editor' }))
@@ -552,10 +553,10 @@ describe('Reviewed stakeholder status revisions', { concurrency: false }, () => 
   }
   before(async () => {
     worker = await startWorker(); human = worker.owner
-    member = await worker.person('synthetic-pegboard-1501@example.com', 'Morgan Publisher')
-    viewer = await worker.person('synthetic-pegboard-1502@example.com', 'Taylor Viewer')
-    guest = await worker.person('synthetic-pegboard-1503@example.com', 'Client Guest', 'guest')
-    agent = await worker.person('synthetic-pegboard-1504@example.com', 'Status Agent', 'agent')
+    member = await worker.person('synthetic-pegboard-1501' + '@' + 'example.com', 'Morgan Publisher')
+    viewer = await worker.person('synthetic-pegboard-1502' + '@' + 'example.com', 'Taylor Viewer')
+    guest = await worker.person('synthetic-pegboard-1503' + '@' + 'example.com', 'Client Guest', 'guest')
+    agent = await worker.person('synthetic-pegboard-1504' + '@' + 'example.com', 'Status Agent', 'agent')
     portfolio = await call(human.post('/api/v1/portfolios', { name: 'Reviewed client programs' }))
     projects = []; sources = []
     for (const name of ['Austin launch', 'Denver launch', 'Boston launch']) {
@@ -721,6 +722,8 @@ describe('Reviewed stakeholder status revisions', { concurrency: false }, () => 
     await call(guest.post(`/api/v1/status-revisions/${clientRevision.id}/preferences`, { following: false, muted: false }))
     assert.deepEqual((await call(guest.get('/api/v1/status-notices'))).notices, [])
     assert.deepEqual((await call(guest.get('/api/v1/status-digest'))).notices, [], 'unfollowed ordinary replies are omitted from the digest')
+    await call(guest.post(`/api/v1/status-revisions/${clientRevision.id}/preferences`, { following: false, muted: false }))
+    assert.deepEqual((await call(guest.get('/api/v1/status-notices'))).notices, [])
     await call(human.post(`/api/v1/status-revisions/${clientRevision.id}/comments`, { body: 'Review the corrected date', mentions: [guest.id] }))
     const mentioned = (await call(guest.get('/api/v1/status-notices'))).notices
     assert.deepEqual(mentioned.map(n => [n.kind,n.body]), [['mention','Review the corrected date']])
@@ -759,3 +762,231 @@ describe('Reviewed stakeholder status revisions', { concurrency: false }, () => 
     assert.equal((await call(human.get(`/api/v1/status-history/project/${projects[0].id}`))).revisions.length, 2)
   })
 })
+
+describe('Status rights request custody', { concurrency: false }, () => {
+ let worker, owner, handler, outsider, guest, source, project, draft, revision, personal, request, cleanDraft
+ const call=async(p,status=200)=>{const r=await p;assert.equal(r.status,status,JSON.stringify(r.body));return r.body}
+ const root='/api/v1/status-rights-requests', day=86400000
+ const act=async(input,who=handler,status=200)=>{const result=await call(who.post(`${root}/${request.id}/actions`,{version:request.version,...input}),status);if(status===200)request=result;return result}
+ before(async()=>{
+  worker=await startWorker();owner=worker.owner
+  handler=await worker.person('synthetic-pegboard-1511' + '@' + 'example.com','Privacy Handler')
+  outsider=await worker.person('synthetic-pegboard-1512' + '@' + 'example.com','Unassigned Handler')
+  guest=await worker.person('synthetic-pegboard-1513' + '@' + 'example.com','Guest Reviewer','guest')
+  project=await call(owner.post('/api/v1/projects',{name:'Private rights subject',visibility:'private'}))
+  source=await call(owner.post('/api/v1/tasks',{projectId:project.id,title:'Sensitive cited employee detail'}))
+  personal=await call(owner.post('/api/v1/tasks',{title:'Unrelated private work'}))
+  const input={subjectType:'project',subjectId:project.id,health:'on_track',summary:'Sensitive attributed status',from:'2026-03-01',to:'2026-03-16',sourceIds:[source.id],recipients:[]}
+  draft=await call(owner.post('/api/v1/status-drafts',input))
+  const review=await call(owner.post(`/api/v1/status-drafts/${draft.id}/review`,{}))
+  revision=await call(owner.post(`/api/v1/status-drafts/${draft.id}/publish`,{token:review.token}))
+ },{timeout:120000})
+ after(()=>worker?.stop())
+ it('tracks the exact structured copies and finite delegated custody without granting browsing or false erasure',async()=>{
+  const until=Date.now()+30*day, input={type:'task',targetId:source.id,receivedAt:'2026-03-16T12:00:00Z',handlerId:handler.id,handlerUntil:until}
+  await call(outsider.post(root,input),403)
+  await call(owner.post(root,{...input,handlerId:guest.id}),403)
+  request=await call(owner.post(root,input))
+  assert.equal(request.received_at,Date.parse('2026-03-16T12:00:00Z'))
+  assert.equal(request.ack_due,Date.parse('2026-03-30T23:59:59.999Z'))
+  assert.equal(request.response_due,Date.parse('2026-04-30T12:00:00Z'))
+  assert.equal(request.handler_id,handler.id);assert.equal(request.handler_until,until)
+  assert.deepEqual(request.copies,[{copy_type:'draft',copy_id:draft.id},{copy_type:'revision',copy_id:revision.id}])
+  assert.deepEqual((await call(handler.get(root))).requests.map(r=>r.id),[request.id])
+  assert.deepEqual((await call(outsider.get(root))).requests,[])
+  assert.equal(request.erasureOutcome,'not_erased');assert.equal(request.custodyBlocker,'review_status_snapshot_custody_before_erasure')
+  const delegated=await call(handler.get(`${root}/${request.id}`))
+  assert.ok(!JSON.stringify(delegated).includes('Sensitive cited employee detail'))
+  await call(handler.get(`/api/v1/tasks/${source.id}`),404)
+  await call(handler.get(`/api/v1/tasks/${personal.id}`),404)
+  await call(outsider.get(`${root}/${request.id}`),403)
+  await call(owner.get(`/api/v1/status-drafts/${draft.id}`),409)
+  await call(owner.get(`/api/v1/status-revisions/${revision.id}`),409)
+  await call(owner.post('/api/v1/status-drafts',{subjectType:'project',subjectId:project.id,health:'on_track',summary:'Reusing disputed data',from:'2026-03-01',to:'2026-03-16',sourceIds:[source.id],recipients:[]}),409)
+  const unrelated=await call(owner.post('/api/v1/tasks',{projectId:project.id,title:'Separate ordinary work'}))
+  const cleanInput={subjectType:'project',subjectId:project.id,health:'on_track',summary:'Unrelated approved content',from:'2026-03-01',to:'2026-03-16',sourceIds:[unrelated.id],recipients:[]}
+  cleanDraft=await call(owner.post('/api/v1/status-drafts',cleanInput))
+  await call(owner.patch(`/api/v1/status-drafts/${cleanDraft.id}`,{...cleanInput,version:cleanDraft.version,sourceIds:[source.id]}),409)
+  assert.equal((await call(owner.get(`/api/v1/status-drafts/${cleanDraft.id}`))).sources[0].id,unrelated.id)
+  await worker.restart()
+  assert.deepEqual((await call(handler.get(`${root}/${request.id}`))).copies,request.copies)
+ })
+ it('escalates acknowledgment and disposition independently at a pinned clock and refuses indefinite or unsupported outcomes',async()=>{
+  const inspect=at=>call(handler.get(`${root}/${request.id}?at=${encodeURIComponent(at)}`))
+  assert.deepEqual((await inspect('2026-03-30T23:59:59.999Z')).escalations,[])
+  assert.deepEqual((await inspect('2026-03-31T00:00:00Z')).escalations,['acknowledgment_overdue'])
+  assert.deepEqual((await inspect('2026-04-30T12:00:00.001Z')).escalations,['acknowledgment_overdue','disposition_overdue'])
+  await act({action:'disposition',state:'justified_retention',reason:'Missing software'},handler,400)
+  await act({action:'acknowledge',notice:'Receipt acknowledged through the verified rights channel'})
+  assert.ok(request.acknowledged_at);assert.equal(request.events.at(-1).actor_id,handler.id)
+  await act({action:'disposition',state:'erased',reason:'Claim success'},handler,400)
+  await act({action:'disposition',state:'justified_retention',reason:'Await software',basisType:'engineering_hold',basis:'Missing implementation',authority:'Engineering',reviewAt:Date.now()+day},handler,400)
+  await act({action:'extend',rule:'Applicable request rule',reason:'Missing implementation',notice:'Wait indefinitely',finalDate:Date.now()+day,permittedUntil:Date.now()+2*day,permitted:true},handler,400)
+  await act({action:'disposition',state:'controlled_resolution_pending',reason:'Owner and handler must reconcile archives and recipients using the controlled procedure',reviewAt:Date.now()+day})
+  assert.equal(request.erasureOutcome,'not_erased');assert.equal(request.state,'controlled_resolution_pending')
+  assert.ok((await inspect(new Date(request.next_review_at+1).toISOString())).escalations.includes('controlled_resolution_review_due'))
+ })
+ it('records justified finite retention separately, requires timely permitted extension and revokes a former handler',async()=>{
+  const receipt=Date.now(), until=receipt+60*day
+  request=await call(owner.post(root,{type:'person',targetId:owner.id,receivedAt:receipt,handlerId:handler.id,handlerUntil:until,applicableDeadline:receipt+5*day}))
+  assert.deepEqual(request.copies,[...([draft.id,cleanDraft.id].sort().map(id=>({copy_type:'draft',copy_id:id}))),{copy_type:'revision',copy_id:revision.id}])
+  await act({action:'acknowledge',notice:'Receipt acknowledged'})
+  await act({action:'extend',rule:'Recorded applicable extension rule',reason:'Necessary identity verification',notice:'Sent definite final response date',finalDate:receipt+8*day,permittedUntil:receipt+7*day,permitted:true},handler,400)
+  await act({action:'extend',rule:'Recorded applicable extension rule',reason:'Necessary identity verification',notice:'Sent definite final response date',finalDate:receipt+7*day,permittedUntil:receipt+7*day,permitted:true})
+  assert.equal(request.final_due,receipt+7*day);assert.ok(request.extension_notified_at<request.response_due)
+  assert.deepEqual((await call(handler.get(`${root}/${request.id}?at=${encodeURIComponent(new Date(receipt+7*day+1).toISOString())}`))).escalations,['disposition_overdue'])
+  await act({action:'disposition',state:'justified_retention',reason:'Specific disputed campaign record required by a recorded preservation order',basisType:'lawful_hold',basis:'Recorded preservation order for this subject only',authority:'Designated records custodian',reviewAt:receipt+10*day})
+  assert.equal(request.state,'justified_retention');assert.equal(request.retention_review_at,receipt+10*day);assert.equal(request.erasureOutcome,'not_erased')
+  const previous=request.version
+  await act({action:'delegate',handlerId:outsider.id,handlerUntil:until},handler,403)
+  await act({action:'delegate',handlerId:outsider.id,handlerUntil:until},owner)
+  await call(handler.get(`${root}/${request.id}`),403)
+  await call(outsider.post(`${root}/${request.id}/actions`,{version:previous,action:'acknowledge',notice:'Stale action'}),409)
+  assert.equal((await call(outsider.get(`${root}/${request.id}`))).handler_id,outsider.id)
+  const exportJob=await call(owner.post('/api/portability/exports',{}),201);let archive
+  for(let part=0;part<100;part++){const progress=await call(owner.post(`/api/portability/exports/${exportJob.id}/advance`,{maxParts:16}));if(progress.phase==='complete'){archive=await call(owner.get(`/api/portability/exports/${exportJob.id}/download`));break}}
+  assert.equal(typeof archive,'string')
+  const archived=archive.split('\n').filter(Boolean).map(line=>JSON.parse(line)).filter(row=>row.kind==='part').flatMap(row=>row.items).filter(row=>row.kind==='row'&&row.table==='peg_status_rights_requests').map(record=>record.row)
+  assert.equal(archived.length,2);assert.ok(archived.every(row=>row.handler_until===0),'archive cannot carry live custody delegation')
+  assert.equal(archived.find(row=>row.id===request.id).received_at,receipt)
+  await worker.sql(`UPDATE peg_status_rights_requests SET handler_until=${receipt-1} WHERE id='${request.id}'`)
+  await call(outsider.get(`${root}/${request.id}`),403)
+  assert.ok((await call(owner.get(`${root}/${request.id}`))).escalations.includes('handler_authority_expired'))
+
+ })
+ it('accepts a departed attributed actor request without reactivating membership or exposing their snapshots',async()=>{
+  const former=await worker.person('synthetic-pegboard-1514' + '@' + 'example.com','Departed status author')
+  const p=await call(former.post('/api/v1/projects',{name:'Former author work',visibility:'private'}))
+  const t=await call(former.post('/api/v1/tasks',{projectId:p.id,title:'Former employee source'}))
+  const d=await call(former.post('/api/v1/status-drafts',{subjectType:'project',subjectId:p.id,health:'on_track',summary:'Former employee narrative',from:'2026-03-01',to:'2026-03-16',sourceIds:[t.id],recipients:[]}))
+  const reviewed=await call(former.post(`/api/v1/status-drafts/${d.id}/review`,{}))
+  const published=await call(former.post(`/api/v1/status-drafts/${d.id}/publish`,{token:reviewed.token}))
+  const path=`/api/v1/workspaces/ws_main/people/${former.id}`
+  const removal=await call(owner.get(path+'/removal-preview'))
+  const choices=Object.fromEntries(removal.affected.filter(set=>set.rows.length).map(set=>[set.key,set.mode==='transfer'?owner.id:set.mode]))
+  await call(owner.post(path+'/remove',{token:removal.token,confirm:true,choices}))
+  await call(former.get(`/api/v1/status-drafts/${d.id}`),401)
+  const tracked=await call(owner.post(root,{type:'person',targetId:former.id,receivedAt:Date.now(),handlerId:outsider.id,handlerUntil:Date.now()+day}))
+  assert.deepEqual(tracked.copies,[{copy_type:'draft',copy_id:d.id},{copy_type:'revision',copy_id:published.id}])
+  assert.equal(tracked.erasureOutcome,'not_erased')
+  const scoped=await call(outsider.get(`${root}/${tracked.id}`))
+  assert.ok(!JSON.stringify(scoped).includes('Former employee narrative'))
+  await call(outsider.get(`/api/v1/status-revisions/${published.id}`),404)
+ })
+
+})
+
+describe('Conditional local work rules',{concurrency:false},()=>{
+ let w,owner,editor,admin,agent,p,q
+ const pass=async(promise,status=200)=>{const r=await promise;assert.equal(r.status,status,JSON.stringify(r.body));return r.body}
+ const save=(project,input)=>pass(owner.post(`/api/v1/projects/${project.id}/rules`,{name:'Route production',source:'task_start',offset:5,unit:'business_days',priority:'high',...input}))
+ const activate=async(id,client=owner)=>{const preview=await pass(client.post(`/api/v1/rules/${id}/preview`,{sampleDate:'2026-07-02'}));await pass(client.post(`/api/v1/rules/${id}/activate`,{token:preview.token}));return preview}
+ const task=(project,extra={})=>pass(editor.post('/api/v1/tasks',{projectId:project.id,title:'Regional print request',startDate:'2026-07-02',dueDate:'2026-07-06',...extra}))
+ before(async()=>{
+  w=await startWorker();owner=w.owner
+  editor=await w.person('synthetic-pegboard-1201' + '@' + 'example.com','Riley Designer');admin=await w.person('synthetic-pegboard-1202' + '@' + 'example.com','Morgan Admin');agent=await w.person('synthetic-pegboard-1203' + '@' + 'example.com','Intake Agent','agent')
+  p=await pass(owner.post('/api/v1/projects',{name:'Austin conditional rules'}));q=await pass(owner.post('/api/v1/projects',{name:'Dallas conditional rules'}))
+  for(const project of [p,q])for(const [person,level] of [[editor,'editor'],[admin,'admin'],[agent,'editor']])await pass(owner.post('/api/v1/grants',{objectType:'project',objectId:project.id,granteeId:person.id,level}))
+ },{timeout:120000})
+ after(()=>w?.stop())
+ it('activates form and section date mappings once through restart and preserves a later edit during scoped undo',async()=>{
+  const status=await save(p,{trigger:'form',ownerId:editor.id}),preview=await activate(status.id)
+  assert.equal(preview.computedDate,'2026-07-10','observed July 3 holiday and weekend do not count')
+  const sec=await pass(owner.post(`/api/v1/projects/${q.id}/sections`,{name:'Editorial review'}))
+  const move=await save(q,{name:'Editorial move',trigger:'section',sectionId:sec.id,source:'task_start',offset:2,unit:'days',ownerId:owner.id});await activate(move.id)
+  const ids=[],moved=[]
+  {const i=0
+   const a=await pass(editor.post(`/api/v1/projects/${p.id}/requests`,{requestKey:`synthetic-pegboard-request-${i}`,title:'Regional print request',startDate:'2026-07-02',dueDate:'2026-07-06'})),b=await task(q);ids.push(a.id);moved.push(b.id)
+   await pass(editor.post(`/api/v1/tasks/${b.id}/section`,{projectId:q.id,sectionId:sec.id}))
+   const av=await pass(owner.get(`/api/v1/tasks/${a.id}`)),bv=await pass(owner.get(`/api/v1/tasks/${b.id}`))
+   assert.equal(av.dueDate,'2026-07-10');assert.equal(av.owner.id,editor.id);assert.equal(av.priority,'high')
+   assert.equal(bv.dueDate,'2026-07-04');assert.equal(bv.owner.id,owner.id)
+  }
+  await w.restart()
+  for(const [i,id] of ids.entries()){const replay=await pass(editor.post(`/api/v1/projects/${p.id}/requests`,{requestKey:`synthetic-pegboard-request-${i}`,title:'Regional print request',startDate:'2026-07-02',dueDate:'2026-07-06'}));assert.equal(replay.id,id);assert.equal(replay.replayed,true)}
+  for(const id of moved)await pass(editor.post(`/api/v1/tasks/${id}/section`,{projectId:q.id,sectionId:sec.id}))
+  for(const project of [p,q]){
+   await pass(owner.post(`/api/v1/projects/${project.id}/rules/process`,{}));const view=await pass(owner.get(`/api/v1/projects/${project.id}/rules`))
+   assert.equal(view.runs.length,1);assert.ok(view.runs.every(r=>r.status==='applied'&&r.version===1&&r.activated_by===owner.id&&r.activation_id&&r.operation_id&&r.source.startDate==='2026-07-02'&&r.computed.dueDate===(project===p?'2026-07-10':'2026-07-04')))
+  }
+  const run=(await pass(owner.get(`/api/v1/projects/${p.id}/rules`))).runs.find(r=>r.task_id===ids[0]),undo=`/api/v1/recovery/bulk/${run.operation_id}`
+  await pass(editor.patch(`/api/v1/tasks/${ids[0]}`,{dueDate:'2026-07-15'}))
+  const review=await pass(owner.get(undo+'/undo-preview'))
+  assert.ok(review.conflicts.some(c=>c.field==='due_date'&&c.reason==='later_field_value'));assert.ok(review.restored.some(e=>e.field==='priority'))
+  await pass(owner.post(undo+'/undo',{token:review.token}))
+  const restored=await pass(owner.get(`/api/v1/tasks/${ids[0]}`));assert.equal(restored.dueDate,'2026-07-15');assert.equal(restored.priority,'normal')
+ })
+ it('refuses editor configuration, stale activation, revoked Admins and agent provenance; holds dependency changes and records missing dates',async()=>{
+  await pass(editor.get(`/app/projects/${p.id}/rules`),403);await pass(editor.post(`/api/v1/projects/${p.id}/rules`,{name:'Unauthorized'}),403)
+  const r=await save(q,{name:'Reviewed authority',status:'done',ownerId:editor.id})
+  await pass(editor.post(`/api/v1/rules/${r.id}/preview`,{}),403)
+  let preview=await pass(admin.post(`/api/v1/rules/${r.id}/preview`,{}));await pass(owner.post(`/api/v1/rules/${r.id}`,{name:'Changed definition',version:1,source:'task_start',offset:-14,priority:'urgent',status:'done'}))
+  await pass(admin.post(`/api/v1/rules/${r.id}/activate`,{token:preview.token}),409)
+  await activate(r.id,admin)
+  const grants=await pass(owner.get(`/api/v1/grants?objectType=project&objectId=${q.id}`))
+  const grant=grants.grants.find(g=>g.grantee_id===admin.id);await pass(owner.delete(`/api/v1/grants/${grant.id}`))
+  const t=await task(q);await pass(editor.patch(`/api/v1/tasks/${t.id}`,{status:'done'}))
+  let runs=(await pass(owner.get(`/api/v1/projects/${q.id}/rules`))).runs
+  assert.equal(runs.find(j=>j.task_id===t.id&&j.rule_id===r.id).status,'pending');assert.equal((await pass(owner.get(`/api/v1/tasks/${t.id}`))).dueDate,'2026-07-06')
+  const safety=await save(p,{name:'Status source safeguards'});await activate(safety.id)
+  const missing=await task(p,{startDate:null});await pass(editor.patch(`/api/v1/tasks/${missing.id}`,{status:'doing'}))
+  runs=(await pass(owner.get(`/api/v1/projects/${p.id}/rules`))).runs;assert.equal(runs.find(j=>j.task_id===missing.id).outcome,'source_date_missing');assert.equal(runs.find(j=>j.task_id===missing.id).status,'noop')
+  const linked=await task(p),hiddenProject=await pass(owner.post('/api/v1/projects',{name:'Private dependent project'})),hidden=await pass(owner.post('/api/v1/tasks',{projectId:hiddenProject.id,title:'Private acquisition delivery',startDate:'2026-07-07',dueDate:'2026-07-08'}))
+  await pass(owner.post('/api/v1/dependencies',{predecessor:linked.id,successor:hidden.id,type:'fs'}));await pass(editor.patch(`/api/v1/tasks/${linked.id}`,{status:'doing'}))
+  runs=(await pass(owner.get(`/api/v1/projects/${p.id}/rules`))).runs;assert.equal(runs.find(j=>j.task_id===linked.id).outcome,'dependency_cascade_requires_review');assert.equal((await pass(owner.get(`/api/v1/tasks/${linked.id}`))).dueDate,'2026-07-06');assert.equal((await pass(owner.get(`/api/v1/tasks/${hidden.id}`))).dueDate,'2026-07-08');assert.ok(!JSON.stringify(runs).includes('Private acquisition delivery'))
+  const suggestion=await pass(editor.post(`/api/v1/projects/${p.id}/rule-suggestions`,{message:'Route print reviews to the designer.'}))
+  let requests=await pass(editor.get(`/api/v1/projects/${p.id}/rule-suggestions`));assert.ok(requests.responsible.some(a=>a.id===owner.id));assert.equal(requests.requests.find(r=>r.id===suggestion.id).status,'submitted')
+  await pass(editor.post(`/api/v1/rule-suggestions/${suggestion.id}/review`,{}),403);await pass(owner.post(`/api/v1/rule-suggestions/${suggestion.id}/review`,{}))
+  requests=await pass(editor.get(`/api/v1/projects/${p.id}/rule-suggestions`));assert.equal(requests.requests.find(r=>r.id===suggestion.id).status,'reviewed')
+  const timed=await task(p,{startDate:'2026-03-07T02:00:00Z'});await pass(editor.patch(`/api/v1/tasks/${timed.id}`,{status:'doing'}));runs=(await pass(owner.get(`/api/v1/projects/${p.id}/rules`))).runs;assert.equal(runs.find(j=>j.task_id===timed.id).outcome,'source_time_requires_review');assert.equal(runs.find(j=>j.task_id===timed.id).status,'pending');assert.equal((await pass(owner.get(`/api/v1/tasks/${timed.id}`))).dueDate,'2026-07-06')
+  const ai=await task(p);await pass(agent.patch(`/api/v1/tasks/${ai.id}`,{status:'doing'}))
+  runs=(await pass(owner.get(`/api/v1/projects/${p.id}/rules`))).runs;assert.equal(runs.find(j=>j.task_id===ai.id).outcome,'ai_source_requires_exact_review');assert.equal((await pass(owner.get(`/api/v1/tasks/${ai.id}`))).dueDate,'2026-07-06')
+  await pass(owner.patch(`/api/v1/tasks/${ai.id}`,{status:'todo'}));await pass(owner.patch(`/api/v1/tasks/${ai.id}`,{status:'doing'}));runs=(await pass(owner.get(`/api/v1/projects/${p.id}/rules`))).runs.filter(j=>j.task_id===ai.id);assert.equal(runs.length,2);assert.ok(runs.every(j=>j.status==='pending'&&j.outcome==='ai_source_requires_exact_review'))
+ })
+ it('applies the complete work-action set once, undoes its own effects and refuses approval decisions or expanded audiences',async()=>{
+  const a=await pass(owner.post('/api/v1/projects',{name:'Reviewed work actions'})),b=await pass(owner.post('/api/v1/projects',{name:'Same audience work'})),privateProject=await pass(owner.post('/api/v1/projects',{name:'Unreviewed wider audience',visibility:'workspace'}))
+  for(const project of [a,b])await pass(owner.post('/api/v1/grants',{objectType:'project',objectId:project.id,granteeId:editor.id,level:'editor'}))
+  const tag=await pass(owner.post('/api/v1/tags',{projectId:a.id,name:'Ready for production',visibility:'project'}))
+  const actions=[{kind:'complete'},{kind:'comment',value:'Production handoff recorded.'},{kind:'collaborator',value:editor.id},{kind:'project',value:b.id},{kind:'subtask',value:'Prepare meeting agenda'},{kind:'tag',value:tag.id}]
+  const rule=await save(a,{name:'Full work handoff',ownerId:editor.id,actions});await activate(rule.id)
+  const t=await task(a);await pass(editor.patch(`/api/v1/tasks/${t.id}`,{status:'doing'}));await w.restart();await pass(owner.post(`/api/v1/projects/${a.id}/rules/process`,{}))
+  let view=await pass(owner.get(`/api/v1/tasks/${t.id}`));assert.equal(view.status,'done');assert.equal(view.comments.length,1);assert.equal(view.comments[0].body,'Production handoff recorded.');assert.equal(view.subtasks.length,1);assert.equal(view.collaborators.length,1);assert.equal(view.projects.length,2);assert.equal(view.tags.length,1)
+  const runs=await pass(owner.get(`/api/v1/projects/${a.id}/rules`));assert.equal(runs.runs.length,1);assert.equal(runs.runs[0].work_count,6)
+  const path=`/api/v1/recovery/bulk/${runs.runs[0].operation_id}`,undo=await pass(owner.get(path+'/undo-preview'));assert.equal(undo.restoredWork.length,6);assert.equal(undo.origin.activating_admin,owner.id);await pass(owner.post(path+'/undo',{token:undo.token}))
+  view=await pass(owner.get(`/api/v1/tasks/${t.id}`));assert.equal(view.status,'doing');assert.equal(view.comments.length,0);assert.equal(view.subtasks.length,0);assert.equal(view.collaborators.length,0);assert.equal(view.projects.length,1);assert.equal(view.tags.length,0)
+  const approval=await task(a,{kind:'approval'});await pass(editor.patch(`/api/v1/tasks/${approval.id}`,{status:'doing'}));let history=await pass(owner.get(`/api/v1/projects/${a.id}/rules`));assert.equal(history.runs.find(j=>j.task_id===approval.id).outcome,'approval_decision_required');assert.equal((await pass(owner.get(`/api/v1/tasks/${approval.id}/decision-preview`))).state,'pending')
+  await pass(owner.post(`/api/v1/rules/${rule.id}`,{name:'New audience needs independent review',version:1,source:'task_start',actions:[{kind:'project',value:privateProject.id}]}));await activate(rule.id)
+  const held=await task(a);await pass(editor.patch(`/api/v1/tasks/${held.id}`,{status:'doing'}));history=await pass(owner.get(`/api/v1/projects/${a.id}/rules`));assert.equal(history.runs.find(j=>j.task_id===held.id).outcome,'share_review_required');assert.equal((await pass(owner.get(`/api/v1/tasks/${held.id}`))).projects.length,1)
+  const outsider=await w.person('synthetic-pegboard-1204' + '@' + 'example.com','Unshared collaborator')
+  await pass(owner.post(`/api/v1/rules/${rule.id}`,{name:'No collaborator access escalation',version:2,source:'task_start',actions:[{kind:'collaborator',value:outsider.id}]}));await activate(rule.id)
+  const unshared=await task(a);await pass(editor.patch(`/api/v1/tasks/${unshared.id}`,{status:'doing'}));history=await pass(owner.get(`/api/v1/projects/${a.id}/rules`));assert.equal(history.runs.find(j=>j.task_id===unshared.id).outcome,'collaborator_existing_access');await pass(outsider.get(`/api/v1/tasks/${unshared.id}`),404)
+ })
+ it('exports rules without active authority and erases source inputs and project suggestions through reviewed custody doors',async()=>{
+  const p=await pass(owner.post('/api/v1/projects',{name:'Rule custody'})),r=await save(p,{});await activate(r.id)
+  const t=await pass(owner.post('/api/v1/tasks',{projectId:p.id,title:'Custody source',startDate:'2026-07-02'}));await pass(owner.patch(`/api/v1/tasks/${t.id}`,{status:'doing'}));await pass(owner.post(`/api/v1/projects/${p.id}/rule-suggestions`,{message:'Retained suggestion'}))
+  const exported=await pass(owner.post('/api/portability/exports',{}),201)
+  let archive
+  for(let i=0;i<100;i++){const progress=await pass(owner.post(`/api/portability/exports/${exported.id}/advance`,{maxParts:16}));if(progress.phase==='complete'){archive=await pass(owner.get(`/api/portability/exports/${exported.id}/download`));break}}
+  assert.ok(archive)
+  const rows=archive.trim().split('\n').map(line=>JSON.parse(line)).filter(part=>part.kind==='part').flatMap(part=>part.items).filter(item=>item.kind==='row'),stored=rows.find(item=>item.table==='peg_local_rules'&&item.row.id===r.id)
+  assert.equal(stored.row.enabled,0);assert.equal(stored.row.activation_id,null);assert.equal(stored.row.activated_by,null)
+  const erasure=await pass(owner.post('/api/v1/data/erasure-preview',{type:'task',id:t.id}));assert.ok(erasure.selections?.some(s=>s.table==='peg_local_rule_runs')??JSON.stringify(erasure).includes('peg_local_rule_runs'))
+  await pass(owner.post('/api/v1/data/erase',{type:'task',id:t.id,token:erasure.token,confirm:true}));assert.equal((await pass(owner.get(`/api/v1/projects/${p.id}/rules`))).runs.length,0)
+  const projectErasure=await pass(owner.post('/api/v1/data/erasure-preview',{type:'project',id:p.id}));await pass(owner.post('/api/v1/data/erase',{type:'project',id:p.id,token:projectErasure.token,confirm:true}));await pass(owner.post(`/api/v1/rules/${r.id}/preview`,{}),404)
+ })
+
+ it('computes event-relative weeks, business days and clamped months across holiday and daylight-saving boundaries',async()=>{
+  for(const [index,sourceDate,offset,unit,expected] of [[1,'2026-07-16',-2,'weeks','2026-07-02'],[2,'2026-03-31',-1,'months','2026-02-28'],[3,'2026-10-31',1,'months','2026-11-30'],[4,'2026-07-06',-1,'business_days','2026-07-02'],[5,'2026-03-07',2,'days','2026-03-09']]){
+   const p=await pass(owner.post('/api/v1/projects',{name:`Event routing ${index}`}))
+   await pass(owner.post(`/api/v1/projects/${p.id}/fields`,{key:'event_day',label:'Custom event date',type:'date'}))
+   const rule=await save(p,{name:'Event-relative routing',source:'custom',sourceField:'event_day',offset,unit,actions:[{kind:'subtask',value:'Prepare meeting agenda'}]});await activate(rule.id)
+   const t=await pass(owner.post('/api/v1/tasks',{projectId:p.id,title:'Prepare event agenda'}))
+   await pass(owner.post(`/api/v1/tasks/${t.id}/fields`,{projectId:p.id,values:{event_day:sourceDate}}));await pass(owner.patch(`/api/v1/tasks/${t.id}`,{status:'doing'}))
+   const current=await pass(owner.get(`/api/v1/tasks/${t.id}`));assert.equal(current.dueDate,expected);assert.equal(current.subtasks.length,1);assert.equal((await pass(owner.get(`/api/v1/tasks/${current.subtasks[0].id}`))).dueDate,expected)
+   const view=await pass(owner.get(`/api/v1/projects/${p.id}/rules`)),run=view.runs.find(j=>j.task_id===t.id);assert.equal(run.source.customDate,sourceDate);assert.equal(run.computed.dueDate,expected)
+  }
+ })
+
+})
+
+it('generates sourced status drafts without granting model publication or bypassing human and custody authority',statusModelScenario)

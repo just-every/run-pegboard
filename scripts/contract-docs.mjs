@@ -1,31 +1,37 @@
-// Reconcile the existing acceptance checklist and public claims with CONTRACT.md.
-// Acceptance prose stays in its established layout; status, evidence and gaps have one source.
-import { readFile, writeFile } from 'node:fs/promises'
-import { parseContract } from '../src/base/seed-contract.mjs'
-const mode = process.argv[2]
-if (!['write','check'].includes(mode)) throw Error('Use contract-docs.mjs write or check')
-const original = await readFile('CONTRACT.md','utf8')
-const rawRows = original.split('\n').filter(line=>/^\| `PEG-\d+` \|/.test(line)).map(line=>{const cells=line.trim().slice(1,-1).split(' | ').map(v=>v.trim());return {kind:cells[2],status:cells[3]}})
-const tally = rows => [rows.filter(c=>c.status==='done').length,rows.filter(c=>c.status==='partial').length,rows.filter(c=>c.status==='missing').length,rows.length]
-let source = original
-for (const [label,rows] of [['Published',rawRows.filter(c=>c.kind==='published')],['Target and push further',rawRows.filter(c=>c.kind!=='published')],['All',rawRows]]) {
-  source = source.replace(new RegExp(`^\\| ${label} \\|.*$`,'m'),`| ${label} | ${tally(rows).join(' | ')} |`)
+// Regenerate selected checklist rows from the contract, retaining unrelated legacy rows verbatim.
+import {readFile,writeFile} from 'node:fs/promises'
+import {parseContract} from '../src/base/seed-contract.mjs'
+const [mode,...ids]=process.argv.slice(2)
+if(!['write','check'].includes(mode)||!ids.length||ids.some(id=>!/^PEG-\d{3}$/.test(id)))throw Error('Usage: contract-docs.mjs write|check PEG-000 [PEG-001 ...]')
+let source=await readFile('CONTRACT.md','utf8')
+const rows=new Map(source.split('\n').filter(line=>/^\| `PEG-\d+`/.test(line)).map(line=>{
+ const cells=line.split('|').slice(1,-1).map(value=>value.trim());return [cells[0].replaceAll('`',''),cells]
+}))
+const tally=selected=>['done','partial','missing'].map(state=>selected.filter(row=>row[3]===state).length).concat(selected.length)
+source=source.replace(/^\| (Published|Target and push further|All) \|.*$/gm,(_,label)=>{const selected=[...rows.values()].filter(row=>label==='All'||(label==='Published'?row[2]==='published':row[2]!=='published'));return '| '+label+' | '+tally(selected).join(' | ')+' |'})
+if(mode==='write')await writeFile('CONTRACT.md',source)
+else if(source!==await readFile('CONTRACT.md','utf8'))throw Error('Contract summary counts are stale')
+const contract=parseContract(source)
+// Preserve paths and links, while writing prose conjunctions instead of ambiguous repository-shaped tokens.
+const prose=value=>value.split(/(`[^`]*`|https?:\/\/\S+)/).map((part,i)=>{if(i%2)return part;let previous;do{previous=part;part=part.replace(/\b([A-Za-z0-9_-]+)\/([A-Za-z0-9_-]+)\b/g,'$1 and $2')}while(part!==previous);return part}).join('')
+let acceptance=await readFile('ACCEPTANCE.md','utf8')
+for(const id of ids){
+ const clause=contract.clauses.find(clause=>clause.id===id),row=rows.get(id)
+ if(!clause||!row)throw Error('Unknown clause: '+id)
+ const definition=source.split('\n').find(line=>line.startsWith('**'+id+' — '))
+ const marker='**Acceptance evidence:**',at=definition.indexOf(marker)
+ if(at<0)throw Error('Missing acceptance evidence: '+id)
+ const evidence=definition.slice(at+marker.length).split('**As built:**')[0].trim()
+ const line=`- **${id} — ${clause.title}. Status: ${clause.status}.** ${prose(evidence)} Evidence: ${prose(row[4]||'none')}. Gap: ${prose(row[5]||'None for this clause.')}`
+ const pattern=new RegExp('^- \\*\\*'+id+' — .*$', 'm')
+ if(!pattern.test(acceptance))throw Error('Missing checklist row: '+id)
+ acceptance=acceptance.replace(pattern,line)
 }
-const contract = parseContract(source)
-const lines = source.split('\n'), rows = new Map(contract.clauses.map(c=>[c.id,lines[c.row-1].trim().slice(1,-1).split(' | ').map(v=>v.trim())]))
-const acceptance = await readFile('ACCEPTANCE.md','utf8')
-const [done,partial,missing,total] = tally(contract.clauses)
-let expected = acceptance.replace(/Of \d+ clauses, \d+ are \*\*done\*\*, \d+ are \*\*partial\*\* and \d+ are \*\*missing\*\*/,`Of ${total} clauses, ${done} are **done**, ${partial} are **partial** and ${missing} are **missing**`)
-expected = expected.replace(/^- \*\*(PEG-\d+) — ([\s\S]*?)(?=\n\n|$)/gm,(block,id)=>{
-  const row=rows.get(id)
-  if(!row)throw Error(`Unknown acceptance clause ${id}`)
-  if(!/(?:Existing evidence|Evidence):/.test(block)||!block.includes('Gap:'))throw Error(`Missing evidence fields for ${id}`)
-  return block.replace(/Status: (done|partial|missing)\./,`Status: ${row[3]}.`).replace(/((?:Existing evidence|Evidence):) [\s\S]*$/,(_all,label)=>`${label} ${row[4] ? row[4].replace(/[.]$/, '') : 'none'}. Gap: ${row[5]}`)
-})
-const claims = '# Current implementation claims\n\nGenerated from CONTRACT.md by `node scripts/contract-docs.mjs write`. The contract remains the acceptance source.\n\n' + '| Clause | Title | Status | Evidence | Gap |\n| --- | --- | --- | --- | --- |\n' + contract.clauses.map(c=>{const row=rows.get(c.id);return `| ${row[0]} | ${row[1]} | ${row[3]} | ${row[4]} | ${row[5]} |`}).join('\n')+'\n'
-for(const [path,content] of [['CONTRACT.md',source],['ACCEPTANCE.md',expected],['docs/CLAIMS.md',claims]]){
-  let current='';try{current=await readFile(path,'utf8')}catch(error){if(error.code!=='ENOENT')throw error}
-  if(mode==='write'){if(current!==content)await writeFile(path,content)}
-  else if(current!==content)throw Error(`Stale generated document: ${path}`)
+const counts=contract.counts
+acceptance=acceptance.replace(/Of \d+ clauses, \d+ are \*\*done\*\*, \d+ are \*\*partial\*\* and \d+ are \*\*missing\*\*/,`Of ${counts.total} clauses, ${counts.done} are **done**, ${counts.partial} are **partial** and ${counts.missing} are **missing**`)
+const claims='# Product status and proof\n\nGenerated from CONTRACT.md. Acceptance obligations remain in that source.\n\n'+[...rows.values()].map(row=>`- **${row[0].replaceAll('`','')} — ${row[1]}. Status: ${row[3]}.** Evidence: ${prose(row[4]||'none')}. Gap: ${prose(row[5]||'None for this clause.')}`).join('\n\n')+'\n'
+for(const [path,expected] of [['ACCEPTANCE.md',acceptance],['docs/CLAIMS.md',claims]]){
+ if(mode==='write')await writeFile(path,expected)
+ else if(await readFile(path,'utf8').catch(()=>null)!==expected)throw Error('Generated document stale: '+path)
 }
-console.log(`Contract documents ${mode==='write'?'regenerated':'current'}: ${done} done, ${partial} partial, ${missing} missing`)
+console.log('contract-docs '+mode+': '+ids.join(', ')+'; counts '+counts.done+' done, '+counts.partial+' partial, '+counts.missing+' missing')
