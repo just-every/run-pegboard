@@ -2775,7 +2775,7 @@
       "executable": false
     },
     "src/pegboard/rules/definitions.ts": {
-      "sha256": "593b0d39bec06aaef3d0049f1271b71ee2c9c1e30219761482b2ea37e89b2c2e",
+      "sha256": "84ac6a288c41da1b1da1b3128a7f8df1cf7a9566b8a21d85eb79de5b121869fe",
       "executable": false
     },
     "src/pegboard/rules/execution.ts": {
@@ -3395,7 +3395,7 @@
       "executable": false
     },
     "tests/portfolios.test.mjs": {
-      "sha256": "4152f9c91ff4d90a86dc021a8aee4fe035431adb06afba7103587b19ce1364e7",
+      "sha256": "ae437b493594de6cb26828f40a7c55c66a70d81efd4076f82fae1ca14ac76222",
       "executable": false
     },
     "tests/runtime.mjs": {
@@ -3459,7 +3459,7 @@
       "executable": false
     },
     "verification.json": {
-      "sha256": "f3ceded96331658e0b6fc35625359ce14058b7de90f246dd23b10254f737090c",
+      "sha256": "1bf7f598e9266d5297182e56eb055151273fc5c7272b1cd0fdbb7d950ae5d31a",
       "executable": false
     },
     "VERIFY-WORKFLOW.md": {

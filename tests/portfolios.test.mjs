@@ -824,7 +824,7 @@ describe('Conditional local work rules',{concurrency:false},()=>{
   const sec=await pass(owner.post(`/api/v1/projects/${q.id}/sections`,{name:'Editorial review'}))
   const move=await save(q,{name:'Editorial move',trigger:'section',sectionId:sec.id,source:'task_start',offset:2,unit:'days',ownerId:owner.id});await activate(move.id)
   const ids=[],moved=[]
-  for(let i=0;i<1;i++){
+  {const i=0
    const a=await pass(editor.post(`/api/v1/projects/${p.id}/requests`,{requestKey:`synthetic-pegboard-request-${i}`,title:'Regional print request',startDate:'2026-07-02',dueDate:'2026-07-06'})),b=await task(q);ids.push(a.id);moved.push(b.id)
    await pass(editor.post(`/api/v1/tasks/${b.id}/section`,{projectId:q.id,sectionId:sec.id}))
    const av=await pass(owner.get(`/api/v1/tasks/${a.id}`)),bv=await pass(owner.get(`/api/v1/tasks/${b.id}`))

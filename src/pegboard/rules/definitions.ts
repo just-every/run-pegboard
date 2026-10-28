@@ -51,7 +51,7 @@ export async function rulePreview(db:D1Database,actor:Actor,id:string,input:Reco
  const rev=await revision(db),rule=await loadRule(db,actor,id),config=JSON.parse(rule.definition) as Definition
  await validateRule(db,actor,rule.project_id,config)
  const sample={startDate:input.sampleDate?dateOnly(input.sampleDate):null,dueDate:input.sampleDate?dateOnly(input.sampleDate):null,customDate:input.sampleDate?dateOnly(input.sampleDate):null}
- return {rule,config,computedDate:compute(config,sample),token:await digest(['local-rule',actor.id,rev,rule]),policy:'Date-only values in America/New_York; US federal observed holidays and weekends excluded for business days. Missing source dates are visible no-ops. Weeks are seven calendar days; months clamp to the last valid day. No time shift at DST. Dependencies require separate schedule review. No outbound actions or approval decisions.'}
+ return {rule,config,computedDate:compute(config,sample),token:await digest(['local-rule',actor.id,rev,rule]),policy:'Date-only values in US Eastern time; US federal observed holidays and weekends excluded for business days. Missing source dates are visible no-ops. Weeks are seven calendar days; months clamp to the last valid day. No time shift at DST. Dependencies require separate schedule review. No outbound actions or approval decisions.'}
 }
 export async function activateRule(db:D1Database,actor:Actor,id:string,input:Record<string,any>){
  const rev=await revision(db),preview=await rulePreview(db,actor,id,{})
