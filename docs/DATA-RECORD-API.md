@@ -24,5 +24,5 @@ qualification and R2/resumable upload qualification remain with their owning
 clauses; their completion is not claimed here.
 
 The current ordinary attachment door retains its existing 524,288-byte database
-limit. PEG-082’s larger guarantees require its complete registered R2 upload
+limit. PEG-082’s and PEG-091’s larger guarantees require the complete registered R2 upload
 implementation; these custody APIs do not lower that contractual requirement.

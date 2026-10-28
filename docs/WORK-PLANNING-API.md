@@ -183,4 +183,4 @@ Reopening or adding a blocker cancels an obsolete queued transition. Read and
 dispatch check current task access, assignment, mute and timed preferences;
 predecessor identities never appear in a notice. Notice preferences live under
 `/app/settings/readiness`. This is native Inbox evidence; provider delivery and
-its timing qualification remain within PEG-037.
+its timing qualification remain within PEG-037 and PEG-097.

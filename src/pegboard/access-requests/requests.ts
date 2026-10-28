@@ -1,4 +1,4 @@
-// Access requests (PEG-083): a blind, deduplicated ask from an active member, delivered to the people who can decide it.
+// Access requests (PEG-100): a blind, deduplicated ask from an active member, delivered to the people who can decide it.
 // Requests create no share and no invitation. A private no-project task is never a target.
 import { all, batch, bound, first, forbidden, invalid, newId, now } from '../db'
 import type { RequestRow } from '../model'

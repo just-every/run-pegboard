@@ -1,6 +1,6 @@
 # Status snapshot rights requests
 
-PEG-015 remains partial. The native API tracks custody review; it cannot erase
+PEG-099 (split from PEG-015) remains partial. The native API tracks custody review; it cannot erase
 retained status snapshots or certify compliance. The recorded CT ruling is in
 [RULINGS.md](../RULINGS.md). The normal erasure preview still reports the explicit
 retained-snapshot custody blocker, and request responses always report

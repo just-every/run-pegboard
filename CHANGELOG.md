@@ -11,7 +11,7 @@ CONTRACT.md was rewritten to the RER contract standard from main `e51882460cea77
 - The carried-done audit demoted PEG-020 (a formula-response refusal not asserted in its cited files) and PEG-032 (queued sends not asserted) to partial.
 - The earlier PEG-036 judgement line ("Judged from ... `66db0c24f2180aa3edcc17a73d453c84df3c60b7`") is recorded below; the Status section keeps the later judgement at `0938de871d6a662b15d0af02fba6ba7e1d1918d9`.
 
-### Status notes moved from done rows
+### Status notes moved out of the Status table
 
 - PEG-001: None for this clause. Slack and Teams unfurls of a refused link belong to PEG-071.
 - PEG-002: None for this clause.

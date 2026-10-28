@@ -211,7 +211,7 @@
       "executable": false
     },
     "CHANGELOG.md": {
-      "sha256": "942d5eb552b76e6c91667107a85a13c87bc7259f66a85306cee0f898a0bb178c",
+      "sha256": "ab73e8f4a27c06ade80f4f97e87c02b82d2f7d509b1398fe9fc2a2e276c395b9",
       "executable": false
     },
     "CLAUDE.md": {
@@ -275,7 +275,7 @@
       "executable": false
     },
     "docs/DATA-RECORD-API.md": {
-      "sha256": "1aaf3d44df77cb33168ce75d695209a3dd0deed25bf3868be6c6d5a15e9edfdb",
+      "sha256": "d198e1965fe10513e78221631d1c64ca915cd292b0fb71501e660eee0a7e0f3e",
       "executable": false
     },
     "docs/ENGINEERING-HANDOFF.md": {
@@ -303,7 +303,7 @@
       "executable": false
     },
     "docs/RECOVERY-API.md": {
-      "sha256": "79c6ca18241ae4200088bfd902d33098e44a7f97d97a449c0723c8178d3dcf13",
+      "sha256": "26eb652518f022ba9eb1fa136c9368d00ab198e5673cd1f11f3a7637da3bc4ed",
       "executable": false
     },
     "docs/STATUS-API.md": {
@@ -311,7 +311,7 @@
       "executable": false
     },
     "docs/STATUS-RIGHTS.md": {
-      "sha256": "91d8f8338847e093037e61b93b3e86c7cee35f45808e69debf20a0317f704375",
+      "sha256": "5a73d897321f44741c8decd01c5fbaa737ea9fc6b81a971b02a7385147c46d9d",
       "executable": false
     },
     "docs/TIME-SERVICE-PACKETS.md": {
@@ -319,7 +319,7 @@
       "executable": false
     },
     "docs/WORK-PLANNING-API.md": {
-      "sha256": "06dd0420e2654db6ff69729acedb966be03f3c09ad67c2c0907d85670494ccf6",
+      "sha256": "a7f2bbc117edc816274f34f1e4939925667aa371a8171e48b18a4e8c34487adf",
       "executable": false
     },
     "edition.json": {
@@ -2287,7 +2287,7 @@
       "executable": false
     },
     "src/pegboard/access-requests/requests.ts": {
-      "sha256": "7b52cf3b2fb5778205f4b04d764602856399e59025ffe41a7b1e4405acbea24d",
+      "sha256": "8c769085ed0979c0ed147e9fd3ad6efcf15f91050b44b21f4f28051eaf057f21",
       "executable": false
     },
     "src/pegboard/admin/departure/removal.ts": {
