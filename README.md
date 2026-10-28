@@ -38,7 +38,7 @@ uses the guarded `.github/workflows/run-site.yml` independently of Verify.
 
 ## Development
 
-This checkout pins the published `@runeditrun/rer` package at 0.2.79, Node
+This checkout pins the published `@runeditrun/rer` package at 0.2.85, Node
 22.20.0 and pnpm 10.12.4. Run `rer check`, `pnpm run build`,
 `pnpm run typecheck` and `pnpm run test:runtime`.
 The verification workflow runs the product API tests and browser journeys as
