@@ -73,7 +73,8 @@ async function submitResolvedRequest(db: D1Database, delivery: Delivery, actor: 
   }
   if (!askable || rank(held) >= rank(level)) return acknowledgment
   const id = newId('req'), at = now(), operator = await operatorRow(db, actor.id)
-  const expires = submittedAt + (await workspaceSettings(db, workspaceId)).requestExpiryDays * 86_400_000
+  // Durable project intake keeps its original deadline; synchronous receipts have an identical lifetime.
+  const expires = (type === 'project' ? submittedAt : at) + (await workspaceSettings(db, workspaceId)).requestExpiryDays * 86_400_000
   if (expires <= at) return acknowledgment
   const policyRev = target ? await policyRevOf(db, target) : -1
   const [inserted] = await batch(db, [bound(db, `INSERT INTO peg_access_requests(id,workspace_id,requester_id,requester_version,target_type,target_id,level,message,status,policy_rev,expires_at,created_at)
