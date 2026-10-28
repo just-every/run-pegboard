@@ -1,6 +1,7 @@
 // Access requests (PEG-083): a blind, deduplicated ask from an active member, delivered to the people who can decide it.
 // Requests create no share and no invitation. A private no-project task is never a target.
 import { all, batch, bound, first, forbidden, invalid, newId, now, placeholders } from '../db'
+import { portfolioLevel } from '../portfolios/portfolios'
 import type { RequestRow } from '../model'
 import { auditStatement } from '../authorization/audit'
 import { projectEffective, taskAccess, teamEffective } from '../authorization/effective'
@@ -54,7 +55,8 @@ async function submitResolvedRequest(db: D1Database, delivery: Delivery, actor: 
   if (!role || role === 'guest' || role === 'agent') return acknowledgment
   // Never a private personal task; never something already held at the level asked.
   let held: Level | null = null, askable = true
-  if (target.type === 'team') { held = (await teamEffective(db, actor, target.row)).level; askable = target.row.privacy !== 'public' }
+  if (target.type === 'portfolio') { held = await portfolioLevel(db, actor, target.row); askable = level === 'viewer' }
+  else if (target.type === 'team') { held = (await teamEffective(db, actor, target.row)).level; askable = target.row.privacy !== 'public' }
   else if (target.type === 'project') held = (await projectEffective(db, actor, target.row)).level
   else {
     const access = await taskAccess(db, actor, target.row)
