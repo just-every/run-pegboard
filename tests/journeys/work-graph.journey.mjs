@@ -1,3 +1,4 @@
+import {statusModelEdge} from '../support/status-model.mjs'
 import {publicApiJourney} from './public-api.mjs'
 import {approvalRoutingJourney} from './approval-routing.mjs'
 import {guestJourney} from './guests.mjs'
@@ -25,7 +26,8 @@ for (const name of selected) if (!journeyNames.includes(name)) throw new Error(`
 
 // Harvest and QuickBooks Time schema fakes at the network edge; every Worker below reaches them through local origins.
 const engineering = await startEngineeringServices(), meetings = await startMeetingServices()
-const services = await startTimeServices(), settings = { PEGBOARD_LOCAL_TIME_SERVICE_ORIGINS: services.origins, PEGBOARD_VECTOR_ORIGIN:'https://vector.example.com',PEGBOARD_LOCAL_ENGINEERING_ORIGINS:engineering.origins, PEGBOARD_LOCAL_MEETING_ORIGINS:meetings.origins }
+const statusModel=selected.has('portfolio')?await statusModelEdge():null
+const services = await startTimeServices(), settings = { ...(statusModel?{INSTALLATION_KEY:'synthetic-pegboard-installation-key-material-1',PEGBOARD_LOCAL_STATUS_MODEL_ORIGIN:statusModel.origin}:{}), PEGBOARD_LOCAL_TIME_SERVICE_ORIGINS: services.origins, PEGBOARD_VECTOR_ORIGIN:'https://vector.example.com',PEGBOARD_LOCAL_ENGINEERING_ORIGINS:engineering.origins, PEGBOARD_LOCAL_MEETING_ORIGINS:meetings.origins }
 let w = await startWorker({ settings })
 const browser = await chromium.launch({ headless: true, ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH?{executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH}:{}), args: ['--use-mock-keychain', '--password-store=basic', '--no-sandbox'] })
 const cookies = client => client.cookie.split('; ').map(pair => ({ name: pair.slice(0, pair.indexOf('=')), value: pair.slice(pair.indexOf('=') + 1), url: w.origin }))
@@ -915,4 +917,5 @@ try {
   await services.stop()
   await engineering.stop()
   await meetings.stop()
+  await statusModel?.close()
 }

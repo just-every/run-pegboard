@@ -1,3 +1,5 @@
+import {connectStatusModel,statusModelConnection} from '../status/model-connection'
+import {requireOwner} from '../data/settings'
 import {announcements,addAnnouncement} from '../status/announcements'
 import {generateStatusDraft} from '../status/model'
 import { createRightsRequest, listRightsRequests, readRightsRequest, actOnRightsRequest } from '../status/rights'
@@ -12,6 +14,8 @@ import { revisionComments, addRevisionComment, changeRevisionComment } from '../
 const compose = (input: Record<string,any>, form: boolean) => form ? { ...input, sourceIds: input.sourceIds ?? [], recipients: (input.recipientIds ?? []).map((id:string)=>({id,channels:input.channels ?? []})), includeSubscribers: flag(input.includeSubscribers) } : input
 const draftPage = (result:any) => `/app/${result.subjectType === 'project' ? 'projects' : 'portfolios'}/${result.subjectId}/status?draft=${result.id}`
 export function statusRoutes(app: Hono<{ Bindings: Bindings }>) {
+  app.get('/status-model',door(async({db,actor,env,workspace})=>{await requireOwner(db,actor,workspace);return statusModelConnection(db,env,workspace)}))
+  app.post('/status-model',door(({db,actor,env,workspace,input,form})=>connectStatusModel(db,actor,env,workspace,form?{...input,processorConsent:flag(input.processorConsent),disconnect:flag(input.disconnect)}:input),{next:()=>'/app/settings/status-model'}))
   app.get('/announcements/:type/:id',door(({db,actor,params})=>announcements(db,actor,params.type,params.id)))
   app.post('/announcements/:type/:id',door(({db,actor,params,input,form})=>addAnnouncement(db,actor,params.type,params.id,form?{...input,internalOnly:flag(input.internalOnly)}:input)))
   app.get('/status-rights-requests', door(({db,actor,workspace,query}) => listRightsRequests(db,actor,workspace,query.has('at') ? Date.parse(query.get('at')!) : undefined)))

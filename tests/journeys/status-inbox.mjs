@@ -77,9 +77,25 @@ export async function statusInboxJourney({ w, browser, sizes, ok }) {
   const portfolio = ok(await owner.post('/api/v1/portfolios', { name: 'Status portfolio review' }))
   ok(await owner.post(`/api/v1/portfolios/${portfolio.id}/projects`, { projectId: project.id }))
   ok(await owner.post(`/api/v1/portfolios/${portfolio.id}/members`, { operatorId: member.id, level: 'viewer' }))
-  const portfolioDraft = ok(await owner.post('/api/v1/status-drafts', { ...input, subjectType: 'portfolio', subjectId: portfolio.id, summary: 'Portfolio update reviewed', recipients: [{ id: member.id, channels: ['in_app'] },{id:guest.id,channels:['in_app']}] }))
-  const portfolioReview = ok(await owner.post(`/api/v1/status-drafts/${portfolioDraft.id}/review`, {}))
-  const portfolioRevision = ok(await owner.post(`/api/v1/status-drafts/${portfolioDraft.id}/publish`, { token: portfolioReview.token }))
+  const portfolioContext=await browser.newContext({viewport:sizes[0][1]})
+  await portfolioContext.addCookies(owner.cookie.split('; ').map(pair=>({name:pair.slice(0,pair.indexOf('=')),value:pair.slice(pair.indexOf('=')+1),url:owner.origin})))
+  let portfolioRevision
+  try {
+    const page=await portfolioContext.newPage()
+    await page.goto(`${w.origin}/app/portfolios/${portfolio.id}/status`)
+    const compose=page.getByRole('form',{name:'Compose status draft'})
+    await compose.getByLabel('Status summary').fill('Portfolio update reviewed')
+    await compose.getByLabel('Window starts').fill(input.from);await compose.getByLabel('Window ends').fill(input.to)
+    await compose.getByLabel('Reviewed launch milestone corrected',{exact:true}).check()
+    await compose.getByLabel('Status Member',{exact:true}).check();await compose.getByLabel('Status Guest',{exact:true}).check()
+    await compose.getByRole('button',{name:'Save draft',exact:true}).click()
+    await page.getByRole('link',{name:'Review exact publication',exact:true}).click()
+    await expect(page.getByRole('heading',{name:'Review exact publication',exact:true})).toBeVisible()
+    for(const [size,viewport] of sizes){await page.setViewportSize(viewport);if(process.env.PEGBOARD_PROOF_DIR)await page.screenshot({path:join(process.env.PEGBOARD_PROOF_DIR,`status-portfolio-review-${size}.png`),fullPage:true})}
+    await page.setViewportSize(sizes[0][1]);await page.getByRole('button',{name:'Approve and publish exact revision',exact:true}).click()
+    portfolioRevision=ok(await owner.get(`/api/v1/status-history/portfolio/${portfolio.id}`)).revisions[0]
+    await expect(page.getByRole('heading',{name:'Portfolio update reviewed',exact:true})).toBeVisible()
+  } finally {await portfolioContext.close()}
   const hidden = ok(await owner.post(`/api/v1/status-revisions/${revision.id}/comments`, { body: 'Internal supplier negotiation', internalOnly: true }))
   const open = async client => {
     const context = await browser.newContext({ viewport: sizes[0][1] })
@@ -201,5 +217,42 @@ export async function statusInboxJourney({ w, browser, sizes, ok }) {
     }
     assert.deepEqual(ok(await guest.get('/api/v1/status-digest')), { updates: [], notices: [] })
     ok(await owner.post(`/api/v1/grants/${memberGrant.id}/revoke`, {}))
+    const modelContext=await browser.newContext({viewport:sizes[0][1]})
+    await modelContext.addCookies(owner.cookie.split('; ').map(pair=>({name:pair.slice(0,pair.indexOf('=')),value:pair.slice(pair.indexOf('=')+1),url:owner.origin})))
+    try {
+      const page=await modelContext.newPage()
+      await page.goto(statusUrl)
+      await page.getByRole('link',{name:'Connect model',exact:true}).click()
+      await expect(page.getByText('No AI model connected',{exact:true})).toBeVisible()
+      const connection=page.getByRole('form',{name:'Connect status model'})
+      await connection.getByLabel('Exact OpenAI model').fill('synthetic-pegboard-model')
+      await connection.getByLabel('OpenAI API key').fill('synthetic-pegboard-credential-73')
+      await connection.getByLabel('Approve OpenAI to process explicitly selected status sources with training off').check()
+      await connection.getByRole('button',{name:'Connect and test model'}).click()
+      await expect(page.getByText('Configured model: synthetic-pegboard-model',{exact:true})).toBeVisible()
+      for(const [size,viewport] of sizes){await page.setViewportSize(viewport);await proof(page,'model-settings',size)}
+      const aiSource=ok(await owner.post('/api/v1/tasks',{projectId:project.id,title:'Synthetic creative proof',description:'Creative review is complete.',status:'done'}))
+      await w.sql(`UPDATE peg_tasks SET updated_at=${Date.parse('2026-10-15T12:00:00Z')} WHERE id='${aiSource.id}'`)
+      await page.setViewportSize(sizes[0][1]);await page.goto(statusUrl)
+      const request=page.getByRole('form',{name:'Request model status draft'})
+      await request.getByLabel('Draft window starts').fill('2026-10-01');await request.getByLabel('Draft window ends').fill('2026-10-31')
+      await request.getByLabel('Synthetic creative proof',{exact:true}).check()
+      await request.getByLabel('Send these selected source records to the approved model processor for this draft').check()
+      await request.getByRole('button',{name:'Generate private draft'}).click()
+      await expect(page.getByText(/Model draft from synthetic-pegboard-model, generated at version 1/)).toBeVisible()
+      const generated=ok(await owner.get(`/api/v1/status-drafts/${new URL(page.url()).searchParams.get('draft')}`))
+      assert.deepEqual(generated.recipients,[])
+      assert.ok(generated.content.highlights.includes(aiSource.id))
+      await expect(page.getByRole('link',{name:'Synthetic creative proof',exact:true})).toHaveAttribute('href',`/app/tasks/${aiSource.id}`)
+      await expect(page.getByRole('listitem').filter({has:page.getByRole('link',{name:'Synthetic creative proof',exact:true})})).toContainText('Creative review is complete.')
+      for(const [size,viewport] of sizes){await page.setViewportSize(viewport);await proof(page,'model-draft',size)}
+      await page.setViewportSize(sizes[0][1]);await page.goto(`${w.origin}/app/settings/status-model`)
+      await page.getByRole('button',{name:'Disconnect model',exact:true}).click()
+      await expect(page.getByText('No AI model connected',{exact:true})).toBeVisible()
+      const refused=await owner.post('/api/v1/status-drafts/generate',{subjectType:'project',subjectId:project.id,sourceIds:[aiSource.id],from:'2026-10-01',to:'2026-10-31',modelConsent:true})
+      assert.equal(refused.status,503)
+      ok(await owner.patch(`/api/v1/tasks/${aiSource.id}`,{title:'Ordinary task remains editable after disconnect'}))
+    } finally {await modelContext.close()}
+
   } finally { await m.context.close(); await g.context.close() }
 }

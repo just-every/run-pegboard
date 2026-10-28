@@ -4,7 +4,7 @@ import { statusModelEdge } from '../support/status-model.mjs'
 
 export async function statusModelScenario() {
   const edge=await statusModelEdge()
-  const w=await startWorker({settings:{AI_ENABLED:'true',AI_API_KEY:'synthetic-pegboard-model-1',AI_BASE_URL:edge.origin,AI_MODEL:'synthetic-pegboard-model',AI_PROCESSOR:'status-model'}})
+  const w=await startWorker({settings:{INSTALLATION_KEY:'synthetic-pegboard-installation-key-material-1',PEGBOARD_LOCAL_STATUS_MODEL_ORIGIN:edge.origin,AI_ENABLED:'true',AI_API_KEY:'synthetic-pegboard-credential-73',AI_BASE_URL:edge.origin,AI_MODEL:'synthetic-pegboard-model',AI_PROCESSOR:'status-model'}})
   const call=async(p,status=200)=>{const response=await p;assert.equal(response.status,status,JSON.stringify(response.body));return response.body}
   try {
     const owner=w.owner,member=await w.person('synthetic-pegboard-model-1'+'@'+'example.com','Model Reader'),guest=await w.person('synthetic-pegboard-model-2'+'@'+'example.com','Model Guest','guest')
@@ -49,5 +49,28 @@ export async function statusModelScenario() {
     await call(owner.post('/api/v1/status-drafts/generate',input),409)
     assert.equal((await call(owner.get(`/api/v1/status-history/project/${project.id}`))).revisions.length,1,'refused generations create no publication')
     assert.equal((await call(owner.get(`/api/v1/status-drafts/${pendingClient.id}`))).version,1,'separate client draft remains pending')
+    edge.controls.beforeReply=null
+    const config={version:0,model:'synthetic-pegboard-model',apiKey:'synthetic-pegboard-credential-73',processorConsent:true}
+    await call(member.post('/api/v1/status-model',config),403)
+    await call(owner.post('/api/v1/status-model',{...config,processorConsent:false}),400)
+    const connected=await call(owner.post('/api/v1/status-model',config))
+    assert.equal(connected.connected,true)
+    const state=await call(owner.get('/api/v1/status-model'))
+    assert.ok(!JSON.stringify(state).includes(config.apiKey),'connection reads never reveal credentials')
+    const afterConnect=await call(owner.post('/api/v1/status-drafts/generate',input))
+    assert.equal(afterConnect.generation.processor,'openai')
+    const archive=await call(owner.post('/api/portability/exports',{}),201)
+    let bytes
+    for(let part=0;part<100;part++){const progress=await call(owner.post(`/api/portability/exports/${archive.id}/advance`,{maxParts:16}));if(progress.phase==='complete'){bytes=await call(owner.get(`/api/portability/exports/${archive.id}/download`));break}}
+    assert.equal(typeof bytes,'string')
+    const archiveRows=bytes.split('\n').filter(Boolean).map(line=>JSON.parse(line)).filter(row=>row.kind==='part').flatMap(row=>row.items).filter(row=>row.kind==='row')
+    assert.ok(!bytes.includes(config.apiKey)&&!archiveRows.some(row=>row.table==='peg_status_model_connections'),'archives carry no model credential or connection authority')
+    edge.controls.beforeReply=async()=>{await call(owner.post('/api/v1/status-model',{version:connected.version,disconnect:true}))}
+    await call(owner.post('/api/v1/status-drafts/generate',input),409)
+    const beforeCalls=edge.requests.length
+    await call(owner.post('/api/v1/status-drafts/generate',input),503)
+    assert.equal(edge.requests.length,beforeCalls,'disconnect cannot fall back to the runtime credential')
+    await call(owner.post('/api/v1/status-model',config),409)
+
   } finally {await w.stop();await edge.close()}
 }

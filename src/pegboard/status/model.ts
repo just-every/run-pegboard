@@ -1,3 +1,4 @@
+import {statusModelConnection,statusModelRuntime} from './model-connection'
 import { AiError, aiConfig, createAiClient } from '../../modules/ai/index.mjs'
 import type { Bindings } from '../../auth.server'
 import { batch, bound, conflict, first, forbidden, invalid, now, PegError } from '../db'
@@ -5,11 +6,7 @@ import { epoch, auditStatement } from '../authorization/audit'
 import { workspaceRole, type Actor } from '../workspace/people'
 import { readDraft, saveDraft, statusAccess, statusSources } from './drafts'
 
-type Runtime = Bindings & { AI_ENABLED?: string; AI_MODEL?: string; AI_API_KEY?: string; AI_BASE_URL?: string; AI_PROCESSOR?: string }
-export function statusModelState(bindings: Bindings) {
-  const env = bindings as Runtime
-  return {connected:env.AI_ENABLED === 'true' && !!env.AI_MODEL && !!(env.AI_API_KEY || env.RER_MODELS_KEY),model:env.AI_MODEL ?? null,connectHref:'/app/data'}
-}
+export const statusModelState = statusModelConnection
 const day = (value: unknown) => {
   if(typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value) || !Number.isFinite(Date.parse(value)) || new Date(value).toISOString().slice(0,10) !== value) throw invalid('status_window')
   return value
@@ -20,8 +17,9 @@ async function policy(db:D1Database,workspace:string,processor:string) {
 }
 /** A requested inference can save only a private draft. Publication always uses the human review door. */
 export async function generateStatusDraft(db:D1Database,actor:Actor,bindings:Bindings,input:Record<string,any>) {
-  const env = bindings as Runtime, state = statusModelState(bindings)
   const {workspace} = await statusAccess(db,actor,input.subjectType,input.subjectId,true)
+  const seen=await epoch(db)
+  const env=await statusModelRuntime(db,bindings,workspace),state=await statusModelState(db,bindings,workspace)
   if(!['owner','admin','manager','member'].includes(await workspaceRole(db,actor.id,workspace) ?? '')) throw forbidden('human_status_request_required')
   if(!state.connected) throw new PegError(503,'status_model_not_connected',{message:'No AI model connected',connectHref:state.connectHref})
   if(input.modelConsent !== true) throw forbidden('status_model_source_consent_required')
@@ -34,7 +32,9 @@ export async function generateStatusDraft(db:D1Database,actor:Actor,bindings:Bin
   if(captured.some(source=>{const date=new Date(source.updatedAt).toISOString().slice(0,10);return date < from || date > to})) throw invalid('status_source_outside_window')
   // Known disputed sources must not leave the installation during custody review.
   for(const source of captured) if(await first(db,`SELECT 1 FROM peg_status_rights_requests q WHERE q.workspace_id=? AND ((q.target_type='task' AND q.target_id=?) OR (q.target_type='person' AND q.target_id=?) OR (q.target_type='project' AND EXISTS(SELECT 1 FROM peg_task_projects p WHERE p.task_id=? AND p.project_id=q.target_id)))`,workspace,source.id,actor.id,source.id)) throw conflict('status_rights_custody_review')
-  const seen=await epoch(db), config=aiConfig({...env,MODELS_SERVICE:env.RER_MODELS_SERVICE,MODELS_KEY:env.RER_MODELS_KEY})
+  if(seen !== await epoch(db)) throw conflict('stale_status_model_sources')
+  await policy(db,workspace,processor)
+  const config=aiConfig({...env,MODELS_SERVICE:env.RER_MODELS_SERVICE,MODELS_KEY:env.RER_MODELS_KEY})
   const properties = {health:{type:'string',enum:['on_track','at_risk','off_track']},summary:{type:'string'},assertions:{type:'array',items:{type:'object',additionalProperties:false,required:['section','text','sourceIds'],properties:{section:{type:'string',enum:['highlights','risks','decisions','nextSteps']},text:{type:'string'},sourceIds:{type:'array',items:{type:'string'}}}}}}
   let result:any
   try {

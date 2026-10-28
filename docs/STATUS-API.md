@@ -77,10 +77,10 @@ adds a new recipient. Muting suppresses all discussion notices; an explicit ment
 can notify an unfollowed recipient who has not muted the revision. Notices retain
 the exact revision and comment link, omit internal comments for guests, disappear
 from the recipient's feed after revocation and omit deleted comments. Editing a
-comment does not leave stale body text in a notice. Native notice availability
-does not claim an Inbox screen, digest, external channel delivery or human read.
-Those screens, queued channel notifications, digests and authenticated inbound
-replies remain outstanding acceptance work.
+comment does not leave stale body text in a notice. The native Inbox and authenticated digest show current authorized publication
+and discussion content. That availability does not claim external delivery or a
+human read. Queued channel notifications, outbound digests and authenticated
+inbound replies remain outstanding acceptance work.
 
 The existing owner erasure preview reports
 `review_status_snapshot_custody_before_erasure` when cited task or project work,
@@ -166,3 +166,21 @@ safe per-recipient destination. A qualified receiving integration under PEG-080
 must establish current audience authority and authenticated reply identity before
 this status path can claim that boundary. No connected-provider or delivery result
 is inferred from a native Inbox read.
+
+## Model Settings and credential custody
+
+The Connect model link opens Settings. An installation owner supplies an exact
+OpenAI model and credential, explicitly approves selected-source processing with
+training off, and runs one connection test without work content. A successful test
+saves an installation-bound encrypted credential. State reads never reveal it.
+Ordinary members can see connection state and ask the owner to repair it; they
+cannot configure, test or disconnect the installation's credential.
+
+Disconnect clears the stored credential and disables inference without falling
+back to runtime credentials. A changed connection invalidates an inference already
+in progress. Every use requires the configuring owner to remain active and current.
+Archives omit connection records entirely. An installation-key rotation requires
+owner reconnection rather than silently using another processor. Operator-provided
+runtime configuration remains supported until an owner chooses an explicit
+connection or disconnect. The remaining shared entry points and their budgets
+still belong to PEG-055 and PEG-074.

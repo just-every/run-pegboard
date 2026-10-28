@@ -1,3 +1,4 @@
+import {randomBytes} from 'node:crypto'
 // Explicit held-credential qualification; never selected by ordinary push Verify.
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
@@ -18,18 +19,20 @@ const transport=createServer(async(request,response)=>{
   } catch {response.writeHead(502,{'content-type':'application/json'}).end(JSON.stringify({error:{code:'qualification_transport_unavailable'}}))}
 })
 await new Promise(resolve=>transport.listen(0,'127.0.0.1',resolve))
-const w=await startWorker({settings:{AI_ENABLED:'true',AI_API_KEY:process.env.AI_API_KEY,AI_MODEL:process.env.AI_MODEL,AI_PROCESSOR:'status-model',AI_BASE_URL:`http://127.0.0.1:${transport.address().port}/v1`}})
+const w=await startWorker({settings:{INSTALLATION_KEY:randomBytes(32).toString('hex'),AI_ENABLED:'false',PEGBOARD_LOCAL_STATUS_MODEL_ORIGIN:`http://127.0.0.1:${transport.address().port}/v1`}})
 const call=async(p,status=200)=>{const result=await p;assert.equal(result.status,status,JSON.stringify(result.body));return result.body}
 try {
   const owner=w.owner,member=await w.person('synthetic-pegboard-model-3'+'@'+'example.com','Internal Status Reviewer')
+  const guest=await w.person('synthetic-pegboard-model-4'+'@'+'example.com','Client Status Reader','guest')
+  await call(owner.post('/api/v1/status-model',{version:0,model:process.env.AI_MODEL,apiKey:process.env.AI_API_KEY,processorConsent:true}))
   const portfolio=await call(owner.post('/api/v1/portfolios',{name:'Agency launch portfolio'})),projects=[],sources=[]
   const work=[['Creative review','Final creative is approved. The creative review is complete.','done'],['Venue contract','The venue contract is unsigned. Missing signature is a delivery risk.','todo'],['Launch decision','The client has not approved a final launch date. Next step is a human decision.','todo']]
   for(const [title,description,status] of work) {
     const project=await call(owner.post('/api/v1/projects',{name:title,visibility:'workspace'}));projects.push(project)
     await call(owner.post(`/api/v1/portfolios/${portfolio.id}/projects`,{projectId:project.id}))
-    sources.push(await call(owner.post('/api/v1/tasks',{projectId:project.id,title,description,status})))
+    await call(owner.post('/api/v1/grants',{objectType:'project',objectId:project.id,granteeId:guest.id,level:'commenter'}))
+    sources.push({...await call(owner.post('/api/v1/tasks',{projectId:project.id,title,description,status})),title,description,status})
   }
-  await call(owner.post('/api/v1/data/processors',{processor:'status-model',approved:true,sharing:true,training:false,confirm:true}))
   await w.sql(`UPDATE peg_tasks SET updated_at=${Date.parse('2026-10-15T12:00:00Z')} WHERE id IN (${sources.map(source=>`'${source.id}'`).join(',')})`)
   await call(owner.post(`/api/v1/portfolios/${portfolio.id}/members`,{operatorId:member.id,level:'viewer'}))
   const receipts=[]
@@ -49,9 +52,10 @@ try {
     assert.equal(replay.id,published.id)
     const revision=await call(owner.get(`/api/v1/status-revisions/${published.id}`))
     assert.equal(revision.reviewedBy,owner.id);assert.equal(revision.content.highlights,'The creative review is complete; final creative is approved.')
-    const clientDraft=await call(owner.post('/api/v1/status-drafts',{...edited.content,subjectType:type,subjectId:id,sourceIds:selected.map(source=>source.id),recipients:[]}))
+    const clientDraft=await call(owner.post('/api/v1/status-drafts',{...edited.content,subjectType:type,subjectId:id,sourceIds:selected.map(source=>source.id),recipients:[{id:guest.id,channels:['in_app']}]}))
     assert.equal((await call(owner.get(`/api/v1/status-drafts/${clientDraft.id}`))).version,1)
     assert.equal((await call(owner.get(`/api/v1/status-history/${type}/${id}`))).revisions.length,1)
+    assert.deepEqual((await call(guest.get('/api/v1/status-inbox'))).updates,[],'client version remains pending exact human publication')
     assert.ok((await call(member.get('/api/v1/status-inbox'))).updates.some(update=>update.id===published.id))
     receipts.push({subjectType:type,model:draft.generation.model,processor:draft.generation.processor,window:[draft.content.from,draft.content.to],sourceFacts:selected.map(source=>({id:source.id,title:source.title,description:source.description,status:source.status})),generated:draft.content,assertions,usage:JSON.parse(draft.generation.usage),humanPublished:true,replayOnce:true,clientPending:true})
   }
