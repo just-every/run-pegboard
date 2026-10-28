@@ -199,7 +199,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "fb62939833e2b0899c67eed2ffc84b8c1091b1db3bd0dee8fbba1c53b60951c1",
+      "sha256": "f67c02dacbf9ad9fc7634922390844380a375fc1a39aab4ff58038943dc66c8e",
       "executable": false
     },
     "AGENTS.md": {
@@ -211,7 +211,7 @@
       "executable": false
     },
     "CHANGELOG.md": {
-      "sha256": "ab73e8f4a27c06ade80f4f97e87c02b82d2f7d509b1398fe9fc2a2e276c395b9",
+      "sha256": "cf3630ec43639a0bc3d8ea8159ad959f2c988b35f7afef071b2f7f68d0f3cff3",
       "executable": false
     },
     "CLAUDE.md": {
@@ -219,7 +219,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "846537e0cd0cac01ed8333a5836e8a8a5db5306168a7bc916a053a800a85802e",
+      "sha256": "b5844cd3a1d9663f5c48f925447d7b5e48ae403187ff1f8b0ebf90e9d920bf78",
       "executable": false
     },
     "DEMO.md": {
@@ -259,15 +259,15 @@
       "executable": false
     },
     "docs/contract/COVERAGE.json": {
-      "sha256": "42d949bcd2ad7a527b784a17a71fc43d57d728fab82bfc207f08c764f40ef110",
+      "sha256": "083caa782f277dc1b3f1e49ccd7a660b42b66c0d30bc6b159f8552b9e2a7c990",
       "executable": false
     },
     "docs/contract/DONE-AUDIT.md": {
-      "sha256": "7b61bf00760efe114a6973875c740518d16ec62ca34e97ee306f589fad30b485",
+      "sha256": "c00914e46c696d67c8e1f9554e18c51844eca93fdce974edb5d1b8589aa95247",
       "executable": false
     },
     "docs/contract/ID-MAP.json": {
-      "sha256": "b693ae46d0f86bd1ed76a08d3499c74bbef71c35c06c8a6a1837fe63e2960db4",
+      "sha256": "e423f2de9c9c78edf1da995e5e579445a16837a36e2b8d106441dbd2df9c0173",
       "executable": false
     },
     "docs/DATA-CUSTODY.md": {
@@ -2459,7 +2459,7 @@
       "executable": false
     },
     "src/pegboard/approvals/routing.ts": {
-      "sha256": "393cfb7d139fb377fec526bf758f9410618ac0a28b816d270b72aa8f5cd61638",
+      "sha256": "d75e75c97593ff6e91f379d2bc4625da2dcebc60ac9d47db082f09a8504d7603",
       "executable": false
     },
     "src/pegboard/audit/metadata.ts": {
@@ -3307,7 +3307,7 @@
       "executable": false
     },
     "tests/journeys/approval-routing.mjs": {
-      "sha256": "ba2304586e61e22c421c723558c08a617fe58ee3d7a871d8da6be3956f22515a",
+      "sha256": "e315a56821ebef5366b218150978be3681e3fcff7fb2e671cf2e86f4b81980b7",
       "executable": false
     },
     "tests/journeys/conversion-hierarchy.mjs": {
@@ -3439,7 +3439,7 @@
       "executable": false
     },
     "tests/work-graph.test.mjs": {
-      "sha256": "7e968f61f49ceeb97c5709cc7c4063b1492a159d06eb39f9ac89d364ad29ed85",
+      "sha256": "8ec5bd132c0c4eea7843dacdcf0cf3e420eb2b4fc380e364f4f0893ec25f09e9",
       "executable": false
     },
     "tsconfig.json": {

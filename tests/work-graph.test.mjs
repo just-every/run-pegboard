@@ -2305,6 +2305,27 @@ describe('Approval routing custody', {concurrency:false},()=>{
  assert.equal(withdrawalHistory.length,1,'withdrawing sign-off writes one reopening entry');assert.equal(withdrawalHistory[0].actor,root.name,'withdrawal reopening names the actual writer')
  const again=await view(root,reopened);assert.equal((await root.post(`/api/v1/approvals/${reopened.id}/change`,{action:'withdraw',token:again.token})).status,409)
  assert.deepEqual((await pass(root.get(`/api/v1/tasks/${f.task.id}`))).history,withdrawnTask.history,'repeated withdrawal creates no history')
+ for(const change of ['tags','collaborators']){
+ const changed=await fixture('task'),tag=change==='tags'?await pass(root.post('/api/v1/tags',{projectId:changed.project.id,name:'Review scope'})):null
+ const edit=present=>change==='tags'?root.post(`/api/v1/tasks/${changed.task.id}/tags`,{tagId:tag.id,remove:!present}):root.patch(`/api/v1/tasks/${changed.task.id}`,{collaborators:present?[stranger.id]:[]})
+ const config={mode:'parallel',stages:[{name:'Material review',people:[internal.id],quorum:1}]}
+ const signed=await configure(changed,config),preview=await view(internal,signed)
+ await pass(decide(internal,signed));assert.equal((await view(root,signed)).state,'approved')
+ await pass(edit(true))
+ assert.equal((await pass(root.get(`/api/v1/tasks/${changed.task.id}`))).status,'todo',`${change} reopens the signed task`)
+ assert.equal((await view(root,signed)).state,'stale',`${change} invalidates counted votes`)
+ assert.equal((await decide(internal,signed,'approve',preview)).status,403,`${change} refuses the earlier decision token`)
+ assert.deepEqual((await view(root,signed)).votes.map(v=>[v.actor_id,v.version]),[[internal.id,signed.version]],'prior votes remain attributed history')
+ await pass(edit(false))
+ assert.equal((await view(root,signed)).state,'stale',`restoring ${change} cannot resurrect prior sign-off`)
+ await pass(edit(true))
+ const fresh=await configure(changed,config)
+ assert.notEqual(fresh.version,signed.version,`${change} requires a fresh reviewed revision`)
+ await pass(decide(internal,fresh));assert.equal((await pass(root.get(`/api/v1/tasks/${changed.task.id}`))).status,'done','fresh human review can complete the changed task')
+ await pass(edit(false))
+ assert.equal((await view(root,fresh)).state,'stale',`removing ${change} invalidates the fresh votes`)
+ assert.equal((await pass(root.get(`/api/v1/tasks/${changed.task.id}`))).status,'todo',`removing ${change} reopens the task`)
+ }
  })
  it('sends a reviewed PDF-v2 reminder once through the mail seam without comments or an implicit approval and respects muted preferences',async()=>{
  const f=await fixture(),file=await pass(root.post(`/api/v1/tasks/${f.task.id}/attachments?name=synthetic-pegboard-7209.pdf`,proofDocument('Reviewed PDF v2 reminder'),{'content-type':'application/pdf'}))

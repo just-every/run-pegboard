@@ -1,4 +1,4 @@
-Carried-done audit against main `e51882460cea77b75572431eefbf465cadbdb365`.
+Carried-done audit against main `3e41cbf87796900b33fda5f9a5f0f5c87446bf58`.
 
 Every acceptance point of every clause done at that commit, one row per outcome the point names, with the line of the assertion in a file the clause's Evidence cell lists. `asserted` means that line asserts the outcome; `none` means no cited file asserts it, so the clause is partial and its Gap names the outcome; `moved` means a pointer or proof boundary left the point. Helper lines (`ok`, `pass`, `call`) assert the expected HTTP status of the call on the cited line. Points carry their old acceptance text; where standard 13 required rewording an agent sentence, the row says so.
 
@@ -155,10 +155,10 @@ Every acceptance point of every clause done at that commit, one row per outcome 
 | PEG-036 | 2 | Human identity, time and exact version on each vote | `tests/work-graph.test.mjs:2235` | asserted |
 | PEG-036 | 2 | A stale tab or replay cannot approve a replacement asset | `tests/work-graph.test.mjs:2249` | asserted |
 | PEG-036 | 2 | Other project content is not revealed | `tests/work-graph.test.mjs:2225` | asserted |
-| PEG-036 | 3 | The ordinary proof reminder is received once at its configured time | `tests/work-graph.test.mjs:2317` | asserted |
-| PEG-036 | 3 | Without a per-message review | `tests/work-graph.test.mjs:2318` | asserted |
-| PEG-036 | 4 | Only the permitted version and safe fields are identified | `tests/work-graph.test.mjs:2319` | asserted |
-| PEG-036 | 4 | The hidden internal comment is absent and the decision stays pending | `tests/work-graph.test.mjs:2322` | asserted |
+| PEG-036 | 3 | The ordinary proof reminder is received once at its configured time | `tests/work-graph.test.mjs:2338` | asserted |
+| PEG-036 | 3 | Without a per-message review | `tests/work-graph.test.mjs:2339` | asserted |
+| PEG-036 | 4 | Only the permitted version and safe fields are identified | `tests/work-graph.test.mjs:2340` | asserted |
+| PEG-036 | 4 | The hidden internal comment is absent and the decision stays pending | `tests/work-graph.test.mjs:2343` | asserted |
 | PEG-036 | 5 | A named approver on a PEG-005 approval task | `tests/work-graph.test.mjs:2261` | asserted |
 | PEG-036 | 5 | Quorum on the approval task | `tests/work-graph.test.mjs:2289` | asserted |
 | PEG-036 | 5 | A delegate decides | `tests/work-graph.test.mjs:2290` | asserted |

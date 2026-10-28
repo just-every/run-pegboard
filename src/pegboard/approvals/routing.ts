@@ -23,7 +23,19 @@ async function subject(db:D1Database,actor:Actor,kind:string,id:string){
  const opened=await openTask(db,actor,proof?.task_id??id)
  if(kind==='task'&&!await first(db,'SELECT 1 FROM peg_approval_tasks WHERE task_id=?',id))throw invalid('approval_task_required')
  const {status,completed_at,updated_at,...material}=opened.task
- const version=proof?.current_version??await digest([material,await all(db,'SELECT * FROM peg_field_values WHERE task_id=? ORDER BY field_id',opened.task.id),await all(db,'SELECT id FROM peg_comments WHERE task_id=? ORDER BY id',opened.task.id),await all(db,'SELECT id FROM peg_attachments WHERE task_id=? ORDER BY id',opened.task.id),await all(db,'SELECT id,current_version FROM peg_proofs WHERE task_id=? ORDER BY id',opened.task.id),await all(db,'SELECT * FROM peg_task_projects WHERE task_id=? ORDER BY project_id',opened.task.id),await all(db,'SELECT * FROM peg_field_definitions WHERE id IN (SELECT field_id FROM peg_field_values WHERE task_id=? UNION SELECT field_id FROM peg_project_fields WHERE project_id IN (SELECT project_id FROM peg_task_projects WHERE task_id=?)) ORDER BY id',opened.task.id,opened.task.id)])
+ const version=proof?.current_version??await digest([
+  material,
+  await all(db,'SELECT * FROM peg_field_values WHERE task_id=? ORDER BY field_id',opened.task.id),
+  await all(db,'SELECT id FROM peg_comments WHERE task_id=? ORDER BY id',opened.task.id),
+  await all(db,'SELECT id FROM peg_attachments WHERE task_id=? ORDER BY id',opened.task.id),
+  await all(db,'SELECT id,current_version FROM peg_proofs WHERE task_id=? ORDER BY id',opened.task.id),
+  await all(db,'SELECT * FROM peg_task_projects WHERE task_id=? ORDER BY project_id',opened.task.id),
+  await all(db,'SELECT * FROM peg_field_definitions WHERE id IN (SELECT field_id FROM peg_field_values WHERE task_id=? UNION SELECT field_id FROM peg_project_fields WHERE project_id IN (SELECT project_id FROM peg_task_projects WHERE task_id=?)) ORDER BY id',opened.task.id,opened.task.id),
+  await all(db,'SELECT t.* FROM peg_tags t JOIN peg_task_tags tt ON tt.tag_id=t.id WHERE tt.task_id=? ORDER BY t.id',opened.task.id),
+  await all(db,'SELECT operator_id FROM peg_task_collaborators WHERE task_id=? ORDER BY operator_id',opened.task.id),
+  // Relation generations prevent restored values from reviving an earlier sign-off.
+  await all(db,"SELECT kind,target_id,generation FROM peg_rule_link_generations WHERE task_id=? AND kind IN ('tag','collaborator') ORDER BY kind,target_id",opened.task.id),
+ ])
  if(proof&&await isRecoveryHidden(db,'proof_version',version))throw notFound()
  return {...opened,version}
 }

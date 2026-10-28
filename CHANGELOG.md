@@ -2,14 +2,14 @@
 
 ## 28 October 2026 — contract cleanup to the RER contract standard
 
-CONTRACT.md was rewritten to the RER contract standard from main `e51882460cea77b75572431eefbf465cadbdb365` with Base `contract-docs.mjs` at `0fe27af9a5cb1bd9dc5e41da024784082e609010`. Nothing was cut and no status was promoted; `docs/contract/COVERAGE.json` places every old sentence, `docs/contract/ID-MAP.json` maps every old id and `docs/contract/DONE-AUDIT.md` proves every carried done point.
+CONTRACT.md was rewritten to the RER contract standard from main `e51882460cea77b75572431eefbf465cadbdb365`, then merged onto main `3e41cbf87796900b33fda5f9a5f0f5c87446bf58` (the old reference both maps name), with Base `contract-docs.mjs` at `0fe27af9a5cb1bd9dc5e41da024784082e609010`. Nothing was cut and no status was promoted; `docs/contract/COVERAGE.json` places every old sentence, `docs/contract/ID-MAP.json` maps every old id and `docs/contract/DONE-AUDIT.md` proves every carried done point.
 
 - Oversized clauses were split into one-capability parts: PEG-012, PEG-015, PEG-037, PEG-046, PEG-047, PEG-048, PEG-055, PEG-056, PEG-061, PEG-071, PEG-074, PEG-080, PEG-081, PEG-082, PEG-083, PEG-084 and PEG-086 (new parts PEG-091 to PEG-126).
 - The acceptance conventions and the rules repeated across clauses became door rules D-1 to D-13; rulings moved to RULINGS.md (RL-1 to RL-6 from the contract, RL-101 to RL-106 from ct's ruling pass); the "As built" notes moved to `docs/contract/as-built.md`, an adopted default awaiting ct to `docs/contract/adopted-defaults.md`, and the hand-written ACCEPTANCE.md is kept as `docs/contract/acceptance-before-cleanup.md`.
 - Real-world-only proof moved to the Field proof register (R-1 to R-10); Base restatements were replaced by citations.
 - The Agent surface (SURFACE-001 to SURFACE-007) was added, and sentences that preset approval for an agent were reworded as the risk class the step carries.
 - The carried-done audit demoted PEG-020 (a formula-response refusal not asserted in its cited files) and PEG-032 (queued sends not asserted) to partial.
-- The earlier PEG-036 judgement line ("Judged from ... `66db0c24f2180aa3edcc17a73d453c84df3c60b7`") is recorded below; the Status section keeps the later judgement at `0938de871d6a662b15d0af02fba6ba7e1d1918d9`.
+- The earlier PEG-036 judgement line ("Judged from ... `66db0c24f2180aa3edcc17a73d453c84df3c60b7`") is recorded below; the Status section keeps the later PEG-036 judgement at `356a5cdc040760c51ce95c33e599606da0ee7867` (main's line read "Judged from the code and test assertions"; it now uses the standard wording).
 
 ### Status notes moved out of the Status table
 

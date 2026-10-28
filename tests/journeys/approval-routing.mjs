@@ -81,8 +81,19 @@ export async function approvalRoutingJourney({w,browser,owner,cookies}){
  if(process.env.PEGBOARD_PROOF_DIR){await mkdir(process.env.PEGBOARD_PROOF_DIR,{recursive:true});await p.screenshot({path:join(process.env.PEGBOARD_PROOF_DIR,`routing-${kind}-${name}-${width}.png`),fullPage:true})}
  }
  }
+ if(kind==='task'){
+ const tag=await ok(owner.post('/api/v1/tags',{projectId:project.id,name:'Updated campaign scope'}))
+ await ok(owner.post(`/api/v1/tasks/${task.id}/tags`,{tagId:tag.id}))
+ assert.equal((await ok(owner.get('/api/v1/tasks/'+task.id))).status,'todo')
+ await page.reload();await expect(page.getByRole('status')).toHaveText('stale')
+ await expect(page.getByRole('form',{name:'Decide routed approval'})).toHaveCount(0)
+ await capture(kind,'stale','manager',page)
+ assert.equal((await guestPage.goto(`${w.origin}/app/proof-reviews/${link.id}`)).status(),404,'changed task tags revoke the earlier guest review')
+ await ok(owner.post(`/api/v1/tasks/${task.id}/tags`,{tagId:tag.id,remove:true}))
+ await page.reload();await expect(page.getByRole('status')).toHaveText('stale')
+ }
  await page.setViewportSize({width:1440,height:900});await guestPage.setViewportSize({width:1440,height:900})
  }
- console.log('Named proof and task routing, guest decisions, quorum and delegation passed at 1440; screens captured at 1440 and 390')
+ console.log('Named proof and task routing, guest decisions, quorum, delegation and stale task refusal passed; preview, pending, approved and stale screens captured at 1440 and 390')
  }finally{await context.close();await guestContext.close()}
 }
