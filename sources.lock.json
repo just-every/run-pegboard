@@ -2863,7 +2863,7 @@
       "executable": false
     },
     "src/pegboard/access-requests/decisions.ts": {
-      "sha256": "8c52c5fe63e3bba6cdff9c20114833b6b23bce6d2e58f2b4f00c70b16619f280",
+      "sha256": "58af57271b18056f1352cc28b74ccdcac08c20fb8915e647f8067ec12373eed8",
       "executable": false
     },
     "src/pegboard/access-requests/notify.ts": {
@@ -3919,7 +3919,7 @@
       "executable": false
     },
     "tests/access-control.test.mjs": {
-      "sha256": "34410daa3bc0fa601cf63f1d166d884d12e66c88a98634ae1d63b6bb63936e8c",
+      "sha256": "fe38911751273c3409e6e390d86d4120bc98eec0b73638d4f5003d5143601f84",
       "executable": false
     },
     "tests/journeys/approval-routing.mjs": {

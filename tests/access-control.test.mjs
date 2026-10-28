@@ -123,6 +123,28 @@ describe('PEG-020 roles, grants and the decision lifecycle', { concurrency: fals
     assert.equal((await who.guest.patch(`/api/v1/projects/${B}`, { name: 'Guest-run B' })).status, 200, 'a guest Admin administers the project it was given')
   })
 
+  it('requires authority on the project chosen for a task access request', async () => {
+    const A = (await ok(owner.post('/api/v1/projects', { name: 'Alice project' }))).id
+    const B = (await ok(owner.post('/api/v1/projects', { name: 'Private project' }))).id
+    const task = await ok(owner.post('/api/v1/tasks', { title: 'Shared request target', projectId: A }))
+    await ok(owner.post(`/api/v1/tasks/${task.id}/projects`, { projectId: B }))
+    await grant(A, who.projadmin, 'admin')
+
+    await ok(who.member.post('/api/v1/access-requests', { targetId: task.id, level: 'viewer' }))
+    const request = (await waiting(who.projadmin)).find(row => row.targetId === task.id)
+    assert.ok(request)
+    assert.ok(request.scopes.some(({ label }) => label === 'Whole project: Alice project'))
+    assert.ok(!request.scopes.some(({ label }) => label.includes('Private project')))
+
+    assert.equal((await decide(who.projadmin, request, { decision: 'approve', level: 'admin', scope: `project:${B}` })).status, 403)
+    const unauthorized = (await ok(owner.get(`/api/v1/grants?objectType=project&objectId=${B}`))).grants
+    assert.ok(!unauthorized.some(grant => grant.grantee_id === who.member.id))
+
+    assert.equal((await decide(who.projadmin, request, { decision: 'approve', level: 'admin', scope: `project:${A}` })).status, 200)
+    const authorized = (await ok(owner.get(`/api/v1/grants?objectType=project&objectId=${A}`))).grants
+    assert.ok(authorized.some(grant => grant.grantee_id === who.member.id && grant.level === 'admin'))
+  })
+
   it('walks every access-request path to a grant or to nothing, with exact audit rows', async () => {
     const stage = async (name, extra = {}) => ok(owner.post('/api/v1/projects', { name, ...extra }))
     const ask = (who, targetId, level = 'viewer', message = '') => ok(who.post('/api/v1/access-requests', { targetId, level, message }))

@@ -22,6 +22,11 @@ async function standing(db: D1Database, actor: Actor, requestId: string): Promis
   return { request, target, authority }
 }
 const revisionOf = async (db: D1Database, request: RequestRow, target: Target) => stamp(JSON.stringify([request.id, request.status, request.level, request.policy_rev, await policyRevOf(db, target), request.requester_version]))
+const projectAuthority = async (db: D1Database, actor: Actor, project: Awaited<ReturnType<typeof loadProject>>, requesterId: string, level: Level) => {
+  if (!project) return false
+  const authority = await authorityOver(db, actor.id, { type: 'project', row: project }, requesterId)
+  return !!authority && authority.via !== 'fallback' && rank(level) <= rank(authority.ceiling)
+}
 
 export async function previewRequest(db: D1Database, actor: Actor, requestId: string) {
   await expireDue(db)
@@ -32,14 +37,18 @@ export async function previewRequest(db: D1Database, actor: Actor, requestId: st
   if (target.type === 'team') { name = target.row.name; readable = authority.via !== 'fallback' }
   else if (target.type === 'project') { name = target.row.name; readable = authority.via !== 'fallback' }
   else { const access = await taskAccess(db, actor, target.row); readable = access.capabilities.has('read'); name = readable ? target.row.title : null }
-  const projects = target.type === 'task' ? await all<{ id: string; name: string }>(db, 'SELECT p.id,p.name FROM peg_task_projects tp JOIN peg_projects p ON p.id=tp.project_id WHERE tp.task_id=?', target.row.id) : []
+  const projects: { id: string; name: string }[] = []
+  if (target.type === 'task' && readable && authority.ceiling !== 'viewer') {
+    for (const project of await all<{ id: string; name: string }>(db, 'SELECT p.id,p.name FROM peg_task_projects tp JOIN peg_projects p ON p.id=tp.project_id WHERE tp.task_id=?', target.row.id))
+      if (await projectAuthority(db, actor, await loadProject(db, project.id), request.requester_id, request.level)) projects.push(project)
+  }
   return {
     id: request.id, status: request.status, targetType: request.target_type, targetId: request.target_id, targetName: readable ? name : null, level: request.level, message: request.message,
     requester: authority.via === 'fallback' ? { id: requester?.id, name: requester?.display_name } : { id: requester?.id, name: requester?.display_name, email: requester?.email },
     requesterActive: requester?.status === 'active', createdAt: request.created_at, expiresAt: request.expires_at, via: authority.via,
     grantable: levels.filter(level => rank(level) <= rank(authority.ceiling)),
     // A task request proposes only the narrow task grant; a broader project grant is a separate, explicit choice.
-    scopes: target.type === 'task' ? [{ scope: 'task', label: 'This task only' }, ...(readable && authority.ceiling !== 'viewer' ? projects.map(project => ({ scope: `project:${project.id}`, label: `Whole project: ${project.name}` })) : [])] : [{ scope: request.target_type, label: request.target_type === 'team' ? 'Team membership' : 'This project' }],
+    scopes: target.type === 'task' ? [{ scope: 'task', label: 'This task only' }, ...projects.map(project => ({ scope: `project:${project.id}`, label: `Whole project: ${project.name}` }))] : [{ scope: request.target_type, label: request.target_type === 'team' ? 'Team membership' : 'This project' }],
     revision: await revisionOf(db, request, target),
   }
 }
@@ -100,6 +109,7 @@ export async function decideRequest(db: D1Database, actor: Actor, requestId: str
       const project = projectId ? await loadProject(db, projectId) : null
       const homes = await first(db, 'SELECT 1 FROM peg_task_projects WHERE task_id=? AND project_id=?', target.row.id, projectId)
       if (!project || !homes || authority.via === 'fallback') throw invalid('scope')
+      if (!await projectAuthority(db, actor, project, request.requester_id, level)) throw forbidden(level === 'admin' ? 'delegate_admin' : 'delegate')
       objectType = 'project'; objectId = projectId
     } else if (level === 'admin') throw invalid('task_level')
   }
