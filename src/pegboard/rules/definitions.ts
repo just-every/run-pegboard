@@ -45,7 +45,7 @@ export async function saveRule(db:D1Database,actor:Actor,projectId:string,input:
  const name=text(input.name,'rule_name'),existing=id?await loadRule(db,actor,id):null
  if(existing&&(existing.project_id!==projectId||Number(input.version)!==existing.version))throw conflict('rule_changed')
  const ruleId=id??newId('localrule')
- await guarded(db,rev,[existing?bound(db,'UPDATE peg_local_rules SET name=?,definition=?,version=version+1,enabled=0,activation_id=NULL,activated_by=NULL WHERE id=?',[name,JSON.stringify(d),ruleId]):bound(db,'INSERT INTO peg_local_rules(id,project_id,name,definition,created_at) VALUES(?,?,?,?,?)',[ruleId,projectId,name,JSON.stringify(d),now()]),localRuleEvent(db,{projectId,actor:actor.id,action:existing?'rule.edited':'rule.created',ruleId,version:existing?existing.version+1:1,activationId:existing?.activation_id})])
+ await guarded(db,rev,[existing?bound(db,'UPDATE peg_local_rules SET name=?,definition=?,version=version+1,enabled=0,activation_id=NULL,activated_by=NULL WHERE id=?',[name,JSON.stringify(d),ruleId]):bound(db,'INSERT INTO peg_local_rules(id,project_id,name,definition,created_at) VALUES(?,?,?,?,?)',[ruleId,projectId,name,JSON.stringify(d),now()]),localRuleEvent(db,{projectId,actor:actor.id,action:existing?'rule.edited':'rule.created',ruleId,version:existing?existing.version+1:1,previousActivationId:existing?.activation_id,previousVersion:existing?.version})])
  return {id:ruleId}
 }
 export async function rulePreview(db:D1Database,actor:Actor,id:string,input:Record<string,any>){

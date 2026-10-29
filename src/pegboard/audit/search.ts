@@ -5,7 +5,7 @@ import type { Actor } from '../workspace/people'
 
 export const permanentEvent=(db:D1Database,input:{workspace:string|null;actor:string|null;action:string;type:string;id:string;result?:string;metadata?:Record<string,unknown>})=>bound(db,'INSERT INTO peg_permanent_audit(workspace_id,at,actor_id,action,target_type,target_id,result,detail) VALUES(?,?,?,?,?,?,?,?)',[input.workspace,now(),input.actor,input.action,input.type,input.id,input.result??'success',JSON.stringify(auditMetadata(input.metadata))])
 /** Local rule receipts commit with the definition, queue or terminal work transaction. */
-export function localRuleEvent(db:D1Database,input:{projectId:string;actor:string|null;action:string;ruleId:string;version:number;activationId?:string|null;runId?:string;operationId?:string|null;eventId?:string;taskId?:string;triggerActorId?:string;activatedById?:string|null;result?:string;outcome?:string;workCount?:number}) {
+export function localRuleEvent(db:D1Database,input:{projectId:string;actor:string|null;action:string;ruleId:string;version:number;activationId?:string|null;previousActivationId?:string|null;previousVersion?:number;runId?:string;operationId?:string|null;eventId?:string;taskId?:string;triggerActorId?:string;activatedById?:string|null;result?:string;outcome?:string;workCount?:number}) {
   const {projectId,actor,action,result='success',...metadata}=input
   return bound(db,`INSERT INTO peg_permanent_audit(workspace_id,at,actor_id,action,target_type,target_id,result,detail)
     SELECT workspace_id,?,?,?,?,?,?,? FROM peg_projects WHERE id=?${input.runId?' AND EXISTS(SELECT 1 FROM peg_local_rule_runs WHERE id=?)':''}`,
