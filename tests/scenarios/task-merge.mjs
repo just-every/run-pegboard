@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import {proofDocument} from '../support/worker.mjs'
 const ok=async(p,status=200)=>{const r=await p;assert.equal(r.status,status,JSON.stringify(r.body));return r.body}
 const identity=n=>['synthetic-pegboard-'+n,'example.test'].join(String.fromCharCode(64))
 export async function mergeFixture(w){
@@ -23,7 +24,11 @@ export async function reviewedMerge(root,source,survivor){
 }
 export async function taskMergeScenario(w){
  const f=await mergeFixture(w),{root,peer,outsider,project,grant,source,survivor,next,comment1,comment2,file,edge,sheet,entry1,entry2}=f
+ const tag=await ok(root.post('/api/v1/tags',{projectId:project.id,name:'Campaign print run'}));await ok(root.post(`/api/v1/tasks/${source.id}/tags`,{tagId:tag.id}));await ok(root.patch(`/api/v1/tasks/${source.id}`,{collaborators:[root.id]}))
+ await ok(root.post('/api/v1/search/favorite',{taskId:source.id,favorite:true}));await ok(root.post('/api/v1/search/visit',{taskId:survivor.id}))
  const input={sourceId:source.id,survivorId:survivor.id},before=await ok(root.get(`/api/v1/tasks/${source.id}`)),targetBefore=await ok(root.get(`/api/v1/tasks/${survivor.id}`))
+ const child=await ok(root.post('/api/v1/tasks',{parentId:source.id,title:'Prepare print labels'})),nested=await ok(root.post('/api/v1/tasks',{parentId:child.id,title:'Inspect the barcode'})),signedChild=await ok(root.post('/api/v1/tasks',{parentId:source.id,title:'Approve print labels',kind:'approval',ownerId:peer.id}))
+ const childDecision=await ok(root.get(`/api/v1/tasks/${signedChild.id}/decision-preview`));await ok(root.post(`/api/v1/tasks/${signedChild.id}/decision`,{revision:childDecision.token,action:'approve',reason:'Reviewed the source task context'}))
  let mark=await ok(peer.post('/api/v1/task-duplicates/preview',input));await ok(peer.post('/api/v1/task-duplicates',{...input,token:mark.token}))
  assert.equal((await ok(root.get(`/api/v1/tasks/${source.id}`))).duplicate.id,survivor.id)
  assert.equal((await outsider.post('/api/v1/task-duplicates/preview',input)).status,404)
@@ -37,13 +42,14 @@ export async function taskMergeScenario(w){
  assert.equal((await ok(root.post('/api/v1/task-merges',{...reviewed,token:plan.token}))).id,merged.id,'replay returns the same operation')
  let task=await ok(root.get(`/api/v1/tasks/${source.id}`));assert.equal(task.id,survivor.id);assert.equal(task.description,'Original printer instructions');assert.equal(task.owner.id,root.id);assert.equal(task.projects[0].fields.find(f=>f.key==='print_run').value,1250)
  assert.equal((await ok(root.get('/api/v1/refs/'+before.ref))).id,survivor.id)
+ assert.deepEqual(task.tags.map(t=>t.id),[tag.id]);assert.deepEqual(task.collaborators.map(p=>p.id),[root.id]);assert.deepEqual((await ok(root.get('/api/v1/search/marks'))).favorites.map(t=>t.id),[survivor.id]);await ok(root.post('/api/v1/search/favorite',{taskId:survivor.id,favorite:false}));assert.deepEqual((await ok(root.get('/api/v1/search/marks'))).favorites,[])
  assert.equal(task.comments.find(c=>c.id===comment1.id).author,peer.name);assert.equal(task.comments.find(c=>c.id===comment1.id).sourceTaskId,source.id)
  assert.equal(task.comments.find(c=>c.id===comment2.id).author,root.name);assert.equal(task.attachments[0].id,file.id)
  assert.deepEqual(task.history.filter(h=>before.history.some(old=>old.id===h.id)).map(h=>h.id).sort(),before.history.map(h=>h.id).sort(),'original source history IDs are retained once')
  assert.equal(new Set(task.history.map(h=>h.id)).size,task.history.length)
  assert.equal(merged.time.seconds,2102);assert.deepEqual(merged.time.entries.map(e=>e.id).sort(),[entry1.id,entry2.id].sort());assert.deepEqual(merged.time.entries.map(e=>e.sourceTaskId).sort(),[source.id,survivor.id].sort())
  const dependencies=await ok(root.get(`/api/v1/tasks/${next.id}/dependencies`));assert.equal(dependencies.dependencies.find(e=>e.id===edge.id).task.id,survivor.id)
- const projectView=await ok(root.get(`/api/v1/projects/${project.id}`));assert.deepEqual(projectView.columns.flatMap(c=>c.tasks).map(t=>t.id).sort(),[survivor.id,next.id].sort())
+ const projectView=await ok(root.get(`/api/v1/projects/${project.id}`));assert.deepEqual(projectView.columns.flatMap(c=>c.tasks).map(t=>t.id).sort(),[survivor.id,next.id].sort());assert.deepEqual(task.subtasks.map(t=>t.id).sort(),[child.id,signedChild.id].sort());assert.equal((await ok(root.get(`/api/v1/tasks/${nested.id}`))).parentId,child.id);assert.equal((await ok(root.get(`/api/v1/tasks/${signedChild.id}/decision-preview`))).state,'reopened')
  assert.equal((await outsider.get(`/api/v1/tasks/${source.id}`)).status,404);assert.equal((await outsider.get(`/api/v1/task-merges/${merged.id}`)).status,404)
  await ok(root.patch(`/api/v1/tasks/${survivor.id}`,{description:'Keep the later human instruction'}))
  await ok(root.post(`/api/v1/tasks/${survivor.id}/comments`,{body:'Later independent master discussion'}))
@@ -51,6 +57,8 @@ export async function taskMergeScenario(w){
  await ok(root.post(`/api/v1/task-merges/${merged.id}/undo`,{token:undo.token}))
  task=await ok(root.get(`/api/v1/tasks/${survivor.id}`));assert.equal(task.description,'Keep the later human instruction');assert.deepEqual(task.comments.map(c=>c.body),['Master campaign conversation','Later independent master discussion']);assert.equal(task.projects[0].fields.find(f=>f.key==='print_run').value,2000)
  const restored=await ok(root.get(`/api/v1/tasks/${source.id}`));assert.equal(restored.id,source.id);assert.deepEqual(restored.comments.map(c=>c.body),['Source printer conversation','Concurrent printer correction']);assert.equal(restored.attachments[0].id,file.id);assert.equal((await ok(root.get('/api/v1/refs/'+before.ref))).id,source.id)
+ assert.deepEqual(restored.subtasks.map(t=>t.id).sort(),[child.id,signedChild.id].sort());assert.equal((await ok(root.get(`/api/v1/tasks/${signedChild.id}/decision-preview`))).state,'reopened','undo does not revive the earlier approval')
+ assert.deepEqual(task.tags,[]);assert.deepEqual(task.collaborators,[]);assert.deepEqual(restored.tags.map(t=>t.id),[tag.id]);assert.deepEqual(restored.collaborators.map(p=>p.id),[root.id])
  assert.equal((await ok(root.get(`/api/v1/timesheets/${sheet.id}`))).totalSeconds,2102)
  const personal=await ok(root.post('/api/v1/tasks',{title:'Private acquisition notes'})),privateInput={sourceId:personal.id,survivorId:survivor.id}
  assert.equal((await peer.post('/api/v1/task-merges/preview',privateInput)).status,404)
@@ -68,6 +76,15 @@ export async function taskMergeScenario(w){
  for(const id of [a.id,b.id])assert.equal((await root.get(`/api/v1/tasks/${id}`)).status,404)
  assert.equal((await root.post('/api/v1/task-merges',{...clean.input,token:clean.plan.token})).status,404)
  assert.equal((await root.get(`/api/v1/task-merges/${receipt.id}/undo-preview`)).status,404)
+ const proofSource=await ok(root.post('/api/v1/tasks',{projectId:project.id,title:'Proof source work',ownerId:peer.id})),proofSurvivor=await ok(root.post('/api/v1/tasks',{projectId:project.id,title:'Proof survivor work'})),pdf=await ok(root.post(`/api/v1/tasks/${proofSource.id}/attachments?name=synthetic-pegboard-3160.pdf`,proofDocument('Version one approved printer proof'),{'content-type':['application','pdf'].join('/')})),proof=await ok(root.post(`/api/v1/tasks/${proofSource.id}/proofs`,{attachmentId:pdf.id}))
+ const decision=await ok(root.get(`/api/v1/proofs/${proof.id}/decision-preview`)),approved=await ok(root.post(`/api/v1/proofs/${proof.id}/decisions`,{token:decision.token,versionId:proof.versionId,action:'approve',reason:'Reviewed the exact printer PDF'}))
+ let proofPlan=await reviewedMerge(root,proofSource,proofSurvivor),proofMerge=await ok(root.post('/api/v1/task-merges',{...proofPlan.input,token:proofPlan.plan.token}))
+ let conserved=await ok(root.get(`/api/v1/proofs/${proof.id}`));assert.equal(conserved.proof.current_version,proof.versionId);assert.equal(conserved.taskId,proofSurvivor.id);assert.deepEqual(conserved.decisions.map(d=>[d.id,d.version_id]),[[approved.id,proof.versionId]]);assert.equal((await ok(root.get(`/api/v1/tasks/${proofSurvivor.id}`))).status,'todo');assert.equal((await ok(root.get(`/api/v1/tasks/${proofSurvivor.id}/proofs`))).proofs.length,1)
+ assert.deepEqual((await ok(root.get('/api/v1/search?q=Proof&kind=task'))).results.map(r=>r.id),[proofSurvivor.id],'search deduplicates canonical IDs')
+ undo=await ok(root.get(`/api/v1/task-merges/${proofMerge.id}/undo-preview`));assert.equal(undo.canApply,true);await ok(root.post(`/api/v1/task-merges/${proofMerge.id}/undo`,{token:undo.token}));assert.equal((await ok(root.get(`/api/v1/proofs/${proof.id}`))).taskId,proofSource.id)
+ proofPlan=await reviewedMerge(root,proofSource,proofSurvivor);proofMerge=await ok(root.post('/api/v1/task-merges',{...proofPlan.input,token:proofPlan.plan.token}))
+ const replacement=await ok(root.post(`/api/v1/tasks/${proofSurvivor.id}/attachments?name=synthetic-pegboard-3161.pdf`,proofDocument('Version two requires a fresh decision'),{'content-type':['application','pdf'].join('/')})),v2=await ok(root.post(`/api/v1/proofs/${proof.id}/versions`,{attachmentId:replacement.id,currentVersion:proof.versionId}))
+ conserved=await ok(root.get(`/api/v1/proofs/${proof.id}`));assert.equal(conserved.state,'pending');assert.equal(conserved.proof.current_version,v2.versionId);assert.deepEqual(conserved.decisions.map(d=>d.version_id),[proof.versionId]);undo=await ok(root.get(`/api/v1/task-merges/${proofMerge.id}/undo-preview`));assert.equal(undo.canApply,false);assert.ok(undo.conflicts.some(c=>c.reason==='later_proof_work'));await ok(root.post(`/api/v1/task-merges/${proofMerge.id}/undo`,{token:undo.token}),409)
  await w.restart();assert.equal((await ok(root.get(`/api/v1/tasks/${source.id}`))).id,source.id)
  return f
 }

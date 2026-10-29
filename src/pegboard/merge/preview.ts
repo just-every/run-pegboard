@@ -9,6 +9,7 @@ import {propose} from '../schedule/graph'
 import {taskCalendars} from '../schedule/availability'
 import {toEdge} from '../schedule/dependencies'
 import type {TaskRow} from '../model'
+import {proofView} from '../records/custody'
 import type {Actor} from '../workspace/people'
 
 export const mergeFields=['title','description','owner_id','priority','status','start_date','due_date','estimate_hours','internal_notes'] as const
@@ -20,7 +21,7 @@ export function mergeChoices(input:MergeInput):Record<string,'source'|'survivor'
  return choices as Record<string,'source'|'survivor'>
 }
 export async function mergePreview(db:D1Database,actor:Actor,workspace:string,input:MergeInput){
- const rev=await revision(db),{source,survivor}=await mergePair(db,actor,workspace,String(input.sourceId??''),String(input.survivorId??'')),choices=mergeChoices(input),fields=[],unresolved:string[]=[],values:Record<string,any>={}
+ const rev=await revision(db),{source,survivor,sourceGraph,survivorGraph}=await mergePair(db,actor,workspace,String(input.sourceId??''),String(input.survivorId??'')),choices=mergeChoices(input),fields=[],unresolved:string[]=[],values:Record<string,any>={}
  for(const field of mergeFields){
   const a=source.task[field],b=survivor.task[field],different=a!==b,choice=choices[field]
   if(different&&!choice)unresolved.push(field)
@@ -54,6 +55,12 @@ export async function mergePreview(db:D1Database,actor:Actor,workspace:string,in
   if(result.shifts.length||result.cyclic.length)conflicts.push('dependency_dates_require_schedule_review')
  }
  const views=await Promise.all([viewTask(db,actor,source.task.id),viewTask(db,actor,survivor.task.id)])
- const plan={source:{id:source.task.id,title:source.task.title},survivor:{id:survivor.task.id,title:survivor.task.title},fields,custom,values,choices,unresolved,conflicts:[...new Set(conflicts)],projects:[...new Map(views.flatMap(v=>v.projects).map(p=>[p.id,{id:p.id,name:p.name,section:p.section}])).values()],comments:views.flatMap(v=>v.comments.map(c=>({...c,sourceTaskId:v.id}))),attachments:views.flatMap(v=>v.attachments.map(a=>({...a,sourceTaskId:v.id}))),dependencies:linked.map(e=>({id:e.id,from:e.predecessor_id,to:e.successor_id,type:e.type,lag:e.lag_days,removesInternal:e.predecessor_id===source.task.id&&e.successor_id===survivor.task.id||e.successor_id===source.task.id&&e.predecessor_id===survivor.task.id})),canApply:!unresolved.length&&!conflicts.length}
- return {...plan,rev,token:await digest(['merge',workspace,actor.id,rev,plan])}
+ const proofs=[]
+ for(const task of views)for(const row of await all<{id:string}>(db,'SELECT id FROM peg_proofs WHERE task_id=? ORDER BY id',task.id)){
+  const proof=await proofView(db,actor,row.id),version=proof.versions.find(v=>v.id===proof.proof.current_version)!
+  proofs.push({id:row.id,sourceTaskId:task.id,versionId:version.id,name:task.attachments.find(a=>a.id===version.attachment_id)?.name??'Reviewed attachment',state:proof.state})
+ }
+ const plan={source:{id:source.task.id,title:source.task.title},survivor:{id:survivor.task.id,title:survivor.task.title},fields,custom,values,choices,unresolved,conflicts:[...new Set(conflicts)],projects:[...new Map(views.flatMap(v=>v.projects).map(p=>[p.id,{id:p.id,name:p.name,section:p.section}])).values()],collaborators:[...new Map(views.flatMap(v=>v.collaborators).map(p=>[p.id,p])).values()],tags:[...new Map(views.flatMap(v=>v.tags).map(t=>[t.id,{id:t.id,name:t.name}])).values()],comments:views.flatMap(v=>v.comments.map(c=>({...c,sourceTaskId:v.id}))),attachments:views.flatMap(v=>v.attachments.map(a=>({...a,sourceTaskId:v.id}))),dependencies:linked.map(e=>({id:e.id,from:e.predecessor_id,to:e.successor_id,type:e.type,lag:e.lag_days,removesInternal:e.predecessor_id===source.task.id&&e.successor_id===survivor.task.id||e.successor_id===source.task.id&&e.predecessor_id===survivor.task.id})),canApply:!unresolved.length&&!conflicts.length}
+ const children=[...sourceGraph,...survivorGraph].filter(t=>t.parent_id).map(t=>({id:t.id,title:t.title,parentId:t.parent_id}))
+ return {...plan,proofs,children,rev,token:await digest(['merge',workspace,actor.id,rev,plan,proofs,children])}
 }

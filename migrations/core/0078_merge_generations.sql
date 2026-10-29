@@ -1,0 +1,5 @@
+-- Field-specific counters survive retention of the editable activity stream.
+CREATE TRIGGER peg_merge_title_generation AFTER UPDATE ON peg_tasks WHEN OLD.title IS NOT NEW.title BEGIN INSERT INTO peg_rule_mutation_generations VALUES(NEW.id,'title',1) ON CONFLICT(task_id,kind) DO UPDATE SET generation=generation+1; END;
+CREATE TRIGGER peg_merge_description_generation AFTER UPDATE ON peg_tasks WHEN OLD.description IS NOT NEW.description BEGIN INSERT INTO peg_rule_mutation_generations VALUES(NEW.id,'description',1) ON CONFLICT(task_id,kind) DO UPDATE SET generation=generation+1; END;
+CREATE TRIGGER peg_merge_estimate_generation AFTER UPDATE ON peg_tasks WHEN OLD.estimate_hours IS NOT NEW.estimate_hours BEGIN INSERT INTO peg_rule_mutation_generations VALUES(NEW.id,'estimate_hours',1) ON CONFLICT(task_id,kind) DO UPDATE SET generation=generation+1; END;
+CREATE TRIGGER peg_merge_internal_generation AFTER UPDATE ON peg_tasks WHEN OLD.internal_notes IS NOT NEW.internal_notes BEGIN INSERT INTO peg_rule_mutation_generations VALUES(NEW.id,'internal_notes',1) ON CONFLICT(task_id,kind) DO UPDATE SET generation=generation+1; END;

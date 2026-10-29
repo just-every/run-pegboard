@@ -3,6 +3,7 @@ import {openTask} from '../tasks/access'
 import {activeGrants,taskAccess} from '../authorization/effective'
 import {projectHomes,projectScope,conversionPerson} from '../conversion/context'
 import {openProject} from '../workspace/projects'
+import {conversionGraph} from '../conversion/graph'
 import type {TaskRow} from '../model'
 import type {Actor} from '../workspace/people'
 
@@ -20,7 +21,8 @@ export async function mergePair(db:D1Database,actor:Actor,workspace:string,sourc
  const source=await mergeTask(db,actor,workspace,sourceId,retained),survivor=await mergeTask(db,actor,workspace,survivorId)
  if(source.task.id===survivor.task.id)throw conflict('merge_distinct_tasks')
  const tasks=[source.task,survivor.task]
- if(tasks.some(t=>t.kind!=='task'||t.parent_id)||await first(db,'SELECT 1 FROM peg_tasks WHERE parent_id IN (?,?)',source.task.id,survivor.task.id)||await first(db,'SELECT 1 FROM peg_approval_tasks WHERE task_id IN (?,?)',source.task.id,survivor.task.id)||await first(db,'SELECT 1 FROM peg_proofs WHERE task_id IN (?,?)',source.task.id,survivor.task.id))throw conflict('ordinary_tasks_required')
+ if(tasks.some(t=>t.kind!=='task'||t.parent_id)||await first(db,'SELECT 1 FROM peg_approval_tasks WHERE task_id IN (?,?)',source.task.id,survivor.task.id))throw conflict('ordinary_tasks_required')
+ const sourceGraph=retained?[source.task]:await conversionGraph(db,actor,workspace,[source.task.id]),survivorGraph=await conversionGraph(db,actor,workspace,[survivor.task.id])
  // Equal current counts are insufficient: retain the complete granting policy.
  if(source.access.personal||survivor.access.personal){if(!source.access.personal||!survivor.access.personal||source.task.owner_id!==survivor.task.owner_id)throw conflict('merge_visibility_change')}
  else{
@@ -34,5 +36,5 @@ export async function mergePair(db:D1Database,actor:Actor,workspace:string,sourc
  }
  const grants=async(id:string)=>(await activeGrants(db,'task',id)).map(g=>JSON.stringify([g.grantee_type,g.grantee_id,g.level,g.scope,g.scopes,g.expires_at])).sort()
  if(source.task.internal_only!==survivor.task.internal_only||JSON.stringify(await grants(source.task.id))!==JSON.stringify(await grants(survivor.task.id)))throw conflict('merge_visibility_change')
- return {source,survivor}
+ return {source,survivor,sourceGraph,survivorGraph}
 }

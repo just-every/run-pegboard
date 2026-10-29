@@ -13,9 +13,9 @@ const fields = {ownerId:'owner_id',startDate:'start_date',dueDate:'due_date',pri
 type Field = typeof fields[keyof typeof fields]
 type Value = string | null
 export interface BulkInput {taskIds:string[];patch:{ownerId?:string;startDate?:string|null;dueDate?:string|null;priority?:string;status?:string};token?:unknown}
-interface Effect {effectId?:string;taskId:string;field:Field;before:Value;after:Value}
+interface Effect {effectId?:string;taskId:string;field:Field;before:Value;after:Value;beforeCompletedAt?:number|null;restoreCompletedAt?:number|null}
 interface Operation {id:string;workspace_id:string;actor_id:string;applied_at:number;task_count:number}
-interface EffectRow {id:string;operation_id:string;task_id:string;field:Field;before_value:string;after_value:string;history_id:number;task_decisions:number;proof_decisions:number;field_generation:number|null}
+interface EffectRow {id:string;operation_id:string;task_id:string;field:Field;before_value:string;after_value:string;history_id:number;task_decisions:number;proof_decisions:number;field_generation:number|null;before_completion:number|null;after_completion:number|null}
 interface UndoConflict {effectId?:string;taskId:string;field:string;reason:string}
 
 async function human(db:D1Database,actor:Actor,workspace:string) {
@@ -97,7 +97,7 @@ export async function bulkPreview(db:D1Database,actor:Actor,workspace:string,inp
   const approval=!!await first(db,'SELECT 1 FROM peg_approval_tasks WHERE task_id=?',id)
   if(approval&&local.status==='done')throw conflict('approval_decision_required')
   if(approval&&task.status==='done'&&local.status!==undefined)local.status='todo'
-  const effects=(Object.entries(local) as [Field,Value][]).filter(([field,value])=>task[field]!==value).map(([field,after])=>({taskId:id,field,before:task[field],after}))
+  const effects=(Object.entries(local) as [Field,Value][]).filter(([field,value])=>task[field]!==value).map(([field,after])=>({taskId:id,field,before:task[field],after,...(field==='status'?{beforeCompletedAt:task.completed_at}:{})}))
   if(!schedule&&effects.some(effect=>effect.field==='start_date'||effect.field==='due_date')&&await dependency(db,id))conflicts.push({taskId:id,field:effects.find(effect=>effect.field==='start_date'||effect.field==='due_date')!.field,reason:'dependency_cascade_requires_review'})
   const start=local.start_date===undefined?task.start_date:local.start_date,due=local.due_date===undefined?task.due_date:local.due_date
   if(start&&due&&Date.parse(start)>Date.parse(due))throw invalid('bulk_date_order')
@@ -111,7 +111,7 @@ export async function bulkPreview(db:D1Database,actor:Actor,workspace:string,inp
 function edit(db:D1Database,actor:Actor,taskId:string,effects:Effect[],at:number,reopen:boolean,kind:string,operationId:string) {
  const assignments=effects.map(effect=>`${effect.field}=?`),args:Param[]=effects.map(effect=>effect.after)
  const status=effects.find(e=>e.field==='status')
- if(status){assignments.push('completed_at=?');args.push(status.after==='done'?at:null)}
+ if(status){assignments.push('completed_at=?');args.push(status.after==='done'?(status.restoreCompletedAt===undefined?at:status.restoreCompletedAt):null)}
  if(reopen)assignments.push("status='todo'",'completed_at=NULL')
  return [reopenGuard(db,taskId,actor.id,kind),bound(db,`UPDATE peg_tasks SET ${assignments.join(',')},updated_at=? WHERE id=?`,[...args,at,taskId]),
   historyStatement(db,taskId,null,actor.id,kind,{...Object.fromEntries(effects.map(effect=>[effect.field,{from:effect.before,to:effect.after}])),operationId})]
@@ -121,7 +121,7 @@ export async function prepareBulkEffects(db:D1Database,actor:Actor,workspace:str
  for(const task of changed){
   const decisions=await counts(db,task.id)
   statements.push(...edit(db,actor,task.id,task.effects,at,task.reopensApproval,kind,id))
-  for(const effect of task.effects)statements.push(bound(db,`INSERT INTO ${effect.field==='status'?'peg_bulk_status_effects':'peg_bulk_effects'} VALUES(?,?,?,?,?,?,(SELECT COALESCE(MAX(id),0) FROM peg_history WHERE task_id=?),?,?,COALESCE((SELECT generation FROM peg_rule_mutation_generations WHERE task_id=? AND kind=?),0))`,[newId('effect'),id,task.id,effect.field,JSON.stringify(effect.before),JSON.stringify(effect.after),task.id,decisions.task_decisions,decisions.proof_decisions,task.id,effect.field]))
+  for(const effect of task.effects)statements.push(bound(db,`INSERT INTO ${effect.field==='status'?'peg_bulk_status_effects':'peg_bulk_effects'} VALUES(?,?,?,?,?,?,(SELECT COALESCE(MAX(id),0) FROM peg_history WHERE task_id=?),?,?,COALESCE((SELECT generation FROM peg_rule_mutation_generations WHERE task_id=? AND kind=?),0)${effect.field==='status'?',?,?':''})`,[newId('effect'),id,task.id,effect.field,JSON.stringify(effect.before),JSON.stringify(effect.after),task.id,decisions.task_decisions,decisions.proof_decisions,task.id,effect.field,...effect.field==='status'?[effect.beforeCompletedAt??null,effect.after==='done'?at:null]:[]]))
   const {access}=await subject(db,actor,workspace,task.id)
   statements.push(permanentEvent(db,{workspace:access.personal?null:workspace,actor:actor.id,action:kind,type:'task',id:task.id,metadata:{id,count:task.effects.length}}))
  }
@@ -141,7 +141,7 @@ async function operation(db:D1Database,actor:Actor,workspace:string,id:string,wr
  await human(db,actor,workspace)
  const op=await first<Operation>(db,'SELECT * FROM peg_bulk_operations WHERE id=? AND workspace_id=?',id,workspace)
  if(!op)throw notFound()
- const effects=await all<EffectRow>(db,'SELECT * FROM peg_bulk_effects WHERE operation_id=? UNION ALL SELECT * FROM peg_bulk_status_effects WHERE operation_id=? ORDER BY task_id,field',id,id)
+ const effects=await all<EffectRow>(db,'SELECT *,NULL before_completion,NULL after_completion FROM peg_bulk_effects WHERE operation_id=? UNION ALL SELECT * FROM peg_bulk_status_effects WHERE operation_id=? ORDER BY task_id,field',id,id)
  const workEffects=await workEffectRows(db,id),origin=await ruleOrigin(db,id)
  if(origin&&origin.work_count!==workEffects.length)throw notFound()
  const taskIds=[...new Set([...effects.map(effect=>effect.task_id),...workEffects.map(effect=>effect.taskId)])]
@@ -162,6 +162,7 @@ export async function undoBulkPreview(db:D1Database,actor:Actor,workspace:string
    let reason:string|null=null
    if(current.task_decisions!==effect.task_decisions||current.proof_decisions!==effect.proof_decisions)reason='later_human_decision'
    else if(effect.field==='status'&&before==='done'&&await first(db,'SELECT 1 FROM peg_approval_tasks WHERE task_id=?',task.id))reason='approval_decision_required'
+   else if(effect.field==='status'&&before==='done'&&effect.before_completion===null)reason='previous_completion_unavailable'
    else if(task[effect.field]!==after)reason='later_field_value'
    else if(effect.field_generation!==null&&effect.field_generation!==((await first<{generation:number}>(db,'SELECT generation FROM peg_rule_mutation_generations WHERE task_id=? AND kind=?',task.id,effect.field))?.generation??0))reason='later_field_edit'
    else if(history.some(row=>row.id>effect.history_id&&Object.prototype.hasOwnProperty.call(JSON.parse(row.detail),effect.field)))reason='later_field_edit'
@@ -170,7 +171,7 @@ export async function undoBulkPreview(db:D1Database,actor:Actor,workspace:string
     try{await replacement(db,actor,task,before!)}catch(error){if(error instanceof PegError&&[400,403,404,409].includes(error.status))reason='previous_owner_unavailable';else throw error}
    }
    if(reason)conflicts.push({effectId:effect.id,taskId:task.id,field:effect.field,reason})
-   else restored.push({effectId:effect.id,taskId:task.id,field:effect.field,before:after,after:before})
+   else restored.push({effectId:effect.id,taskId:task.id,field:effect.field,before:after,after:before,...effect.field==='status'?{restoreCompletedAt:effect.before_completion}:{}})
   }
   // Restoring one date beside a newer, preserved date must not invert the interval.
   const selected=restored.filter(effect=>effect.taskId===task.id)
