@@ -635,7 +635,7 @@
       "executable": false
     },
     "package.json": {
-      "sha256": "1c70df8c86a388f8dbd2d051f119d51226c9741a720e99321d241ab0ccac3962",
+      "sha256": "ad8a796334f5367059065116f0ce44c3a7eaa6ea5377f38c4a180be19e0f3b47",
       "executable": false
     },
     "packaging.json": {
@@ -3031,7 +3031,7 @@
       "executable": false
     },
     "src/pegboard/api/index.ts": {
-      "sha256": "9f18711ba70071ed81b1f15c9f20616cddcd3bc5090ba3ae8b103489871bf86a",
+      "sha256": "df94b13600b799722ba52a07701d27d897a7f125795f62c461db299c0cd2c07e",
       "executable": false
     },
     "src/pegboard/api/meeting-routes.ts": {
@@ -3571,7 +3571,7 @@
       "executable": false
     },
     "src/pegboard/tasks/tasks.ts": {
-      "sha256": "f1bf75426fbd44a86fb9f1374f5327e17c38df932937e9562569c1f29967fc47",
+      "sha256": "b5dbc2f54cf3d5561cf95aa1514a7770bd9a3ace6ecf1822800b3de51c8c3d04",
       "executable": false
     },
     "src/pegboard/tasks/view.ts": {
@@ -3767,11 +3767,11 @@
       "executable": false
     },
     "src/pegboard/ui/pages/project-settings.tsx": {
-      "sha256": "cea50c0b5ad0d0f1698d9f8587375c663f5b14fbd699fb3e1be24085a0437466",
+      "sha256": "ccf7c55bc469ba440ebc02e3744e6d741bbf3d20c7ef3458a0663471d1c41139",
       "executable": false
     },
     "src/pegboard/ui/pages/project.tsx": {
-      "sha256": "a88f1df0df316fb030d3f89e4418aaf521b53aa6a2174fdd1cc0c5759297a1d2",
+      "sha256": "328b3d411a0d1866bc0c7c53d5bcc64ee1ef9b87ee9fd632989319e2d57ccdb7",
       "executable": false
     },
     "src/pegboard/ui/pages/projects.tsx": {
@@ -3855,7 +3855,7 @@
       "executable": false
     },
     "src/pegboard/ui/routes.ts": {
-      "sha256": "1f3284486e6c8e71e7e012244a6b662e6b70056a157c7b6db7eeac7594e88d03",
+      "sha256": "97c406609ec440df91a2eeb6a8ef85c70fbeb2e80338a920412fc253c046ea20",
       "executable": false
     },
     "src/pegboard/ui/schedule-editor.tsx": {
@@ -4143,7 +4143,7 @@
       "executable": false
     },
     "tests/journeys/work-graph.journey.mjs": {
-      "sha256": "9048bcc51294a487331d08d983b24ffe669fbd7ee187076307994177a2a92add",
+      "sha256": "dc14c026dde6541fae923070f0f6c34618f3be5d7079b908daf22b7e18907f05",
       "executable": false
     },
     "tests/journeys/work-rules.mjs": {
@@ -4231,7 +4231,7 @@
       "executable": false
     },
     "tests/work-graph.test.mjs": {
-      "sha256": "dc98902858706f54ad2b3b76de52a54645c59ead9ba68daadb76ca75b0253f01",
+      "sha256": "17cd9b174ba6dbe76a14150ea9ee53235e54e534f225c4594b47007a98456f68",
       "executable": false
     },
     "tsconfig.json": {

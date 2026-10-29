@@ -1,0 +1,136 @@
+import assert from 'node:assert/strict'
+import { mkdir } from 'node:fs/promises'
+import { join } from 'node:path'
+import { expect } from '@playwright/test'
+
+export async function workViewsJourney({w,browser,ok}) {
+ const pass=async(request,status=200)=>ok(await request,status),owner=w.owner
+ const editor=await w.person(['synthetic-pegboard-3011','example.com'].join('@'),'Mia Production')
+ const guest=await w.person(['synthetic-pegboard-3012','example.com'].join('@'),'Gus Client','guest')
+ const project=await pass(owner.post('/api/v1/projects',{name:'Summer launch production'}))
+ const grant=await pass(owner.post('/api/v1/grants',{objectType:'project',objectId:project.id,granteeId:editor.id,level:'editor'}))
+ const guestGrant=await pass(owner.post('/api/v1/grants',{objectType:'project',objectId:project.id,granteeId:guest.id,level:'viewer'}))
+ const doing=await pass(owner.post(`/api/v1/projects/${project.id}/sections`,{name:'In production',mapsTo:'doing'}))
+ const field=await pass(owner.post(`/api/v1/projects/${project.id}/fields`,{key:'client_units',label:'Client units',type:'number'}))
+ const hiddenField=await pass(owner.post(`/api/v1/projects/${project.id}/fields`,{key:'margin',label:'Internal margin',type:'number',visibility:'internal'}))
+ const tasks=[]
+ for(const [index,title] of ['Hero photography','Packaging review','Retail handoff','Press preview'].entries()) tasks.push(await pass(owner.post('/api/v1/tasks',{projectId:project.id,title,ownerId:editor.id,startDate:'2026-07-06',dueDate:index===1?'2026-07-08T14:00:00.000Z':'2026-07-09',estimateHours:index+1})))
+ const privateTask=await pass(owner.post('/api/v1/tasks',{projectId:project.id,title:'Internal pricing negotiation',internalOnly:true,dueDate:'2026-07-09'}))
+ await pass(owner.post(`/api/v1/tasks/${tasks[0].id}/fields`,{projectId:project.id,values:{client_units:7,margin:913}}))
+ const contexts=[]
+ const open=async client=>{
+  const context=await browser.newContext({viewport:{width:1440,height:900}});contexts.push(context)
+  await context.addCookies(client.cookie.split('; ').map(pair=>({name:pair.slice(0,pair.indexOf('=')),value:pair.slice(pair.indexOf('=')+1),url:w.origin})))
+  return {context,page:await context.newPage()}
+ }
+ const a=await open(owner),b=await open(editor),g=await open(guest)
+ const path=`${w.origin}/app/projects/${project.id}`
+ const proof=async(name,page)=>{
+  if(!process.env.PEGBOARD_PROOF_DIR)return
+  await mkdir(process.env.PEGBOARD_PROOF_DIR,{recursive:true})
+  for(const [width,height] of [[1440,900],[390,844]]){
+   await page.setViewportSize({width,height})
+   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`${name}: no page overflow at ${width}`)
+   await page.screenshot({path:join(process.env.PEGBOARD_PROOF_DIR,`work-views-${name}-${width}.png`),fullPage:true})
+  }
+  await page.setViewportSize({width:1440,height:900})
+ }
+ const ids=page=>page.locator('[data-work-row]').evaluateAll(rows=>rows.map(row=>row.dataset.workRow).sort())
+ const row=(page,id)=>page.locator(`[data-work-row="${id}"]`)
+ try {
+  // Enter from the project's ordinary public navigation and configure a reusable named view under Settings.
+  await a.page.goto(path)
+  await a.page.getByRole('link',{name:'Work views',exact:true}).click()
+  await expect(a.page.locator('[data-work-row]')).toHaveCount(5)
+  await proof('entry',a.page)
+  await a.page.getByRole('link',{name:'Saved view settings',exact:true}).click()
+  const settings=a.page.getByRole('form',{name:'Save view configuration'})
+  await settings.getByLabel('View name',{exact:true}).fill('Summer delivery plan')
+  await settings.getByLabel('Initial view',{exact:true}).selectOption('table')
+  await settings.getByLabel('Group by',{exact:true}).selectOption('owner')
+  await settings.getByLabel('Sort by',{exact:true}).selectOption('dueDate')
+  await settings.getByLabel('Due from',{exact:true}).fill('2026-07-01')
+  await settings.getByLabel('Due through',{exact:true}).fill('2026-07-31')
+  await settings.getByLabel('Client units',{exact:true}).check()
+  await settings.getByLabel('Internal margin',{exact:true}).check()
+  await settings.getByLabel('Share configuration with current project readers').check()
+  await settings.getByRole('button',{name:'Save view',exact:true}).click()
+  await a.page.waitForURL(/savedView=view_/)
+  const savedId=new URL(a.page.url()).searchParams.get('savedView')
+  await proof('settings',a.page)
+  const personal=a.page.getByRole('form',{name:'Set personal default'})
+  await personal.getByLabel('My default view').selectOption(savedId)
+  await personal.getByRole('button',{name:'Set personal default'}).click()
+  const team=a.page.getByRole('form',{name:'Set team default'})
+  await team.getByLabel('Team default view').selectOption(savedId)
+  await team.getByRole('button',{name:'Set team default'}).click()
+  const modes=['list','board','table','calendar','timeline','workload'],expected=[...tasks.map(task=>task.id),privateTask.id].sort()
+  for(const mode of modes){
+   await a.page.goto(`${path}/views?mode=${mode}&savedView=${savedId}&from=2026-07-06`)
+   await b.page.goto(`${path}/views?mode=${mode}&savedView=${savedId}&from=2026-07-06`)
+   await expect(a.page.locator('[data-live-status]')).toContainText('Live')
+   assert.deepEqual(await ids(a.page),expected,mode)
+   assert.deepEqual(await ids(b.page),expected,mode+' in second browser')
+   await expect(row(a.page,tasks[1].id).locator('[data-summary]')).toContainText('2026-07-08T14:00:00.000Z')
+   await proof(mode,a.page)
+  }
+  // Native filter and grouping controls narrow the same records, without rewriting the saved preset.
+  await b.page.goto(`${path}/views?mode=board&savedView=${savedId}&groupBy=section`)
+  await a.page.goto(`${path}/views?mode=table&savedView=${savedId}`)
+  let loads=0;a.page.on('framenavigated',frame=>{if(frame===a.page.mainFrame())loads++})
+  const move=row(b.page,tasks[0].id).getByRole('form',{name:'Move Hero photography'})
+  await move.getByLabel('Move to section').selectOption(doing.id)
+  await move.getByRole('button',{name:'Move card',exact:true}).click()
+  await expect(row(a.page,tasks[0].id).locator('[data-summary]')).toContainText('doing')
+  assert.equal((await pass(owner.get(`/api/v1/tasks/${tasks[0].id}`))).status,'doing')
+  const dates=row(a.page,tasks[0].id).getByRole('form',{name:'Change due date for Hero photography'})
+  await dates.getByLabel('Due date',{exact:true}).fill('2026-07-10')
+  await dates.getByRole('button',{name:'Preview date change'}).click()
+  await expect(a.page.locator('[data-date-preview]')).toContainText('2026-07-10')
+  assert.equal((await pass(owner.get(`/api/v1/tasks/${tasks[0].id}`))).dueDate,'2026-07-09')
+  await a.page.getByRole('form',{name:'Apply reviewed date'}).getByRole('button',{name:'Apply this change set'}).click()
+  await expect(row(b.page,tasks[0].id).locator('[data-summary]')).toContainText('2026-07-10')
+  await expect(row(a.page,tasks[0].id).locator('[data-summary]')).toContainText('2026-07-10')
+  assert.equal(loads,0,'remote and local committed edits paint without document reload')
+  await a.page.getByRole('form',{name:'Filter and group work'}).getByLabel('Status filter').selectOption('doing')
+  await a.page.getByRole('button',{name:'Show work',exact:true}).click()
+  assert.deepEqual(await ids(a.page),[tasks[0].id])
+  await a.page.goto(`${path}/views?mode=table&savedView=${savedId}`)
+  // Retain an offline draft, then reveal a concurrent committed edit and refuse stale submission.
+  await a.context.setOffline(true)
+  const edit=row(a.page,tasks[0].id).getByRole('form',{name:'Edit Hero photography'})
+  await edit.getByLabel('Title',{exact:true}).fill('Offline photography draft')
+  await edit.getByRole('button',{name:'Save task'}).click()
+  await expect(a.page.locator('[data-live-status]')).toContainText('Offline')
+  assert.equal((await pass(owner.get(`/api/v1/tasks/${tasks[0].id}`))).title,'Hero photography')
+  await proof('offline',a.page)
+  await pass(editor.patch(`/api/v1/tasks/${tasks[0].id}`,{title:'Photography approved remotely'}))
+  await a.context.setOffline(false)
+  await expect(row(a.page,tasks[0].id).locator('[data-draft-warning]')).toContainText('Photography approved remotely')
+  await expect(row(a.page,tasks[0].id).getByLabel('Title',{exact:true})).toHaveValue('Offline photography draft')
+  await row(a.page,tasks[0].id).getByRole('button',{name:'Save task'}).click()
+  assert.equal((await pass(owner.get(`/api/v1/tasks/${tasks[0].id}`))).title,'Photography approved remotely')
+  await proof('conflict',a.page)
+  await row(a.page,tasks[0].id).getByRole('button',{name:'Discard draft and refresh task'}).click()
+  await expect(row(a.page,tasks[0].id).getByLabel('Title',{exact:true})).toHaveValue('Photography approved remotely')
+  // A fresh signed-in browser consumes the persisted personal default.
+  const fresh=await w.signIn('owner',owner.name,owner.id),restored=await open(fresh)
+  await restored.page.goto(`${path}/views`)
+  await expect(restored.page.getByRole('region',{name:'Task spreadsheet'})).toBeVisible()
+  await expect(restored.page.getByLabel('Saved view',{exact:true})).toHaveValue(savedId)
+  // A shared recipient gets current permitted rows and columns, and loses open content after revocation.
+  await g.page.goto(`${path}/views?mode=table&savedView=${savedId}`)
+  assert.deepEqual(await ids(g.page),tasks.map(task=>task.id).sort())
+  const html=await g.page.content()
+  for(const secret of ['Internal margin','Internal pricing negotiation',hiddenField.id,privateTask.id])assert.ok(!html.includes(secret),secret)
+  await expect(g.page.getByRole('columnheader',{name:'Client units',exact:true})).toBeVisible()
+  await proof('shared',g.page)
+  await pass(owner.delete(`/api/v1/grants/${guestGrant.id}`))
+  await expect(g.page.locator('#main')).toContainText('This view is no longer available')
+  assert.equal(await g.page.locator('[data-work-row]').count(),0)
+  for(const task of tasks)assert.ok(!(await g.page.content()).includes(task.id))
+  await proof('revoked',g.page)
+  assert.equal((await guest.get(`/api/v1/projects/${project.id}/work-view?view=${savedId}`)).status,404)
+  await pass(owner.delete(`/api/v1/grants/${grant.id}`))
+ } finally { for(const context of contexts)await context.close() }
+}
