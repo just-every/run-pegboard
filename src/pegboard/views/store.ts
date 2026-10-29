@@ -1,7 +1,7 @@
 import { all, bound, conflict, first, forbidden, invalid, newId, notFound, now } from '../db'
 import { guarded, revision, type Revision } from '../decisions/revision'
 import { fieldLibrary, fieldReadable, need, openProject } from '../workspace/projects'
-import { operatorRow, type Actor } from '../workspace/people'
+import { displayNames, operatorRow, type Actor } from '../workspace/people'
 import { readableTasks } from '../tasks/board'
 import { columnSet, parseConfig, pruneConfig, type ViewConfig } from './config'
 
@@ -57,8 +57,9 @@ export async function listWorkViews(db: D1Database, actor: Actor, projectId: str
     const authority = issuer && await openProject(db, issuer, projectId).catch(() => null)
     if (authority?.effective.capabilities.has('manage_settings')) teamDefaultId = team.view_id
   }
+  const names = await displayNames(db, [...owners])
   await stableRead(db, fence)
-  return { project: { id: project.id, name: project.name }, views, fields: safeDefinitions(fields), availableColumns: availableColumns(fields),
+  return { project: { id: project.id, name: project.name }, owners: [...owners].map(id => ({ id, name: names.get(id) ?? 'Former member' })), views, fields: safeDefinitions(fields), availableColumns: availableColumns(fields),
     personalDefaultId: views.some(view => view.id === personal?.view_id) ? personal!.view_id : null,
     teamDefaultId, defaultsRevision: fence.value, canSetTeamDefault: effective.capabilities.has('manage_settings') }
 }

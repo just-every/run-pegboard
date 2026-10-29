@@ -243,7 +243,12 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
     }
     if(section==='projects'&&id&&tail==='register'&&segments.length===4){const data=await board(db,actor,id);return page('Delivery register',h(RegisterPage,{viewer,view:await registerView(db,actor,id),people:await peopleOptions(db,actor,workspace),tasks:data.columns.flatMap(c=>c.tasks.map(t=>({value:t.id,label:t.title})))}))}
     if(section==='projects'&&id&&(tail==='views'&&segments.length===4||tail==='settings'&&segments[4]==='views'&&segments.length===5)) {
-      const input=Object.fromEntries(url.searchParams),options={viewId:input.savedView||undefined,mode:input.mode,status:input.status,groupBy:input.groupBy,from:input.from,days:input.days}
+      const input=Object.fromEntries(url.searchParams)
+      if (input.previousView !== undefined && input.previousView !== (input.savedView??'')) {
+        delete input.mode; delete input.status; delete input.groupBy
+      }
+      if (input.status === 'saved') delete input.status
+      const options={viewId:input.savedView||undefined,mode:input.mode,status:input.status,groupBy:input.groupBy,from:input.from,days:input.days}
       const data=await workView(db,actor,id,options)
       const body=tail==='settings'?h(ViewSettingsPage,{viewer,presets:await listWorkViews(db,actor,id),data,selected:input.savedView}):request.headers.has('x-work-view-refresh')?h(WorkViewContent,{data}):h(WorkViewPage,{viewer,data,presets:data,input})
       const response=await page('Work views',body),headers=new Headers(response.headers)

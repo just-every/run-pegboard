@@ -10,7 +10,7 @@ export function ViewSettingsPage({viewer,presets,data,selected}:{viewer:Viewer;p
   const id=presets.project.id, here=`/app/projects/${id}/settings/views`, saved=presets.views.find(view=>view.id===selected)
   const config=saved??initialConfig(), editing=!!saved?.canEdit
   const options=presets.availableColumns.map(column=>({value:column.id,label:column.label}))
-  const owners=[...new Map(data.rows.map(row=>[row.owner.id,row.owner])).values()]
+  const owners=[...presets.owners, ...config.filters.ownerIds.filter(id=>!presets.owners.some(owner=>owner.id===id)).map((id,index)=>({id,name:`Saved owner filter ${index+1}`}))]
   const defaults=(scope:'personal'|'team')=><Form action={`/api/v1/projects/${id}/work-view-defaults`} next={here} label={`Set ${scope} default`}>
     <input type="hidden" name="revision" value={presets.defaultsRevision}/><input type="hidden" name="scope" value={scope}/>
     <Pick label={scope==='personal'?'My default view':'Team default view'} name="viewId" blank="No saved default" value={scope==='personal'?presets.personalDefaultId:presets.teamDefaultId} options={presets.views.filter(view=>scope==='personal'||view.shared).map(view=>({value:view.id,label:view.name}))}/><Submit quiet>Set {scope} default</Submit>
