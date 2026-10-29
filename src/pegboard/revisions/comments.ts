@@ -7,9 +7,12 @@ import type { Actor } from '../workspace/people'
 interface CommentRow {id:string;task_id:string;project_id:string|null;author_id:string;body:string;version:number;internal_only:number;deleted_at:number|null}
 export async function openComment(db:D1Database,actor:Actor,taskId:string,id:string,write=false) {
  const opened=await openTask(db,actor,taskId)
- if(write)require(opened.access,'comment')
  const comment=await first<CommentRow>(db,'SELECT * FROM peg_comments WHERE id=? AND task_id=?',id,opened.task.id)
  if(!comment||(comment.internal_only&&opened.access.role==='guest')||(comment.project_id&&!opened.access.contexts.has(comment.project_id)))throw notFound()
+ if(write){
+  require(opened.access,'comment')
+  if(comment.project_id&&!opened.access.contexts.get(comment.project_id)?.capabilities.has('comment'))throw forbidden('comment')
+ }
  return {...opened,comment}
 }
 export async function reviseComment(db:D1Database,actor:Actor,taskId:string,id:string,input:{body?:unknown;version?:unknown;remove?:boolean}) {

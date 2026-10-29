@@ -3491,7 +3491,7 @@
       "executable": false
     },
     "src/pegboard/revisions/comments.ts": {
-      "sha256": "15845617b3c632ba922faf41f8a31c0109bd21d11e8a0164ffd5d61f5f222247",
+      "sha256": "22ae8c4aa82547afcc34b3594c4521f1da2718825be393f4eabd19bd2c887c83",
       "executable": false
     },
     "src/pegboard/revisions/field-store.ts": {
@@ -4199,7 +4199,7 @@
       "executable": false
     },
     "tests/scenarios/collaboration.mjs": {
-      "sha256": "cb71373e34ccbbfded8a0a7727e26b30c40145958592a5007a0eb8efd3865581",
+      "sha256": "18f0b0e96356e8f4fdbedd652c33386682fa1582ffbd2b2df7746f42dfec7d68",
       "executable": false
     },
     "tests/scenarios/conversions.mjs": {
