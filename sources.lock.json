@@ -3263,7 +3263,7 @@
       "executable": false
     },
     "src/pegboard/connectors/sheets/edge.ts": {
-      "sha256": "27666a41c6d55bbf3ee66c71b0ed2217159d9a51d474ce5cfcd07b92267a4a4f",
+      "sha256": "2d8d525fd7926bde8b0131cf702f5216050f907e37b351827656e73f61b3d9a0",
       "executable": false
     },
     "src/pegboard/connectors/time/delivery.ts": {
@@ -3579,7 +3579,7 @@
       "executable": false
     },
     "src/pegboard/sheets/exports.ts": {
-      "sha256": "a7ab636ada0b947833de9e540e457321170c74157070541fb36449b2c9a8ca5c",
+      "sha256": "30da2f460c5f13df8ad87a7040f6b44d11f4507645c8c0b7d136063fd476f7a3",
       "executable": false
     },
     "src/pegboard/status/comments.ts": {
@@ -4267,7 +4267,7 @@
       "executable": false
     },
     "tests/scenarios/sheets-export.mjs": {
-      "sha256": "aa608c102dd98b4a92b25932c73ff9b87c7b2fdcf6310e22e5065b2380a75097",
+      "sha256": "62e190c84eb1eed67eb6b120cb59332682abdb9eb410671a8f5cccabb3e51803",
       "executable": false
     },
     "tests/schedule.test.mjs": {
@@ -4299,7 +4299,7 @@
       "executable": false
     },
     "tests/support/sheets-service.mjs": {
-      "sha256": "e8bef07116d4c75f7ef731dc85c93188b09471f61f12e97f91a8c591c1900687",
+      "sha256": "7cb18f0e1f334dd752e26ce97325342db536158a23873180fd4aff2cb2bf9235",
       "executable": false
     },
     "tests/support/time-services.mjs": {

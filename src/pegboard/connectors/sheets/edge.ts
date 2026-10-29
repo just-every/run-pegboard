@@ -38,9 +38,9 @@ export function sheetsEdge(env: Bindings, spreadsheet: string, credential: unkno
     page = result.nextPageToken; seen.add(page)
    }
    if (!audience.length) throw new SheetsFailure(409, 'sheets_audience_unknown')
-   const book = await call(sheets, 'GET', base + '?fields=spreadsheetId,sheets(properties(sheetId,title))')
+   const book = await call(sheets, 'GET', base + '?fields=spreadsheetId,sheets(properties(sheetId,title,gridProperties(rowCount,columnCount)))')
    if (book.spreadsheetId !== spreadsheet || !Array.isArray(book.sheets) || book.sheets.some((s: any) => !Number.isInteger(s.properties?.sheetId) || typeof s.properties?.title !== 'string')) throw new SheetsFailure(503, 'sheets_schema_incomplete')
-   return { id: file.id as string, name: file.name as string, url: 'https://docs.google.com/spreadsheets/d/' + encodeURIComponent(spreadsheet) + '/edit', audience: audience.sort((a, b) => a.id.localeCompare(b.id)), tabs: (book.sheets as any[]).map((s: any) => ({ id: s.properties.sheetId as number, title: s.properties.title as string })) }
+   return { id: file.id as string, name: file.name as string, url: 'https://docs.google.com/spreadsheets/d/' + encodeURIComponent(spreadsheet) + '/edit', audience: audience.sort((a, b) => a.id.localeCompare(b.id)), tabs: (book.sheets as any[]).map((s: any) => ({ id: s.properties.sheetId as number, title: s.properties.title as string, rows: Number(s.properties.gridProperties?.rowCount ?? 0), columns: Number(s.properties.gridProperties?.columnCount ?? 0) })) }
   },
   async read(title: string, rows: number, columns: number): Promise<string[][]> {
    const end = (n: number): string => n ? end(Math.floor((n - 1) / 26)) + String.fromCharCode(65 + (n - 1) % 26) : ''
@@ -49,9 +49,11 @@ export function sheetsEdge(env: Bindings, spreadsheet: string, credential: unkno
    if (data.values !== undefined && (!Array.isArray(data.values) || data.values.some((r: any) => !Array.isArray(r) || r.some((c: any) => !['string', 'number', 'boolean'].includes(typeof c))))) throw new SheetsFailure(503, 'sheets_readback_incomplete')
    return Array.from({ length: rows }, (_, i) => Array.from({ length: columns }, (_, j) => String(data.values?.[i]?.[j] ?? '')))
   },
-  async write(sheetId: number, title: string, exists: boolean, values: string[][]) {
+  async write(sheetId: number, title: string, capacity: { rows: number; columns: number } | null, values: string[][]) {
    await call(sheets, 'POST', base + ':batchUpdate', { requests: [
-    ...(!exists ? [{ addSheet: { properties: { sheetId, title, gridProperties: { rowCount: Math.max(1000, values.length), columnCount: values[0].length } } } }] : []),
+    ...(!capacity ? [{ addSheet: { properties: { sheetId, title, gridProperties: { rowCount: Math.max(1000, values.length), columnCount: values[0].length } } } }] : []),
+    ...(capacity && values.length > capacity.rows ? [{ appendDimension: { sheetId, dimension: 'ROWS', length: values.length - capacity.rows } }] : []),
+    ...(capacity && values[0].length > capacity.columns ? [{ appendDimension: { sheetId, dimension: 'COLUMNS', length: values[0].length - capacity.columns } }] : []),
     { updateCells: { range: { sheetId, startRowIndex: 0, endRowIndex: values.length, startColumnIndex: 0, endColumnIndex: values[0].length }, rows: values.map(row => ({ values: row.map(value => ({ userEnteredValue: { stringValue: value } })) })), fields: 'userEnteredValue' } },
    ] })
   },

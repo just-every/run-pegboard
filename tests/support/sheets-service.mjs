@@ -23,7 +23,7 @@ export async function startSheetsService() {
     const records = state.unknownAudience ? [{ id: 'synthetic-pegboard-774', type: 'group', role: 'reader', emailAddress: address(774) }] : state.permissions
     return send(200, url.searchParams.get('pageToken') === 'second' ? { permissions: records.slice(1) } : { permissions: records.slice(0, 1), nextPageToken: 'second' })
    }
-   if (req.method === 'GET' && url.pathname === sheets) return send(200, { spreadsheetId, sheets: [...state.tabs.values()].map(t => ({ properties: { sheetId: t.id, title: t.title } })) })
+   if (req.method === 'GET' && url.pathname === sheets) return send(200, { spreadsheetId, sheets: [...state.tabs.values()].map(t => ({ properties: { sheetId: t.id, title: t.title, gridProperties: { rowCount: t.rows, columnCount: t.columns } } })) })
    if (req.method === 'GET' && url.pathname.startsWith(sheets + '/values/')) {
     assert.equal(url.searchParams.get('valueRenderOption'), 'UNFORMATTED_VALUE')
     const range = decodeURIComponent(url.pathname.slice((sheets + '/values/').length)), match = /^'((?:[^']|'')*)'!A1:([A-Z]+)(\d+)$/.exec(range)
@@ -36,11 +36,13 @@ export async function startSheetsService() {
     assert.deepEqual(Object.keys(body), ['requests']); assert.ok(body.requests.length >= 1)
     const tabs = structuredClone(state.tabs)
     for (const request of body.requests) {
-     if (request.addSheet) { const p = request.addSheet.properties; assert.ok(Number.isInteger(p.sheetId)); assert.ok(!tabs.has(p.sheetId)); tabs.set(p.sheetId, { id: p.sheetId, title: p.title, values: [] }); continue }
+     if (request.addSheet) { const p = request.addSheet.properties; assert.ok(Number.isInteger(p.sheetId)); assert.ok(!tabs.has(p.sheetId)); tabs.set(p.sheetId, { id: p.sheetId, title: p.title, rows: p.gridProperties.rowCount, columns: p.gridProperties.columnCount, values: [] }); continue }
+     if (request.appendDimension) { const a = request.appendDimension, tab = tabs.get(a.sheetId); assert.ok(tab); assert.ok(Number.isInteger(a.length) && a.length > 0); assert.ok(['ROWS', 'COLUMNS'].includes(a.dimension)); tab[a.dimension === 'ROWS' ? 'rows' : 'columns'] += a.length; continue }
      assert.deepEqual(Object.keys(request), ['updateCells'])
      const update = request.updateCells; assert.equal(update.fields, 'userEnteredValue'); const tab = tabs.get(update.range.sheetId); assert.ok(tab)
      assert.equal(update.range.startRowIndex, 0); assert.equal(update.range.startColumnIndex, 0)
      assert.equal(update.rows.length, update.range.endRowIndex)
+     assert.ok(update.range.endRowIndex <= tab.rows && update.range.endColumnIndex <= tab.columns, 'write fits the official Google grid')
      tab.values = update.rows.map(r => r.values.map(c => { assert.deepEqual(Object.keys(c.userEnteredValue), ['stringValue']); assert.equal(typeof c.userEnteredValue.stringValue, 'string'); return c.userEnteredValue.stringValue }))
     }
     if (state.failNextWrite) { state.failNextWrite = false; return send(503, { error: { code: 503 } }) }

@@ -3,7 +3,7 @@ import { all, bound, conflict, first, forbidden, invalid, newId, now, run } from
 import { digest, guarded, revision } from '../decisions/revision'
 import { auditStatement } from '../authorization/audit'
 import { openProject } from '../workspace/projects'
-import { operatorRow, workspaceRole, workspaceSettings, type Actor } from '../workspace/people'
+import { displayNames, operatorRow, workspaceRole, workspaceSettings, type Actor } from '../workspace/people'
 import { rank } from '../authorization/levels'
 import { exportRows } from '../tasks/board'
 import { openTask, require } from '../tasks/access'
@@ -44,7 +44,9 @@ async function source(db: D1Database, actor: Actor, workspace: string, projects:
    let item = tasks.get(String(row.id))
    if (!item) { item = { projects: [], values: {} }; tasks.set(String(row.id), item) }
    item.projects.push(id)
-   for (const key of Object.keys(sheetFields)) item.values[key] = String(row[key] ?? '')
+   const task = opened.task
+   const names = fields.includes('owner') ? await displayNames(db, [task.owner_id]) : null
+   Object.assign(item.values, { title: task.title, status: task.status, priority: task.priority, due: task.due_date ?? '', owner: names?.get(task.owner_id) ?? 'Former member', estimate_hours: String(task.estimate_hours) })
    const custom = report.rows.find(r => r.id === row.id)
    for (const f of custom?.fields ?? []) {
     if (!fields.includes(id + ':' + f.id)) continue
@@ -60,6 +62,7 @@ async function source(db: D1Database, actor: Actor, workspace: string, projects:
 const mappings = (db: D1Database, id: string) => all<Mapping>(db, 'SELECT task_id,row_number FROM peg_sheet_rows WHERE export_id=? ORDER BY row_number', id)
 async function observed(edge: ReturnType<typeof sheetsEdge>, cfg: Export, rows: number, columns: number) {
  const destination = await edge.destination(), tab = destination.tabs.find(t => t.id === cfg.sheet_id)
+ if (tab && (!Number.isInteger(tab.rows) || !Number.isInteger(tab.columns) || tab.rows < 1 || tab.columns < 1)) throw conflict('sheets_grid_unavailable')
  if (tab && tab.title !== cfg.tab_title || !tab && destination.tabs.some(t => t.title === cfg.tab_title)) throw conflict('sheets_tab_identity_changed')
  const values = tab ? await edge.read(cfg.tab_title, rows, columns) : null
  return { destination, values, fingerprint: await digest({ id: destination.id, name: destination.name, audience: destination.audience, tab: tab ?? null, values }) }
@@ -122,7 +125,7 @@ export async function sendSheet(env: Bindings, db: D1Database, actor: Actor, id:
  await reviewed(db, actor, id)
  await guarded(db, rev, [bound(db, "UPDATE peg_sheet_reviews SET state='pending' WHERE id=? AND state='review'", [id]), bound(db, 'UPDATE peg_sheet_exports SET last_review=? WHERE id=?', [id, cfg.id]), ...packet.mapping.map(m => bound(db, 'INSERT OR IGNORE INTO peg_sheet_rows VALUES(?,?,?)', [cfg.id, m.task_id, m.row_number])), auditStatement(db, { workspaceId: null, actorId: actor.id, action: 'sheets.send_reviewed', targetType: 'sheet_export', targetId: cfg.id })])
  try {
-  await edge.write(cfg.sheet_id, cfg.tab_title, packet.existing, packet.values)
+  await edge.write(cfg.sheet_id, cfg.tab_title, at.destination.tabs.find(t => t.id === cfg.sheet_id) ?? null, packet.values)
   return await reconcileSheet(env, db, actor, id, input)
  } catch (error) {
   if (error instanceof SheetsFailure && error.status === 403) await revokeSheet(db, actor, cfg.id)

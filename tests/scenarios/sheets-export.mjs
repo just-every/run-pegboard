@@ -38,6 +38,7 @@ export function registerSheetsExportTests({ test, context }) {
   assert.equal((await ok(send())).state, 'confirmed'); assert.equal(writes(edge), before)
   let settings = await ok(root.get('/api/v1/sheets')), cfgRow = settings.exports.find(e => e.id === cfg.id), tab = edge.state.tabs.get(cfgRow.sheet_id)
   assert.deepEqual(tab.values, review.values); assert.equal(cfgRow.watermark, review.watermark)
+  tab.rows = tab.values.length
   tab.values.find(r => r[0] === seeded.shared.id)[3] = 'Edited in spreadsheet only'
   assert.equal((await ok(root.get(`/api/v1/tasks/${seeded.shared.id}`))).title, '=Untrusted spreadsheet text')
   await ok(root.patch(`/api/v1/tasks/${seeded.shared.id}`, { title: 'Edited native work', status: 'doing' }))
@@ -50,6 +51,14 @@ export function registerSheetsExportTests({ test, context }) {
   assert.equal((await ok(root.post(`/api/v1/sheet-reviews/${refresh.id}/send`, { credential, confirm: true }))).state, 'confirmed')
   assert.deepEqual(edge.state.tabs.get(cfgRow.sheet_id).values, refresh.values)
   assert.notEqual(refresh.values[0][2], review.values[0][2], 'every refresh has a distinct reconciliation identity')
+  const interrupted = await preview(); edge.state.loseNextWrite = true
+  await ok(root.post(`/api/v1/sheet-reviews/${interrupted.id}/send`, { credential, confirm: true }), 503)
+  await ok(root.patch(`/api/v1/tasks/${seeded.shared.id}`, { title: 'Edited during uncertain response' }))
+  await w.restart()
+  const pendingView = await ok(root.get(`/api/v1/sheet-reviews/${interrupted.id}`)); assert.equal(pendingView.state, 'pending'); assert.ok(!pendingView.values, 'readback controls reveal no stale content')
+  const attempts = writes(edge)
+  assert.equal((await ok(root.post(`/api/v1/sheet-reviews/${interrupted.id}/reconcile`, { credential }))).state, 'confirmed'); assert.equal(writes(edge), attempts)
+  assert.equal((await ok(root.get(`/api/v1/tasks/${seeded.shared.id}`))).title, 'Edited during uncertain response')
   const pending = await preview(); edge.state.failNextWrite = true
   await ok(root.post(`/api/v1/sheet-reviews/${pending.id}/send`, { credential, confirm: true }), 503)
   assert.equal((await ok(root.post(`/api/v1/sheet-reviews/${pending.id}/reconcile`, { credential }))).state, 'not_applied')
@@ -86,7 +95,11 @@ export function registerSheetsExportTests({ test, context }) {
   await ok(member.post(`/api/v1/sheet-reviews/${current.id}/send`, { credential, confirm: true }), 403)
   await ok(guest.get(`/api/v1/sheet-reviews/${current.id}`), 403); assert.equal(edge.state.calls.length, calls)
   await ok(root.post(`/api/v1/sheet-reviews/${current.id}/send`, { credential, confirm: false }), 400); assert.equal(writes(edge), sent)
+  await ok(root.patch('/api/v1/workspaces/ws_main/settings', { integrationsEnabled: false }))
+  const disabledCalls = edge.state.calls.length
+  await ok(send(current), 403); assert.equal(edge.state.calls.length, disabledCalls, 'current export policy is rechecked before the network')
   const grant = await ok(root.post(`/api/v1/sheets/${cfg.id}/revoke`, {})); assert.equal(grant.active, false)
+  await ok(root.patch('/api/v1/workspaces/ws_main/settings', { integrationsEnabled: true }))
   const snapshot = JSON.stringify([...edge.state.tabs]), stopped = edge.state.calls.length
   await ok(send(current), 409); await ok(root.post(`/api/v1/sheets/${cfg.id}/reviews`, { credential }), 409); await ok(root.get(`/api/v1/sheet-reviews/${current.id}`), 409)
   await w.restart(); await ok(send(current), 409); assert.equal(edge.state.calls.length, stopped); assert.equal(JSON.stringify([...edge.state.tabs]), snapshot, 'revocation does not claim to erase existing external copies')
