@@ -1,3 +1,5 @@
+import { CapturePage } from './pages/capture'
+import { captureOptions,captureView } from '../capture/browser'
 import { dashboards, ownDashboard, readSnapshot } from '../reporting/dashboard'
 import { ReportsSettings, ReportsList, ReportPage } from './pages/reports'
 import { ownKey, readReport } from '../analytics-export/reports'
@@ -179,6 +181,15 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
   const editorFor=async(projectId:string,tasks:{value:string;label:string}[],here:string):Promise<ScheduleEditorProps>=>({here,projectId,tasks,people:await peopleOptions(db,actor,workspace),input:scheduleInput,preview:await schedulePreview(db,actor,scheduleInput)})
 
   try {
+    if(section==='capture'&&!tail){
+      const view=id?await captureView(db,actor,session.id,id):null
+      const project=url.searchParams.has('projectId')?url.searchParams.get('projectId'):view?.projectId
+      const options=await captureOptions(db,actor,workspace,project||undefined)
+      const response=await page('Capture a page',h(CapturePage,{viewer,view:view?{...view,projectId:project||null,ownerId:project!==view.projectId?null:view.ownerId,target:project!==view.projectId?null:view.target}:null,options,cancelled:url.searchParams.has('cancelled')}))
+      response.headers.set('content-security-policy',response.headers.get('content-security-policy')+"; connect-src 'self'")
+      response.headers.set('referrer-policy','no-referrer')
+      return response
+    }
     if(section==='settings'&&id==='reports'&&!tail)return page('Report settings',h(ReportsSettings,{viewer,projects:await listProjects(db,actor,workspace),list:await dashboards(db,actor,workspace)}))
     if(section==='reports'&&!id)return page('Reports',h(ReportsList,{viewer,list:await dashboards(db,actor,workspace)}))
     if(section==='reports'&&id&&!tail){const {row}=await ownDashboard(db,actor,workspace,id);const snapshot=url.searchParams.get('snapshot');return page(row.name,h(ReportPage,{viewer,id,name:row.name,report:snapshot?await readSnapshot(db,actor,workspace,id,snapshot):null}))}
