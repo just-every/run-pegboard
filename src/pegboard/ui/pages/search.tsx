@@ -12,6 +12,7 @@ export function SearchPage({viewer,data,saved,marks,projects,people}:{viewer:Vie
    <Pick label="Work type" name="kind" value={data.filters.kind} blank="All content" options={['task','approval','project','brief'].map(value=>({value,label:value[0].toUpperCase()+value.slice(1)}))}/>
    <Pick label="Status" name="status" value={data.filters.status} blank="Any status" options={['todo','doing','done'].map(value=>({value,label:value}))}/>
    <Pick label="Project" name="projectId" value={data.filters.projectId} blank="All permitted projects" options={projects}/>
+   <Pick label="Owner" name="ownerId" value={data.filters.ownerId} blank="Any owner" options={people}/>
    <Pick label="Priority" name="priority" value={data.filters.priority} blank="Any priority" options={['low','normal','high','urgent'].map(value=>({value,label:value}))}/>
    <Submit>Search work</Submit>
   </form></Card>

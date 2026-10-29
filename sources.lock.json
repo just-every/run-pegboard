@@ -199,7 +199,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "fafbd829fcfaa5bab60f43b4a056b9c29407fc630e64a23b2b8c347d27d4fe85",
+      "sha256": "e129e8f19231b729bc8b543b0fc2225089f15b1c4138e450262878cb96e9aa5c",
       "executable": false
     },
     "AGENTS.md": {
@@ -215,7 +215,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "8db2f6bcd778b26cd9fac0d90f03eaa0cba1213bfbd4e2cc8fc8ec4a0f59fcdf",
+      "sha256": "60a15e8d98e44a07aa76d8f48d7b81bcf7eae270c7913c0fb7ace84a9a00be81",
       "executable": false
     },
     "DEMO.md": {
@@ -243,7 +243,7 @@
       "executable": false
     },
     "docs/CLAIMS.md": {
-      "sha256": "fd45b2b869a6ceb08fc09844973de3ada59f592b3d14cd7e8dc32791f06f2fe0",
+      "sha256": "efa8691a629ba3da93f08d742266c0f36fbea6bbb407da9c892613cfdd074419",
       "executable": false
     },
     "docs/DATA-CUSTODY.md": {
@@ -3903,7 +3903,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/search.tsx": {
-      "sha256": "bf12fd0814389fcf4e6dca69b0db17b0054420fa7fb03b01eef5ab274303f7e8",
+      "sha256": "cc588c958c1c7a735c640140589e4673e560ee579db73b0e1ded13161c921681",
       "executable": false
     },
     "src/pegboard/ui/pages/source-credential.tsx": {
@@ -4227,7 +4227,7 @@
       "executable": false
     },
     "tests/journeys/search-bulk.mjs": {
-      "sha256": "38f72b67f771dc42ef6f8fd607b99bd4919a515e78081ec8e6c2c9dc30a0ccf5",
+      "sha256": "4cb340a011d18f8f77caef4d720239b365cd8b2d124ec9f1d8ca5a3fc8b598f0",
       "executable": false
     },
     "tests/journeys/template-gallery.mjs": {
