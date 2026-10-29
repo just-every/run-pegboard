@@ -4155,7 +4155,7 @@
       "executable": false
     },
     "tests/portfolios.test.mjs": {
-      "sha256": "ca40c75a0fc8616e5d3bf7c0fcbb0970a949f51022b86a707917ff022d081f3a",
+      "sha256": "bc01097ce52f77a0e648e3e8a43afc900a0978e02a9e5d52dd973b9dfc94b51a",
       "executable": false
     },
     "tests/runtime.mjs": {

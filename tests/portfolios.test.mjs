@@ -852,7 +852,7 @@ describe('Conditional local work rules',{concurrency:false},()=>{
   const sec=await pass(owner.post(`/api/v1/projects/${q.id}/sections`,{name:'Editorial review'}))
   const move=await save(q,{name:'Editorial move',trigger:'section',sectionId:sec.id,source:'task_start',offset:2,unit:'days',ownerId:owner.id});await activate(move.id)
   const ids=[],moved=[]
-  {const i=0
+  for(let i=0;i<10;i++){
    const a=await pass(editor.post(`/api/v1/projects/${p.id}/requests`,{requestKey:`synthetic-pegboard-request-${i}`,title:'Regional print request',startDate:'2026-07-02',dueDate:'2026-07-06'})),b=await task(q);ids.push(a.id);moved.push(b.id)
    await pass(editor.post(`/api/v1/tasks/${b.id}/section`,{projectId:q.id,sectionId:sec.id}))
    const av=await pass(owner.get(`/api/v1/tasks/${a.id}`)),bv=await pass(owner.get(`/api/v1/tasks/${b.id}`))
@@ -864,7 +864,7 @@ describe('Conditional local work rules',{concurrency:false},()=>{
   for(const id of moved)await pass(editor.post(`/api/v1/tasks/${id}/section`,{projectId:q.id,sectionId:sec.id}))
   for(const project of [p,q]){
    await pass(owner.post(`/api/v1/projects/${project.id}/rules/process`,{}));const view=await pass(owner.get(`/api/v1/projects/${project.id}/rules`))
-   assert.equal(view.runs.length,1);assert.ok(view.runs.every(r=>r.status==='applied'&&r.version===1&&r.activated_by===owner.id&&r.activation_id&&r.operation_id&&r.source.startDate==='2026-07-02'&&r.computed.dueDate===(project===p?'2026-07-10':'2026-07-04')))
+   assert.equal(view.runs.length,10);assert.ok(view.runs.every(r=>r.status==='applied'&&r.version===1&&r.activated_by===owner.id&&r.activation_id&&r.operation_id&&r.source.startDate==='2026-07-02'&&r.computed.dueDate===(project===p?'2026-07-10':'2026-07-04')))
   }
   const run=(await pass(owner.get(`/api/v1/projects/${p.id}/rules`))).runs.find(r=>r.task_id===ids[0]),undo=`/api/v1/recovery/bulk/${run.operation_id}`
   await pass(editor.patch(`/api/v1/tasks/${ids[0]}`,{dueDate:'2026-07-15'}))
@@ -936,7 +936,7 @@ describe('Conditional local work rules',{concurrency:false},()=>{
   for(const [index,sourceDate,offset,unit,expected] of [[1,'2026-07-16',-2,'weeks','2026-07-02'],[2,'2026-03-31',-1,'months','2026-02-28'],[3,'2026-10-31',1,'months','2026-11-30'],[4,'2026-07-06',-1,'business_days','2026-07-02'],[5,'2026-03-07',2,'days','2026-03-09']]){
    const p=await pass(owner.post('/api/v1/projects',{name:`Event routing ${index}`}))
    await pass(owner.post(`/api/v1/projects/${p.id}/fields`,{key:'event_day',label:'Custom event date',type:'date'}))
-   const rule=await save(p,{name:'Event-relative routing',source:'custom',sourceField:'event_day',offset,unit,actions:[{kind:'subtask',value:'Prepare meeting agenda'}]});await activate(rule.id)
+   const rule=await save(p,{name:'Event-relative routing',source:'custom',sourceField:'event_day',offset,unit,actions:[{kind:'subtask',value:'Prepare meeting agenda'}]});const preview=await activate(rule.id);assert.ok(preview.policy.includes('clamp'))
    const t=await pass(owner.post('/api/v1/tasks',{projectId:p.id,title:'Prepare event agenda'}))
    await pass(owner.post(`/api/v1/tasks/${t.id}/fields`,{projectId:p.id,values:{event_day:sourceDate}}));await pass(owner.patch(`/api/v1/tasks/${t.id}`,{status:'doing'}))
    const current=await pass(owner.get(`/api/v1/tasks/${t.id}`));assert.equal(current.dueDate,expected);assert.equal(current.subtasks.length,1);assert.equal((await pass(owner.get(`/api/v1/tasks/${current.subtasks[0].id}`))).dueDate,expected)
