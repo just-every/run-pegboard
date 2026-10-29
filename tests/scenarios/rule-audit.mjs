@@ -138,27 +138,37 @@ export function registerRuleAuditTests({test,context}){
   const unchanged=await pass(root.get(`/api/v1/tasks/${denied.id}`));assert.equal(unchanged.dueDate,null);assert.equal(unchanged.priority,'normal');assert.deepEqual(unchanged.comments,[])
   assert.equal((await delegated.get(path(delegatedProject.id))).status,404)
   assert.equal((await delegated.get(`/api/v1/admin/audit/export?rule=${delegatedRule.id}`)).status,403)
+  await pass(root.post('/api/v1/grants',{objectType:'project',objectId:delegatedProject.id,granteeId:delegated.id,level:'admin'}))
+  await pass(root.post(path(delegatedProject.id)+'/process',{}))
+  assert.deepEqual(await audit(root,delegatedRule.id,'&run='+deniedRun.id),deniedEvents,'renewed access never replays a refused run')
+  assert.deepEqual((await pass(root.get(`/api/v1/tasks/${denied.id}`))).comments,[])
   // A real queue tail survives restart and is safely terminated by native restore.
   // The public process door handles at most 100 runs, so the last of 101 rules stays queued.
   const queuedProject=await pass(root.post('/api/v1/projects',{name:'synthetic-pegboard-5750'}))
-  const queuedRules=[]
   for(let n=0;n<101;n++){
    const next=await create(root,queuedProject.id,`synthetic-pegboard-${5751+n}`)
-   await activate(root,next.id);queuedRules.push(next.id)
+   await activate(root,next.id)
   }
-  await request(root,queuedProject.id,5860,{startDate:null})
-  let pending=(await read(root,queuedProject.id)).runs.filter(r=>r.status==='queued')
-  assert.equal(pending.length,1)
-  const waiting=pending[0],waitingAudit=await audit(root,waiting.rule_id,'&run='+waiting.id)
+  // The recent-runs page is bounded and equal timestamps can hide a queue tail.
+  // Reconcile the actual queue and terminal receipts through the audit door instead.
+  const pendingRun=async task=>{
+   const queued=(await pass(root.get('/api/v1/admin/audit?action=rule.run_queued&limit=500'))).events.filter(e=>e.metadata.taskId===task.id)
+   const finished=(await pass(root.get('/api/v1/admin/audit?action=rule.run_noop&limit=500'))).events.filter(e=>e.metadata.taskId===task.id)
+   assert.equal(queued.length,101);assert.equal(finished.length,100)
+   const terminalIds=new Set(finished.map(e=>e.metadata.runId)),pending=queued.filter(e=>!terminalIds.has(e.metadata.runId))
+   assert.equal(pending.length,1)
+   const event=pending[0]
+   return {id:event.metadata.runId,rule_id:event.metadata.ruleId,event_id:event.metadata.eventId}
+  }
+  const queuedTask=await request(root,queuedProject.id,5860,{startDate:null})
+  const waiting=await pendingRun(queuedTask),waitingAudit=await audit(root,waiting.rule_id,'&run='+waiting.id)
   assert.deepEqual(waitingAudit.map(e=>e.action),['rule.run_queued'])
   await w.restart();await pass(root.post(path(queuedProject.id)+'/process',{}))
   assert.deepEqual((await audit(root,waiting.rule_id,'&run='+waiting.id)).map(e=>e.action),['rule.run_queued','rule.run_noop'])
   await pass(root.post(path(queuedProject.id)+'/process',{}))
   assert.equal((await audit(root,waiting.rule_id,'&run='+waiting.id)).length,2)
-  await request(root,queuedProject.id,5861,{startDate:null})
-  pending=(await read(root,queuedProject.id)).runs.filter(r=>r.status==='queued')
-  assert.equal(pending.length,1)
-  const restoring=pending[0],beforeRestore=await audit(root,restoring.rule_id,'&run='+restoring.id)
+  const restoreTask=await request(root,queuedProject.id,5861,{startDate:null})
+  const restoring=await pendingRun(restoreTask),beforeRestore=await audit(root,restoring.rule_id,'&run='+restoring.id)
   assert.deepEqual(beforeRestore.map(e=>e.action),['rule.run_queued'])
   const copy=await restoreCanvasInstallation(root)
   try{
@@ -172,6 +182,9 @@ export function registerRuleAuditTests({test,context}){
    assert.equal(restoredQueue[1].actor_id,root.id)
    await pass(copy.worker.owner.post(path(queuedProject.id)+'/process',{}))
    assert.deepEqual(await audit(copy.worker.owner,restoring.rule_id,'&run='+restoring.id),restoredQueue)
+   const repeated=await restoreCanvasInstallation(copy.worker.owner)
+   try{assert.deepEqual(await audit(repeated.worker.owner,restoring.rule_id,'&run='+restoring.id),restoredQueue,'another native restore preserves one terminal refusal')}
+   finally{await repeated.stop()}
    await pass(copy.worker.owner.post(path(project.id)+'/process',{}));assert.deepEqual(await audit(copy.worker.owner,rule.id),anonymous)
    const restored=await read(copy.worker.owner,project.id);assert.ok(restored.rules.every(r=>!r.enabled&&!r.activation_id));assert.equal(restored.runs.find(r=>r.task_id===valid.id).status,'applied')
    assert.deepEqual((await pass(copy.worker.owner.get(`/api/v1/tasks/${valid.id}`))).comments.map(c=>c.body),['synthetic-pegboard-5718'],'native restore preserves the later comment without resurrecting erased rule content')

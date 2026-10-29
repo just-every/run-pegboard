@@ -247,11 +247,11 @@
       "executable": false
     },
     "docs/DATA-CUSTODY.md": {
-      "sha256": "b530a7bcac2457471300d1d1048a76b718f1012c938fc35fe29a5fd8838b740c",
+      "sha256": "40c498a212473c26bae69cc43dd74baaab8710e9c69d875fab66c3e8967dda1b",
       "executable": false
     },
     "docs/DATA-RECORD-API.md": {
-      "sha256": "21b1bb11067664dc13440d7b3f4005bfd044661663370cdb3abb05923c0a7b3d",
+      "sha256": "81c811e0b05d3e389dd556922e534ae671a458d826df44c0ebfb7629806ab0c5",
       "executable": false
     },
     "docs/ENGINEERING-HANDOFF.md": {
@@ -4167,7 +4167,7 @@
       "executable": false
     },
     "tests/journeys/rule-audit.mjs": {
-      "sha256": "637feaa88c73ff4aaef35c4b8229e60088378e2f44b2d045334fc7644c14ffd7",
+      "sha256": "d374cafa8d8c3724aed101a0541500e661fe7552f394f1c60423f01432ef2f62",
       "executable": false
     },
     "tests/journeys/schedule-settings.mjs": {
@@ -4239,7 +4239,7 @@
       "executable": false
     },
     "tests/scenarios/rule-audit.mjs": {
-      "sha256": "ca92c5126ee4befd58f82771a18330c4e449e2b95a2ffdee922331899414fbfe",
+      "sha256": "2e697ecfb119210fdd5b082e4810608b6c4be5232d437aabb5bc7235ce376dae",
       "executable": false
     },
     "tests/scenarios/schedule-calendar.mjs": {
@@ -4295,7 +4295,7 @@
       "executable": false
     },
     "verification.json": {
-      "sha256": "4c5335dc92311235bacca486259fac10f28170bf9a8098a9c39d65b83024554e",
+      "sha256": "4cf5e8c5220ebd8bc130a594ae5536de13ef8b83380ad917d6c10ba1fed9c486",
       "executable": false
     },
     "VERIFY-WORKFLOW.md": {

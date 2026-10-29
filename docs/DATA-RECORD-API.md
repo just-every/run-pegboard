@@ -45,5 +45,8 @@ result; it grants no additional read authority.
 
 Deactivation or editing never rewrites earlier receipts. Restored rules remain
 inactive, erased actors retain anonymized attribution, and existing run receipts
-survive native archive restore. Queue and terminal receipts share the original trigger event ID. A queued run fenced by native restore appends `rule.run_blocked` with `restored_inactive`, preserving its original activation and actor without restoring execution authority. These records do not expand PEG-012 rule behavior
+survive native archive restore. Queue and terminal receipts share the original
+trigger event ID. A queued run fenced by native restore appends `rule.run_blocked`
+with `restored_inactive`, preserving its original activation and actor without
+restoring execution authority. These records do not expand PEG-012 rule behavior
 or qualify product imports, autonomous agent execution or future integration doors.

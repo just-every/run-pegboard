@@ -61,7 +61,10 @@ export async function ruleAuditJourney({w,browser}){
   const link=page.getByRole('link',{name:'Export this page as JSON',exact:true})
   await link.focus();await expect(link).toBeFocused()
   const exported=await page.request.get(new URL(await link.getAttribute('href'),w.origin).href)
-  assert.equal(exported.status(),200);assert.deepEqual((await exported.json()).events,events.filter(e=>e.metadata.runId===run.id))
+  assert.equal(exported.status(),200)
+  const exportedEvents=(await exported.json()).events
+  assert.deepEqual(exportedEvents,events.filter(e=>e.metadata.runId===run.id))
+  assert.deepEqual(exportedEvents.map(e=>e.metadata.eventId),[run.event_id,run.event_id])
   await proof('filtered')
   assert.equal((await pass(root.get(`/api/v1/tasks/${noop.id}`))).dueDate,null)
   const member=await w.person(['synthetic-pegboard-5726','example.com'].join('@'),'synthetic-pegboard-5726')
