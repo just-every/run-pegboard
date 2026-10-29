@@ -1091,7 +1091,7 @@
       "executable": false
     },
     "public/look/work-views.js": {
-      "sha256": "657f372c224517362a23c846638cf9e3ac2b47eacd270ca27cfcff6ed04c2b33",
+      "sha256": "4d0b40532dfaee18898ba77a201fd91b659a36a9266362267af6db8cdd265ccd",
       "executable": false
     },
     "public/personal-day.js": {
@@ -4251,7 +4251,7 @@
       "executable": false
     },
     "tests/journeys/work-views.mjs": {
-      "sha256": "b00d79b73f9036179a7ca8cecc357e078b1c864b89d047ab57d315d926450152",
+      "sha256": "55379e8af9ae2d2ae51f508090b549b8c4ae6ce6be34456c49acb26e6de58bf0",
       "executable": false
     },
     "tests/journeys/workflow-bundles.mjs": {

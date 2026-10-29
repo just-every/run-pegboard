@@ -36,16 +36,26 @@ if (root) {
       let conflict = false
       for (const row of current.querySelectorAll('[data-work-row][data-dirty="1"]')) {
         const replacement = [...fresh.querySelectorAll('[data-work-row]')].find(candidate => candidate.dataset.workRow === row.dataset.workRow)
-        // Removed rows and columns are never retained for drafts. Current authority wins.
-        if (!replacement || current.dataset.schema !== fresh.dataset.schema) continue
-        if (replacement.dataset.revision !== row.dataset.revision) {
-          row.dataset.conflict = '1'
-          const warning = row.querySelector('[data-draft-warning]')
+        if (!replacement) continue
+        const changed = replacement.dataset.revision !== row.dataset.revision
+        let retained = false
+        // Keep only editable drafts. Read-only values and available controls always come from the current authorized read.
+        for (const form of row.querySelectorAll('form[data-dirty="1"]')) {
+          const target = [...replacement.querySelectorAll('form')].find(candidate => candidate.getAttribute('action') === form.getAttribute('action'))
+          if (!target) continue
+          target.replaceWith(form)
+          retained = true
+        }
+        if (!retained) continue
+        replacement.dataset.dirty = '1'
+        replacement.dataset.revision = row.dataset.revision
+        replacement.querySelector('[data-refresh-task]').hidden = false
+        if (changed) {
+          const warning = replacement.querySelector('[data-draft-warning]')
           warning.hidden = false
           warning.textContent = 'A committed edit changed this task. Your draft is retained; refresh the task before saving. Current: ' + replacement.querySelector('[data-summary]').textContent
           conflict = true
         }
-        replacement.replaceWith(row)
       }
       current.replaceWith(fresh)
       if (focused?.isConnected) focused.focus({ preventScroll: true })
