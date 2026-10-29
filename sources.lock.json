@@ -247,7 +247,7 @@
       "executable": false
     },
     "docs/COLLABORATION.md": {
-      "sha256": "631f159a7ef60b7c8256ccf8c181df7be8981dcf4c0183b60976629e8e6a21c3",
+      "sha256": "32bbe512297399d6e688ee946575b42ee745f9b38b9b9ec39904980dd07bc7d0",
       "executable": false
     },
     "docs/DATA-CUSTODY.md": {
@@ -1031,7 +1031,7 @@
       "executable": false
     },
     "public/look/collaboration.js": {
-      "sha256": "d4fc9c96bd8e7ccad629a841aecd949a26347140830a193c8f55f17f7998f342",
+      "sha256": "094409753f381b8196e1be366087d3e09463989341f5f5caece6c9d24e94a6ab",
       "executable": false
     },
     "public/look/controls.css": {
@@ -1051,7 +1051,7 @@
       "executable": false
     },
     "public/look/pages.css": {
-      "sha256": "6ab0e301b80d1e95aeddf04cd134a7f8042cc904d418540a6194673efa4df324",
+      "sha256": "c56cf3c16ef21d2c711a686b63693cd81b2614d877ce5105aafe44fdc9a81b34",
       "executable": false
     },
     "public/look/parts.css": {
@@ -3699,7 +3699,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/brief.tsx": {
-      "sha256": "b79a64c1d768d675fe7b9feba9aa8929907f85bccd4b21fcdeab0e1cea5a9802",
+      "sha256": "0669983c9c3d26764663b952a39233706a5fcdbcfba7c680d8eff8393543b975",
       "executable": false
     },
     "src/pegboard/ui/pages/bulk.tsx": {
@@ -3835,7 +3835,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/task.tsx": {
-      "sha256": "8e067f72ebfd56522c73934570d0d015e038d649e2b8030c0d8144866c70c116",
+      "sha256": "19ee4b9448db2cfc86e3a91967a4c970803e6974920c1d1ea4a393a03ea58502",
       "executable": false
     },
     "src/pegboard/ui/pages/team-gate.tsx": {
@@ -3871,7 +3871,7 @@
       "executable": false
     },
     "src/pegboard/ui/rich-text.tsx": {
-      "sha256": "885671de2e39c4f9b9fa134e1ce8b4edf98081aa26841b767c1fb3097a76241c",
+      "sha256": "8b7957dc43e0570865b13259c63142912b6da41a320b117b07c0772c648998b4",
       "executable": false
     },
     "src/pegboard/ui/routes.ts": {
@@ -3887,7 +3887,7 @@
       "executable": false
     },
     "src/pegboard/ui/shell.tsx": {
-      "sha256": "c6784258d96dd2ef3f27a885fe52a698c538e9a966c0a66af548f2cdd8582518",
+      "sha256": "3a6339b6b41626dbb33059aede5b1104d5f96d602cf2277c2571f3c9de695cb4",
       "executable": false
     },
     "src/pegboard/ui/templates/structure.tsx": {
@@ -4035,7 +4035,7 @@
       "executable": false
     },
     "src/ui/heading.tsx": {
-      "sha256": "6dda3c6093c1317b7c9e7b02d30f8ce132baa635dc1f5baba6b89f4ccee360e0",
+      "sha256": "7ef02d5d6754752b7d0f1da4a80d4ad81bce25253da2725ad6dfb89450520390",
       "executable": false
     },
     "src/ui/home.tsx": {
@@ -4099,7 +4099,7 @@
       "executable": false
     },
     "tests/journeys/collaboration.mjs": {
-      "sha256": "60f1431bc9dd637be7b2afd07fa2413fb4b8c64d42185d22538e7d1bd14d425f",
+      "sha256": "9490d9bdb13ab1ac043a8b3b0cf2daa1b20d8cef6ec6c1582d474b9c0beb4342",
       "executable": false
     },
     "tests/journeys/conversion-hierarchy.mjs": {
@@ -4167,7 +4167,7 @@
       "executable": false
     },
     "tests/journeys/work-graph.journey.mjs": {
-      "sha256": "818882d205a3c16df39d36775671981d523ed57ed3952d6e43f2b8cc324fda1e",
+      "sha256": "fb574e62504a6d92468c7ebd6079eaef4b1f5012b2fc3a8fd62c94cb176dde8f",
       "executable": false
     },
     "tests/journeys/work-rules.mjs": {
@@ -4199,7 +4199,7 @@
       "executable": false
     },
     "tests/scenarios/collaboration.mjs": {
-      "sha256": "5fcfac4aa5e07b27fccc79865bafadf87fe31631c9b2936a60c7ddbbca2e3377",
+      "sha256": "cb71373e34ccbbfded8a0a7727e26b30c40145958592a5007a0eb8efd3865581",
       "executable": false
     },
     "tests/scenarios/conversions.mjs": {

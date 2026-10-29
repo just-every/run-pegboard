@@ -45,3 +45,6 @@ ul.plain{margin:6px 0 0;padding-left:18px}
 }
 
 .page .task-description,.page .meeting-source{overflow-wrap:anywhere;min-width:0}
+
+/* Attributable history includes stable revision identifiers and long retained text. */
+.page .history{overflow-wrap:anywhere;min-width:0}

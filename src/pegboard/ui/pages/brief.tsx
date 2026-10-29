@@ -13,9 +13,10 @@ export function BriefPage({viewer,view}:BriefPageProps) {
    <div data-live-region="brief"><RichText text={view.text}/></div>
    {view.canEdit?<Form action={api} next={here} label="Edit project brief"><input type="hidden" name="version" value={view.version}/><Area label="Brief text" name="text" value={view.text}/><TextHelp/><Submit>Save new revision</Submit></Form>:!view.text&&<p>No brief saved.</p>}
   </Card>
+  <div className="stack" data-live-region="brief-history-tools">
   {view.versions.length>0&&<Card title="Revision history">
-   <ul className="rows" data-live-region="brief-history">{view.versions.map(row=><li key={row.version}><span>Revision {row.version} · {row.actor} · {when(row.createdAt)}{row.restoredFrom!==null?` · Restored from revision ${row.restoredFrom}`:''}</span></li>)}</ul>
-   <form data-live-region="brief-comparison" action={here} method="get" className="stack" aria-label="Compare brief revisions">
+   <ul className="rows">{view.versions.map(row=><li key={row.version}><span>Revision {row.version} · {row.actor} · {when(row.createdAt)}{row.restoredFrom!==null?` · Restored from revision ${row.restoredFrom}`:''}</span></li>)}</ul>
+   <form action={here} method="get" className="stack" aria-label="Compare brief revisions">
     <Pick label="Earlier revision" name="fromVersion" options={options} value={String(view.comparison?.from.version??view.versions.at(-1)!.version)}/>
     <Pick label="Later revision" name="toVersion" options={options} value={String(view.comparison?.to.version??view.version)}/>
     <Submit quiet>Compare revisions</Submit>
@@ -30,5 +31,6 @@ export function BriefPage({viewer,view}:BriefPageProps) {
    <p>Restore the selected brief as a new revision. Existing revisions and later project work remain available.</p>
    <Form action={api+'/restore'} next={here} label="Restore project brief revision"><input type="hidden" name="version" value={view.version}/><Pick label="Revision to restore" name="fromVersion" options={options} value={String(view.comparison?.from.version??view.version)}/><Submit>Restore as new revision</Submit></Form>
   </Card>}
+  </div>
  </Shell>
 }

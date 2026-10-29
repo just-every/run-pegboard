@@ -55,6 +55,15 @@ export async function collaborationJourney({w,browser,ok}) {
   let current=ok(await root.get(taskApi)).comments[0]
   assert.deepEqual(current.versions.map(v=>v.body),['@Text colleague A **shared comment** and [work link](https://example.test/work).','Revised **shared comment**'])
   assert.equal(current.versions[1].actor,'Wes Holloway');assert.ok(current.versions[1].at>=first.at)
+  // A draft in an existing comment never hides another person's new comment.
+  await a.page.locator(`[data-comment-id="${first.id}"]`).getByText('Edit this comment',{exact:true}).click()
+  const heldEdit=a.page.locator(`[data-comment-id="${first.id}"]`).getByRole('form',{name:'Edit comment',exact:true})
+  await heldEdit.getByLabel('Edited comment').fill('Locally retained comment draft')
+  ok(await peer.post(taskApi+'/comments',{body:'Another live contribution'}))
+  await expect(a.page.locator('[data-live-region="comments"]')).toContainText('Another live contribution')
+  await expect(heldEdit.getByLabel('Edited comment')).toHaveValue('Locally retained comment draft')
+  await heldEdit.getByRole('button',{name:'Save comment revision'}).click()
+  await expect(b.page.locator('[data-live-region="comments"]')).toContainText('Locally retained comment draft')
   // Current source access is enforced before link alternatives or formatting are rendered.
   ok(await root.post(taskApi+'/comments',{body:'Internal collaboration only',internalOnly:true}))
   ok(await root.post(taskApi+'/comments',{body:'<img src=x onerror=alert(1)> [unsafe](javascript:alert) **Safe text**'}))
@@ -93,6 +102,11 @@ export async function collaborationJourney({w,browser,ok}) {
   for(const page of [a.page,b.page])await expect(page.locator('[data-live-status]')).toContainText('Live')
   const peerTask=b.page.getByRole('form',{name:'Edit task',exact:true}),rootTask=a.page.getByRole('form',{name:'Edit task',exact:true})
   await peerTask.getByLabel('Description',{exact:true}).fill('Local description draft')
+  const another=ok(await root.post('/api/v1/projects',{name:'Additional authorized context'}))
+  ok(await root.post('/api/v1/grants',{objectType:'project',objectId:another.id,granteeId:peer.id,level:'editor'}))
+  ok(await root.post(taskApi+'/projects',{projectId:another.id}))
+  await b.page.waitForResponse(r=>r.url()===taskApi.replace('/api/',w.origin+'/api/')&&r.request().method()==='GET')
+  await expect(peerTask.getByLabel('Description',{exact:true})).toHaveValue('Local description draft')
   await rootTask.getByLabel('Description',{exact:true}).fill('Remote **description revision**')
   await rootTask.getByRole('button',{name:'Save',exact:true}).click()
   await expect(b.page.locator('[data-live-conflict]')).toBeVisible()
