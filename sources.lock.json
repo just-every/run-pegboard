@@ -199,7 +199,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "4baeb5808e54fcf3a5900a4be3ff8aab7b5145e4cb9bb2bf2830c93414c12255",
+      "sha256": "32d832c0c580a93a2bdd00426d5d07010fd2c40c2d6a89ee4c3f73c1d5dd4491",
       "executable": false
     },
     "AGENTS.md": {
@@ -215,7 +215,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "ee82c3eb9b22ec7c829d6fdc5c75f42d1b90adfd1e80a202618bbe39f2846031",
+      "sha256": "f6e9c7b9f9f215eb8b008d565aad2b3944d58b65f560ba99110db4cebdae3707",
       "executable": false
     },
     "DEMO.md": {
@@ -243,7 +243,7 @@
       "executable": false
     },
     "docs/CLAIMS.md": {
-      "sha256": "b6b3fd3304e56e367caa0d98af81843214d0e7583a23289e8123c34fafc6898b",
+      "sha256": "c36164825e5f033e6369b1d05cdeb89f94338b3c25a4ce639db381d480a21d5f",
       "executable": false
     },
     "docs/DATA-CUSTODY.md": {
@@ -1075,7 +1075,7 @@
       "executable": false
     },
     "public/look/work-views.css": {
-      "sha256": "e442e9caf7c46868ac98ee797588d0168ccab3c92e9d655a26a2792a817c1be2",
+      "sha256": "844b5a30305448ab8e8447bdfc3455f356e1fc07d157540edcfb1c38261881bb",
       "executable": false
     },
     "public/look/work-views.js": {
@@ -3835,7 +3835,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/table.tsx": {
-      "sha256": "4b58aa7de66c57881bf9680807a81807a76becfe1df54e36cac762e52f331b00",
+      "sha256": "e0b62e38974f45671ff9cd3b99bb5be9ada7ecf6011f5fefa0a07040c54098af",
       "executable": false
     },
     "src/pegboard/ui/pages/tags.tsx": {
@@ -3899,7 +3899,7 @@
       "executable": false
     },
     "src/pegboard/ui/work-views/page.tsx": {
-      "sha256": "c28518c5e29ec424de5bddd4790ea138c983302994149b0a3bab20ed93a4bb34",
+      "sha256": "5a71641c7ebd51c5686ab5a5e8c8d60f0d19c1c51dd525a526846e5f200676f5",
       "executable": false
     },
     "src/pegboard/ui/work-views/rows.tsx": {
@@ -4215,7 +4215,7 @@
       "executable": false
     },
     "tests/journeys/work-views.mjs": {
-      "sha256": "bc64ffee48931759d3c1b1728e1c01672301e99192642b11cb1e562fcf3ef781",
+      "sha256": "b00d79b73f9036179a7ca8cecc357e078b1c864b89d047ab57d315d926450152",
       "executable": false
     },
     "tests/journeys/workflow-bundles.mjs": {
@@ -4263,7 +4263,7 @@
       "executable": false
     },
     "tests/scenarios/work-views.mjs": {
-      "sha256": "34590c36c53b945a92d37b69f9db2996f61b906c0e8288250523dd1a07ee1eeb",
+      "sha256": "bac6ac445a2d50cc588bc5717f45d25192bc0c57401de9c3d9f4c600fd462712",
       "executable": false
     },
     "tests/schedule.test.mjs": {

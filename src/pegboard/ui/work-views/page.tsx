@@ -14,7 +14,7 @@ export const modeLabel = (mode:string) => mode === 'board' ? 'Board' : mode === 
 export function WorkViewPage({ viewer, data, presets, input }: { viewer:Viewer; data:Data; presets:Presets; input:Record<string,string> }) {
   const id = data.project.id, path = `/app/projects/${id}/views`, mode = data.config.mode
   const query = new URLSearchParams(input); query.delete('taskId'); query.delete('due')
-  return <Shell viewer={viewer} current="/app/projects" title={data.project.name} chip={modeLabel(mode).toUpperCase()} facts={[`${data.counts.tasks} permitted tasks`, 'One shared task graph']} crumbs={[{label:data.project.name,href:`/app/projects/${id}`},{label:'Work views',href:path,current:true}]}>
+  return <Shell viewer={viewer} current="/app/projects" title={data.project.name} chip={modeLabel(mode).toUpperCase()} facts={['One shared task graph']} crumbs={[{label:data.project.name,href:`/app/projects/${id}`},{label:'Work views',href:path,current:true}]}>
     <section data-work-view>
       <nav className="work-view-nav" aria-label="Work views">{modes.map(view => { const params = new URLSearchParams(query); params.set('mode',view); return <a key={view} href={`${path}?${params}`} aria-current={mode===view?'page':undefined}>{modeLabel(view)}</a> })}</nav>
       <Card title="View this work"><p><a href={`/app/projects/${id}`}>Path</a> · <a href={`/app/projects/${id}/settings/views`}>Saved view settings</a> · <a href={`/app/projects/${id}/timeline`}>Schedule and dependencies</a></p>
@@ -49,7 +49,8 @@ export function WorkViewContent({data}:{data:Data}) {
     </div>
   </li>
   return <section className="work-content" data-work-content data-mode={data.config.mode} data-revision={data.revision} data-schema={JSON.stringify(columns)}>
-    {data.config.mode==='table'?<Card title="Task table"><WorkTable rows={data.rows} columns={columns} availableColumns={data.availableColumns} projectId={data.project.id}/></Card>:<>
+    <p data-task-count>{data.counts.tasks} permitted tasks · {data.counts.done} done</p>
+    {data.config.mode==='table'?<Card title="Task table"><WorkTable rows={data.rows} columns={columns} availableColumns={data.availableColumns} projectId={data.project.id} groupBy={data.config.groupBy}/></Card>:<>
       {data.config.mode==='timeline'&&<Card title="Schedule overview"><TimelineRange rows={data.rows}/></Card>}
       {data.config.mode==='workload'&&data.workload&&<Card title="Committed workload"><p>Capacity for the same filtered work. Completed tasks stay in the task list and add no committed hours.</p>{data.workload.people.map(person=><section key={person.id}><h3>{person.name}</h3><p>{person.hours} committed h · {person.days.reduce((sum,day)=>sum+day.availableHours,0)} available h · {person.zone}</p><ul className="rows">{person.days.map(day=><li key={day.date}>{day.date} · {day.hours} h committed · {day.availableHours} h available</li>)}</ul></section>)}</Card>}
       {[...groups].map(([name,rows])=><Card key={name} title={name}><ul className="rows">{rows.map(card)}</ul></Card>)}
