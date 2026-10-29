@@ -31,3 +31,5 @@
 .work-content[data-mode=board]{grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));align-items:start}
 .work-content[data-mode=board] .rows{gap:14px}
 .work-content[data-mode=board] .rows>li{border:1px solid var(--edge);border-radius:8px;padding:14px}
+
+.work-content>[data-task-count]{grid-column:1/-1;margin:12px 0;font-size:15px}

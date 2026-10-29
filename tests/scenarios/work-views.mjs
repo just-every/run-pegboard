@@ -87,6 +87,8 @@ export function registerWorkViewTests({test, context}) {
   assert.deepEqual(shown.config.sort,[])
   assert.equal(shown.rows[0].fields.find(row=>row.id===publicField.id).value,7)
   assert.ok(shown.rows[0].fields.every(row=>row.id!==hiddenField.id&&row.value!==913))
+  await pass(guest.post(`/api/v1/work-view-tasks/${visible.id}/edit`,{projectId:project.id,revision:shown.rows[0].revision,title:'Viewer overwrite'}),403)
+  assert.equal((await task(root,visible.id)).title,'Assigned client delivery')
   const payload = JSON.stringify(shown)
   for (const secret of [hidden.id,hiddenField.id,'Private margin','private_margin','Unassigned internal delivery']) assert.ok(!payload.includes(secret),secret)
   assert.equal((await outsider.get(`/api/v1/projects/${project.id}/work-view?view=${saved.id}`)).status,404)
