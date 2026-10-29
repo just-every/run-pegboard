@@ -1,4 +1,5 @@
 import {searchRoutes} from './search-routes'
+import {mergeRoutes} from './merge-routes'
 import { calendarRoutes } from './calendar-routes'
 import { publicRoutes } from './public-routes'
 import { capacityRoutes } from './capacity-routes'
@@ -36,6 +37,7 @@ import { taskRoutes } from './task-routes'
 import { workspaceRoutes } from './workspace-routes'
 
 export const pegboardApi = new Hono<{ Bindings: Bindings }>()
+mergeRoutes(pegboardApi)
 workspaceRoutes(pegboardApi)
 taskRoutes(pegboardApi)
 accessRoutes(pegboardApi)

@@ -1,4 +1,6 @@
 import {searchBulkScenario} from './scenarios/search-bulk.mjs'
+import {taskMergeScenario} from './scenarios/task-merge.mjs'
+import {bulkCatalogueScenario} from './scenarios/bulk-catalogue.mjs'
 import { analystDatasetScenario } from './scenarios/analytics.mjs'
 import { registerCalendarBlockTests } from './scenarios/calendar-blocks.mjs'
 import { startCalendarServices } from './support/calendar-services.mjs'
@@ -43,6 +45,8 @@ describe('Search and reviewed bulk selection',{concurrency:false},()=>{
  before(async()=>{worker=await startWorker()},{timeout:120000})
  after(()=>worker?.stop())
  it('finds authorized content, saves filters, reviews every mixed-permission row and preserves later work on undo',async()=>{await searchBulkScenario(worker)})
+ it('marks duplicates and merges ordinary work with conserved provenance, safe aliases and conflict-preserving undo',async()=>{await taskMergeScenario(worker)})
+ it('reviews bulk statuses, custom fields, project moves, duplication and archive without overwriting later work',async()=>{await bulkCatalogueScenario(worker)})
 })
 
 describe('Work conversions through reviewed public doors',{concurrency:false},()=>{

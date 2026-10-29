@@ -675,7 +675,7 @@ export async function timeTaskOptions(
     workspaceId,
   )) {
     const opened = await openTask(db, actor, row.id).catch(() => null)
-    if (opened?.access.capabilities.has('edit'))
+    if (opened?.task.id===row.id&&opened.access.capabilities.has('edit'))
       out.push({ value: opened.task.id, label: opened.task.title })
   }
   return out

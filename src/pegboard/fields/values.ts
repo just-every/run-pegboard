@@ -156,6 +156,7 @@ export async function evaluate(
   const opened = await openTask(db, actor, taskId).catch(() => null),
     context = opened?.access.contexts.get(projectId)
   if (!context) return bad('INPUT_UNAVAILABLE')
+  taskId=opened!.task.id
   const field = (await definitions(db, projectId)).find((f) => f.key === key)
   if (!field || !fieldReadable(field, context)) return bad('INPUT_UNAVAILABLE')
   const stored = await first<{ value: string }>(

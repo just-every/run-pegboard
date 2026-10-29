@@ -1,0 +1,73 @@
+import assert from 'node:assert/strict'
+const ok=async(p,status=200)=>{const r=await p;assert.equal(r.status,status,JSON.stringify(r.body));return r.body}
+const identity=n=>['synthetic-pegboard-'+n,'example.test'].join(String.fromCharCode(64))
+export async function mergeFixture(w){
+ const root=w.owner,peer=await w.person(identity(3151),'Campaign editor'),outsider=await w.person(identity(3152),'Unrelated colleague')
+ const project=await ok(root.post('/api/v1/projects',{name:'Campaign consolidation'}))
+ const grant=await ok(root.post('/api/v1/grants',{objectType:'project',objectId:project.id,granteeId:peer.id,level:'editor'}))
+ await ok(root.post(`/api/v1/projects/${project.id}/prefix`,{prefix:'MRG'}))
+ const source=await ok(root.post('/api/v1/tasks',{projectId:project.id,title:'Print launch draft',description:'Original printer instructions',ownerId:peer.id,priority:'high',dueDate:'2026-12-10'})),survivor=await ok(root.post('/api/v1/tasks',{projectId:project.id,title:'Print launch master',description:'Approved campaign wording',ownerId:root.id,dueDate:'2026-12-10'})),next=await ok(root.post('/api/v1/tasks',{projectId:project.id,title:'Distribute print campaign',startDate:'2026-12-15',dueDate:'2026-12-16'}))
+ const comment1=await ok(peer.post(`/api/v1/tasks/${source.id}/comments`,{body:'Source printer conversation'})),comment2=await ok(root.post(`/api/v1/tasks/${survivor.id}/comments`,{body:'Master campaign conversation'}))
+ await ok(root.post(`/api/v1/projects/${project.id}/fields`,{key:'print_run',label:'Print run',type:'number'}))
+ await ok(root.post(`/api/v1/tasks/${source.id}/fields`,{projectId:project.id,values:{print_run:1250}}));await ok(root.post(`/api/v1/tasks/${survivor.id}/fields`,{projectId:project.id,values:{print_run:2000}}))
+ const file=await ok(peer.post(`/api/v1/tasks/${source.id}/attachments?projectId=${project.id}&name=synthetic-pegboard-3153.txt`,'Printer source notes',{'content-type':['text','plain'].join('/')}))
+ const edge=await ok(root.post('/api/v1/dependencies',{predecessor:source.id,successor:next.id,type:'fs'}))
+ const sheet=await ok(root.post('/api/v1/timesheets',{startDate:'2026-11-02',endDate:'2026-11-02'})),entry1=await ok(root.post(`/api/v1/timesheets/${sheet.id}/entries`,{taskId:source.id,projectId:project.id,date:'2026-11-02',seconds:901,key:'synthetic-pegboard-3154'})),entry2=await ok(root.post(`/api/v1/timesheets/${sheet.id}/entries`,{taskId:survivor.id,projectId:project.id,date:'2026-11-02',seconds:1201,key:'synthetic-pegboard-3155'}))
+ return {root,peer,outsider,project,grant,source,survivor,next,comment1,comment2,file,edge,sheet,entry1,entry2}
+}
+export function choicesFor(plan){return Object.fromEntries([...plan.fields,...plan.custom].filter(f=>f.different).map(f=>[f.key,f.key==='description'||f.key.startsWith('field:')?'source':'survivor']))}
+export async function reviewedMerge(root,source,survivor){
+ const input={sourceId:source.id,survivorId:survivor.id},initial=await ok(root.post('/api/v1/task-merges/preview',input)),choices=choicesFor(initial),plan=await ok(root.post('/api/v1/task-merges/preview',{...input,choices}))
+ assert.equal(plan.canApply,true,JSON.stringify(plan.conflicts))
+ return {input:{...input,choices},plan}
+}
+export async function taskMergeScenario(w){
+ const f=await mergeFixture(w),{root,peer,outsider,project,grant,source,survivor,next,comment1,comment2,file,edge,sheet,entry1,entry2}=f
+ const input={sourceId:source.id,survivorId:survivor.id},before=await ok(root.get(`/api/v1/tasks/${source.id}`)),targetBefore=await ok(root.get(`/api/v1/tasks/${survivor.id}`))
+ let mark=await ok(peer.post('/api/v1/task-duplicates/preview',input));await ok(peer.post('/api/v1/task-duplicates',{...input,token:mark.token}))
+ assert.equal((await ok(root.get(`/api/v1/tasks/${source.id}`))).duplicate.id,survivor.id)
+ assert.equal((await outsider.post('/api/v1/task-duplicates/preview',input)).status,404)
+ let {input:reviewed,plan}=await reviewedMerge(root,source,survivor)
+ await ok(peer.post(`/api/v1/tasks/${source.id}/comments`,{body:'Concurrent printer correction'}))
+ await ok(root.post('/api/v1/task-merges',{...reviewed,token:plan.token}),409)
+ assert.equal((await ok(root.get(`/api/v1/tasks/${source.id}`))).id,source.id,'a stale merge changes no task identity')
+ ;({input:reviewed,plan}=await reviewedMerge(root,source,survivor))
+ assert.deepEqual(plan.comments.map(c=>c.body).sort(),['Concurrent printer correction','Master campaign conversation','Source printer conversation'])
+ const merged=await ok(root.post('/api/v1/task-merges',{...reviewed,token:plan.token}))
+ assert.equal((await ok(root.post('/api/v1/task-merges',{...reviewed,token:plan.token}))).id,merged.id,'replay returns the same operation')
+ let task=await ok(root.get(`/api/v1/tasks/${source.id}`));assert.equal(task.id,survivor.id);assert.equal(task.description,'Original printer instructions');assert.equal(task.owner.id,root.id);assert.equal(task.projects[0].fields.find(f=>f.key==='print_run').value,1250)
+ assert.equal((await ok(root.get('/api/v1/refs/'+before.ref))).id,survivor.id)
+ assert.equal(task.comments.find(c=>c.id===comment1.id).author,peer.name);assert.equal(task.comments.find(c=>c.id===comment1.id).sourceTaskId,source.id)
+ assert.equal(task.comments.find(c=>c.id===comment2.id).author,root.name);assert.equal(task.attachments[0].id,file.id)
+ assert.deepEqual(task.history.filter(h=>before.history.some(old=>old.id===h.id)).map(h=>h.id).sort(),before.history.map(h=>h.id).sort(),'original source history IDs are retained once')
+ assert.equal(new Set(task.history.map(h=>h.id)).size,task.history.length)
+ assert.equal(merged.time.seconds,2102);assert.deepEqual(merged.time.entries.map(e=>e.id).sort(),[entry1.id,entry2.id].sort());assert.deepEqual(merged.time.entries.map(e=>e.sourceTaskId).sort(),[source.id,survivor.id].sort())
+ const dependencies=await ok(root.get(`/api/v1/tasks/${next.id}/dependencies`));assert.equal(dependencies.dependencies.find(e=>e.id===edge.id).task.id,survivor.id)
+ const projectView=await ok(root.get(`/api/v1/projects/${project.id}`));assert.deepEqual(projectView.columns.flatMap(c=>c.tasks).map(t=>t.id).sort(),[survivor.id,next.id].sort())
+ assert.equal((await outsider.get(`/api/v1/tasks/${source.id}`)).status,404);assert.equal((await outsider.get(`/api/v1/task-merges/${merged.id}`)).status,404)
+ await ok(root.patch(`/api/v1/tasks/${survivor.id}`,{description:'Keep the later human instruction'}))
+ await ok(root.post(`/api/v1/tasks/${survivor.id}/comments`,{body:'Later independent master discussion'}))
+ let undo=await ok(root.get(`/api/v1/task-merges/${merged.id}/undo-preview`));assert.equal(undo.canApply,true);assert.ok(undo.conflicts.some(c=>c.field==='description'))
+ await ok(root.post(`/api/v1/task-merges/${merged.id}/undo`,{token:undo.token}))
+ task=await ok(root.get(`/api/v1/tasks/${survivor.id}`));assert.equal(task.description,'Keep the later human instruction');assert.deepEqual(task.comments.map(c=>c.body),['Master campaign conversation','Later independent master discussion']);assert.equal(task.projects[0].fields.find(f=>f.key==='print_run').value,2000)
+ const restored=await ok(root.get(`/api/v1/tasks/${source.id}`));assert.equal(restored.id,source.id);assert.deepEqual(restored.comments.map(c=>c.body),['Source printer conversation','Concurrent printer correction']);assert.equal(restored.attachments[0].id,file.id);assert.equal((await ok(root.get('/api/v1/refs/'+before.ref))).id,source.id)
+ assert.equal((await ok(root.get(`/api/v1/timesheets/${sheet.id}`))).totalSeconds,2102)
+ const personal=await ok(root.post('/api/v1/tasks',{title:'Private acquisition notes'})),privateInput={sourceId:personal.id,survivorId:survivor.id}
+ assert.equal((await peer.post('/api/v1/task-merges/preview',privateInput)).status,404)
+ assert.equal((await root.post('/api/v1/task-merges/preview',privateInput)).status,409)
+ assert.equal((await ok(root.get(`/api/v1/tasks/${personal.id}`))).description,'')
+ const approval=await ok(root.post('/api/v1/tasks',{projectId:project.id,title:'Independent signed decision',kind:'approval',ownerId:peer.id}))
+ await ok(root.post('/api/v1/task-merges/preview',{sourceId:approval.id,survivorId:survivor.id}),409)
+ const safe=await reviewedMerge(root,source,survivor)
+ await ok(root.post(`/api/v1/grants/${grant.id}/revoke`,{}))
+ await ok(peer.post('/api/v1/task-merges',{...safe.input,token:safe.plan.token}),404)
+ assert.equal((await ok(root.get(`/api/v1/tasks/${source.id}`))).id,source.id)
+ // Merge erasure removes the retained source too, and a captured merge cannot recreate it.
+ const a=await ok(root.post('/api/v1/tasks',{projectId:project.id,title:'synthetic-pegboard-3156 erase combined work'})),b=await ok(root.post('/api/v1/tasks',{projectId:project.id,title:'synthetic-pegboard-3157 erase survivor'})),clean=await reviewedMerge(root,a,b),receipt=await ok(root.post('/api/v1/task-merges',{...clean.input,token:clean.plan.token}))
+ const erasure=await ok(root.post('/api/v1/data/erasure-preview',{type:'task',id:b.id}));await ok(root.post('/api/v1/data/erase',{type:'task',id:b.id,token:erasure.token,confirm:true}))
+ for(const id of [a.id,b.id])assert.equal((await root.get(`/api/v1/tasks/${id}`)).status,404)
+ assert.equal((await root.post('/api/v1/task-merges',{...clean.input,token:clean.plan.token})).status,404)
+ assert.equal((await root.get(`/api/v1/task-merges/${receipt.id}/undo-preview`)).status,404)
+ await w.restart();assert.equal((await ok(root.get(`/api/v1/tasks/${source.id}`))).id,source.id)
+ return f
+}

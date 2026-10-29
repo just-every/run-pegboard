@@ -1,4 +1,5 @@
 import {selectionPreview,applySelection,selectionReceipt} from '../recovery/selection'
+import {cataloguePreview,applyCatalogue,catalogueReceipt,catalogueUndoPreview,undoCatalogue} from '../recovery/catalogue'
 import {first,notFound,PegError} from '../db'
 import type {Hono} from 'hono'
 import type {Bindings} from '../../auth.server'
@@ -7,13 +8,18 @@ import {bulkPreview,applyBulk,undoBulkPreview,undoBulk,listBulk,type BulkInput} 
 export function bulkInput(input:Record<string,any>):BulkInput {
  if(input.patch)return input as BulkInput
  const patch:BulkInput['patch']={}
- for(const key of ['ownerId','priority','startDate','dueDate'] as const)if(input[key])patch[key]=input[key]
+ for(const key of ['ownerId','priority','startDate','dueDate','status'] as const)if(input[key])patch[key]=input[key]
  if(input.clearStart)patch.startDate=null
  if(input.clearDue)patch.dueDate=null
  return {taskIds:Array.isArray(input.taskIds)?input.taskIds:input.taskIds?[String(input.taskIds)]:[],patch,token:input.token}
 }
 const ruleOperation=async(db:D1Database,id:string)=>{const row=await first<{operation_id:string|null}>(db,'SELECT operation_id FROM peg_rule_effect_runs WHERE run_id=?',id);if(!row?.operation_id)throw notFound();return row.operation_id}
 export function bulkRoutes(app:Hono<{Bindings:Bindings}>) {
+ app.post('/recovery/catalogue/preview',door(({db,actor,workspace,input})=>cataloguePreview(db,actor,workspace,input)))
+ app.post('/recovery/catalogue',door(({db,actor,workspace,input})=>applyCatalogue(db,actor,workspace,input),{next:r=>`/app/recovery/catalogue?receipt=${r.id}`}))
+ app.get('/recovery/catalogue/:id',door(({db,actor,workspace,params})=>catalogueReceipt(db,actor,workspace,params.id)))
+ app.get('/recovery/catalogue/:id/undo-preview',door(({db,actor,workspace,params})=>catalogueUndoPreview(db,actor,workspace,params.id)))
+ app.post('/recovery/catalogue/:id/undo',door(({db,actor,workspace,params,input})=>undoCatalogue(db,actor,workspace,params.id,input),{next:r=>`/app/recovery/catalogue?receipt=${r.id}`}))
  app.post('/recovery/bulk/selection-preview',door(({db,actor,workspace,input})=>selectionPreview(db,actor,workspace,{...bulkInput(input),reviewRows:input.reviewRows})))
  app.post('/recovery/bulk/selection-apply',door(async({db,actor,workspace,input,form})=>{
   try{return await applySelection(db,actor,workspace,{...bulkInput(input),reviewRows:input.reviewRows})}

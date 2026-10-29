@@ -21,7 +21,7 @@ export async function selectKeys(db:D1Database,table:string,where:string,args:Pa
   return {table,keys:await all<Key>(db,`SELECT ${pk.map(quote).join(',')} FROM ${quote(table)} WHERE ${where} ORDER BY ${pk.map(quote).join(',')}`,...args)}
 }
 export const deletion=(db:D1Database,selection:Selection)=>selection.keys.map(key=>bound(db,`DELETE FROM ${quote(selection.table)} WHERE ${Object.keys(key).map(k=>quote(k)+' IS ?').join(' AND ')}`,Object.values(key)))
-const descendants=(db:D1Database,roots:string[])=>all<{id:string}>(db,`WITH RECURSIVE scope(id) AS (SELECT id FROM peg_tasks WHERE id IN (${placeholders(roots)}) UNION SELECT t.id FROM peg_tasks t JOIN scope s ON t.parent_id=s.id) SELECT id FROM scope ORDER BY id`,...roots)
+const descendants=(db:D1Database,roots:string[])=>all<{id:string}>(db,`WITH RECURSIVE scope(id) AS (SELECT id FROM peg_tasks WHERE id IN (${placeholders(roots)}) UNION SELECT t.id FROM peg_tasks t JOIN scope s ON t.parent_id=s.id UNION SELECT m.source_id FROM peg_task_merges m JOIN scope s ON m.survivor_id=s.id WHERE m.undone_at IS NULL) SELECT id FROM scope ORDER BY id`,...roots)
 export async function erasurePlan(db:D1Database,actor:Actor,workspace:string,type:string,id:string) {
   await requireOwner(db,actor,workspace)
   if(!['project','task','person','attachment','proof'].includes(type))throw invalid('erasure_type')
@@ -65,7 +65,7 @@ export async function erasurePlan(db:D1Database,actor:Actor,workspace:string,typ
     await take('peg_capacity_profiles','person_id=?',[id]);await take('peg_time_off','operator_id=?',[id]);await take('peg_availability_history','person_id=?',[id]);await take('peg_effort_allocations','person_id=?',[id]);await take('peg_resource_plans','person_id=?',[id]);
     await take('peg_workspace_members','operator_id=?',[id]);await take('peg_personal_layout','operator_id=?',[id]);await take('peg_personal_moves','operator_id=?',[id]);await take('peg_personal_rules','operator_id=?',[id]);await take('peg_personal_sections','operator_id=?',[id]);await take('peg_personal_settings','operator_id=?',[id])
     await take('peg_grants',"grantee_type='person' AND grantee_id=?",[id]);await take('peg_task_collaborators','operator_id=?',[id]);await take('peg_approvers','operator_id=?',[id]);await take('peg_inbox','operator_id=? OR request_id IN(SELECT id FROM peg_access_requests WHERE requester_id=?)',[id,id]);await take('peg_access_requests','requester_id=?',[id]);await take('peg_project_request_intake','requester_id=?',[id])
-    await take('peg_saved_searches','owner_id=?',[id]);await take('peg_bulk_selection_receipts','actor_id=?',[id])
+    await take('peg_saved_searches','owner_id=?',[id]);await take('peg_bulk_selection_receipts','actor_id=?',[id]);await take('peg_work_marks','person_id=?',[id])
     await take('peg_rule_suggestions','requested_by=?',[id])
     await take('peg_comments','author_id=?',[id]);await take('peg_attachments','created_by=?',[id])
     retained.local_auth_material=(await first<{n:number}>(db,'SELECT (SELECT COUNT(*) FROM oa_sessions WHERE operator_id=?)+(SELECT COUNT(*) FROM oa_tokens WHERE operator_id=?)+(SELECT COUNT(*) FROM oa_credentials WHERE operator_id=?)+(SELECT COUNT(*) FROM oa_external_identities WHERE operator_id=?) n',id,id,id,id))!.n
@@ -104,6 +104,11 @@ export async function erasurePlan(db:D1Database,actor:Actor,workspace:string,typ
     await take('peg_agent_retrieval',`${scoped('task_id')} OR output_id IN(SELECT id FROM peg_agent_outputs WHERE ${projectScoped('project_id')})`,[...tasks,...projects])
     await take('peg_agent_outputs',`${scoped('task_id')} OR ${projectScoped('project_id')}`,[...tasks,...projects])
     await take('peg_search_records',scoped('task_id'),tasks)
+    await take('peg_catalogue_rows',`${scoped('task_id')} OR ${scoped('result_id')}`,[...tasks,...tasks])
+    await take('peg_merge_items',`operation_id IN(SELECT id FROM peg_task_merges WHERE ${scoped('source_id')} OR ${scoped('survivor_id')})`,[...tasks,...tasks])
+    await take('peg_task_merges',`${scoped('source_id')} OR ${scoped('survivor_id')}`,[...tasks,...tasks])
+    await take('peg_work_marks',scoped('task_id'),tasks)
+    await take('peg_task_duplicates',`${scoped('source_id')} OR ${scoped('target_id')}`,[...tasks,...tasks])
     // Child rows first, including all current caches, identity aliases and values.
     for(const table of ['peg_effort_allocations','peg_effort_mappings','peg_task_tags','peg_personal_layout','peg_personal_moves','peg_approval_reopen_guards','peg_decision_guards','peg_task_decisions','peg_approval_owners','peg_approval_tasks','peg_field_values','peg_task_collaborators','peg_task_refs'])await take(table,scoped('task_id'),tasks)
     for(const table of ['peg_history','peg_comments','peg_attachments'])await take(table,`${scoped('task_id')} OR ${projectScoped('project_id')}`,[...tasks,...projects])

@@ -9,10 +9,10 @@ import { historyStatement, reopenGuard } from '../tasks/history'
 import type { TaskRow } from '../model'
 import { workspaceRole, type Actor } from '../workspace/people'
 
-const fields = {ownerId:'owner_id',startDate:'start_date',dueDate:'due_date',priority:'priority'} as const
+const fields = {ownerId:'owner_id',startDate:'start_date',dueDate:'due_date',priority:'priority',status:'status'} as const
 type Field = typeof fields[keyof typeof fields]
 type Value = string | null
-export interface BulkInput {taskIds:string[];patch:{ownerId?:string;startDate?:string|null;dueDate?:string|null;priority?:string};token?:unknown}
+export interface BulkInput {taskIds:string[];patch:{ownerId?:string;startDate?:string|null;dueDate?:string|null;priority?:string;status?:string};token?:unknown}
 interface Effect {effectId?:string;taskId:string;field:Field;before:Value;after:Value}
 interface Operation {id:string;workspace_id:string;actor_id:string;applied_at:number;task_count:number}
 interface EffectRow {id:string;operation_id:string;task_id:string;field:Field;before_value:string;after_value:string;history_id:number;task_decisions:number;proof_decisions:number;field_generation:number|null}
@@ -22,7 +22,7 @@ async function human(db:D1Database,actor:Actor,workspace:string) {
  const role=await workspaceRole(db,actor.id,workspace)
  if(!role||role==='agent')throw forbidden('human_bulk_edit')
 }
-async function subject(db:D1Database,actor:Actor,workspace:string,id:string,write=true) {
+export async function bulkSubject(db:D1Database,actor:Actor,workspace:string,id:string,write=true) {
  const task=await first<TaskRow>(db,'SELECT * FROM peg_tasks WHERE id=? AND workspace_id=?',id,workspace)
  if(!task||await first(db,"SELECT 1 FROM peg_data_erased_objects WHERE object_type='task' AND object_id=?",id))throw notFound()
  const access=await taskAccess(db,actor,task)
@@ -34,6 +34,7 @@ async function subject(db:D1Database,actor:Actor,workspace:string,id:string,writ
  }
  return {task,access}
 }
+const subject=bulkSubject
 export function parseBulk(input:BulkInput) {
  if(!input||!Array.isArray(input.taskIds)||!input.taskIds.length||input.taskIds.length>50||input.taskIds.some(id=>typeof id!=='string'||!id||id.length>100))throw invalid('bulk_tasks')
  if(!input.patch||typeof input.patch!=='object'||Array.isArray(input.patch)||Object.keys(input.patch).some(key=>!Object.prototype.hasOwnProperty.call(fields,key)))throw invalid('bulk_patch')
@@ -44,6 +45,9 @@ export function parseBulk(input:BulkInput) {
   if(key==='ownerId'){
    if(typeof value!=='string'||!value||value.length>100)throw invalid('bulk_owner')
    patch.owner_id=value
+  }else if(key==='status'){
+   if(typeof value!=='string'||!['todo','doing','done'].includes(value))throw invalid('bulk_status')
+   patch.status=value
   }else if(key==='priority'){
    if(typeof value!=='string'||!['low','normal','high','urgent'].includes(value))throw invalid('bulk_priority')
    patch.priority=value
@@ -90,6 +94,9 @@ export async function bulkPreview(db:D1Database,actor:Actor,workspace:string,inp
    if(id===schedule.taskId)for(const field of ['start_date','due_date'] as const)if(patch[field]!==undefined&&(local[field]===undefined?task[field]:local[field])!==patch[field])throw invalid('rule_schedule_validation')
   }
   if(local.owner_id!==undefined)await replacement(db,actor,task,local.owner_id!)
+  const approval=!!await first(db,'SELECT 1 FROM peg_approval_tasks WHERE task_id=?',id)
+  if(approval&&local.status==='done')throw conflict('approval_decision_required')
+  if(approval&&task.status==='done'&&local.status!==undefined)local.status='todo'
   const effects=(Object.entries(local) as [Field,Value][]).filter(([field,value])=>task[field]!==value).map(([field,after])=>({taskId:id,field,before:task[field],after}))
   if(!schedule&&effects.some(effect=>effect.field==='start_date'||effect.field==='due_date')&&await dependency(db,id))conflicts.push({taskId:id,field:effects.find(effect=>effect.field==='start_date'||effect.field==='due_date')!.field,reason:'dependency_cascade_requires_review'})
   const start=local.start_date===undefined?task.start_date:local.start_date,due=local.due_date===undefined?task.due_date:local.due_date
@@ -103,6 +110,8 @@ export async function bulkPreview(db:D1Database,actor:Actor,workspace:string,inp
 
 function edit(db:D1Database,actor:Actor,taskId:string,effects:Effect[],at:number,reopen:boolean,kind:string,operationId:string) {
  const assignments=effects.map(effect=>`${effect.field}=?`),args:Param[]=effects.map(effect=>effect.after)
+ const status=effects.find(e=>e.field==='status')
+ if(status){assignments.push('completed_at=?');args.push(status.after==='done'?at:null)}
  if(reopen)assignments.push("status='todo'",'completed_at=NULL')
  return [reopenGuard(db,taskId,actor.id,kind),bound(db,`UPDATE peg_tasks SET ${assignments.join(',')},updated_at=? WHERE id=?`,[...args,at,taskId]),
   historyStatement(db,taskId,null,actor.id,kind,{...Object.fromEntries(effects.map(effect=>[effect.field,{from:effect.before,to:effect.after}])),operationId})]
@@ -112,7 +121,7 @@ export async function prepareBulkEffects(db:D1Database,actor:Actor,workspace:str
  for(const task of changed){
   const decisions=await counts(db,task.id)
   statements.push(...edit(db,actor,task.id,task.effects,at,task.reopensApproval,kind,id))
-  for(const effect of task.effects)statements.push(bound(db,`INSERT INTO peg_bulk_effects VALUES(?,?,?,?,?,?,(SELECT COALESCE(MAX(id),0) FROM peg_history WHERE task_id=?),?,?,COALESCE((SELECT generation FROM peg_rule_mutation_generations WHERE task_id=? AND kind=?),0))`,[newId('effect'),id,task.id,effect.field,JSON.stringify(effect.before),JSON.stringify(effect.after),task.id,decisions.task_decisions,decisions.proof_decisions,task.id,effect.field]))
+  for(const effect of task.effects)statements.push(bound(db,`INSERT INTO ${effect.field==='status'?'peg_bulk_status_effects':'peg_bulk_effects'} VALUES(?,?,?,?,?,?,(SELECT COALESCE(MAX(id),0) FROM peg_history WHERE task_id=?),?,?,COALESCE((SELECT generation FROM peg_rule_mutation_generations WHERE task_id=? AND kind=?),0))`,[newId('effect'),id,task.id,effect.field,JSON.stringify(effect.before),JSON.stringify(effect.after),task.id,decisions.task_decisions,decisions.proof_decisions,task.id,effect.field]))
   const {access}=await subject(db,actor,workspace,task.id)
   statements.push(permanentEvent(db,{workspace:access.personal?null:workspace,actor:actor.id,action:kind,type:'task',id:task.id,metadata:{id,count:task.effects.length}}))
  }
@@ -132,7 +141,7 @@ async function operation(db:D1Database,actor:Actor,workspace:string,id:string,wr
  await human(db,actor,workspace)
  const op=await first<Operation>(db,'SELECT * FROM peg_bulk_operations WHERE id=? AND workspace_id=?',id,workspace)
  if(!op)throw notFound()
- const effects=await all<EffectRow>(db,'SELECT * FROM peg_bulk_effects WHERE operation_id=? ORDER BY task_id,field',id)
+ const effects=await all<EffectRow>(db,'SELECT * FROM peg_bulk_effects WHERE operation_id=? UNION ALL SELECT * FROM peg_bulk_status_effects WHERE operation_id=? ORDER BY task_id,field',id,id)
  const workEffects=await workEffectRows(db,id),origin=await ruleOrigin(db,id)
  if(origin&&origin.work_count!==workEffects.length)throw notFound()
  const taskIds=[...new Set([...effects.map(effect=>effect.task_id),...workEffects.map(effect=>effect.taskId)])]
@@ -152,6 +161,7 @@ export async function undoBulkPreview(db:D1Database,actor:Actor,workspace:string
    const before=JSON.parse(effect.before_value) as Value,after=JSON.parse(effect.after_value) as Value
    let reason:string|null=null
    if(current.task_decisions!==effect.task_decisions||current.proof_decisions!==effect.proof_decisions)reason='later_human_decision'
+   else if(effect.field==='status'&&before==='done'&&await first(db,'SELECT 1 FROM peg_approval_tasks WHERE task_id=?',task.id))reason='approval_decision_required'
    else if(task[effect.field]!==after)reason='later_field_value'
    else if(effect.field_generation!==null&&effect.field_generation!==((await first<{generation:number}>(db,'SELECT generation FROM peg_rule_mutation_generations WHERE task_id=? AND kind=?',task.id,effect.field))?.generation??0))reason='later_field_edit'
    else if(history.some(row=>row.id>effect.history_id&&Object.prototype.hasOwnProperty.call(JSON.parse(row.detail),effect.field)))reason='later_field_edit'

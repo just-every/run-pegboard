@@ -3,6 +3,7 @@ import {mkdir} from 'node:fs/promises'
 import {join} from 'node:path'
 import {expect} from '@playwright/test'
 import {searchBulkFixture} from '../scenarios/search-bulk.mjs'
+import {mergeCatalogueJourney} from './merge-catalogue.mjs'
 export async function searchBulkJourney({w,browser,ok}){
  const {root,editor,p,grant,approval,later,stale,viewer}=await searchBulkFixture(w)
  const context=await browser.newContext({viewport:{width:1440,height:900}})
@@ -24,6 +25,15 @@ export async function searchBulkJourney({w,browser,ok}){
   assert.deepEqual((await results().getByRole('link').allTextContents()).sort(),['Old print approval','Read only approval'])
   assert.deepEqual((await results().locator('[data-result-id]').evaluateAll(els=>els.map(el=>el.dataset.resultId))).sort(),[approval.id,viewer.id].sort())
   await proof('approval-search')
+  await page.keyboard.press('Alt+f');await expect(page.getByRole('form',{name:'Search work',exact:true}).getByLabel('Words or reference')).toBeFocused()
+  await page.keyboard.press('Alt+s');await expect(page.getByLabel('Select Old print approval',{exact:true})).toBeChecked();await page.keyboard.press('Alt+s');await expect(page.getByLabel('Select Old print approval',{exact:true})).not.toBeChecked()
+  await page.keyboard.press('Alt+n');await expect(page.getByRole('form',{name:'Quick add task'}).getByLabel('New task title')).toBeFocused()
+  form=page.getByRole('form',{name:'Quick add task'});await form.getByLabel('New task title').fill('Quick production follow-up');await form.getByLabel('Project for new task').selectOption(p.id);await form.getByRole('button',{name:'Create task',exact:true}).click()
+  assert.equal(ok(await editor.get('/api/v1/search?q=Quick%20production%20follow-up')).count,1,'keyboard quick-add creates real persisted work')
+  await page.goto(w.origin+'/app/search?q=synthetic-pegboard-310&kind=approval')
+  form=page.getByRole('form',{name:'Favorite a result'});await form.getByLabel('Task to favorite').selectOption(approval.id);await form.getByRole('button',{name:'Add favorite',exact:true}).click()
+  await expect(page.getByRole('list',{name:'Favorite work'}).getByRole('link')).toHaveText('Old print approval');await page.getByRole('list',{name:'Favorite work'}).getByRole('link').click()
+  await page.goto(w.origin+'/app/search?q=synthetic-pegboard-310&kind=approval');await expect(page.getByRole('list',{name:'Recent work'}).getByRole('link')).toHaveText('Old print approval');await proof('favorites-and-keyboard')
   form=page.getByRole('form',{name:'Save this search',exact:true});await form.getByLabel('Search name').fill('Archived approvals');await form.getByRole('button',{name:'Save search',exact:true}).click()
   await page.goto(w.origin+'/app/search');await page.getByRole('list',{name:'Saved searches',exact:true}).getByRole('link',{name:'Archived approvals',exact:true}).click()
   assert.equal(new URL(page.url()).searchParams.get('kind'),'approval');await expect(page.getByRole('status')).toHaveText('2 permitted results');await proof('saved-search')
@@ -50,8 +60,10 @@ export async function searchBulkJourney({w,browser,ok}){
   ok(await root.post(`/api/v1/grants/${grant.id}/revoke`,{}))
   await page.goto(w.origin+'/app/search');await page.getByRole('list',{name:'Saved searches',exact:true}).getByRole('link',{name:'Archived approvals',exact:true}).click()
   await expect(page.getByRole('status')).toHaveText('1 permitted results');await expect(results().getByRole('link')).toHaveText(['Read only approval'])
+  await expect(page.getByRole('list',{name:'Favorite work'}).getByRole('link')).toHaveCount(0);await expect(page.getByRole('list',{name:'Recent work'}).getByRole('link')).toHaveCount(0)
   const download=await page.request.get(w.origin+await page.getByRole('link',{name:'Download current results',exact:true}).getAttribute('href'))
   assert.equal(download.status(),200);assert.deepEqual((await download.json()).results.map(r=>r.id),[viewer.id]);await proof('revoked-saved-search')
  }finally{await context.close()}
  console.log('Search and mixed-permission bulk review passed at 1440; screens checked at 1440 and 390')
+ await mergeCatalogueJourney({w,browser,ok})
 }

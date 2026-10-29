@@ -1,4 +1,5 @@
 import {guarded, type revision} from '../decisions/revision'
+import {duplicateOf} from '../merge/duplicates'
 import { isRecoveryHidden } from '../recovery/visibility'
 import {registerView} from '../register/records'
 import {taskFields} from '../fields/values'
@@ -30,6 +31,8 @@ export async function viewTask(db: D1Database, actor: Actor, idOrRef: string) {
     projects.push({id:home.project_id,name:home.name,section:section?{id:section.id,name:section.name}:null,level:context.level,fields:await taskFields(db,actor,task.id,home.project_id)})
   }
   const history = await historyOf(db, task.id, readable)
+  const provenance=await all<{kind:string;object_id:string;source_id:string}>(db,'SELECT i.kind,i.object_id,i.source_id FROM peg_merge_items i JOIN peg_task_merges m ON m.id=i.operation_id WHERE m.survivor_id=? AND m.undone_at IS NULL',task.id)
+  const sourceOf=(kind:string,id:string|number)=>provenance.find(p=>p.kind===kind&&p.object_id===String(id))?.source_id??task.id
   const comments = (await all<{ id: string; internal_only: number; project_id: string | null; author_id: string; body: string; created_at: number }>(db, 'SELECT id,internal_only,project_id,author_id,body,created_at FROM peg_comments WHERE task_id=? ORDER BY created_at', task.id)).filter(comment => (access.role !== 'guest' || !comment.internal_only) && (comment.project_id === null || readable.has(comment.project_id)))
   const files = await all<{ id: string; project_id: string | null; name: string; content_type: string; size: number; created_by: string; created_at: number }>(db, `SELECT id,project_id,name,content_type,size,created_by,created_at FROM peg_attachments WHERE task_id=? AND NOT EXISTS(SELECT 1 FROM peg_recovery r WHERE r.object_type='attachment' AND r.object_id=peg_attachments.id AND r.restored_at IS NULL) AND NOT EXISTS(SELECT 1 FROM peg_proof_versions v JOIN peg_recovery r ON r.object_type='proof_version' AND r.object_id=v.id AND r.restored_at IS NULL WHERE v.attachment_id=peg_attachments.id) ORDER BY created_at`, task.id)
   const collaborators = (await all<{ operator_id: string }>(db, 'SELECT operator_id FROM peg_task_collaborators WHERE task_id=?', task.id)).map(row => row.operator_id)
@@ -52,7 +55,8 @@ export async function viewTask(db: D1Database, actor: Actor, idOrRef: string) {
     mentionChoices,tags:await taskTags(db,actor,task.id), capabilities: [...access.capabilities], level: access.level, projects, subtasks,
     meetingCitations: await all<{meetingId:string;segmentIndex:number}>(db,`SELECT m.id AS meetingId,p.segment_index AS segmentIndex FROM peg_meeting_proposals p JOIN peg_meetings m ON m.id=p.meeting_id JOIN oa_operators o ON o.id=m.created_by WHERE p.task_id=? AND m.created_by=? AND m.revoked_at IS NULL AND o.status='active' AND o.role IN ('owner','admin')`,task.id,actor.id),
     history: visibleHistory.filter(entry => internal || (!entry.kind.startsWith('internal.') && !(entry.kind === 'comment.added' && entry.project_id === null))).map(entry => ({ id: entry.id, at: entry.at, actor: name(entry.actor_id), kind: entry.kind, projectId: entry.project_id, detail: entry.kind==='fields.changed'?{}:shareHistory(entry.detail, readable) })),
-    comments: comments.map(comment => ({ id: comment.id, author: name(comment.author_id), body: comment.body, at: comment.created_at })),
+    duplicate:await duplicateOf(db,actor,task.id),
+    comments: comments.map(comment => ({ id: comment.id, author: name(comment.author_id), body: comment.body, at: comment.created_at, sourceTaskId:sourceOf('comment',comment.id) })),
     attachments: files.filter(file => file.project_id === null ? task.owner_id === actor.id : readable.has(file.project_id)).map(file => ({ id: file.id, projectId: file.project_id, name: file.name, contentType: file.content_type, size: file.size, by: name(file.created_by), at: file.created_at })),
     createdAt: task.created_at, updatedAt: task.updated_at, completedAt: task.completed_at,
   }

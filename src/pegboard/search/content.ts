@@ -30,7 +30,7 @@ export async function contentSearch(db:D1Database,actor:Actor,workspace:string,i
    if(exporting){const {access}=await openTask(db,actor,task.id);if(!access.capabilities.has('export')||!access.personal&&![...access.contexts.values()].some(context=>context.capabilities.has('export')&&rank(context.level)>=rank(exportMinimum)))continue}
    if(filters.kind==='approval'&&task.kind!=='approval'||filters.status&&task.status!==filters.status||filters.priority&&task.priority!==filters.priority||filters.ownerId&&task.owner.id!==filters.ownerId||filters.projectId&&!task.projects.some(p=>p.id===filters.projectId))continue
    const sources=[...(!q||matches(task.title)||matches(task.description)||matches(task.ref??'')||task.aliases.some(a=>matches(a))?['Task']:[]),...(task.comments.some(c=>matches(c.body))?['Comment']:[]),...(task.attachments.some(a=>matches(a.name))?['Attachment']:[])]
-   if(sources.length)results.push({id:task.id,type:'task',title:task.title,href:`/app/tasks/${task.id}`,matches:sources,status:task.status,priority:task.priority,editable:task.capabilities.includes('edit')})
+   if(sources.length&&!results.some(r=>r.type==='task'&&r.id===task.id))results.push({id:task.id,type:'task',title:task.title,href:`/app/tasks/${task.id}`,matches:sources,status:task.status,priority:task.priority,editable:task.capabilities.includes('edit')})
   }catch(error){if(!(error instanceof PegError&&[403,404].includes(error.status)))throw error}
  }
  if((!filters.kind||filters.kind==='project'||filters.kind==='brief')&&!filters.status&&!filters.priority&&!filters.ownerId)for(const p of await listProjects(db,actor,workspace)){

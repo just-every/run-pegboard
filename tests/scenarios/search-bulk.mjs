@@ -39,6 +39,9 @@ export async function searchBulkScenario(w){
  const saved=await ok(editor.post('/api/v1/search/saved',{q:'synthetic-pegboard-310',kind:'approval',status:'todo',name:'Archived approvals'}))
  assert.equal((await ok(editor.get('/api/v1/search/saved'))).searches.find(r=>r.id===saved.id).filters.kind,'approval')
  assert.deepEqual((await ok(guest.get('/api/v1/search/saved'))).searches,[])
+ await ok(editor.post('/api/v1/search/favorite',{taskId:approval.id,favorite:true}))
+ await ok(editor.post('/api/v1/search/visit',{taskId:later.id}))
+ let marks=await ok(editor.get('/api/v1/search/marks'));assert.deepEqual(marks.favorites.map(r=>r.id),[approval.id]);assert.deepEqual(marks.recent.map(r=>r.id),[later.id]);assert.deepEqual((await ok(guest.get('/api/v1/search/marks'))).favorites,[])
  // A mixed-home task cannot use one editor grant to change the other project's work.
  const input={taskIds:[approval.id,later.id,stale.id,viewer.id,hidden.id,'synthetic-pegboard-399'],patch:{ownerId:editor.id,priority:'high',dueDate:'2026-12-15'}}
  let plan=await ok(editor.post('/api/v1/recovery/bulk/selection-preview',input))
@@ -86,6 +89,8 @@ export async function searchBulkScenario(w){
  assert.equal((await ok(root.get(`/api/v1/tasks/${later.id}`))).priority,'urgent')
  const after=await ok(editor.get(search));assert.deepEqual(after.results.map(r=>r.id),[viewer.id]);assert.equal(after.count,1);assert.deepEqual(after.suggestions.map(r=>r.id),[viewer.id])
  assert.deepEqual((await ok(editor.get('/api/v1/search/export?q=synthetic-pegboard-310'))).results.map(r=>r.id),[viewer.id])
+ marks=await ok(editor.get('/api/v1/search/marks'));assert.deepEqual(marks.favorites,[]);assert.deepEqual(marks.recent,[])
+ await ok(editor.post('/api/v1/search/favorite',{taskId:approval.id,favorite:false}),404)
  const receipt=await ok(editor.get(`/api/v1/recovery/bulk/receipts/${applied.id}`));assert.ok(!JSON.stringify(receipt).includes('Packing instructions'))
  assert.deepEqual((await ok(editor.get('/api/v1/search/saved'))).searches.map(r=>r.id),[saved.id])
  const erased=await ok(root.post('/api/v1/tasks',{projectId:p.id,title:'synthetic-pegboard-319 erase this searchable task'}))
