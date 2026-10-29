@@ -4155,7 +4155,7 @@
       "executable": false
     },
     "tests/journeys/reporting.mjs": {
-      "sha256": "a2e914aa7e6d3fd1bcb48d3a328d44a9fda123943b1d0cdf04b0fd4427e15601",
+      "sha256": "5cfadda7e7f85ec5ed57c9e72151bb9b165886560efb5d7fa724034e59146c9c",
       "executable": false
     },
     "tests/journeys/schedule-settings.mjs": {

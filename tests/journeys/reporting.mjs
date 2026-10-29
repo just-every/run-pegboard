@@ -39,6 +39,21 @@ export async function reportingJourney({w,browser}) {
    assert.equal(await values.count(),widget.values.length)
    if(expected[index])for(const [point,value] of expected[index].entries())await expect(values.nth(point).locator('strong')).toHaveText(widget.values[point].label+': '+value)
   }
+  // Inspect the actual plotted marks as well as the source-row value lists.
+  const chart=kind=>page.getByRole('img',{name:kind+' chart',exact:true})
+  const bars=await chart('Horizontal bar').locator('rect').evaluateAll(nodes=>nodes.map(n=>Number(n.getAttribute('width'))))
+  assert.equal(bars.length,3);assert.ok(bars.every(n=>n>0&&n===bars[0]),'equal status counts draw equal horizontal bars')
+  const columns=await chart('Vertical column').locator('rect').evaluateAll(nodes=>nodes.map(n=>Number(n.getAttribute('height'))))
+  assert.equal(columns.length,3);assert.ok(columns.every(n=>n>0&&n===columns[0]),'equal status counts draw equal columns')
+  const slices=await chart('Donut').locator('circle').evaluateAll(nodes=>nodes.map(n=>n.getAttribute('stroke-dasharray').split(' ').map(Number)))
+  assert.equal(slices.length,3);for(const [part,gap] of slices)assert.ok(Math.abs(part/(part+gap)-1/3)<0.000001,'each slice reconciles to one of three tasks')
+  const line=await chart('Line').locator('circle').evaluateAll(nodes=>nodes.map(n=>Number(n.getAttribute('cy'))))
+  assert.equal(line.length,3,'unknown history has no invented plotted marks');assert.ok(line[0]<line[1]&&line[1]===line[2],'the line draws four tasks followed by three and three')
+  for(const [kind,rises] of [['Burn up',false],['Burn down',true]]){
+   const points=await chart(kind).locator('circle').evaluateAll(nodes=>nodes.map(n=>Number(n.getAttribute('cy'))))
+   assert.equal(points.length,3);assert.ok(points[0]===points[2]&&(rises?points[1]<points[0]:points[1]>points[0]),'reopening and effort changes are drawn in the burn curve')
+   assert.equal(await chart(kind).locator('line[stroke-dasharray]').count(),2,'known scope is drawn independently of progress')
+  }
   const shared=page.locator('[data-report-value="0:2"]')
   await shared.locator('summary').click()
   await shared.getByRole('link',{name:'Shared deliverable',exact:true}).click()
