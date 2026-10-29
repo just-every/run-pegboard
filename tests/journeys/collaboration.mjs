@@ -8,14 +8,15 @@ export async function collaborationJourney({w,browser,ok}) {
  const project=ok(await root.post('/api/v1/projects',{name:'Collaboration workshop'}))
  ok(await root.post('/api/v1/grants',{objectType:'project',objectId:project.id,granteeId:peer.id,level:'editor'}))
  const share=ok(await root.post('/api/v1/grants',{objectType:'project',objectId:project.id,granteeId:guest.id,level:'commenter'}))
- const task=ok(await root.post('/api/v1/tasks',{projectId:project.id,title:'Native text collaboration',description:'Initial **description**',ownerId:peer.id}))
+ const task=ok(await root.post('/api/v1/tasks',{projectId:project.id,title:'Native text collaboration',description:'Initial **description**',ownerId:peer.id,kind:'approval'}))
  const brief='/api/v1/projects/'+project.id+'/brief',taskApi='/api/v1/tasks/'+task.id
  ok(await root.post(brief,{version:0,text:'# Initial brief\n**Agreed direction**'}))
- const contexts=[]
+ const contexts=[],browserErrors=[]
  const open=async client=>{
   const context=await browser.newContext({viewport:{width:1440,height:900}});contexts.push(context)
   await context.addCookies(client.cookie.split('; ').map(pair=>({name:pair.slice(0,pair.indexOf('=')),value:pair.slice(pair.indexOf('=')+1),url:w.origin})))
-  return {context,page:await context.newPage()}
+  const page=await context.newPage();page.on('pageerror',error=>browserErrors.push(error.message))
+  return {context,page}
  }
  const proof=async(page,name)=>{
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'collaboration reflows')
@@ -127,7 +128,7 @@ export async function collaborationJourney({w,browser,ok}) {
   await g.page.goto(briefUrl);await expect(g.page.locator('[data-live-region="brief"]')).toContainText('Reconciled brief')
   assert.equal(await g.page.getByRole('button',{name:'Save new revision',exact:true}).count(),0)
   await proof(g.page,'guest-scoped-brief')
-  const guestTask=await g.context.newPage();await guestTask.goto(taskUrl)
+  const guestTask=await g.context.newPage();guestTask.on('pageerror',error=>browserErrors.push(error.message));await guestTask.goto(taskUrl)
   await expect(guestTask.locator('[data-live-status]')).toContainText('Live')
   ok(await root.post('/api/v1/grants/'+share.id+'/revoke',{}))
   await expect(g.page.getByRole('heading',{name:'This work is no longer available.',exact:true})).toBeVisible()
@@ -138,6 +139,7 @@ export async function collaborationJourney({w,browser,ok}) {
   assert.ok(!(await guestTask.content()).includes(project.name),'revocation clears the protected breadcrumb')
   assert.ok(!(await guestTask.title()).includes(task.title),'revocation clears the protected document title')
   await proof(guestTask,'revoked-reader')
+  assert.deepEqual(browserErrors,[],'collaboration controls produce no browser errors')
   console.log('Native text collaboration: two browsers, preserved reconnect drafts, exact revisions and scoped guest reads passed at 1440px')
  }finally{for(const context of contexts)await context.close()}
 }

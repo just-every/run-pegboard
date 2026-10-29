@@ -4099,7 +4099,7 @@
       "executable": false
     },
     "tests/journeys/collaboration.mjs": {
-      "sha256": "92e7df06ff46c36640850235052f8424b8ab62d4caea4965e48d11ed44bc3057",
+      "sha256": "437bd27cf66b46ea124c4c458b8bbecc53595042cc82a6d76058fe5d7cad689b",
       "executable": false
     },
     "tests/journeys/conversion-hierarchy.mjs": {
