@@ -4,6 +4,8 @@ if (root) {
   const status = root.querySelector('[data-live-status]'), preview = root.querySelector('[data-date-preview]')
   let reading = false, ended = false, writing = false
   const message = text => { status.textContent = text }
+  const offline = 'Offline — stale view. Changes are not sent until you reconnect and review them.'
+  const syncDraft = row => { if (row.querySelector('form[data-dirty="1"]')) row.dataset.dirty = '1'; else delete row.dataset.dirty }
   const refuse = () => {
     ended = true
     document.title = 'Not available · Pegboard'
@@ -11,6 +13,7 @@ if (root) {
     note.className = 'card panel'
     note.textContent = 'This view is no longer available. Current access is required to read or change work.'
     document.getElementById('main').replaceChildren(note)
+    document.querySelector('.crumbs')?.replaceChildren()
   }
   const request = async (url, options = {}) => {
     const response = await fetch(url, { credentials: 'same-origin', cache: 'no-store', ...options })
@@ -19,12 +22,14 @@ if (root) {
   }
   const refresh = async () => {
     if (reading || ended || writing) return
-    if (!navigator.onLine) { message('Offline — stale view. Changes are not sent until you reconnect and review them.'); return }
+    if (!navigator.onLine) { message(offline); return }
     reading = true
     try {
       const response = await request(location.href, { signal: AbortSignal.timeout(5000), headers: { 'x-work-view-refresh': '1' } })
       if (!response.ok) throw new Error('Read unavailable')
-      const doc = new DOMParser().parseFromString(await response.text(), 'text/html')
+      const html = await response.text()
+      if (!navigator.onLine) { message(offline); return }
+      const doc = new DOMParser().parseFromString(html, 'text/html')
       const fresh = doc.querySelector('[data-work-content]'), current = root.querySelector('[data-work-content]')
       if (!fresh || !current) throw new Error('View unavailable')
       const focused = document.activeElement
@@ -45,7 +50,7 @@ if (root) {
       current.replaceWith(fresh)
       if (focused?.isConnected) focused.focus({ preventScroll: true })
       message(conflict ? 'Conflict — a remote edit needs review. Your draft has not been sent.' : 'Live — committed values checked. Local drafts are not shared.')
-    } catch { if (!ended) message('Connection unavailable — stale view. Keep your draft and reconnect before sending changes.') }
+    } catch { if (!ended) message(!navigator.onLine ? offline : 'Connection unavailable — stale view. Keep your draft and reconnect before sending changes.') }
     finally { reading = false }
   }
   const post = async (url, input) => {
@@ -55,7 +60,7 @@ if (root) {
     if (!response.ok) throw new Error(response.status === 409 ? 'Conflict — reviewed values changed. Your draft is retained. Refresh this task before saving again.' : 'Change refused: ' + String(result.error ?? 'unavailable').replaceAll('_', ' '))
     return result
   }
-  const dirty = event => { const row = event.target.closest('[data-work-row]'); if (row) { row.dataset.dirty = '1'; const discard = row.querySelector('[data-refresh-task]'); if (discard) discard.hidden = false } }
+  const dirty = event => { const row = event.target.closest('[data-work-row]'); if (row) { row.dataset.dirty = '1'; const form = event.target.closest('form'); if (form) form.dataset.dirty = '1'; const discard = row.querySelector('[data-refresh-task]'); if (discard) discard.hidden = false } }
   root.addEventListener('focusin', event => { if (event.target.matches('input,select,textarea')) dirty(event) })
   root.addEventListener('input', dirty)
   root.addEventListener('change', dirty)
@@ -100,15 +105,22 @@ if (root) {
       } else {
         if (input.moves) input.moves = JSON.parse(input.moves)
         const result = await post(form.action, input)
-        if (row) delete row.dataset.dirty
-        if (form.matches('[data-date-apply]')) { root.querySelectorAll('[data-work-row]').forEach(node => { delete node.dataset.dirty }); preview.replaceChildren() }
+        if (row) { delete form.dataset.dirty; syncDraft(row) }
+        if (form.matches('[data-date-apply]')) {
+          const changed = new Set(input.moves.map(move => move.taskId))
+          root.querySelectorAll('[data-work-row]').forEach(node => {
+            if (changed.has(node.dataset.workRow)) node.querySelectorAll('[data-date-edit]').forEach(dateForm => { delete dateForm.dataset.dirty })
+            syncDraft(node)
+          })
+          preview.replaceChildren()
+        }
         message(result.status === 'pending' ? 'Awaiting authorized approval. No dates changed.' : 'Change committed. Refreshing visible values.')
       }
     } catch (error) { if (!ended) message(error.message) }
     finally { writing = false; if (button.isConnected) button.disabled = false }
     if (!form.matches('[data-date-edit]')) await refresh()
   })
-  addEventListener('offline', () => message('Offline — stale view. Changes are not sent until you reconnect and review them.'))
+  addEventListener('offline', () => message(offline))
   addEventListener('online', () => { void refresh() })
   addEventListener('pageshow', () => { void refresh() })
   const timer = setInterval(refresh, 1000)
