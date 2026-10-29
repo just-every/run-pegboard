@@ -85,8 +85,9 @@ export async function setPersonRole(db: D1Database, actor: Actor, workspaceId: s
 }
 
 /** Base's account changes (role, active or not) run through Base's own policy and its last-owner guard; Pegboard adds the audit row and the new epoch. */
-export async function changeBaseAccount(db: D1Database, actor: Actor, workspaceId: string, operatorId: string, change: { role?: string; status?: string }, apply: () => Promise<unknown>) {
+export async function changeBaseAccount(db: D1Database, actor: Actor, workspaceId: string, operatorId: string, change: { role?: string; status?: string }, apply: () => Promise<unknown>, reviewedOwnership = false) {
   await requireAdministrator(db, actor, workspaceId)
+  if (change.role && !reviewedOwnership && (change.role === 'owner' || (await operatorRow(db, operatorId))?.role === 'owner')) throw conflict('ownership_review_required')
   await keepGoalOwner(db,operatorId,{status:change.status,baseRole:change.role})
   try { await apply() } catch (error) { throw translate(error) }
   await batch(db, [auditStatement(db, { workspaceId, actorId: actor.id, action: change.status ? 'person.status_changed' : 'person.base_role_changed', targetType: 'workspace', targetId: workspaceId, subjectId: operatorId, detail: change }), bumpEpoch(db)])

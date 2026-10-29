@@ -63,7 +63,7 @@ export function workspaceRoutes(app: App) {
   app.get('/workspaces/:id/people/:operator/ownership-preview', door(({ actor, db, params, query }) => ownershipPreview(db, actor, params.operator, query.get('action'))))
   app.post('/workspaces/:id/people/:operator/ownership', door(async ({ actor, db, params, input, request, env }) => {
     const review = await validateOwnership(db, actor, params.operator, input)
-    await changeBaseAccount(db, actor, params.id, params.operator, { role: review.role }, () => operatorAuth(env).setRole(request, params.operator, review.role))
+    await changeBaseAccount(db, actor, params.id, params.operator, { role: review.role }, () => operatorAuth(env).setRole(request, params.operator, review.role), true)
     return { id: params.operator, role: review.role }
   }, { next: () => '/app/admin' }))
   app.post('/workspaces/:id/people/:operator/account', door(({ actor, db, params, input, request, env }) => {

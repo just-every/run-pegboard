@@ -199,7 +199,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "b00fff141c7c99dec5957e65e6ad9758c8d608322298b8550958a5f99bc8dfb6",
+      "sha256": "e1e4237e9aa64689f6e7afa2c8fa75eec86178e643475aa66ea3b24a4d1a3145",
       "executable": false
     },
     "AGENTS.md": {
@@ -215,7 +215,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "86ae8424e892cbe441ffb68095931ae6025af3eba58a23228b29296b92753a24",
+      "sha256": "0e47f26f45c26f2b941908e7779a53619caf7945fa1beb56450057aa39e9da1a",
       "executable": false
     },
     "DEMO.md": {
@@ -243,7 +243,7 @@
       "executable": false
     },
     "docs/CLAIMS.md": {
-      "sha256": "cdb8673afadf2a11c48a4d6046f6cf16fa474c8bc6f36a114954ae946417f91d",
+      "sha256": "f8dd1153939eaba614d4bd3b44851c37d9493d0f0044e6c62b39900777dfc34c",
       "executable": false
     },
     "docs/DATA-CUSTODY.md": {
@@ -2943,7 +2943,7 @@
       "executable": false
     },
     "src/pegboard/admin/settings.ts": {
-      "sha256": "1cfe0505cba7b8299436afb21d46456310cdb03f14a1b994e3e2cc97670d1bdf",
+      "sha256": "7305444b2bd96aca7a2d5d128b39ac3ea47e32a4a339541bcf69c1a41052a10c",
       "executable": false
     },
     "src/pegboard/admin/webhooks.ts": {
@@ -3107,7 +3107,7 @@
       "executable": false
     },
     "src/pegboard/api/workspace-routes.ts": {
-      "sha256": "db3c8968ef0edeeeea7774b0fb2ee1778385673166590024b54cd943655ea8c8",
+      "sha256": "d6a79e0c61cb27c0e69e0637c4cfc24193d3302310ffb3af76d6ed3e27d817be",
       "executable": false
     },
     "src/pegboard/approvals/mail.d.mts": {
@@ -3655,7 +3655,7 @@
       "executable": false
     },
     "src/pegboard/ui/error.tsx": {
-      "sha256": "e5048f080629ec18cb0b7e6fa0b9e81cbd1afae693dfcf855e2b6e09cd47b107",
+      "sha256": "79a8c2d17829376f399ec25f410db288f23fa86b14864e0d0e39bd66141578e4",
       "executable": false
     },
     "src/pegboard/ui/field-errors.ts": {
@@ -4195,7 +4195,7 @@
       "executable": false
     },
     "tests/scenarios/identity-lifecycle.mjs": {
-      "sha256": "9861ecdeefb7f960e88a5c3f9eace9492b52a7be92473f4fad08ce4007cb6351",
+      "sha256": "d0285272ae21457b12a4b716a849d27cce10831044838417391f21ec5bd5ebe1",
       "executable": false
     },
     "tests/scenarios/public-api.mjs": {

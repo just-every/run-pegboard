@@ -31,6 +31,7 @@ const sayings: Record<string, string> = {
   review_project_visibility_before_submission:'This includes personal time or project work you can no longer access. Keep personal time private and record submitted time against currently shared project work.',
 
   not_found: 'That is not available to you, or it does not exist.', forbidden: 'You do not have the access this needs.', cross_origin: 'That request did not come from this app.',
+  ownership_review_required: 'Open an installation ownership review in Administration before changing an owner role.',
   ownership_review_changed: 'The account or installation owners changed. Open a fresh ownership review.',
   confirm_ownership: 'Confirm that you reviewed this installation ownership change before continuing.',
   active_administrator_required: 'Choose an active installation administrator for the ownership handoff.',
