@@ -635,7 +635,7 @@
       "executable": false
     },
     "package.json": {
-      "sha256": "1c70df8c86a388f8dbd2d051f119d51226c9741a720e99321d241ab0ccac3962",
+      "sha256": "0fefd9847b6aaad9774b2fd7ef93070dea04c9e36782a9a4f80a1532592f66e4",
       "executable": false
     },
     "packaging.json": {
@@ -3115,11 +3115,11 @@
       "executable": false
     },
     "src/pegboard/audit/metadata.ts": {
-      "sha256": "34a266268de9322084e895e7c64dda5ebbc7ea91a03c2312b5b08fa7f58f741e",
+      "sha256": "f7f78958fd7403f1dfbf65c4381c44945e2e619f9258bdc12917e86669803446",
       "executable": false
     },
     "src/pegboard/audit/search.ts": {
-      "sha256": "9560c3fa74625d068d446f6c99c121957c8b1a85dcd60ae3e3dc8524b3cf709c",
+      "sha256": "c936a3f0bf0cb4dc66f49ba08461382d35cb4fe3e3712e80620e2724e3592ef3",
       "executable": false
     },
     "src/pegboard/authorization/audit.ts": {
@@ -3487,11 +3487,11 @@
       "executable": false
     },
     "src/pegboard/rules/definitions.ts": {
-      "sha256": "84ac6a288c41da1b1da1b3128a7f8df1cf7a9566b8a21d85eb79de5b121869fe",
+      "sha256": "7f7de6e622e661abed052c6cbd8fb3dfcc4026cb58b43098466f2023f10749ce",
       "executable": false
     },
     "src/pegboard/rules/execution.ts": {
-      "sha256": "f27d8c726959243c61015dbbbac8e89d2bb179091be21d99257d70999548ecc6",
+      "sha256": "c52654bc1f512a0498236c547d8d1e2265ad9359015222b63be0b3ebd734e8a1",
       "executable": false
     },
     "src/pegboard/rules/requests.ts": {
@@ -3675,7 +3675,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/audit.tsx": {
-      "sha256": "c40ab10fc1912486d02c11b60da74472c10b47611043fdb0eb41315fb74ef632",
+      "sha256": "071899b5794302f1a11dcc6bfa85eb83d91b542e50e16e88e239ee8e6e37ff98",
       "executable": false
     },
     "src/pegboard/ui/pages/availability.tsx": {
@@ -4122,6 +4122,10 @@
       "sha256": "647940876f603d283e8c7386906e28a7099da557c74c049fb3b023b4d3770ca1",
       "executable": false
     },
+    "tests/journeys/rule-audit.mjs": {
+      "sha256": "70f035dbbfb29068f9880f7e5a545ad78c30ba460f7884b0e59ef841ff620090",
+      "executable": false
+    },
     "tests/journeys/schedule-settings.mjs": {
       "sha256": "0b5266adcb551eca9b42f76486da56664f3d29771923ccf2879a98e8b6633f60",
       "executable": false
@@ -4143,7 +4147,7 @@
       "executable": false
     },
     "tests/journeys/work-graph.journey.mjs": {
-      "sha256": "9048bcc51294a487331d08d983b24ffe669fbd7ee187076307994177a2a92add",
+      "sha256": "9edd7b49d5090b5f833b5baf8b951aac7156e077e3b180e363a46f91d566d325",
       "executable": false
     },
     "tests/journeys/work-rules.mjs": {
@@ -4184,6 +4188,10 @@
     },
     "tests/scenarios/readiness.mjs": {
       "sha256": "f788c3aeeb59c82cab4c631a2fc13aa070faa9b5c591e529534fd7434cd21859",
+      "executable": false
+    },
+    "tests/scenarios/rule-audit.mjs": {
+      "sha256": "18ba7795fc62c8a67707237f9ebacfd2668fb7264ce320f92ea8504bbfa0bfc0",
       "executable": false
     },
     "tests/scenarios/schedule-calendar.mjs": {
@@ -4231,7 +4239,7 @@
       "executable": false
     },
     "tests/work-graph.test.mjs": {
-      "sha256": "dc98902858706f54ad2b3b76de52a54645c59ead9ba68daadb76ca75b0253f01",
+      "sha256": "811ce2a597f84e3bb54061a070c6c241c05ebefcb5ac7463c08708308cb59444",
       "executable": false
     },
     "tsconfig.json": {

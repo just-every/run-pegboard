@@ -1,3 +1,4 @@
+import { registerRuleAuditTests } from './scenarios/rule-audit.mjs'
 import { analystDatasetScenario } from './scenarios/analytics.mjs'
 import { registerCalendarBlockTests } from './scenarios/calendar-blocks.mjs'
 import { startCalendarServices } from './support/calendar-services.mjs'
@@ -2389,4 +2390,12 @@ describe('Calendar work blocks through provider schema edges', {concurrency:fals
  before(async () => { services = await startCalendarServices(); worker = await startWorker({settings:{PEGBOARD_LOCAL_CALENDAR_ORIGINS:services.origins}}) }, {timeout:120000})
  after(async () => { await worker?.stop(); await services?.stop() })
  registerCalendarBlockTests({test:it,context:()=>({w:worker,services})})
+})
+
+// One bounded rule-audit suite owns lifecycle and durable outcome journeys.
+describe('Local rule audit', {concurrency:false},()=>{
+ let worker
+ before(async()=>{worker=await startWorker()},{timeout:120000})
+ after(()=>worker?.stop())
+ registerRuleAuditTests({test:it,context:()=>worker})
 })
