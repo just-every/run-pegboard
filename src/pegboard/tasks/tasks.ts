@@ -74,7 +74,7 @@ export async function prepareTask(db: D1Database, actor: Actor, input: TaskInput
   }
   statements.unshift(bound(db, `INSERT INTO peg_tasks(id,workspace_id,title,description,kind,parent_id,status,priority,start_date,due_date,owner_id,creator_id,estimate_hours,internal_only,internal_notes,created_at,updated_at,completed_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     [id, workspaceId, title(input.title), (input.description ?? '').slice(0, 20000), kind === 'approval' ? 'task' : kind, parent?.id ?? null, status, input.priority ?? 'normal', date(input.startDate, 'start_date'), date(input.dueDate, 'due_date'), owner, actor.id, hours(input.estimateHours), input.internalOnly ? 1 : 0, (input.internalNotes ?? '').slice(0, 20000), at, at, status === 'done' ? at : null]))
-  statements.push(historyStatement(db, id, null, actor.id, 'created', { kind, parentId: parent?.id ?? null }),...(options.queueRules===false?[]:[...await bundleQueueStatements(db,projectId,id),...await templateRuleQueueStatements(db,projectId,id)]))
+  statements.push(historyStatement(db, id, null, actor.id, 'created', { kind, parentId: parent?.id ?? null, ...(actor.preparedBy ? {preparedBy: actor.preparedBy} : {}) }),...(options.queueRules===false?[]:[...await bundleQueueStatements(db,projectId,id),...await templateRuleQueueStatements(db,projectId,id)]))
   return { id, statements, projectId }
 }
 
@@ -122,7 +122,7 @@ export async function updateTask(db: D1Database, actor: Actor, idOrRef: string, 
       [next.title, next.description, next.status, next.priority, next.start_date, next.due_date, next.owner_id, next.estimate_hours, next.internal_only, next.internal_notes, next.completed_at, at, task.id]))
     const shown = Object.fromEntries(Object.entries(changes).filter(([key]) => key !== 'internal_notes' && key !== 'internal_only'))
     const hidden = Object.keys(changes).some(key => key === 'internal_notes' || key === 'internal_only')
-    if (Object.keys(shown).length) statements.push(historyStatement(db, task.id, null, actor.id, next.status !== task.status && Object.keys(shown).length === 1 ? 'status.changed' : 'updated', shown))
+    if (Object.keys(shown).length) statements.push(historyStatement(db, task.id, null, actor.id, next.status !== task.status && Object.keys(shown).length === 1 ? 'status.changed' : 'updated', { ...shown, ...(actor.preparedBy ? {preparedBy: actor.preparedBy} : {}) }))
     if (hidden) statements.push(historyStatement(db, task.id, null, actor.id, 'internal.changed', {}))
   }
   if (patch.collaborators) statements.push(reopenGuard(db,task.id,actor.id,'collaborators',patch.collaborators.length?'1':'EXISTS(SELECT 1 FROM peg_task_collaborators WHERE task_id=t.id)'),bound(db, 'DELETE FROM peg_task_collaborators WHERE task_id=?', [task.id]), ...[...new Set(patch.collaborators)].map(id => bound(db, 'INSERT INTO peg_task_collaborators(task_id,operator_id) VALUES (?,?)', [task.id, id])), historyStatement(db, task.id, null, actor.id, 'collaborators.changed', { count: new Set(patch.collaborators).size }))

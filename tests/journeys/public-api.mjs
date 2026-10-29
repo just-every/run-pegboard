@@ -1,9 +1,11 @@
+import {message,localPolicy} from '../agent-door/client.mjs'
 import assert from 'node:assert/strict'
 import {expect} from '@playwright/test'
 import {mkdir} from 'node:fs/promises'
 
 export async function publicApiJourney({w,browser,owner,cookies}) {
  const ok=async promise=>{const r=await promise;assert.equal(r.status,200,JSON.stringify(r.body));return r.body}
+ await ok(owner.call('PUT','/agents/api/policy',localPolicy))
  const project=await ok(owner.post('/api/v1/projects',{name:'Connected work'}))
  const guest=await w.person('api-browser-guest@example.com','Connected guest','guest')
  const viewer=await w.person('api-browser-viewer@example.com','Connected viewer')
@@ -11,7 +13,8 @@ export async function publicApiJourney({w,browser,owner,cookies}) {
  await ok(owner.post('/api/v1/grants',{objectType:'project',objectId:project.id,granteeId:viewer.id,level:'viewer'}))
  const key=await ok(guest.post('/api/v1/api-keys',{name:'Connected client',projects:[project.id],expiresAt:Date.now()+3600000,writable:true,consent:true}))
  const call=async(name,args)=>{
-  const response=await fetch(w.origin+'/api/v1/public/mcp',{method:'POST',headers:{authorization:'Bearer '+key.secret,'content-type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:1,method:['tools','call'].join('/'),params:{name,arguments:args}})})
+  const m=message({jsonrpc:'2.0',id:1,method:'tools/call',params:{name,arguments:args}})
+  const response=await fetch(w.origin+'/api/v1/public/mcp',{method:'POST',headers:{authorization:'Bearer '+key.secret,'content-type':'application/json',...m.headers},body:JSON.stringify(m.body)})
   assert.equal(response.status,200);const message=await response.json();assert.equal(message.result.isError,false,JSON.stringify(message));return JSON.parse(message.result.content[0].text)
  }
  const task=await call('task_create',{title:'Connected draft',projectId:project.id,intent:'browser-create'})
