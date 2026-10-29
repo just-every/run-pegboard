@@ -1,0 +1,1 @@
+CREATE TRIGGER peg_merge_parent_generation AFTER UPDATE ON peg_tasks WHEN OLD.parent_id IS NOT NEW.parent_id BEGIN INSERT INTO peg_rule_mutation_generations VALUES(NEW.id,'parent_id',1) ON CONFLICT(task_id,kind) DO UPDATE SET generation=generation+1; END;

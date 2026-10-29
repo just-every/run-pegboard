@@ -1,5 +1,16 @@
 import { dashboards, ownDashboard, readSnapshot } from '../reporting/dashboard'
 import { ReportsSettings, ReportsList, ReportPage } from './pages/reports'
+import {contentSearch} from '../search/content'
+import {savedSearches} from '../search/saved'
+import {SearchPage} from './pages/search'
+import {workMarks,markWork} from '../search/marks'
+import {MergePage} from './pages/merge'
+import {mergePreview} from '../merge/preview'
+import {mergeView,mergeUndoPreview} from '../merge/execution'
+import {duplicatePreview} from '../merge/duplicates'
+import {CataloguePage} from './pages/catalogue'
+import {cataloguePreview,catalogueReceipt,catalogueUndoPreview} from '../recovery/catalogue'
+import {selectionPreview,selectionReceipt} from '../recovery/selection'
 import { ownKey, readReport } from '../analytics-export/reports'
 import { AnalystReportPage } from './pages/analyst-report'
 import { operatorMail } from '../../mail.server.mjs'
@@ -124,7 +135,7 @@ import { resolveTaskId } from '../references/refs'
 import { board, myTasks } from '../tasks/board'
 import { viewTask } from '../tasks/view'
 import { displayNames, ensureDefaultWorkspace, workspaceRole, workspaceSettings, workspacesOf, actorOf, type Actor } from '../workspace/people'
-import { listProjects, listSections, openProject, previewShare, need } from '../workspace/projects'
+import { listProjects, listSections, openProject, previewShare, need, fieldReadable } from '../workspace/projects'
 import { listTeams, teamMembers } from '../workspace/teams'
 import { AccessReviewPage } from './pages/access-review'
 import { AdminPage } from './pages/admin'
@@ -225,7 +236,16 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
       return page('Template rules',h(TemplateRulesPage,{viewer,view,templates:(await listTemplates(db,actor,view.project.workspace_id)).map(t=>({id:t.template.id,name:t.template.name,version:t.headVersion,roles:t.definition.roles})),people:await peopleOptions(db,actor,view.project.workspace_id),selectedTemplateId:url.searchParams.get('templateId')??undefined,preview:url.searchParams.get('review')?await previewTemplateRule(db,actor,url.searchParams.get('review')!,{...Object.fromEntries(url.searchParams),runIds:url.searchParams.getAll('runIds[]')}):null}))
     }
     if(section==='fields'&&id&&tail==='revisions')return page('Field revisions',h(FieldRevisionsPage,{viewer,view:await fieldRevisionView(db,actor,id),preview:url.searchParams.has('fromVersion')?await fieldRevisionPreview(db,actor,id,Object.fromEntries(url.searchParams)):null}))
-    if(section==='recovery'&&id==='bulk'&&!tail){const input=bulkInput({...Object.fromEntries(url.searchParams),taskIds:url.searchParams.getAll('taskIds[]')});return page('Bulk changes',h(BulkPage,{viewer,input,tasks:(await recoveryList(db,actor,workspace)).choices.filter(c=>c.value.startsWith('task.')).map(c=>({value:c.value.slice(5),label:c.label.slice(7)})),people:await peopleOptions(db,actor,workspace),listing:await listBulk(db,actor,workspace),preview:input.taskIds.length?await bulkPreview(db,actor,workspace,input):null,undo:url.searchParams.get('operationId')?await undoBulkPreview(db,actor,workspace,url.searchParams.get('operationId')!):null}))}
+    if(section==='task-merges'){
+      const input=Object.fromEntries(url.searchParams)
+      return page('Merge tasks',h(MergePage,{viewer,input,tasks:(await recoveryList(db,actor,workspace)).choices.filter(c=>c.value.startsWith('task.')).map(c=>({value:c.value.slice(5),label:c.label.slice(7)})),people:await peopleOptions(db,actor,workspace),preview:!id&&input.sourceId&&input.survivorId&&input.review?await mergePreview(db,actor,workspace,input):null,duplicate:!id&&input.sourceId&&input.survivorId&&input.mark?await duplicatePreview(db,actor,workspace,input):null,result:id?await mergeView(db,actor,workspace,id):null,undo:id&&url.searchParams.has('undo')?await mergeUndoPreview(db,actor,workspace,id):null}))
+    }
+    if(section==='recovery'&&id==='catalogue'&&!tail){
+      const input={...Object.fromEntries(url.searchParams),taskIds:url.searchParams.getAll('taskIds[]')},fieldContext=url.searchParams.get('projectId')?(await openProject(db,actor,url.searchParams.get('projectId')!)).effective:null
+      return page('Bulk actions',h(CataloguePage,{viewer,input,fieldOptions:url.searchParams.get('projectId')?(await ruleDateFields(db,url.searchParams.get('projectId')!)).filter(f=>fieldReadable(f,fieldContext!)).map(f=>({value:f.key,label:f.label})):[],tasks:(await recoveryList(db,actor,workspace)).choices.filter(c=>c.value.startsWith('task.')).map(c=>({value:c.value.slice(5),label:c.label.slice(7)})),projects:(await listProjects(db,actor,workspace)).filter(p=>p.level&&['editor','admin'].includes(p.level)).map(p=>({value:p.id,label:p.name})),plan:url.searchParams.has('review')?await cataloguePreview(db,actor,workspace,input):null,receipt:url.searchParams.has('receipt')?await catalogueReceipt(db,actor,workspace,url.searchParams.get('receipt')!):null,undo:url.searchParams.has('undo')?await catalogueUndoPreview(db,actor,workspace,url.searchParams.get('receipt')!):null}))
+    }
+    if(section==='search'&&!id)return page('Find work',h(SearchPage,{viewer,marks:await workMarks(db,actor,workspace),people:await peopleOptions(db,actor,workspace),data:await contentSearch(db,actor,workspace,Object.fromEntries(url.searchParams)),saved:await savedSearches(db,actor,workspace),projects:(await listProjects(db,actor,workspace)).map(p=>({value:p.id,label:p.name}))}))
+    if(section==='recovery'&&id==='bulk'&&!tail){const input=bulkInput({...Object.fromEntries(url.searchParams),taskIds:url.searchParams.getAll('taskIds[]')});return page('Bulk changes',h(BulkPage,{viewer,input,selection:url.searchParams.has('selection'),selectionPlan:url.searchParams.has('selection')&&input.taskIds.length?await selectionPreview(db,actor,workspace,{...input,reviewRows:url.searchParams.get('reviewRows')??undefined}):null,receipt:url.searchParams.has('receipt')?await selectionReceipt(db,actor,workspace,url.searchParams.get('receipt')!):null,tasks:(await recoveryList(db,actor,workspace)).choices.filter(c=>c.value.startsWith('task.')).map(c=>({value:c.value.slice(5),label:c.label.slice(7)})),people:await peopleOptions(db,actor,workspace),listing:await listBulk(db,actor,workspace),preview:!url.searchParams.has('selection')&&input.taskIds.length?await bulkPreview(db,actor,workspace,input):null,undo:url.searchParams.get('operationId')?await undoBulkPreview(db,actor,workspace,url.searchParams.get('operationId')!):null}))}
     if(section==='projects'&&id&&tail==='brief')return page('Project brief',h(BriefPage,{viewer,view:await briefView(db,actor,id,Object.fromEntries(url.searchParams))}))
     if(section==='recovery'&&!id)return page('Archive and trash',h(RecoveryPage,{viewer,listing:await recoveryList(db,actor,workspace),preview:url.searchParams.has('id')?await recoveryPreview(db,actor,workspace,Object.fromEntries(url.searchParams)):url.searchParams.get('target')?await recoveryPreview(db,actor,workspace,(()=>{const [type,id]=url.searchParams.get('target')!.split('.');return {type,id,action:type==='project'?'archive':'trash'}})()):null}))
     if(section==='workflow-bundles'&&!tail){return page('Workflow bundles',h(BundlesPage,{viewer,pendingSchedule:id&&url.searchParams.has('reviewJob')?await pendingRuleSchedulePreview(db,actor,id,url.searchParams.get('reviewJob')!):null,revisionPreview:id&&url.searchParams.has('fromVersion')?await bundleRevisionPreview(db,actor,id,Object.fromEntries(url.searchParams)):null,tags:(await tagCatalogue(db,actor,workspace)).filter(t=>!t.archived&&!t.owner_id).map(t=>({value:t.id,label:t.name})),bundles:id?[]:await listBundles(db,actor,workspace),view:id?await bundleView(db,actor,id):null,projects:(await listProjects(db,actor,workspace)).filter(p=>p.level==='admin').map(p=>({value:p.id,label:p.name})),fields:(await catalogue(db,actor,workspace)).map(f=>({value:f.id,label:f.label})),people:await peopleOptions(db,actor,workspace),preview:id&&url.searchParams.getAll('projectIds[]').length?await previewBundle(db,actor,id,{projectIds:url.searchParams.getAll('projectIds[]')}):null}))}
@@ -306,6 +326,8 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
     if (section === 'tasks' && id) {
       let task
       try { task = await viewTask(db, actor, decodeURIComponent(id)) } catch (error) { if (error instanceof PegError && error.status === 404) return refuse(db, actor, viewer, decodeURIComponent(id)); throw error }
+      if(task.id!==id)return new Response(null,{status:303,headers:{location:`/app/tasks/${task.id}`,'cache-control':'no-store'}})
+      await markWork(db,actor,workspace,task.id,'visit')
       const open = (await listProjects(db, actor, workspace)).filter(project => project.level && ['editor', 'admin'].includes(project.level) && !task.projects.some(own => own.id === project.id))
       const sections = Object.fromEntries(await Promise.all(task.projects.map(async project => [project.id, (await listSections(db, project.id)).map(entry => ({ value: entry.id, label: entry.name }))])))
       return page('Task', h(TaskPage, { viewer, task, editor:!task.personal&&task.capabilities.includes('edit')&&task.projects[0]?await editorFor(task.projects[0].id,[{value:task.id,label:task.title}],`/app/tasks/${task.id}`):null, participants: task.capabilities.includes('edit') ? await availabilityChoices(db,actor,workspace,await taskParticipants(db,actor,(await openTask(db,actor,task.id)).access),task.startDate,task.dueDate) : [], conversionLinks:await listConversionLinks(db,actor,'task',task.id), decision:task.kind==='approval'?await decisionPreview(db,actor,task.id):null, addable: open.map(project => ({ value: project.id, label: project.name })), sections, tagOptions:(await tagCatalogue(db,actor,workspace)).filter(t=>!t.archived).map(t=>({value:t.id,label:t.name})), preview: task.personal && url.searchParams.get('projectId') ? await visibilityPreview(db,actor,task.id,url.searchParams.get('projectId')!) : null }))

@@ -23,6 +23,8 @@ export function TaskPage({ viewer, task, participants, addable, sections, previe
     crumbs={[...(first ? [{ label: first.name, href: `/app/projects/${first.id}` }] : [{ label: 'My tasks', href: '/app/my-tasks' }]), { label: task.ref ?? 'Task', href: here, current: true }]}>
     {task.deliveryRecords.length>0&&<Card title="Delivery register"><ul className="rows">{task.deliveryRecords.map(r=><li key={r.id}><a href={r.link}>{r.title}</a></li>)}</ul></Card>}
     <ConversionLinks links={conversionLinks}/>
+    {task.duplicate&&<Card title="Duplicate work"><p>Marked as a duplicate of <a href={'/app/tasks/'+task.duplicate.id}>{task.duplicate.title}</a>.</p></Card>}
+    {can('edit')&&viewer.role!=='guest'&&task.kind==='task'&&!task.parentId&&<Card title="Combine work"><a href={'/app/task-merges?sourceId='+task.id}>Review duplicate mark or merge</a></Card>}
     {can('edit')&&viewer.role!=='guest'&&<Card title="Convert work"><p>{task.parentId?<a href={`/app/conversions?kind=promote&sourceId=${task.id}`}>Promote to top-level work</a>:<><a href={`/app/conversions?kind=task_to_project&sourceId=${task.id}`}>Convert to linked project</a> · <a href={`/app/conversions?kind=demote&sourceId=${task.id}`}>Make a subtask</a></>}</p></Card>}
     {can('edit')&&viewer.role!=='guest'&&<Card title="Recovery"><a className="button quiet" href={`/app/recovery?type=task&id=${task.id}&action=trash`}>Review trash</a></Card>}
     <Card title="Task">

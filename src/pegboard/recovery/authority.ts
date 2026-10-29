@@ -21,6 +21,7 @@ export async function recoverySubject(db:D1Database,actor:Actor,workspace:string
   if(type==='attachment'&&await first(db,"SELECT 1 FROM peg_data_erased_objects WHERE object_type='attachment' AND object_id=?",id))throw notFound()
   const task=await first<TaskRow>(db,'SELECT * FROM peg_tasks WHERE id=? AND workspace_id=?',version?.task_id??file?.task_id??id,workspace)
   if(!task||await first(db,"SELECT 1 FROM peg_data_erased_objects WHERE object_type='task' AND object_id=?",task.id))throw notFound()
+  if(await first(db,'SELECT 1 FROM peg_task_merges WHERE source_id=? AND undone_at IS NULL',task.id))throw notFound()
   const access=await taskAccess(db,actor,task,true)
   if(!access.capabilities.has('read'))throw notFound()
   if(file&&(file.project_id===null?task.owner_id!==actor.id:!access.contexts.has(file.project_id)))throw notFound()

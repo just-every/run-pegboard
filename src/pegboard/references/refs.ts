@@ -1,6 +1,7 @@
 // Human-readable references (MKT-142): unique in the installation, stable on moves and multi-homing, and every old
 // prefix and reference keeps resolving to its task after a prefix change. They never replace the immutable id.
 import { all, bound, conflict, first, invalid, now } from '../db'
+import {canonicalTask} from '../merge/canonical'
 import type { ProjectRow } from '../model'
 
 export const prefixPattern = /^[A-Z][A-Z0-9]{1,7}$/
@@ -12,13 +13,13 @@ export const normalizePrefix = (value: unknown): string => {
 export const refPattern = /^([A-Z][A-Z0-9]{1,7})-(\d{1,9})$/
 
 /** The statements that issue a task its next reference under the project's prefix; none when the project has no prefix. */
-export async function issueRef(db: D1Database, project: ProjectRow, taskId: string): Promise<{ ref: string; statements: D1PreparedStatement[] } | null> {
+export async function issueRef(db: D1Database, project: ProjectRow, taskId: string, offset=0): Promise<{ ref: string; statements: D1PreparedStatement[] } | null> {
   if (!project.prefix) return null
   const row = await first<{ next_number: number }>(db, 'SELECT next_number FROM peg_ref_prefixes WHERE prefix=?', project.prefix)
   if (!row) return null
-  const ref = `${project.prefix}-${row.next_number}`
+  const ref = `${project.prefix}-${row.next_number+offset}`
   return { ref, statements: [
-    bound(db, 'UPDATE peg_ref_prefixes SET next_number=next_number+1 WHERE prefix=? AND next_number=?', [project.prefix, row.next_number]),
+    bound(db, 'UPDATE peg_ref_prefixes SET next_number=next_number+1 WHERE prefix=? AND next_number=?', [project.prefix, row.next_number+offset]),
     bound(db, 'INSERT INTO peg_task_refs(ref,task_id,current,created_at) VALUES (?,?,1,?)', [ref, taskId, now()]),
   ] }
 }
@@ -53,10 +54,11 @@ export async function setPrefix(db: D1Database, project: ProjectRow, value: unkn
 
 /** An id or a reference, current or historical, to the task it names. Access is checked by the caller. */
 export async function resolveTaskId(db: D1Database, idOrRef: string): Promise<string | null> {
-  if (idOrRef.startsWith('tsk_')) return idOrRef
+  if (idOrRef.startsWith('tsk_')) return canonicalTask(db,idOrRef)
   const match = refPattern.exec(idOrRef.trim().toUpperCase())
   if (!match) return null
-  return (await first<{ task_id: string }>(db, 'SELECT task_id FROM peg_task_refs WHERE ref=?', `${match[1]}-${match[2]}`))?.task_id ?? null
+  const id=(await first<{ task_id: string }>(db, 'SELECT task_id FROM peg_task_refs WHERE ref=?', `${match[1]}-${match[2]}`))?.task_id
+  return id?canonicalTask(db,id):null
 }
 export const currentRef = async (db: D1Database, taskId: string) => (await first<{ ref: string }>(db, 'SELECT ref FROM peg_task_refs WHERE task_id=? AND current=1', taskId))?.ref ?? null
 export const aliases = async (db: D1Database, taskId: string) => (await all<{ ref: string }>(db, 'SELECT ref FROM peg_task_refs WHERE task_id=? AND current=0 ORDER BY created_at', taskId)).map(row => row.ref)
