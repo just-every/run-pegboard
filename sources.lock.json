@@ -4215,7 +4215,7 @@
       "executable": false
     },
     "tests/journeys/work-views.mjs": {
-      "sha256": "f278b8b6b8c770eb3e7b6b0df18954246ae57c25f8996da7cd2bc217f7c49479",
+      "sha256": "bc64ffee48931759d3c1b1728e1c01672301e99192642b11cb1e562fcf3ef781",
       "executable": false
     },
     "tests/journeys/workflow-bundles.mjs": {
