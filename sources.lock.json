@@ -1079,7 +1079,7 @@
       "executable": false
     },
     "public/look/work-views.js": {
-      "sha256": "4d0b40532dfaee18898ba77a201fd91b659a36a9266362267af6db8cdd265ccd",
+      "sha256": "52646e5822f6c606d4c2ed029603c3029594ba9c225e55351e7931b24b7790c4",
       "executable": false
     },
     "public/personal-day.js": {
@@ -3087,7 +3087,7 @@
       "executable": false
     },
     "src/pegboard/api/schedule-routes.ts": {
-      "sha256": "cc5516fc9709c14d92736ffaeac2e618ea2dc2901bdafe6cc6834c329d0dc30a",
+      "sha256": "c2a04d35aa0833259e2e3f827039767ae24e1ddbf46e80da39a87d4910add7b2",
       "executable": false
     },
     "src/pegboard/api/status-routes.ts": {
@@ -3531,7 +3531,7 @@
       "executable": false
     },
     "src/pegboard/schedule/changes.ts": {
-      "sha256": "ff0cedd10a7bdf71c8fe05e4df5185c5361fd7b94c8a444acca41f2314a6e473",
+      "sha256": "29d683dcfc3fb5789fd794f1cf0b343a331bfa7e3a6f4fb2e38034e60b04d7a9",
       "executable": false
     },
     "src/pegboard/schedule/dependencies.ts": {
@@ -3879,7 +3879,7 @@
       "executable": false
     },
     "src/pegboard/ui/routes.ts": {
-      "sha256": "97c406609ec440df91a2eeb6a8ef85c70fbeb2e80338a920412fc253c046ea20",
+      "sha256": "ab93a484595cea18bc68a3a9bc21ed5432909f077058642c3b08395698ee4b0f",
       "executable": false
     },
     "src/pegboard/ui/schedule-editor.tsx": {
@@ -3899,7 +3899,7 @@
       "executable": false
     },
     "src/pegboard/ui/work-views/page.tsx": {
-      "sha256": "5a71641c7ebd51c5686ab5a5e8c8d60f0d19c1c51dd525a526846e5f200676f5",
+      "sha256": "569ada3cbf10d6df388e5e18734ff5cec58d11d11ed1eddb52020f16c70a6445",
       "executable": false
     },
     "src/pegboard/ui/work-views/rows.tsx": {
@@ -3907,7 +3907,7 @@
       "executable": false
     },
     "src/pegboard/ui/work-views/settings.tsx": {
-      "sha256": "045b33b1639b3f33087f0a49152806f0ad45810dd56d2e16fcff0ae431beafb0",
+      "sha256": "c20ac37afc3f5fdfad62a9d6d45a572739e796e050979f977cc8ed4497c3801b",
       "executable": false
     },
     "src/pegboard/ui/work-views/timeline.tsx": {
@@ -3931,7 +3931,7 @@
       "executable": false
     },
     "src/pegboard/views/store.ts": {
-      "sha256": "8313fc95b1a25b24ab6d3bf8b08f919fbff37c92731da24b21dc5f77592b85dc",
+      "sha256": "9cd4e6e50af0edf54b3deea53bc63572878005af843f6389aeb0cbe1741548bd",
       "executable": false
     },
     "src/pegboard/views/workload.ts": {
@@ -4215,7 +4215,7 @@
       "executable": false
     },
     "tests/journeys/work-views.mjs": {
-      "sha256": "55379e8af9ae2d2ae51f508090b549b8c4ae6ce6be34456c49acb26e6de58bf0",
+      "sha256": "2343699a8c22db7cdcf2ca34f9e4ff40509a802bf34b6b5e63cfa9d8991b704f",
       "executable": false
     },
     "tests/journeys/workflow-bundles.mjs": {

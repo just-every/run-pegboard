@@ -2,8 +2,18 @@
 const root = document.querySelector('[data-work-view]')
 if (root) {
   const status = root.querySelector('[data-live-status]'), preview = root.querySelector('[data-date-preview]')
-  let reading = false, ended = false, writing = false
-  const message = text => { status.textContent = text }
+  let reading = false, ended = false, writing = false, pendingId = null
+  const awaiting = 'Awaiting authorized approval. No dates changed.'
+  const message = text => { status.textContent = pendingId ? awaiting + ' ' + text : text }
+  const showShifts = shifts => {
+    const list = document.createElement('ul'); list.className = 'rows'
+    for (const shift of shifts) {
+      const item = document.createElement('li')
+      item.textContent = `${shift.title}: ${shift.from.start ?? 'No start'} to ${shift.from.due ?? 'No due'} → ${shift.to.start ?? 'No start'} to ${shift.to.due ?? 'No due'} · ${shift.owner} · ${shift.estimateHours} planned hours`
+      list.append(item)
+    }
+    return list
+  }
   const offline = 'Offline — stale view. Changes are not sent until you reconnect and review them.'
   const syncDraft = row => { if (row.querySelector('form[data-dirty="1"]')) row.dataset.dirty = '1'; else delete row.dataset.dirty }
   const refuse = () => {
@@ -58,6 +68,21 @@ if (root) {
         }
       }
       current.replaceWith(fresh)
+      if (pendingId) {
+        const response = await request('/api/v1/schedule/sets/' + encodeURIComponent(pendingId) + '/status', { signal: AbortSignal.timeout(5000) })
+        if (!response.ok) throw new Error('Proposal status unavailable')
+        const proposal = await response.json()
+        preview.replaceChildren()
+        const note = document.createElement('p')
+        if (proposal.status === 'pending') {
+          note.textContent = proposal.stale ? awaiting + ' The reviewed values changed; the request needs a fresh review.' : awaiting
+          preview.append(note, showShifts(proposal.shifts))
+        } else {
+          pendingId = null
+          note.textContent = proposal.status === 'applied' ? 'Authorized approval applied the date change.' : proposal.status === 'rejected' ? 'The date change was rejected. No dates changed by this request.' : 'The approved date change was undone.'
+          preview.append(note)
+        }
+      }
       if (focused?.isConnected) focused.focus({ preventScroll: true })
       message(conflict ? 'Conflict — a remote edit needs review. Your draft has not been sent.' : 'Live — committed values checked. Local drafts are not shared.')
     } catch { if (!ended) message(!navigator.onLine ? offline : 'Connection unavailable — stale view. Keep your draft and reconnect before sending changes.') }
@@ -76,13 +101,14 @@ if (root) {
   root.addEventListener('change', dirty)
   root.addEventListener('click', event => {
     if (event.target.closest('[data-refresh-task]')) { delete event.target.closest('[data-work-row]').dataset.dirty; void refresh() }
-    if (event.target.closest('[data-cancel-date]')) preview.replaceChildren()
+    if (event.target.closest('[data-cancel-date]') && !pendingId) preview.replaceChildren()
   })
   root.addEventListener('submit', async event => {
     const form = event.target
     if (!form.matches('[data-live-edit],[data-date-edit],[data-date-apply]')) return
     event.preventDefault()
     if (writing || ended) return
+    if (pendingId && form.matches('[data-date-edit],[data-date-apply]')) { message('Review the submitted request before proposing another date change.'); return }
     const button = form.querySelector('button[type="submit"]'), row = form.closest('[data-work-row]')
     const input = Object.fromEntries(new FormData(form))
     delete input._next
@@ -95,13 +121,7 @@ if (root) {
         const plan = await post('/api/v1/schedule/preview', { moves })
         preview.replaceChildren()
         const title = document.createElement('h2'); title.textContent = 'Review date changes'; preview.append(title)
-        const list = document.createElement('ul'); list.className = 'rows'
-        for (const shift of plan.shifts) {
-          const item = document.createElement('li')
-          item.textContent = `${shift.title}: ${shift.from.start ?? 'No start'} to ${shift.from.due ?? 'No due'} → ${shift.to.start ?? 'No start'} to ${shift.to.due ?? 'No due'} · ${shift.owner} · ${shift.estimateHours} planned hours`
-          list.append(item)
-        }
-        preview.append(list)
+        preview.append(showShifts(plan.shifts))
         const note = document.createElement('p')
         note.textContent = plan.blocked ? 'This change cannot be applied because it would move completed work.' : plan.waits ? 'Some affected work needs its authorized approver. No dates will change now.' : 'Apply confirms this exact set. Current permissions and record versions are checked again.'
         preview.append(note)
@@ -122,9 +142,13 @@ if (root) {
             if (changed.has(node.dataset.workRow)) node.querySelectorAll('[data-date-edit]').forEach(dateForm => { delete dateForm.dataset.dirty })
             syncDraft(node)
           })
-          preview.replaceChildren()
+          if (result.status === 'pending') {
+            pendingId = result.id
+            preview.querySelector('[data-date-apply]')?.remove()
+            preview.querySelector('[data-cancel-date]')?.remove()
+          } else preview.replaceChildren()
         }
-        message(result.status === 'pending' ? 'Awaiting authorized approval. No dates changed.' : 'Change committed. Refreshing visible values.')
+        message(result.status === 'pending' ? '' : 'Change committed. Refreshing visible values.')
       }
     } catch (error) { if (!ended) message(error.message) }
     finally { writing = false; if (button.isConnected) button.disabled = false }
