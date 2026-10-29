@@ -1,3 +1,4 @@
+import { requireAdministrator } from '../admin/settings'
 import { all, batch, bound, first, forbidden, invalid, newId, now, PegError } from '../db'
 import { digest, guarded, revision } from '../decisions/revision'
 import { permanentEvent } from '../audit/search'
@@ -46,4 +47,14 @@ export async function authenticate(db: D1Database, request: Request) {
  const actor: Actor = { id: person.id, email: person.email, displayName: person.display_name, baseRole: person.role as Actor['baseRole'], apiScope: { projects: JSON.parse(key.projects), personal: !!key.personal } }
  // A bearer key delegates scoped work; it never proves a human's presence at a decision door.
  return { key, actor }
+}
+
+/** Native access reviews describe credential state, never token material or private scope names. */
+export async function credentialReview(db: D1Database, actor: Actor, workspace: string) {
+ await requireAdministrator(db, actor, workspace)
+ return all<{ id: string; ownerId: string; expiresAt: number; revokedAt: number | null; active: number }>(db, `SELECT k.id,k.owner_id ownerId,k.expires_at expiresAt,k.revoked_at revokedAt,
+  CASE WHEN k.revoked_at IS NULL AND k.expires_at>? AND o.status='active' AND k.owner_version=o.version THEN 1 ELSE 0 END active
+  FROM peg_api_keys k JOIN oa_operators o ON o.id=k.owner_id
+  WHERE o.role IN ('owner','admin') OR EXISTS(SELECT 1 FROM peg_workspace_members m WHERE m.workspace_id=? AND m.operator_id=o.id)
+  ORDER BY k.created_at DESC,k.id LIMIT 100`, now(), workspace)
 }
