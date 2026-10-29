@@ -3487,7 +3487,7 @@
       "executable": false
     },
     "src/pegboard/reporting/dashboard.ts": {
-      "sha256": "4e2958709de9f1c48215e3056e5273875b8acef9ef17266f8a2ee215118a3e16",
+      "sha256": "85a8d0485f92c1ce4be276407372f6f468a1c5292812550240eac06e19e7dee7",
       "executable": false
     },
     "src/pegboard/reporting/definition.ts": {
@@ -4223,7 +4223,7 @@
       "executable": false
     },
     "tests/scenarios/reporting.mjs": {
-      "sha256": "2f13a721c6dd5a245046380367943bad898ef997c5b3abca7c4055b987f4b229",
+      "sha256": "222e68178da39e00fc1ffba6812d1c9d8ef6914cbf75f043b8ca56077b297191",
       "executable": false
     },
     "tests/scenarios/schedule-calendar.mjs": {

@@ -34,6 +34,16 @@ export async function ownDashboard(db:D1Database,actor:Actor,workspace:string,id
 const stateAt=(source:Source,at:number)=>source.events.filter(e=>e.at<=at).at(-1)
 const included=(e:Event|undefined,def:Definition)=>!!e&&e.projects.some(p=>def.projects.includes(p))&&(def.status==='all'||e.status===def.status)
 const amount=(e:Event,measure:Measure)=>measure==='effort'?e.effort:1
+function scopedEvents(events:Event[],projects:string[]):Event[] {
+ let previous:string[]=[]
+ return events.flatMap(event=>{
+  const visible=event.projects.filter(p=>projects.includes(p))
+  const changed=visible.length!==previous.length||visible.some(p=>!previous.includes(p))
+  previous=visible
+  // A scope change outside the selected projects discloses no event or timestamp.
+  return event.kind.startsWith('scope_')&&!changed?[]:[{...event,projects:visible}]
+ })
+}
 function value(label:string,records:{source:Source;event:Event;value:number;refs?:number[];unknown?:boolean}[],unknown=false):Value {
  return {label,value:unknown||records.some(r=>r.unknown)?null:records.reduce((n,r)=>n+r.value,0),sourceIds:records.map(r=>r.source.id),eventIds:[...new Set(records.flatMap(r=>r.refs??[r.event.seq]))]}
 }
@@ -44,7 +54,8 @@ export function calculate(sources:Source[],def:Definition,at:number) {
   const trend=['line','burn-up','burn-down'].includes(widget.kind), daily:Value[]=[]
   const records=(cutoff:number,before:number)=>sources.flatMap(source=>{
    if(widget.measure==='throughput'){
-    const completions=source.events.filter((v,i)=>v.at>=before&&v.at<=cutoff&&v.kind==='state'&&v.status==='done'&&source.events[i-1]?.status!=='done'&&included(v,def))
+    // A combined save can record its new status in the deadline event first.
+    const completions=source.events.filter((v,i)=>v.at>=before&&v.at<=cutoff&&i>0&&v.kind!=='baseline'&&v.status==='done'&&source.events[i-1].status!=='done'&&included(v,def))
     return completions.length?[{source,event:completions.at(-1)!,value:completions.length,refs:completions.map(e=>e.seq)}]:[]
    }
    const event=stateAt(source,cutoff);if(!included(event,def))return []
@@ -58,7 +69,14 @@ export function calculate(sources:Source[],def:Definition,at:number) {
     if(measure==='cycle-hours'&&e.status!=='done')return []
     if(source.events[index].kind==='baseline')return [{source,event:e,value:0,unknown:true}]
     if(measure==='status-age-hours')n=(cutoff-source.events[index].at)/3600000
-    else {if(e.status!=='done')return [];const begun=source.events.slice(0,index).reverse().find(v=>v.status==='doing');if(!begun)return [{source,event:e,value:0,unknown:true}];n=(source.events[index].at-begun.at)/3600000}
+    else {
+     let begun=index-1
+     while(begun>=0&&source.events[begun].status!=='doing')begun--
+     // Estimate, deadline and membership edits do not restart the Doing interval.
+     while(begun>0&&source.events[begun-1].status==='doing')begun--
+     if(begun<0||source.events[begun].kind==='baseline')return [{source,event:e,value:0,unknown:true}]
+     n=(source.events[index].at-source.events[begun].at)/3600000
+    }
    }
    return [{source,event:e,value:n}]
   })
@@ -90,7 +108,7 @@ export async function captureReport(db:D1Database,actor:Actor,workspace:string,i
   const opened=await openTask(db,actor,taskId).catch(()=>null)
   if(!opened||opened.task.workspace_id!==workspace||!opened.access.capabilities.has('export'))continue
   // Historical scope is restricted to projects explicitly selected and currently authorized.
-  sources.push({id:taskId,title:opened.task.title,due:opened.task.due_date,events:events.map(e=>({...e,projects:e.projects.filter(p=>def.projects.includes(p))}))})
+  sources.push({id:taskId,title:opened.task.title,due:opened.task.due_date,events:scopedEvents(events,def.projects)})
  }
  const capturedAt=now(),snapshot=newId('report'),report:Report={id:snapshot,dashboardId:id,name:row.name,capturedAt,definition:def,sources,...calculate(sources,def,capturedAt)}
  await guard(db,actor,rev,[bound(db,'DELETE FROM peg_report_snapshots WHERE captured_at<?',[capturedAt-86400000]),bound(db,'INSERT INTO peg_report_snapshots VALUES(?,?,?,?,?,?)',[snapshot,id,actor.id,capturedAt,rev,JSON.stringify(report)])],authority)
@@ -100,7 +118,11 @@ export async function readSnapshot(db:D1Database,actor:Actor,workspace:string,da
  const authority=await authorityRevision(db),rev=await dataRevision(db);await ownDashboard(db,actor,workspace,dashboardId)
  const row=await first<{body:string;captured_at:number}>(db,'SELECT body,captured_at FROM peg_report_snapshots WHERE id=? AND dashboard_id=? AND owner_id=?',id,dashboardId,actor.id)
  if(!row||row.captured_at+86400000<=now())throw new PegError(410,'report_unavailable_refresh_required')
- const report=JSON.parse(row.body) as Report
+ const cached=JSON.parse(row.body) as Report
+ // Apply the same projection to snapshots captured before this privacy repair.
+ // Recalculate from their frozen events and capture instant, never today's state.
+ const sources=cached.sources.map(source=>({...source,events:scopedEvents(source.events,cached.definition.projects)}))
+ const report:Report={...cached,sources,...calculate(sources,cached.definition,cached.capturedAt)}
  for(const source of report.sources){const opened=await openTask(db,actor,source.id).catch(()=>null);if(!opened?.access.capabilities.has('export'))throw new PegError(410,'report_scope_changed_refresh_required')}
  // Expiring grants must still be live at the final read barrier.
  if(authority.until!==null&&authority.until<=now())throw conflict('report_authority_changed')
