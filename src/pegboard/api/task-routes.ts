@@ -1,3 +1,4 @@
+import {reactToComment,reviseComment} from '../revisions/comments'
 import {projectParticipants,taskParticipants} from '../tasks/participants'
 import {openTask} from '../tasks/access'
 import { visibilityPreview, sharePersonal, saveSettings, section, place, addRule, undoMove, personalMeta } from '../tasks/personal'
@@ -48,8 +49,11 @@ export function taskRoutes(app: App) {
   app.post('/tasks/:id/comments', door(async ({ actor, db, params, input }) => {
     let body=input.body
     if(input.mentionId){const view=await viewTask(db,actor,params.id),choice=view.mentionChoices.find(c=>c.value===input.mentionId);if(!choice)throw invalid('mention_participant');body='@'+choice.label.split(' · ')[0]+' '+String(body??'')}
-    return addComment(db, actor, params.id, body, flag(input.internalOnly))
+    return addComment(db, actor, params.id, body, flag(input.internalOnly),undefined,input.key)
   }, { next: (_, { params }) => task(params.id) }))
+  app.post('/tasks/:id/comments/:comment/edit',door(({db,actor,params,input})=>reviseComment(db,actor,params.id,params.comment,input),{next:(_, {params})=>task(params.id)}))
+  app.post('/tasks/:id/comments/:comment/delete',door(({db,actor,params,input})=>reviseComment(db,actor,params.id,params.comment,{...input,remove:true}),{next:(_, {params})=>task(params.id)}))
+  app.post('/tasks/:id/comments/:comment/reactions',door(({db,actor,params,input})=>reactToComment(db,actor,params.id,params.comment,{...input,active:flag(input.active)}),{next:(_, {params})=>task(params.id)}))
   app.post('/tasks/:id/attachments', door(async ({ actor, db, params, request, query }) => {
     const type = request.headers.get('content-type') ?? ''
     if (type.includes('multipart/form-data')) {

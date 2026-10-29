@@ -85,7 +85,7 @@ export async function createTask(db: D1Database, actor: Actor, input: TaskInput)
   return (await first<TaskRow>(db,'SELECT * FROM peg_tasks WHERE id=?',id))!
 }
 
-export interface TaskPatch { title?: string; description?: string; status?: string; priority?: string; startDate?: string | null; dueDate?: string | null; ownerId?: string; estimateHours?: number; internalOnly?: boolean; internalNotes?: string; collaborators?: string[] }
+export interface TaskPatch { title?: string; description?: string; descriptionVersion?: number; status?: string; priority?: string; startDate?: string | null; dueDate?: string | null; ownerId?: string; estimateHours?: number; internalOnly?: boolean; internalNotes?: string; collaborators?: string[] }
 export async function updateTask(db: D1Database, actor: Actor, idOrRef: string, patch: TaskPatch, fence?: Awaited<ReturnType<typeof revision>>, extraStatements: D1PreparedStatement[] = []): Promise<TaskRow> {
   const localRevision=fence??await revision(db)
   const { task, access } = await openTask(db, actor, idOrRef)
@@ -95,7 +95,12 @@ export async function updateTask(db: D1Database, actor: Actor, idOrRef: string, 
   const next = { ...task }, changes: Record<string, { from: unknown; to: unknown }> = {}
   const set = <K extends keyof TaskRow>(key: K, value: TaskRow[K]) => { if (next[key] !== value) { changes[key] = { from: next[key], to: value }; next[key] = value } }
   if (patch.title !== undefined) set('title', title(patch.title))
-  if (patch.description !== undefined) set('description', String(patch.description).slice(0, 20000))
+  const descriptionVersion=(await first<{version:number}>(db,'SELECT MAX(version) version FROM peg_description_versions WHERE task_id=?',task.id))?.version??0
+  if(patch.descriptionVersion!==undefined&&Number(patch.descriptionVersion)!==descriptionVersion)throw conflict('description_revision_changed')
+  if (patch.description !== undefined) {
+    if(typeof patch.description!=='string'||patch.description.length>20000)throw invalid('description')
+    set('description',patch.description)
+  }
   if (patch.status !== undefined) { if (!statuses.includes(patch.status)) throw invalid('status'); set('status', patch.status as TaskRow['status']) }
   if (patch.priority !== undefined) { if (!priorities.includes(patch.priority)) throw invalid('priority'); set('priority', patch.priority as TaskRow['priority']) }
   if (patch.startDate !== undefined) set('start_date', date(patch.startDate, 'start_date'))
@@ -120,6 +125,7 @@ export async function updateTask(db: D1Database, actor: Actor, idOrRef: string, 
   if (Object.keys(changes).length) {
     statements.push(reopenGuard(db,task.id,actor.id,'task_edit'),bound(db, 'UPDATE peg_tasks SET title=?,description=?,status=?,priority=?,start_date=?,due_date=?,owner_id=?,estimate_hours=?,internal_only=?,internal_notes=?,completed_at=?,updated_at=? WHERE id=?',
       [next.title, next.description, next.status, next.priority, next.start_date, next.due_date, next.owner_id, next.estimate_hours, next.internal_only, next.internal_notes, next.completed_at, at, task.id]))
+    if(changes.description)statements.push(bound(db,'INSERT INTO peg_description_versions VALUES(?,?,?,?,?)',[task.id,descriptionVersion+1,next.description,actor.id,at]))
     const shown = Object.fromEntries(Object.entries(changes).filter(([key]) => key !== 'internal_notes' && key !== 'internal_only'))
     const hidden = Object.keys(changes).some(key => key === 'internal_notes' || key === 'internal_only')
     if (Object.keys(shown).length) statements.push(historyStatement(db, task.id, null, actor.id, next.status !== task.status && Object.keys(shown).length === 1 ? 'status.changed' : 'updated', shown))
@@ -128,7 +134,7 @@ export async function updateTask(db: D1Database, actor: Actor, idOrRef: string, 
   if (patch.collaborators) statements.push(reopenGuard(db,task.id,actor.id,'collaborators',patch.collaborators.length?'1':'EXISTS(SELECT 1 FROM peg_task_collaborators WHERE task_id=t.id)'),bound(db, 'DELETE FROM peg_task_collaborators WHERE task_id=?', [task.id]), ...[...new Set(patch.collaborators)].map(id => bound(db, 'INSERT INTO peg_task_collaborators(task_id,operator_id) VALUES (?,?)', [task.id, id])), historyStatement(db, task.id, null, actor.id, 'collaborators.changed', { count: new Set(patch.collaborators).size }))
   const queued=changes.status?await localRuleQueue(db,task.id,'status',actor.id):[]
   statements.push(...queued,...extraStatements)
-  if (statements.length){if(fence||queued.length)await guarded(db,localRevision,statements);else await batch(db, statements)}
+  if (statements.length){if(fence||queued.length||patch.description!==undefined)await guarded(db,localRevision,statements);else await batch(db, statements)}
   if(changes.status)for(const projectId of access.contexts.keys())await processLocalRules(db,projectId)
   return (await first<TaskRow>(db, 'SELECT * FROM peg_tasks WHERE id=?', task.id))!
 }

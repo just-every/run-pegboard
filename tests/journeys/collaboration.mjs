@@ -1,0 +1,124 @@
+import assert from 'node:assert/strict'
+import {mkdir} from 'node:fs/promises'
+import {join} from 'node:path'
+import {expect} from '@playwright/test'
+const address=n=>['synthetic-pegboard-'+n,'example.test'].join(String.fromCharCode(64))
+export async function collaborationJourney({w,browser,ok}) {
+ const root=w.owner,peer=await w.person(address(1030),'Text colleague'),guest=await w.person(address(1031),'Scoped guest','guest'),hiddenPerson=await w.person(address(1032),'Hidden colleague')
+ const project=ok(await root.post('/api/v1/projects',{name:'Collaboration workshop'}))
+ ok(await root.post('/api/v1/grants',{objectType:'project',objectId:project.id,granteeId:peer.id,level:'editor'}))
+ const share=ok(await root.post('/api/v1/grants',{objectType:'project',objectId:project.id,granteeId:guest.id,level:'commenter'}))
+ const task=ok(await root.post('/api/v1/tasks',{projectId:project.id,title:'Native text collaboration',description:'Initial **description**',ownerId:peer.id}))
+ const brief='/api/v1/projects/'+project.id+'/brief',taskApi='/api/v1/tasks/'+task.id
+ ok(await root.post(brief,{version:0,text:'# Initial brief\n**Agreed direction**'}))
+ const contexts=[]
+ const open=async client=>{
+  const context=await browser.newContext({viewport:{width:1440,height:900}});contexts.push(context)
+  await context.addCookies(client.cookie.split('; ').map(pair=>({name:pair.slice(0,pair.indexOf('=')),value:pair.slice(pair.indexOf('=')+1),url:w.origin})))
+  return {context,page:await context.newPage()}
+ }
+ const proof=async(page,name)=>{
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'collaboration reflows')
+  assert.deepEqual(await page.locator('main').evaluate(el=>[...el.querySelectorAll('button,a,input,select,p,label,h2,h3,summary,small')].filter(e=>e.getBoundingClientRect().width&&parseFloat(getComputedStyle(e).fontSize)<13).map(e=>e.textContent.slice(0,40))),[],'readable text')
+  assert.deepEqual(await page.locator('main button,main a').evaluateAll(nodes=>nodes.filter(e=>!e.textContent.trim()&&e.querySelector('svg,img')).map(e=>e.outerHTML)),[],'actions have visible words')
+  if(!process.env.PEGBOARD_PROOF_DIR)return
+  await mkdir(process.env.PEGBOARD_PROOF_DIR,{recursive:true})
+  for(const width of [1440,390]){
+   await page.setViewportSize({width,height:width===1440?900:844})
+   await page.screenshot({path:join(process.env.PEGBOARD_PROOF_DIR,`collaboration-${name}-${width}.png`),fullPage:true})
+  }
+  await page.setViewportSize({width:1440,height:900})
+ }
+ try {
+  const a=await open(root),b=await open(peer),g=await open(guest),taskUrl=w.origin+'/app/tasks/'+task.id,briefUrl=w.origin+'/app/projects/'+project.id+'/brief'
+  await Promise.all([a.page.goto(taskUrl),b.page.goto(taskUrl),g.page.goto(taskUrl)])
+  for(const page of [a.page,b.page,g.page])await expect(page.locator('[data-live-status]')).toContainText('Live')
+  await expect(b.page.locator('[data-live-region="description"] strong')).toHaveText('description')
+  const comment=a.page.getByRole('form',{name:'Comment',exact:true})
+  await comment.getByLabel('Mention a participant').selectOption(peer.id)
+  await comment.getByLabel('Comment',{exact:true}).fill('A **shared comment** and [work link](https://example.test/work).')
+  const before=b.page.url();await comment.getByRole('button',{name:'Comment',exact:true}).click()
+  const received=b.page.locator('[data-live-region="comments"]')
+  await expect(received.locator('strong').filter({hasText:'shared comment'}).first()).toBeVisible()
+  assert.equal(b.page.url(),before,'another signed-in browser receives the change without navigation')
+  await expect(received).toContainText('@Text colleague')
+  const first=ok(await root.get(taskApi)).comments[0],card=b.page.locator(`[data-comment-id="${first.id}"]`)
+  await card.getByRole('form',{name:'Add thanks',exact:true}).getByRole('button').click()
+  await expect(a.page.locator(`[data-comment-id="${first.id}"]`)).toContainText('thanks · 1')
+  await card.getByRole('form',{name:'Remove thanks',exact:true}).getByRole('button').click()
+  await expect(a.page.locator(`[data-comment-id="${first.id}"]`)).toContainText('thanks · 0')
+  const ownerComment=a.page.locator(`[data-comment-id="${first.id}"]`)
+  await ownerComment.getByText('Edit this comment',{exact:true}).click()
+  const edit=ownerComment.getByRole('form',{name:'Edit comment',exact:true})
+  await edit.getByLabel('Edited comment').fill('Revised **shared comment**');await edit.getByRole('button',{name:'Save comment revision'}).click()
+  await expect(received).toContainText('revision 2')
+  let current=ok(await root.get(taskApi)).comments[0]
+  assert.deepEqual(current.versions.map(v=>v.body),['@Text colleague A **shared comment** and [work link](https://example.test/work).','Revised **shared comment**'])
+  assert.equal(current.versions[1].actor,'Wes Holloway');assert.ok(current.versions[1].at>=first.at)
+  // Current source access is enforced before link alternatives or formatting are rendered.
+  ok(await root.post(taskApi+'/comments',{body:'Internal collaboration only',internalOnly:true}))
+  ok(await root.post(taskApi+'/comments',{body:'<img src=x onerror=alert(1)> [unsafe](javascript:alert) **Safe text**'}))
+  await expect(g.page.locator('[data-live-region="comments"]')).toContainText('Safe text')
+  assert.equal(await g.page.locator('[data-live-region="comments"] img,[data-live-region="comments"] a[href^="javascript:"]').count(),0)
+  assert.ok(!(await g.page.content()).includes('Internal collaboration only'))
+  assert.ok(!(await g.page.getByLabel('Mention a participant').innerText()).includes('Hidden colleague'))
+  assert.equal((await guest.post(taskApi+'/comments',{body:'Not an allowed mention',mentionId:hiddenPerson.id})).status,400)
+  // A brief's two-browser disconnect preserves the exact unsent draft and requires a visible reconciliation.
+  await Promise.all([a.page.goto(briefUrl),b.page.goto(briefUrl)])
+  for(const page of [a.page,b.page])await expect(page.locator('[data-live-status]')).toContainText('Live')
+  await b.context.setOffline(true)
+  const peerBrief=b.page.getByRole('form',{name:'Edit project brief',exact:true})
+  await peerBrief.getByLabel('Brief text').fill('# Disconnected draft\nMy retained *contribution*')
+  await peerBrief.getByRole('button',{name:'Save new revision'}).click()
+  await expect(b.page.locator('[data-live-error]')).toContainText('text is kept')
+  const rootBrief=a.page.getByRole('form',{name:'Edit project brief',exact:true})
+  await rootBrief.getByLabel('Brief text').fill('# Remote revision\n**Remote contribution**')
+  await rootBrief.getByRole('button',{name:'Save new revision'}).click()
+  await expect(a.page.locator('[data-live-region="brief"] strong')).toHaveText('Remote contribution')
+  await b.context.setOffline(false)
+  await expect(b.page.locator('[data-live-conflict]')).toBeVisible()
+  await expect(peerBrief.getByLabel('Brief text')).toHaveValue('# Disconnected draft\nMy retained *contribution*')
+  await proof(b.page,'brief-reconnect-conflict')
+  await b.page.getByRole('button',{name:'Review latest text',exact:true}).click()
+  await expect(b.page.locator('[data-live-latest]')).toContainText('Remote contribution')
+  await expect(peerBrief.getByLabel('Brief text')).toHaveValue('# Disconnected draft\nMy retained *contribution*')
+  await peerBrief.getByLabel('Brief text').fill('# Reconciled brief\n**Remote contribution**\nMy retained *contribution*')
+  await peerBrief.getByRole('button',{name:'Save new revision'}).click()
+  await expect(a.page.locator('[data-live-region="brief"] em')).toHaveText('contribution')
+  let revisions=ok(await root.get(brief)).versions
+  assert.deepEqual(revisions.map(v=>v.version),[3,2,1]);assert.equal(revisions[0].actor,'Text colleague');assert.equal(revisions[1].actor,'Wes Holloway')
+  await proof(a.page,'brief-current')
+  // Description conflict through the task's own form, with an exact current revision in both clients.
+  await Promise.all([a.page.goto(taskUrl),b.page.goto(taskUrl)])
+  for(const page of [a.page,b.page])await expect(page.locator('[data-live-status]')).toContainText('Live')
+  const peerTask=b.page.getByRole('form',{name:'Edit task',exact:true}),rootTask=a.page.getByRole('form',{name:'Edit task',exact:true})
+  await peerTask.getByLabel('Description',{exact:true}).fill('Local description draft')
+  await rootTask.getByLabel('Description',{exact:true}).fill('Remote **description revision**')
+  await rootTask.getByRole('button',{name:'Save',exact:true}).click()
+  await expect(b.page.locator('[data-live-conflict]')).toBeVisible()
+  await peerTask.getByRole('button',{name:'Save',exact:true}).click()
+  await expect(b.page.locator('[data-live-error]')).toContainText('revision changed')
+  await expect(peerTask.getByLabel('Description',{exact:true})).toHaveValue('Local description draft')
+  await b.page.getByRole('button',{name:'Review latest text',exact:true}).click()
+  await peerTask.getByLabel('Description',{exact:true}).fill('Remote **description revision**\nLocal description draft')
+  await peerTask.getByRole('button',{name:'Save',exact:true}).click()
+  await expect(a.page.locator('[data-live-region="description"]')).toContainText('Local description draft')
+  const taskView=ok(await root.get(taskApi))
+  assert.deepEqual(taskView.descriptionVersions.map(v=>v.text),['Initial **description**','Remote **description revision**','Remote **description revision**\nLocal description draft'])
+  await expect(a.page.locator('[data-live-region="history"]')).toContainText('Text colleague')
+  await proof(a.page,'task-current')
+  const exported=ok(await guest.get('/api/v1/projects/'+project.id+'/export?format=json'))
+  assert.deepEqual(exported.tasks.map(t=>t.id),[task.id]);assert.ok(!JSON.stringify(exported).includes('Internal collaboration only'))
+  await proof(g.page,'guest-scoped-task')
+  await g.page.goto(briefUrl);await expect(g.page.locator('[data-live-region="brief"]')).toContainText('Reconciled brief')
+  assert.equal(await g.page.getByRole('button',{name:'Save new revision',exact:true}).count(),0)
+  await proof(g.page,'guest-scoped-brief')
+  ok(await root.post('/api/v1/grants/'+share.id+'/revoke',{}))
+  await expect(g.page.getByRole('heading',{name:'This work is no longer available.',exact:true})).toBeVisible()
+  assert.ok(!(await g.page.content()).includes('Remote contribution'))
+  assert.equal((await guest.get(taskApi)).status,404);assert.equal((await guest.get(brief)).status,404)
+  assert.equal((await guest.get('/api/v1/projects/'+project.id+'/export?format=json')).status,404)
+  await proof(g.page,'revoked-reader')
+  console.log('Native text collaboration: two browsers, preserved reconnect drafts, exact revisions and scoped guest reads passed at 1440px')
+ }finally{for(const context of contexts)await context.close()}
+}

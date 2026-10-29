@@ -1,0 +1,15 @@
+# Native text collaboration
+
+Task descriptions, project briefs and task comments render native Markdown: paragraphs, headings, lists, bold, emphasis, inline code and explicit HTTP or HTTPS links. Raw HTML is displayed as text. Links never load a protected preview or execute an active URL. Named provider embeds are still unqualified.
+
+The task response includes `descriptionVersion` and attributed `descriptionVersions`. A task description submitted with `descriptionVersion` refuses a stale revision before changing any task field. The native Edit form always submits that version. Project brief writes retain their existing mandatory revision fence, immutable history, comparison and restore door.
+
+A task comment is scoped to the first currently permitted commenting project in original placement order. A personal task has its own scope. Internal comments and their revisions and reactions remain invisible to guests. Mention choices contain current explicit participants of that same context who can still read the task; workspace administrator status alone publishes no directory entry. A mention does not grant access or send an external notification.
+
+The comment edit and delete routes under `/api/v1/tasks/:id/comments/:comment` require the current author and comment capability. Edits include the current `version`; deletion uses the same fence and leaves a visible tombstone with the earlier revisions retained. Reaction writes use `reaction`, explicit desired `active` state and an actor-bound `key`. The three native reactions are like, celebrate and thanks. Replaying an old key returns its recorded result and never reinstates a subsequently removed reaction. Comment creation accepts the same optional stable key for lost-response retries. Current parent authority is checked before every replay.
+
+The browser polls authorized native responses. Live regions update without navigating or replacing a dirty text field. Source revisions and disconnected state remain visible. A stale save refuses without replacing the draft; Review latest text shows current text, retains the draft and updates its expected revision for deliberate reconciliation. Drafts live only in the open document, with no persistent browser storage. Closing the document ends an unsent draft. Revoked read access clears cached context and draft text; a changed role or project audience clears the old document and reloads under current authority.
+
+Revisions and reactions participate in the existing reviewed erasure inventory and native archive policy. Erasing a task removes its description revisions, comment revisions, reactions and retry records. A replay cannot recreate an erased parent. Retention and person erasure keep their existing reviewed custody boundaries; a comment tombstone alone is not erasure.
+
+The native slice is exercised by `tests/scenarios/collaboration.mjs` and `tests/journeys/collaboration.mjs`, registered in the work graph suite and the core browser selector. It does not qualify announcements, inbound email, provider embeds, Slate continuity, upload custody or the fixed physical-device latency profiles.

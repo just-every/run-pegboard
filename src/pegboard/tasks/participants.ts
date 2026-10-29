@@ -1,6 +1,6 @@
 // A guest may choose only people who currently participate in a project they share.
 import { all, forbidden } from '../db'
-import { projectEffective, type TaskAccess } from '../authorization/effective'
+import { projectEffective, rootOf, taskAccess, type TaskAccess } from '../authorization/effective'
 import { loadProject } from '../authorization/grants'
 import { openProject, need } from '../workspace/projects'
 import { workspaceRole, type Actor } from '../workspace/people'
@@ -34,4 +34,17 @@ export async function requireGuestParticipant(db: D1Database, actor: Actor, role
   if (role !== 'guest' || !ids.length) return
   const allowed = new Set((projectId ? await projectParticipants(db, actor, projectId) : access ? await taskParticipants(db, actor, access) : []).map(person => person.value))
   if (ids.some(id => !allowed.has(id))) throw forbidden('shared_project_participant')
+}
+
+export async function mentionParticipants(db:D1Database,actor:Actor,task:import('../model').TaskRow,access:TaskAccess) {
+ const via=await commentProject(db,task,access)
+ const choices=via?await participants(db,via,task.workspace_id):[{value:actor.id,label:actor.displayName}]
+ const visible=[]
+ for(const person of choices)if((await taskAccess(db,{...actor,id:person.value,baseRole:'member',apiScope:undefined},task)).capabilities.has('read'))visible.push(person)
+ return visible
+}
+
+export async function commentProject(db:D1Database,task:import('../model').TaskRow,access:TaskAccess) {
+ const homes=await all<{project_id:string}>(db,'SELECT project_id FROM peg_task_projects WHERE task_id=? ORDER BY added_at,project_id',(await rootOf(db,task)).id)
+ return homes.find(p=>access.contexts.get(p.project_id)?.capabilities.has('comment'))?.project_id??null
 }
