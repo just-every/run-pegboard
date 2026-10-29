@@ -199,7 +199,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "29b919ce2b522e22b77f755552edf1b351294b370b1278e43ef652bc3ab60828",
+      "sha256": "01a0ba13f95da0c280da69681b98a9467462cd07ebc88d96593f6ee8f5914f44",
       "executable": false
     },
     "AGENTS.md": {
@@ -215,7 +215,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "b4c3cf718019cd7dbcd896bb7966e6189418402c1b93e406ffc4cedd15f95bea",
+      "sha256": "a65f0de4efa471ed7a9e291e523031e9030ab0511e0142a74e7fdecee25c57fa",
       "executable": false
     },
     "DEMO.md": {
@@ -243,7 +243,7 @@
       "executable": false
     },
     "docs/CLAIMS.md": {
-      "sha256": "204cdac3253d54d979eba3dcf6c754981368056d5f991358c73ed4f92d81ac56",
+      "sha256": "28d82fc1a595db1ff507de9290d889cd159ae12cb5203c3a5533eac4cecf916a",
       "executable": false
     },
     "docs/DATA-CUSTODY.md": {
@@ -251,7 +251,7 @@
       "executable": false
     },
     "docs/DATA-RECORD-API.md": {
-      "sha256": "fed70cda83feb20a57f1b074c546a9c69c1c20007777aa0e6e8289b46d5fd972",
+      "sha256": "21b1bb11067664dc13440d7b3f4005bfd044661663370cdb3abb05923c0a7b3d",
       "executable": false
     },
     "docs/ENGINEERING-HANDOFF.md": {
@@ -636,6 +636,10 @@
     },
     "migrations/core/0075_reporting_snapshot_privacy.sql": {
       "sha256": "5666794f2cecdcb83443884e515d34f44e1abe7e2b36d269b9fb33f8c28b0999",
+      "executable": false
+    },
+    "migrations/core/0076_rule_restore_audit.sql": {
+      "sha256": "d300fa25ac2836da1bb4bb28f91df5992ab342826641e3101fb9d576d68b5b5c",
       "executable": false
     },
     "ONBOARDING.md": {
@@ -3135,11 +3139,11 @@
       "executable": false
     },
     "src/pegboard/audit/metadata.ts": {
-      "sha256": "fa603755fefae422fee5644d56513252eec53d6bd932c370a736a3bb1bc83993",
+      "sha256": "759c72860718f6f6af4b502956d16cf2a2dfbcc88f7ed9cf913aeb6938c421de",
       "executable": false
     },
     "src/pegboard/audit/search.ts": {
-      "sha256": "e3038b7b474cf95ea5e657fb8cde3072b36b839000a90a8d33f0d00d0c94e1ef",
+      "sha256": "8ca893f99607f1eb5775ca357537f02e3471caa564e4f8b6105ae28e0baa5c0c",
       "executable": false
     },
     "src/pegboard/authorization/audit.ts": {
@@ -3519,11 +3523,11 @@
       "executable": false
     },
     "src/pegboard/rules/definitions.ts": {
-      "sha256": "55f6a00885d2844ae104434ef15bde767f3eb827fe17338baaa95c6775e9add5",
+      "sha256": "ac22168b870ecac7359ea465c71031de9e6219aefb1a6a9e5520cb66401d59ac",
       "executable": false
     },
     "src/pegboard/rules/execution.ts": {
-      "sha256": "c52654bc1f512a0498236c547d8d1e2265ad9359015222b63be0b3ebd734e8a1",
+      "sha256": "9df02cc2f8bf6e8e9172b9d0d36b454a1ea797607c8cc6d55b243729964398a1",
       "executable": false
     },
     "src/pegboard/rules/requests.ts": {
@@ -4235,7 +4239,7 @@
       "executable": false
     },
     "tests/scenarios/rule-audit.mjs": {
-      "sha256": "7a50de37de4e66f6eada1ba4f9fb19a7919741242808a6d761bf4186f2147afa",
+      "sha256": "ca92c5126ee4befd58f82771a18330c4e449e2b95a2ffdee922331899414fbfe",
       "executable": false
     },
     "tests/scenarios/schedule-calendar.mjs": {

@@ -28,7 +28,7 @@ export function registerRuleAuditTests({test,context}){
   assert.equal(queued.actor_id,member.id);assert.equal(terminal.actor_id,root.id)
   for(const event of [queued,terminal]){
    assert.equal(event.metadata.ruleId,rule.id);assert.equal(event.metadata.version,1);assert.equal(event.metadata.activationId,first.activationId)
-   assert.equal(event.metadata.runId,run.id);assert.equal(event.metadata.taskId,applied.id);assert.equal(event.metadata.triggerActorId,member.id);assert.equal(event.metadata.activatedById,root.id)
+   assert.equal(event.metadata.eventId,run.event_id);assert.equal(event.metadata.runId,run.id);assert.equal(event.metadata.taskId,applied.id);assert.equal(event.metadata.triggerActorId,member.id);assert.equal(event.metadata.activatedById,root.id)
    assert.ok(Number.isSafeInteger(event.at)&&event.at>0)
   }
   assert.equal(terminal.result,'applied');assert.equal(terminal.metadata.operationId,run.operation_id);assert.equal(terminal.metadata.workCount,1)
@@ -69,6 +69,33 @@ export function registerRuleAuditTests({test,context}){
   assert.equal((await member.get(`/api/v1/admin/audit/export?rule=${rule.id}`)).status,403)
   for(const method of ['patch','delete'])assert.equal((await root[method](`/api/v1/admin/audit/${events[0].id}`,{})).status,404)
   await w.restart();await pass(root.post(path(project.id)+'/process',{}));assert.deepEqual(await audit(root,rule.id),after)
+  // Status and section changes use the same durable receipts; nonmatching changes create no run.
+  const scoped=await pass(root.post('/api/v1/projects',{name:'synthetic-pegboard-5730'}))
+  await pass(root.post('/api/v1/grants',{objectType:'project',objectId:scoped.id,granteeId:member.id,level:'editor'}))
+  const section=await pass(root.post(`/api/v1/projects/${scoped.id}/sections`,{name:'synthetic-pegboard-5731'}))
+  const statusRule=await create(root,scoped.id,'synthetic-pegboard-5732',{trigger:'status',status:'doing'})
+  const sectionRule=await create(root,scoped.id,'synthetic-pegboard-5733',{trigger:'section',sectionId:section.id})
+  await activate(root,statusRule.id);await activate(root,sectionRule.id)
+  const changed=await pass(member.post('/api/v1/tasks',{projectId:scoped.id,title:'synthetic-pegboard-5734',startDate:'2026-07-02'}))
+  await pass(member.patch(`/api/v1/tasks/${changed.id}`,{status:'done'}))
+  assert.deepEqual((await read(root,scoped.id)).runs,[])
+  await pass(member.patch(`/api/v1/tasks/${changed.id}`,{status:'doing'}))
+  await pass(member.post(`/api/v1/tasks/${changed.id}/section`,{projectId:scoped.id,sectionId:section.id}))
+  const current=(await read(root,scoped.id)).runs
+  assert.equal(current.length,2)
+  for(const activeRule of [statusRule,sectionRule]){
+   const actual=current.find(r=>r.rule_id===activeRule.id),receipts=await audit(root,activeRule.id)
+   assert.equal(actual.status,'applied')
+   assert.deepEqual(receipts.map(e=>e.action),['rule.created','rule.activated','rule.run_queued','rule.run_applied'])
+   assert.deepEqual(receipts.slice(2).map(e=>e.metadata.eventId),[actual.event_id,actual.event_id])
+   assert.deepEqual(await audit(root,activeRule.id,'&event='+actual.event_id),receipts.slice(2))
+   assert.deepEqual(receipts.slice(2).map(e=>e.actor_id),[member.id,root.id])
+  }
+  await pass(member.patch(`/api/v1/tasks/${changed.id}`,{status:'doing'}))
+  await pass(member.post(`/api/v1/tasks/${changed.id}/section`,{projectId:scoped.id,sectionId:section.id}))
+  assert.equal((await read(root,scoped.id)).runs.length,2,'repeated non-transitions produce no extra rule run')
+  await w.restart();await pass(root.post(path(scoped.id)+'/process',{}))
+  assert.equal((await read(root,scoped.id)).runs.length,2)
  },{timeout:180000})
  test('attributes background refusal to the former activating administrator and retains anonymized rule audit through native archive restore',async()=>{
   const w=context(),root=w.owner
@@ -95,12 +122,59 @@ export function registerRuleAuditTests({test,context}){
   const anonymous=await audit(root,rule.id)
   for(const e of events){const row=anonymous.find(r=>r.id===e.id);assert.deepEqual({...row,actor:e.actor},e);if(row.actor_id===admin.id)assert.equal(row.actor,'Erased actor')}
   assert.ok(!JSON.stringify(anonymous).includes(admin.name)&&!JSON.stringify(anonymous).includes(admin.email))
+  // Revoking only the project grant fences background authority while the person stays active.
+  const delegated=await w.person(['synthetic-pegboard-5740','example.com'].join('@'),'synthetic-pegboard-5740')
+  const delegatedProject=await pass(root.post('/api/v1/projects',{name:'synthetic-pegboard-5741'}))
+  const grant=await pass(root.post('/api/v1/grants',{objectType:'project',objectId:delegatedProject.id,granteeId:delegated.id,level:'admin'}))
+  const delegatedRule=await create(delegated,delegatedProject.id,'synthetic-pegboard-5742',{actions:[{kind:'comment',value:'synthetic-pegboard-5743'}]})
+  await activate(delegated,delegatedRule.id)
+  await pass(root.delete(`/api/v1/grants/${grant.id}`))
+  const denied=await request(root,delegatedProject.id,5744)
+  const deniedRun=(await read(root,delegatedProject.id)).runs.find(r=>r.task_id===denied.id)
+  const deniedEvents=await audit(root,delegatedRule.id,'&run='+deniedRun.id)
+  assert.deepEqual(deniedEvents.map(e=>[e.action,e.result]),[['rule.run_queued','queued'],['rule.run_blocked','blocked']])
+  assert.equal(deniedEvents[1].actor_id,delegated.id);assert.equal(deniedEvents[1].metadata.outcome,'activation_scope_changed')
+  assert.equal(deniedEvents[1].metadata.eventId,deniedRun.event_id)
+  const unchanged=await pass(root.get(`/api/v1/tasks/${denied.id}`));assert.equal(unchanged.dueDate,null);assert.equal(unchanged.priority,'normal');assert.deepEqual(unchanged.comments,[])
+  assert.equal((await delegated.get(path(delegatedProject.id))).status,404)
+  assert.equal((await delegated.get(`/api/v1/admin/audit/export?rule=${delegatedRule.id}`)).status,403)
+  // A real queue tail survives restart and is safely terminated by native restore.
+  // The public process door handles at most 100 runs, so the last of 101 rules stays queued.
+  const queuedProject=await pass(root.post('/api/v1/projects',{name:'synthetic-pegboard-5750'}))
+  const queuedRules=[]
+  for(let n=0;n<101;n++){
+   const next=await create(root,queuedProject.id,`synthetic-pegboard-${5751+n}`)
+   await activate(root,next.id);queuedRules.push(next.id)
+  }
+  await request(root,queuedProject.id,5860,{startDate:null})
+  let pending=(await read(root,queuedProject.id)).runs.filter(r=>r.status==='queued')
+  assert.equal(pending.length,1)
+  const waiting=pending[0],waitingAudit=await audit(root,waiting.rule_id,'&run='+waiting.id)
+  assert.deepEqual(waitingAudit.map(e=>e.action),['rule.run_queued'])
+  await w.restart();await pass(root.post(path(queuedProject.id)+'/process',{}))
+  assert.deepEqual((await audit(root,waiting.rule_id,'&run='+waiting.id)).map(e=>e.action),['rule.run_queued','rule.run_noop'])
+  await pass(root.post(path(queuedProject.id)+'/process',{}))
+  assert.equal((await audit(root,waiting.rule_id,'&run='+waiting.id)).length,2)
+  await request(root,queuedProject.id,5861,{startDate:null})
+  pending=(await read(root,queuedProject.id)).runs.filter(r=>r.status==='queued')
+  assert.equal(pending.length,1)
+  const restoring=pending[0],beforeRestore=await audit(root,restoring.rule_id,'&run='+restoring.id)
+  assert.deepEqual(beforeRestore.map(e=>e.action),['rule.run_queued'])
   const copy=await restoreCanvasInstallation(root)
   try{
    assert.deepEqual(await audit(copy.worker.owner,rule.id),anonymous)
+   const restoredQueue=await audit(copy.worker.owner,restoring.rule_id,'&run='+restoring.id)
+   assert.deepEqual(restoredQueue.map(e=>[e.action,e.result]),[['rule.run_queued','queued'],['rule.run_blocked','blocked']])
+   assert.deepEqual(restoredQueue[0],beforeRestore[0])
+   assert.equal(restoredQueue[1].metadata.outcome,'restored_inactive')
+   assert.equal(restoredQueue[1].metadata.eventId,restoring.event_id)
+   assert.equal(restoredQueue[1].metadata.activationId,beforeRestore[0].metadata.activationId)
+   assert.equal(restoredQueue[1].actor_id,root.id)
+   await pass(copy.worker.owner.post(path(queuedProject.id)+'/process',{}))
+   assert.deepEqual(await audit(copy.worker.owner,restoring.rule_id,'&run='+restoring.id),restoredQueue)
    await pass(copy.worker.owner.post(path(project.id)+'/process',{}));assert.deepEqual(await audit(copy.worker.owner,rule.id),anonymous)
    const restored=await read(copy.worker.owner,project.id);assert.ok(restored.rules.every(r=>!r.enabled&&!r.activation_id));assert.equal(restored.runs.find(r=>r.task_id===valid.id).status,'applied')
    assert.deepEqual((await pass(copy.worker.owner.get(`/api/v1/tasks/${valid.id}`))).comments.map(c=>c.body),['synthetic-pegboard-5718'],'native restore preserves the later comment without resurrecting erased rule content')
   }finally{await copy.stop()}
- },{timeout:240000})
+ },{timeout:360000})
 }

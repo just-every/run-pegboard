@@ -19,7 +19,7 @@ export async function searchAudit(db:D1Database,actor:Actor,workspace:string,fil
     const value=String(filter[key]);if(value.length>100)throw invalid('audit_filter')
     conditions.push(`${column}=?`);args.push(value)
   }
-  for(const [key,field] of [['rule','ruleId'],['run','runId'],['activation','activationId'],['operation','operationId']] as const) if(filter[key]) {
+  for(const [key,field] of [['rule','ruleId'],['run','runId'],['activation','activationId'],['operation','operationId'],['event','eventId']] as const) if(filter[key]) {
     const value=String(filter[key]);if(value.length>100)throw invalid('audit_filter')
     conditions.push(`json_extract(detail,'$.${field}')=?`);args.push(value)
   }

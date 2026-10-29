@@ -25,7 +25,7 @@ export async function processLocalRules(db:D1Database,projectId:string){
  const runs=await all<Run>(db,"SELECT j.* FROM peg_local_rule_runs j JOIN peg_local_rules r ON r.id=j.rule_id WHERE r.project_id=? AND j.status='queued' ORDER BY j.created_at,j.id LIMIT 100",projectId)
  for(const run of runs){
  const rev=await revision(db),source=JSON.parse(run.source)
- const receipt=(action:string,result:string,outcome:string,operationId?:string|null,workCount?:number)=>localRuleEvent(db,{projectId,actor:run.activated_by,action,ruleId:run.rule_id,version:run.version,activationId:run.activation_id,runId:run.id,taskId:run.task_id,triggerActorId:source.triggerActorId,activatedById:run.activated_by,result,outcome,operationId,workCount})
+ const receipt=(action:string,result:string,outcome:string,operationId?:string|null,workCount?:number)=>localRuleEvent(db,{projectId,actor:run.activated_by,action,ruleId:run.rule_id,version:run.version,activationId:run.activation_id,runId:run.id,eventId:run.event_id,taskId:run.task_id,triggerActorId:source.triggerActorId,activatedById:run.activated_by,result,outcome,operationId,workCount})
  try{
  const rule=await first<Rule>(db,'SELECT * FROM peg_local_rules WHERE id=?',run.rule_id)
  if(!rule||!rule.enabled||rule.version!==run.version||rule.definition!==run.definition||rule.activation_id!==run.activation_id)throw conflict('activation_changed')

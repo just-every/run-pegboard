@@ -30,7 +30,7 @@ implementation; these custody APIs do not lower that contractual requirement.
 ## Local rule audit
 
 Authorized administrators use `GET /api/v1/admin/audit` and its `export` door.
-Exact query filters `rule`, `run`, `activation` and `operation` select opaque
+Exact query filters `rule`, `run`, `activation`, `operation` and `event` select opaque
 identities without expanding the existing workspace or personal scope. The browser
 audit search offers rule and run IDs alongside action, actor and subject filters.
 
@@ -45,5 +45,5 @@ result; it grants no additional read authority.
 
 Deactivation or editing never rewrites earlier receipts. Restored rules remain
 inactive, erased actors retain anonymized attribution, and existing run receipts
-survive native archive restore. These records do not expand PEG-012 rule behavior
+survive native archive restore. Queue and terminal receipts share the original trigger event ID. A queued run fenced by native restore appends `rule.run_blocked` with `restored_inactive`, preserving its original activation and actor without restoring execution authority. These records do not expand PEG-012 rule behavior
 or qualify product imports, autonomous agent execution or future integration doors.
