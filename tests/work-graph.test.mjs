@@ -1,3 +1,5 @@
+import { registerSheetsExportTests } from './scenarios/sheets-export.mjs'
+import { startSheetsService } from './support/sheets-service.mjs'
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs'
 import { reportingScenario } from './scenarios/reporting.mjs'
 import { analystDatasetScenario } from './scenarios/analytics.mjs'
@@ -2430,4 +2432,12 @@ with zipfile.ZipFile(sys.argv[1]) as z:
    await parsed.destroy()
   } finally {await rm(scratch,{recursive:true,force:true})}
  },{timeout:180000})
+})
+
+
+describe('Google Sheets reviewed exports through schema edges', {concurrency:false}, () => {
+ let worker, edge
+ before(async () => { edge = await startSheetsService(); worker = await startWorker({settings:{PEGBOARD_LOCAL_SHEETS_ORIGIN:edge.origin}}) }, {timeout:120000})
+ after(async () => { await worker?.stop(); await edge?.stop() })
+ registerSheetsExportTests({test:it,context:()=>({w:worker,edge})})
 })

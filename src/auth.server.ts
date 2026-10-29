@@ -42,6 +42,8 @@ export interface Bindings {
  PEGBOARD_LOCAL_CAPACITY_ORIGINS?: string
  /** Official Calendar schema edges in local runtimes only. */
  PEGBOARD_LOCAL_CALENDAR_ORIGINS?: string
+ /** Official Sheets and Drive schema edge in local runtimes only. */
+ PEGBOARD_LOCAL_SHEETS_ORIGIN?: string
  /** Local runtimes only: the checkout's key gate and dev identity switch. Deploy refuses both. */
  RER_MODELS_SERVICE?: string
  RER_MODELS_KEY?: string
