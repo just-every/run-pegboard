@@ -24,6 +24,15 @@ export async function identityFixture(w) {
   const key = await issue()
   const attachment = await ok(owner.post(`/api/v1/tasks/${task.id}/attachments?name=synthetic-pegboard-4504.pdf`, proofDocument('Lifecycle reviewed proof'), { 'content-type': 'application/pdf' }))
   const proof = await ok(owner.post(`/api/v1/tasks/${task.id}/proofs`, { attachmentId: attachment.id }))
+  const recurringInput = { sourceType: 'task', sourceId: personal.id, mode: 'calendar', timezone: 'America/New_York', unit: 'week', interval: 1, start: '2030-01-07', count: 2 }
+  const recurringReview = await ok(member.post('/api/v1/recurrences/preview', recurringInput))
+  const recurrence = await ok(member.post('/api/v1/recurrences', { ...recurringInput, revision: recurringReview.token }))
+  const localRule = await ok(approver.post(`/api/v1/projects/${project.id}/rules`, { name: 'Lifecycle scheduled priority', trigger: 'status', status: 'doing', source: 'fixed', fixedDate: '2030-01-02', priority: 'high' }))
+  const activateRule = async () => {
+    const preview = await ok(approver.post(`/api/v1/rules/${localRule.id}/preview`, {}))
+    return ok(approver.post(`/api/v1/rules/${localRule.id}/activate`, { token: preview.token }))
+  }
+  await activateRule()
   const config = { mode: 'parallel', stages: [{ name: 'Member decision', people: [member.id], quorum: 1 }] }
   const route = async () => {
     const preview = await ok(owner.post(`/api/v1/approval-routing/proof/${proof.id}/preview`, config))
@@ -58,7 +67,7 @@ export async function identityFixture(w) {
     })
     return { status: response.status, body: await response.json() }
   }
-  return { w, owner, member, requester, approver, project, task, personal, section, issue, key, routed, route, share, link, priorDecision, memberRequest, otherRequest, approverDecision, requestProject, path, preview, change, bearer }
+  return { w, owner, member, requester, approver, project, task, personal, section, recurrence, localRule, issue, key, routed, route, share, link, priorDecision, memberRequest, otherRequest, approverDecision, requestProject, path, preview, change, bearer }
 }
 
 export async function identityLifecycleScenario(w) {
@@ -87,9 +96,23 @@ export async function identityLifecycleScenario(w) {
   assert.equal((await ok(f.owner.get(`/api/v1/approvals/${f.routed.id}`))).state, 'pending')
   assert.deepEqual((await ok(f.member.get('/api/v1/my-tasks'))).rules, [])
   assert.ok((await ok(f.member.get('/api/v1/api-keys'))).keys.every(key => key.revoked_at !== null))
+  assert.equal((await ok(f.member.get(`/api/v1/recurrences/${f.recurrence.id}`))).schedule.active, 0)
+  assert.equal((await ok(f.member.post(`/api/v1/recurrences/${f.recurrence.id}/run`, {}))).state, 'finished')
   await f.change(f.approver, 'inactive'); await f.change(f.approver, 'active')
   await ok(f.approver.get('/api/v1/me'), 401)
   f.approver = await w.signIn(f.approver.email, f.approver.name, f.approver.id)
+  const ruleView = await ok(f.approver.get(`/api/v1/projects/${f.project.id}/rules`))
+  assert.equal(ruleView.rules.find(row => row.id === f.localRule.id).enabled, 0)
+  const ruleTask = await ok(f.owner.post('/api/v1/tasks', { projectId: f.project.id, title: 'Lifecycle scheduled work' }))
+  await ok(f.owner.patch(`/api/v1/tasks/${ruleTask.id}`, { status: 'doing' }))
+  await ok(f.owner.post(`/api/v1/projects/${f.project.id}/rules/process`, {}))
+  assert.equal((await ok(f.owner.get(`/api/v1/tasks/${ruleTask.id}`))).priority, 'normal')
+  const newActivation = await ok(f.approver.post(`/api/v1/rules/${f.localRule.id}/preview`, {}))
+  await ok(f.approver.post(`/api/v1/rules/${f.localRule.id}/activate`, { token: newActivation.token }))
+  await ok(f.owner.patch(`/api/v1/tasks/${ruleTask.id}`, { status: 'todo' }))
+  await ok(f.owner.patch(`/api/v1/tasks/${ruleTask.id}`, { status: 'doing' }))
+  await ok(f.owner.post(`/api/v1/projects/${f.project.id}/rules/process`, {}))
+  assert.equal((await ok(f.owner.get(`/api/v1/tasks/${ruleTask.id}`))).priority, 'high')
   const decisionPath = `/api/v1/access-requests/${f.otherRequest.id}/decision`
   await ok(f.approver.post(decisionPath, { revision: f.approverDecision.revision, decision: 'approve' }), 404)
   await ok(f.approver.get(`/api/v1/access-requests/${f.otherRequest.id}`), 404)
@@ -124,4 +147,12 @@ export async function identityLifecycleScenario(w) {
   const text = JSON.stringify(report)
   for (const hidden of [f.key.secret, renewed.secret, 'token_hash', 'Private lifecycle work', 'Private lifecycle section', f.link.id]) assert.ok(!text.includes(hidden), 'review excludes private data and capabilities')
   await ok(f.requester.get('/api/v1/admin/access-review/download'), 403)
+  const erased = await w.person(email(4505), 'Lifecycle erased identity')
+  await ok(f.owner.post(f.path(erased) + '/account', { status: 'inactive' }))
+  const eraseReview = await ok(f.owner.post('/api/v1/data/erasure-preview', { type: 'person', id: erased.id }))
+  assert.deepEqual(eraseReview.blockers, [])
+  await ok(f.owner.post('/api/v1/data/erase', { type: 'person', id: erased.id, token: eraseReview.token, confirm: true }))
+  await ok(f.owner.get(f.path(erased) + '/lifecycle-preview?status=active'), 404)
+  await ok(f.owner.post(f.path(erased) + '/account', { status: 'active' }), 409)
+  await ok(erased.get('/api/v1/me'), 401)
 }
