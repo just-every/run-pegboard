@@ -8,9 +8,9 @@ import { workspaceSettings, type Actor } from '../workspace/people'
 import { definition, localDay, midnight, nextDay, type Definition, type Measure } from './definition'
 
 interface Dashboard { id:string; workspace_id:string; owner_id:string; name:string; definition:string; created_at:number }
-export interface Event { seq:number; task_id:string; at:number; kind:string; status:string; effort:number; projects:string[] }
+export interface Event { seq:number; task_id:string; at:number; kind:string; status:string; effort:number; due:string|null; due_known:number; projects:string[] }
 export interface Source { id:string; title:string; due:string|null; events:Event[] }
-export interface Value { label:string; value:number|null; sourceIds:string[]; eventIds:number[] }
+export interface Value { label:string; value:number|null; sourceIds:string[]; eventIds:number[]; scope?:number|null }
 export interface Report { id:string; dashboardId:string; name:string; capturedAt:number; definition:Definition; sources:Source[]; widgets:{kind:string;measure:Measure;group:string;values:Value[]}[]; window:{startAt:number;endAt:number}; unknown:string[] }
 async function scope(db:D1Database,actor:Actor,workspace:string,def:Definition) {
  const settings=await workspaceSettings(db,workspace)
@@ -34,8 +34,8 @@ export async function ownDashboard(db:D1Database,actor:Actor,workspace:string,id
 const stateAt=(source:Source,at:number)=>source.events.filter(e=>e.at<=at).at(-1)
 const included=(e:Event|undefined,def:Definition)=>!!e&&e.projects.some(p=>def.projects.includes(p))&&(def.status==='all'||e.status===def.status)
 const amount=(e:Event,measure:Measure)=>measure==='effort'?e.effort:1
-function value(label:string,records:{source:Source;event:Event;value:number}[],unknown=false):Value {
- return {label,value:unknown?null:records.reduce((n,r)=>n+r.value,0),sourceIds:records.map(r=>r.source.id),eventIds:[...new Set(records.map(r=>r.event.seq))]}
+function value(label:string,records:{source:Source;event:Event;value:number;refs?:number[];unknown?:boolean}[],unknown=false):Value {
+ return {label,value:unknown||records.some(r=>r.unknown)?null:records.reduce((n,r)=>n+r.value,0),sourceIds:records.map(r=>r.source.id),eventIds:[...new Set(records.flatMap(r=>r.refs??[r.event.seq]))]}
 }
 export function calculate(sources:Source[],def:Definition,at:number) {
  const startAt=midnight(def.start,def.timezone),endAt=midnight(nextDay(def.end),def.timezone)
@@ -43,18 +43,22 @@ export function calculate(sources:Source[],def:Definition,at:number) {
  const widgets=def.widgets.map(widget=>{
   const trend=['line','burn-up','burn-down'].includes(widget.kind), daily:Value[]=[]
   const records=(cutoff:number,before:number)=>sources.flatMap(source=>{
+   if(widget.measure==='throughput'){
+    const completions=source.events.filter((v,i)=>v.at>=before&&v.at<=cutoff&&v.kind==='state'&&v.status==='done'&&source.events[i-1]?.status!=='done'&&included(v,def))
+    return completions.length?[{source,event:completions.at(-1)!,value:completions.length,refs:completions.map(e=>e.seq)}]:[]
+   }
    const event=stateAt(source,cutoff);if(!included(event,def))return []
    const e=event!,measure=widget.measure
    let n=amount(e,measure)
    if(measure==='completed')n=Number(e.status==='done')
-   if(measure==='overdue')n=Number(e.status!=='done'&&!!source.due&&source.due<localDay(cutoff,def.timezone))
-   if(measure==='throughput')n=source.events.filter((v,i)=>v.at>=before&&v.at<=cutoff&&v.kind==='state'&&v.status==='done'&&source.events[i-1]?.status!=='done'&&included(v,def)).length
+   if(measure==='overdue'){if(!e.due_known)return [{source,event:e,value:0,unknown:true}];n=Number(e.status!=='done'&&!!e.due&&(e.due.includes('T')?Date.parse(e.due)<=cutoff:e.due<localDay(cutoff,def.timezone)))}
    if(measure==='status-age-hours'||measure==='cycle-hours'){
     let index=source.events.indexOf(e)
     while(index>0&&source.events[index-1].status===e.status)index--
-    if(source.events[index].kind==='baseline')return []
+    if(measure==='cycle-hours'&&e.status!=='done')return []
+    if(source.events[index].kind==='baseline')return [{source,event:e,value:0,unknown:true}]
     if(measure==='status-age-hours')n=(cutoff-source.events[index].at)/3600000
-    else {if(e.status!=='done')return [];const begun=source.events.slice(0,index).reverse().find(v=>v.status==='doing');if(!begun)return [];n=(source.events[index].at-begun.at)/3600000}
+    else {if(e.status!=='done')return [];const begun=source.events.slice(0,index).reverse().find(v=>v.status==='doing');if(!begun)return [{source,event:e,value:0,unknown:true}];n=(source.events[index].at-begun.at)/3600000}
    }
    return [{source,event:e,value:n}]
   })
@@ -65,10 +69,10 @@ export function calculate(sources:Source[],def:Definition,at:number) {
    let rs=records(cutoff,earlier)
    if(widget.kind==='burn-up')rs=rs.map(r=>({...r,value:r.event.status==='done'?amount(r.event,widget.measure):0}))
    if(widget.kind==='burn-down')rs=rs.map(r=>({...r,value:r.event.status!=='done'?amount(r.event,widget.measure):0}))
-   daily.push(value(day,rs,unknownDay))
+   daily.push({...value(day,rs,unknownDay),...(['burn-up','burn-down'].includes(widget.kind)?{scope:unknownDay?null:records(cutoff,earlier).reduce((n,r)=>n+amount(r.event,widget.measure),0)}:{})})
   }}
-  const rs=records(lastAt,startAt)
-  const values=trend?daily:widget.kind==='single-number'?[value('Total',rs)]:widget.kind==='table'?rs.map(r=>value(r.source.title,[r])):['todo','doing','done'].map(status=>value(status,rs.filter(r=>r.event.status===status)))
+  const rs=records(lastAt,startAt),unobserved=sources.filter(s=>s.events[0]?.kind==='baseline'&&s.events[0].at>lastAt)
+  const values=trend?daily:widget.kind==='single-number'?[value('Total',rs,unobserved.length>0)]:widget.kind==='table'?[...rs.map(r=>value(r.source.title,[r])),...unobserved.map(source=>value(source.title,[{source,event:source.events[0],value:0,unknown:true}]))]:['todo','doing','done'].map(status=>value(status,rs.filter(r=>r.event.status===status),unobserved.length>0))
   return {...widget,group:trend?'local day':widget.kind==='table'?'task':widget.kind==='single-number'?'total':'status',values}
  })
  return {widgets,unknown,window:{startAt,endAt}}

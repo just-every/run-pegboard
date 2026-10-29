@@ -4,8 +4,8 @@ import { toCsv } from '../tasks/board'
 /** All formats contain the same definitions, plotted values and event references. */
 export function exportRecords(report:Report):Record<string,string|number|null>[] {
  const records:Record<string,string|number|null>[]=[{section:'snapshot',snapshot:report.id,name:report.name,capturedAt:report.capturedAt,start:report.definition.start,end:report.definition.end,timezone:report.definition.timezone,status:report.definition.status,projects:report.definition.projects.join(';'),unknown:report.unknown.join(';')}]
- for(const [index,widget] of report.widgets.entries())for(const point of widget.values)records.push({section:'value',widget:index,kind:widget.kind,measure:widget.measure,group:widget.group,label:point.label,value:point.value,sources:point.sourceIds.join(';'),events:point.eventIds.join(';')})
- for(const source of report.sources){records.push({section:'source',task:source.id,title:source.title,due:source.due});for(const event of source.events)records.push({section:'event',task:source.id,event:event.seq,at:event.at,kind:event.kind,status:event.status,effort:event.effort,projects:event.projects.join(';')})}
+ for(const [index,widget] of report.widgets.entries())for(const point of widget.values)records.push({section:'value',widget:index,kind:widget.kind,measure:widget.measure,group:widget.group,label:point.label,value:point.value,scope:point.scope??null,sources:point.sourceIds.join(';'),events:point.eventIds.join(';')})
+ for(const source of report.sources){records.push({section:'source',task:source.id,title:source.title,due:source.due});for(const event of source.events)records.push({section:'event',task:source.id,event:event.seq,at:event.at,kind:event.kind,status:event.status,effort:event.effort,due:event.due,dueKnown:event.due_known,projects:event.projects.join(';')})}
  return records
 }
 export const reportCsv=(report:Report)=>toCsv(exportRecords(report))

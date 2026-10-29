@@ -10,7 +10,7 @@ export function definition(input: Record<string, any>): Definition {
  for(const day of [start,end])if(!/^\d{4}-\d{2}-\d{2}$/.test(day)||!Number.isFinite(Date.parse(day+'T00:00:00Z'))||new Date(day+'T00:00:00Z').toISOString().slice(0,10)!==day)throw invalid('report_dates')
  if(start>end||(Date.parse(end)-Date.parse(start))/86400000>366)throw invalid('report_window')
  try{new Intl.DateTimeFormat('en-US',{timeZone:timezone}).format(0)}catch{throw invalid('report_timezone')}
- const widgets = input.widgets ?? widgetKinds.map(kind=>({kind,measure:input.measure??'count'}))
+ const widgets = input.widgets ?? widgetKinds.map(kind=>({kind,measure:input['measure:'+kind]??input.measure??'count'}))
  if(!Array.isArray(widgets)||!widgets.length||widgets.length>16||widgets.some(w=>!widgetKinds.includes(w.kind)||!measures.includes(w.measure)))throw invalid('report_widgets')
  if(widgets.some(w=>['burn-up','burn-down'].includes(w.kind)&&!['count','effort'].includes(w.measure)))throw invalid('burn_measure_count_or_effort')
  return {projects,start,end,timezone,status,widgets:widgets.map(w=>({kind:w.kind,measure:w.measure}))}

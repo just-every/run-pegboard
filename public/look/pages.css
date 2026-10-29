@@ -45,3 +45,15 @@ ul.plain{margin:6px 0 0;padding-left:18px}
 }
 
 .page .task-description,.page .meeting-source{overflow-wrap:anywhere;min-width:0}
+
+/* Native reports use the shared hung cards and page tokens. */
+.report-widgets { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; grid-column: 1 / -1; }
+.report-widgets .panel { min-width: 0; }
+.report-chart { width: 100%; height: auto; max-height: 250px; display: block; }
+.report-chart text { fill: var(--ink); font-family: var(--sans); font-size: 28px; }
+.report-number { font-size: 48px; font-weight: 800; margin: 16px 0; }
+.report-values { max-height: 320px; overflow: auto; }
+.report-values details { font-size: 14px; }
+.report-values summary { cursor: pointer; padding: 8px 0; }
+.report-widgets code, [data-report-snapshot] { overflow-wrap: anywhere; }
+@media (max-width: 1023px) { .report-widgets { grid-template-columns: minmax(0, 1fr); } }

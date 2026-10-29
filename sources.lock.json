@@ -199,7 +199,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "f6cf2933c4c1c7634be1efa7ed36b0f3f6251871c346866e6dee6a2d8a82883f",
+      "sha256": "41992ade0eb966791c42f99e41fafcefab48e2481f8182c904c3393f122b2b91",
       "executable": false
     },
     "AGENTS.md": {
@@ -215,7 +215,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "a5642679e28ee2f4b31b132dca25c043838a0c648fc23e209030acbdac17b145",
+      "sha256": "c30674ad31c1ba48001fabfa037cde498212145efd2815336c66c1542c7dbcfa",
       "executable": false
     },
     "DEMO.md": {
@@ -243,7 +243,7 @@
       "executable": false
     },
     "docs/CLAIMS.md": {
-      "sha256": "cb883381d84bd5d14d1a6ce8b46fe7bec421691c790d27c5b03463a083c7a135",
+      "sha256": "bdc71dba62f3e00349e679ea24c910fbdf1f8e0f23eafe7e298b9385a3a907af",
       "executable": false
     },
     "docs/DATA-CUSTODY.md": {
@@ -280,6 +280,10 @@
     },
     "docs/RECOVERY-API.md": {
       "sha256": "79c6ca18241ae4200088bfd902d33098e44a7f97d97a449c0723c8178d3dcf13",
+      "executable": false
+    },
+    "docs/REPORTING.md": {
+      "sha256": "3e6a403d4345ce6e96e680bfe10e324526dbfae636c1c0da6acb42ca4d1a9b41",
       "executable": false
     },
     "docs/STATUS-API.md": {
@@ -626,6 +630,10 @@
       "sha256": "291c5db30beeccd2ba366bb39006df6986de93e17d2e460a24d149e9cdc5f1ed",
       "executable": false
     },
+    "migrations/core/0074_reporting_deadlines.sql": {
+      "sha256": "e738e1ed1078f5e4ffbfade3782bdb840420d9d9eecbb505f34acca5910144b5",
+      "executable": false
+    },
     "ONBOARDING.md": {
       "sha256": "24b685d6eddeae5480ce4dfbf44c0590e54bcfe83641373de5bba985765380bd",
       "executable": false
@@ -639,7 +647,7 @@
       "executable": false
     },
     "package.json": {
-      "sha256": "1c70df8c86a388f8dbd2d051f119d51226c9741a720e99321d241ab0ccac3962",
+      "sha256": "44a39d908b2e70bb84fa5ff36a1170e95cd5a1e112e8283cb0471a2e45590628",
       "executable": false
     },
     "packaging.json": {
@@ -647,7 +655,7 @@
       "executable": false
     },
     "pnpm-lock.yaml": {
-      "sha256": "477df2c69d0cca3878b56bfd0ba61712755e6225ac12cf1a8f2cf93b0fea6cf9",
+      "sha256": "fa7960c8002cd657de38b28c11ab676427733eb4ffd5864cfbf11af31c8df9fb",
       "executable": false
     },
     "public/brand/apple-touch-icon.png": {
@@ -1043,7 +1051,7 @@
       "executable": false
     },
     "public/look/pages.css": {
-      "sha256": "6ab0e301b80d1e95aeddf04cd134a7f8042cc904d418540a6194673efa4df324",
+      "sha256": "a13f8384cb6cbebf7b1971211241c0d75813cedf9cc02c00a0e08c383773266f",
       "executable": false
     },
     "public/look/parts.css": {
@@ -3479,15 +3487,15 @@
       "executable": false
     },
     "src/pegboard/reporting/dashboard.ts": {
-      "sha256": "1490a339597db3535002c60213e6443883b8846b6bd84576d3180c16369036cd",
+      "sha256": "4e2958709de9f1c48215e3056e5273875b8acef9ef17266f8a2ee215118a3e16",
       "executable": false
     },
     "src/pegboard/reporting/definition.ts": {
-      "sha256": "63abb1781e695c626ac922ef035799c3a3402815990076b75ac4690bd428d3df",
+      "sha256": "38a422a15f63dcd1ad87deb078bfa356c7787b020cc3810fc3606bd7810d8c20",
       "executable": false
     },
     "src/pegboard/reporting/exports.ts": {
-      "sha256": "980b261869a3a41d73cb4a8f69e5518f5391cb1cd7a77a32759f03130fb8dfe8",
+      "sha256": "783084a1f44f2c67fea87f550a56438ae3074af6cdfaacd1b56742c9166275fd",
       "executable": false
     },
     "src/pegboard/revisions/briefs.ts": {
@@ -3818,6 +3826,10 @@
       "sha256": "45a3d07c951a26ed7fb3b199f31046c22ac85ff4761aec04cd0f8edd01e654fe",
       "executable": false
     },
+    "src/pegboard/ui/pages/reports.tsx": {
+      "sha256": "9f04a17b3082d35a582756afa0e280d4184da1ac23c150ed38083e915e999aa6",
+      "executable": false
+    },
     "src/pegboard/ui/pages/rule-request.tsx": {
       "sha256": "227a09458f1395016633e6065969b758ec000b6a2a22350f742f7b2a4af52a47",
       "executable": false
@@ -3875,7 +3887,7 @@
       "executable": false
     },
     "src/pegboard/ui/routes.ts": {
-      "sha256": "1f3284486e6c8e71e7e012244a6b662e6b70056a157c7b6db7eeac7594e88d03",
+      "sha256": "61ce3c6606a1ab8e7f646bc6d33954ee4f7158cf13858a8613091dde487c7185",
       "executable": false
     },
     "src/pegboard/ui/schedule-editor.tsx": {
@@ -4039,7 +4051,7 @@
       "executable": false
     },
     "src/ui/home.tsx": {
-      "sha256": "8f0730afe728cd5aeda61b1b1d41268a26f263ad0c14729c9c58abb80c0eb5c0",
+      "sha256": "177ec13eb9578dfa2a5ec3d2c3b1f260df895489470a4eea2e6b83407c871708",
       "executable": false
     },
     "src/ui/icons.tsx": {
@@ -4142,6 +4154,10 @@
       "sha256": "647940876f603d283e8c7386906e28a7099da557c74c049fb3b023b4d3770ca1",
       "executable": false
     },
+    "tests/journeys/reporting.mjs": {
+      "sha256": "a2e914aa7e6d3fd1bcb48d3a328d44a9fda123943b1d0cdf04b0fd4427e15601",
+      "executable": false
+    },
     "tests/journeys/schedule-settings.mjs": {
       "sha256": "0b5266adcb551eca9b42f76486da56664f3d29771923ccf2879a98e8b6633f60",
       "executable": false
@@ -4163,7 +4179,7 @@
       "executable": false
     },
     "tests/journeys/work-graph.journey.mjs": {
-      "sha256": "9048bcc51294a487331d08d983b24ffe669fbd7ee187076307994177a2a92add",
+      "sha256": "4780930877805da9607825e528d79c7dac4e97e98cac5d316ace63d20d5ea375",
       "executable": false
     },
     "tests/journeys/work-rules.mjs": {
@@ -4204,6 +4220,10 @@
     },
     "tests/scenarios/readiness.mjs": {
       "sha256": "f788c3aeeb59c82cab4c631a2fc13aa070faa9b5c591e529534fd7434cd21859",
+      "executable": false
+    },
+    "tests/scenarios/reporting.mjs": {
+      "sha256": "2f13a721c6dd5a245046380367943bad898ef997c5b3abca7c4055b987f4b229",
       "executable": false
     },
     "tests/scenarios/schedule-calendar.mjs": {
@@ -4251,7 +4271,7 @@
       "executable": false
     },
     "tests/work-graph.test.mjs": {
-      "sha256": "dc98902858706f54ad2b3b76de52a54645c59ead9ba68daadb76ca75b0253f01",
+      "sha256": "53ffab9856204978d559d408841dbddc3467f5d4048693b187200444c4ea2361",
       "executable": false
     },
     "tsconfig.json": {
@@ -4259,7 +4279,7 @@
       "executable": false
     },
     "verification.json": {
-      "sha256": "37e551ada48498d1a12f275f9b293d572f08a6cbba3b76e2a7a70c8775599859",
+      "sha256": "4c5335dc92311235bacca486259fac10f28170bf9a8098a9c39d65b83024554e",
       "executable": false
     },
     "VERIFY-WORKFLOW.md": {
