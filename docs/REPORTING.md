@@ -30,9 +30,14 @@ Throughput counts completion transitions in the selected period while the task
 was in scope, including subsequent reopening or removal. Cycle hours sum elapsed
 hours from the most recent recorded doing transition to the recorded completion
 of currently completed work. Status age sums hours since each current status
-began. Missing duration or deadline history produces Unknown rather than a
+began. Estimate and deadline edits do not restart the doing interval; completion
+counts once even when its deadline changes in the same edit. Missing duration or deadline history produces Unknown rather than a
 fabricated total. The current slice does not report approved time, capacity,
 requests or approvals.
+
+Membership changes outside the selected project scope disclose neither a source
+event nor its timestamp. Upgrading this privacy correction expires prior cached
+snapshots; saved dashboards and source history are retained for fresh capture.
 
 Every displayed value links to its source task rows and event references. CSV,
 real XLSX and paginated US Letter PDF contain the same snapshot definition,

@@ -199,7 +199,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "41992ade0eb966791c42f99e41fafcefab48e2481f8182c904c3393f122b2b91",
+      "sha256": "17b3436c62a13e578c54f60f79677e6376b21393d0e3000b6351e5e75e8dd60f",
       "executable": false
     },
     "AGENTS.md": {
@@ -215,7 +215,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "c30674ad31c1ba48001fabfa037cde498212145efd2815336c66c1542c7dbcfa",
+      "sha256": "8509a99cbcac42571a0589c4336874e9021c1f64bf0db01de2cfebdb27bb23b8",
       "executable": false
     },
     "DEMO.md": {
@@ -243,7 +243,7 @@
       "executable": false
     },
     "docs/CLAIMS.md": {
-      "sha256": "bdc71dba62f3e00349e679ea24c910fbdf1f8e0f23eafe7e298b9385a3a907af",
+      "sha256": "765213a90c5cd5ebb021bdf9fd0c09df756cb79395e95ca9bfdb113747a5f8dd",
       "executable": false
     },
     "docs/DATA-CUSTODY.md": {
@@ -283,7 +283,7 @@
       "executable": false
     },
     "docs/REPORTING.md": {
-      "sha256": "3e6a403d4345ce6e96e680bfe10e324526dbfae636c1c0da6acb42ca4d1a9b41",
+      "sha256": "494b1894c6e94f9fc86cc1b19fed2815c84d660854a0d1ad68310a10eaabe4b5",
       "executable": false
     },
     "docs/STATUS-API.md": {
@@ -632,6 +632,10 @@
     },
     "migrations/core/0074_reporting_deadlines.sql": {
       "sha256": "e738e1ed1078f5e4ffbfade3782bdb840420d9d9eecbb505f34acca5910144b5",
+      "executable": false
+    },
+    "migrations/core/0075_reporting_snapshot_privacy.sql": {
+      "sha256": "5666794f2cecdcb83443884e515d34f44e1abe7e2b36d269b9fb33f8c28b0999",
       "executable": false
     },
     "ONBOARDING.md": {
@@ -3487,7 +3491,7 @@
       "executable": false
     },
     "src/pegboard/reporting/dashboard.ts": {
-      "sha256": "85a8d0485f92c1ce4be276407372f6f468a1c5292812550240eac06e19e7dee7",
+      "sha256": "cca089094d438261ea911748aa37a8875886522fd4596c03adc160dc057a0d53",
       "executable": false
     },
     "src/pegboard/reporting/definition.ts": {
@@ -4223,7 +4227,7 @@
       "executable": false
     },
     "tests/scenarios/reporting.mjs": {
-      "sha256": "222e68178da39e00fc1ffba6812d1c9d8ef6914cbf75f043b8ca56077b297191",
+      "sha256": "f52dcb9349171a52866c0f3c17d1024401063858218645ccbb3690d25ec40f72",
       "executable": false
     },
     "tests/scenarios/schedule-calendar.mjs": {

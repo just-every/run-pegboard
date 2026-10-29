@@ -1,44 +1,8 @@
 import assert from 'node:assert/strict'
 const ok=async(promise,status=200)=>{const r=await promise;assert.equal(r.status,status,JSON.stringify(r.body));return r.body}
 const instant=s=>Date.parse(s)
-async function reportingTransitions(w) {
- const owner=w.owner,p=await ok(owner.post('/api/v1/projects',{name:'Transition reconciliation'}))
- const a=await ok(owner.post('/api/v1/tasks',{title:'Cycle with estimate change',projectId:p.id,estimateHours:2}))
- await ok(owner.patch(`/api/v1/tasks/${a.id}`,{status:'doing'}))
- await ok(owner.patch(`/api/v1/tasks/${a.id}`,{estimateHours:5}))
- await ok(owner.patch(`/api/v1/tasks/${a.id}`,{status:'done'}))
- const b=await ok(owner.post('/api/v1/tasks',{title:'Completion with deadline change',projectId:p.id}))
- await ok(owner.patch(`/api/v1/tasks/${b.id}`,{status:'done',dueDate:'2026-03-10'}))
- const c=await ok(owner.post('/api/v1/tasks',{title:'Shared transition source',projectId:p.id}))
- const input={name:'Transition review',projects:[p.id],start:'2026-03-06',end:'2026-03-10',timezone:'America/New_York',widgets:[{kind:'table',measure:'cycle-hours'},{kind:'table',measure:'throughput'}]}
- const dashboard=await ok(owner.post('/api/v1/reports',input)),base=`/api/v1/reports/${dashboard.id}`
- await w.sql(`UPDATE peg_report_events SET at=CASE
- WHEN task_id='${a.id}' AND kind='state' AND status='doing' AND effort=2 THEN ${instant('2026-03-07T17:00:00Z')}
- WHEN task_id='${a.id}' AND kind='state' AND status='doing' AND effort=5 THEN ${instant('2026-03-08T17:00:00Z')}
- WHEN kind IN ('state','deadline') THEN ${instant('2026-03-09T17:00:00Z')}
- ELSE ${instant('2026-03-06T17:00:00Z')} END WHERE task_id IN ('${a.id}','${b.id}','${c.id}')`)
- const report=await ok(owner.post(base+'/capture',{}))
- assert.equal(report.widgets[0].values.find(v=>v.sourceIds.includes(a.id)).value,48,'an estimate edit during Doing does not restart cycle time')
- assert.equal(report.widgets[1].values.find(v=>v.sourceIds.includes(b.id))?.value??0,1,'completion and a deadline edit in one save count exactly once')
- const guest=await w.person(['transition-guest','example.test'].join(String.fromCharCode(64)),'Transition guest','guest')
- await ok(owner.post('/api/v1/grants',{objectType:'project',objectId:p.id,granteeId:guest.id,level:'viewer'}))
- const own=await ok(guest.post('/api/v1/reports',{...input,widgets:[{kind:'single-number',measure:'count'}]})),guestBase=`/api/v1/reports/${own.id}`
- const before=await ok(guest.post(guestBase+'/capture',{}))
- const hidden=await ok(owner.post('/api/v1/projects',{name:'Private transition membership'}))
- await ok(owner.post(`/api/v1/tasks/${c.id}/projects`,{projectId:hidden.id}))
- const hiddenAt=instant('2026-03-08T13:17:41Z')
- await w.sql(`UPDATE peg_report_events SET at=${hiddenAt} WHERE task_id='${c.id}' AND seq=(SELECT MAX(seq) FROM peg_report_events WHERE task_id='${c.id}')`)
- const safe=await ok(guest.post(guestBase+'/capture',{}))
- assert.deepEqual(safe.sources,before.sources,'a private membership addition reveals no event or timestamp to a guest')
- assert.deepEqual(safe.widgets,before.widgets,'a private membership addition changes no visible value or event reference')
- const csv=await ok(guest.get(`${guestBase}/snapshots/${safe.id}?format=csv`))
- assert.ok(!csv.includes(String(hiddenAt))&&!csv.includes(hidden.id),'CSV contains neither the private membership timestamp nor its project')
- assert.deepEqual((await ok(guest.get(`${guestBase}/snapshots/${before.id}`))).sources,before.sources,'an earlier download remains restricted to its authorized frozen source history')
- const authorized=await ok(owner.post('/api/v1/reports',{...input,projects:[p.id,hidden.id]}))
- const full=await ok(owner.post(`/api/v1/reports/${authorized.id}/capture`,{}))
- assert.ok(full.sources.find(s=>s.id===c.id).events.some(e=>e.at===hiddenAt&&e.projects.includes(hidden.id)),'the owner can still reconcile an explicitly selected private membership')
-}
 export async function reportingScenario(w,{erase=true}={}) {
+ await reportingReconciliationScenario(w)
  const owner=w.owner,projects=[]
  for(const name of ['Reporting campaign','Reporting launch','Reporting delivery'])projects.push(await ok(owner.post('/api/v1/projects',{name})))
  const task=async(title,p,estimateHours)=>ok(owner.post('/api/v1/tasks',{title,projectId:projects[p].id,estimateHours}))
@@ -142,6 +106,57 @@ export async function reportingScenario(w,{erase=true}={}) {
  const refreshed=await ok(owner.post(base+'/capture',{}))
  assert.ok(!JSON.stringify(refreshed).includes(c.id),'erased source and events never resurrect')
  }
- await reportingTransitions(w)
  return {owner,projects,a,b,c,legacy,report,dashboard,download,files,guest,own,safe,grant,guestBase,input}
+}
+
+// Ordinary edits must preserve timing, completion and the privacy of unrelated memberships.
+export async function reportingReconciliationScenario(w) {
+ const owner=w.owner,failures=[]
+ const shared=await ok(owner.post('/api/v1/projects',{name:'Reconciliation shared project'}))
+ const privateProject=await ok(owner.post('/api/v1/projects',{name:'Reconciliation private project'}))
+ const input={name:'Reconciliation',projects:[shared.id],start:'2026-03-06',end:'2026-03-10',timezone:'America/New_York',status:'all'}
+ const task=await ok(owner.post('/api/v1/tasks',{title:'Reconciled deliverable',projectId:shared.id,estimateHours:2}))
+ await ok(owner.patch(`/api/v1/tasks/${task.id}`,{status:'doing'}))
+ await ok(owner.patch(`/api/v1/tasks/${task.id}`,{estimateHours:5}))
+ await ok(owner.patch(`/api/v1/tasks/${task.id}`,{status:'done',dueDate:'2026-03-12'}))
+ const dashboard=await ok(owner.post('/api/v1/reports',{...input,widgets:[{kind:'single-number',measure:'cycle-hours'},{kind:'single-number',measure:'throughput'}]}))
+ const base=`/api/v1/reports/${dashboard.id}`
+ const before=await ok(owner.post(base+'/capture',{}))
+ const events=before.sources.find(s=>s.id===task.id).events
+ let doing=0
+ await w.sql(events.map(event=>{
+  const at=event.status==='doing'?(doing++===0?'2026-03-07T17:00:00Z':'2026-03-08T17:00:00Z'):event.status==='done'?'2026-03-09T17:00:00Z':'2026-03-06T17:00:00Z'
+  return `UPDATE peg_report_events SET at=${instant(at)} WHERE seq=${event.seq}`
+ }).join(';'))
+ const timed=await ok(owner.post(base+'/capture',{}))
+ for(const [index,expected] of [48,1].entries()){
+  const actual=timed.widgets[index].values[0].value
+  if(actual!==expected)failures.push(`${index===0?'Doing → estimate edit → Done cycle hours':'Completion with deadline edit throughput'}: expected ${expected}, received ${actual}`)
+ }
+ const guest=await w.person(['synthetic-pegboard-reconciliation','example.test'].join(String.fromCharCode(64)),'Reconciliation guest','guest')
+ const grant=await ok(owner.post('/api/v1/grants',{objectType:'project',objectId:shared.id,granteeId:guest.id,level:'viewer'}))
+ const guestDashboard=await ok(guest.post('/api/v1/reports',input)),guestBase=`/api/v1/reports/${guestDashboard.id}`
+ const visibleBefore=await ok(guest.post(guestBase+'/capture',{}))
+ await ok(owner.post(`/api/v1/tasks/${task.id}/projects`,{projectId:privateProject.id}))
+ // A distinct pinned instant makes disclosure visible independently of timestamp rounding.
+ const privateDashboard=await ok(owner.post('/api/v1/reports',{...input,projects:[privateProject.id]}))
+ const ownerView=await ok(owner.post(`/api/v1/reports/${privateDashboard.id}/capture`,{})),privateEvent=ownerView.sources.find(s=>s.id===task.id).events.at(-1)
+ const privateAt=instant('2026-03-10T18:23:45Z')
+ await w.sql(`UPDATE peg_report_events SET at=${privateAt} WHERE seq=${privateEvent.seq}`)
+ const visibleAfter=await ok(guest.post(guestBase+'/capture',{}))
+ const sourceEvents=report=>report.sources.find(s=>s.id===task.id).events
+ if(JSON.stringify(sourceEvents(visibleBefore))!==JSON.stringify(sourceEvents(visibleAfter)))failures.push('Private project membership changed guest source history')
+ const csv=await ok(guest.get(`${guestBase}/snapshots/${visibleAfter.id}?format=csv`))
+ if(csv.includes(String(privateAt))||csv.includes(privateProject.id))failures.push('Guest CSV disclosed private project membership event or timestamp')
+ const privateReport=await ok(owner.post(`/api/v1/reports/${privateDashboard.id}/capture`,{}))
+ assert.ok(privateReport.sources.find(s=>s.id===task.id).events.some(e=>e.seq===privateEvent.seq&&e.at===privateAt),'the authorized private membership event is retained')
+ const completion=sourceEvents(visibleAfter).find(e=>e.status==='done')
+ assert.ok(completion,'the guest retains visible completion history')
+ const remove=await ok(owner.post('/api/v1/projects',{name:'Reconciliation destination'}))
+ await ok(owner.post(`/api/v1/tasks/${task.id}/move`,{from:privateProject.id,to:remove.id}))
+ const afterMove=await ok(guest.post(guestBase+'/capture',{}))
+ if(JSON.stringify(sourceEvents(visibleAfter))!==JSON.stringify(sourceEvents(afterMove)))failures.push('Moving private membership changed guest source history')
+ await ok(owner.delete(`/api/v1/grants/${grant.id}`))
+ await ok(guest.get(`${guestBase}/snapshots/${visibleAfter.id}?format=csv`),404)
+ assert.deepEqual(failures,[],'source-event reconciliation and membership privacy')
 }
