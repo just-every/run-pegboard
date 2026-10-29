@@ -1,7 +1,8 @@
 .work-view-nav{display:flex;gap:8px;flex-wrap:wrap;margin-block:10px 18px}
 .work-view-nav a{display:block;padding:8px 14px;border:1px solid var(--edge);border-radius:8px;background:var(--paper);font-size:15px}
 .work-view-nav a[aria-current=page]{background:var(--azure-l);font-weight:750}
-.work-content{display:grid;gap:22px;min-width:0}
+.work-content{display:grid;grid-template-columns:minmax(0,1fr);gap:22px;min-width:0}
+.work-content>.panel{min-width:0;max-width:100%;box-sizing:border-box}
 .work-content h3{margin-block:10px}
 .work-row{min-width:0;overflow-wrap:anywhere}
 .work-row .stack{display:grid;gap:10px}
