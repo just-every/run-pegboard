@@ -22,7 +22,7 @@ behavior. The app wears the owner-approved look (app pick A, the Path view): bui
 every screen from the tokens and parts named in docs/LOOK.md, and keep
 public/rer-theme.css within Base's theme grammar (the installer reads it).
 
-Use the exact published @runeditrun/rer 0.2.85 pin. Public commands use bare rer
+Use the exact published @runeditrun/rer 0.2.91 pin. Public commands use bare rer
 verbs; do not restore a vendored CLI. Base runtime copies and their origins live
 in edition.json, sources.lock.json and base-copies.json. Keep recorded copies
 verbatim and preserve migrations already applied by an owner. Refresh source
@@ -57,3 +57,5 @@ Supply each changed clause ID as a separate argument. The generator updates
 those acceptance rows and the summary counts from CONTRACT.md, preserves
 unrelated legacy checklist rows, and generates docs/CLAIMS.md from all status
 rows. Regenerate the source lock last, after staging new files.
+
+Lander-Regenerate: node scripts/contract-docs.mjs write PEG-027 BASE-AGENT-001 BASE-AGENT-002 BASE-AGENT-003 BASE-AGENT-004 BASE-AGENT-005 BASE-AGENT-006 BASE-AGENT-007 BASE-AGENT-008 BASE-AGENT-009 BASE-AGENT-010 BASE-AGENT-011 BASE-AGENT-012 BASE-AGENT-013

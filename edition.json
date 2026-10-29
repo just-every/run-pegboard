@@ -31,7 +31,8 @@
         "paths": [
           "src/base",
           "src/modules",
-          "scripts/edition-authoring"
+          "scripts/edition-authoring",
+          "src/foundation"
         ],
         "origin": {
           "repository": "https://github.com/runeditrun/base.git",

@@ -1,3 +1,4 @@
+import { agentResponse } from './pegboard/agent-door'
 import { processReports } from './pegboard/analytics-export/reports'
 import { expireDue, processProjectRequests } from './pegboard/access-requests/requests'
 import { operatorMail } from './mail.server.mjs'
@@ -41,6 +42,8 @@ export default withDemo<Bindings, ExportedHandler<Bindings>>({
     if (asset) return asset
     const archive = await archiveResponse(request, env)
     if (archive) return archive
+    const agent = await agentResponse(request, env)
+    if (agent) return agent
     const auth = await authResponse(request, env)
     if (auth) return auth
     // The installed variant: the Lobby at / and the public claim state it reads.

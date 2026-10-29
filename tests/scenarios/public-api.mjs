@@ -1,20 +1,19 @@
+import {message,toolResponse,localPolicy} from '../agent-door/client.mjs'
 import {createServer} from 'node:http'
 import assert from 'node:assert/strict'
 import { createHash, createHmac } from 'node:crypto'
 
 export function registerPublicApiTests({ test, api }) {
  const ok = async (promise, status = 200) => { const r = await promise; assert.equal(r.status, status, JSON.stringify(r.body)); return r.body }
- const issue = (person, projects, extra = {}) => ok(person.post('/api/v1/api-keys', { name: 'synthetic-pegboard-1', projects, writable: true, consent: true, expiresAt: Date.now() + 3600000, ...extra }))
+ const issue = async (person, projects, extra = {}) => { await ok(api().root.call('PUT','/agents/api/policy',localPolicy)); return ok(person.post('/api/v1/api-keys', { name: 'synthetic-pegboard-1', projects, writable: true, consent: true, expiresAt: Date.now() + 3600000, ...extra })) }
  const rest = (worker, key) => async (method, path, body) => {
-  const response = await fetch(worker.origin + '/api/v1/public' + path, { method, headers: { authorization: 'Bearer ' + key.secret, 'content-type': 'application/json' }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) })
+  const m=path==='/mcp'?message(body):{body,headers:{}}
+  const response = await fetch(worker.origin + '/api/v1/public' + path, { method, headers: { authorization: 'Bearer ' + key.secret, 'content-type': 'application/json',...m.headers }, ...(body === undefined ? {} : { body: JSON.stringify(m.body) }) })
   return { status: response.status, body: await response.json() }
  }
  const mcp = (call) => async (name, args = {}) => {
   const response = await call('POST', '/mcp', { jsonrpc: '2.0', id: 2, method: ['tools','call'].join('/'), params: { name, arguments: args } })
-  assert.equal(response.status, 200, JSON.stringify(response.body))
-  const result = response.body.result
-  const body = JSON.parse(result.content[0].text)
-  return { status: result.isError ? body.status : 200, body }
+  return toolResponse(response)
  }
  test('creates and edits through the published REST and MCP doors with exact pages, reports and signed replay-safe events', async () => {
   const { worker, root, webhookEdge } = api(), project = await ok(root.post('/api/v1/projects', { name: 'Public work' }))
@@ -45,8 +44,8 @@ export function registerPublicApiTests({ test, api }) {
   assert.ok(event, 'the created event is actually present')
   const signingKey = createHash('sha256').update(JSON.stringify(key.secret)).digest('hex')
   assert.equal(event.signature, createHmac('sha256', signingKey).update(JSON.stringify(event.envelope)).digest('hex'))
-  await ok(tool('event_receive', { ...event, envelope: { ...event.envelope, taskId: b.id } }), 403)
-  assert.equal((await ok(tool('event_receive', event))).applied, true)
+  await ok(call('POST','/events/receive', { ...event, envelope: { ...event.envelope, taskId: b.id } }), 403)
+  assert.equal((await ok(call('POST','/events/receive',event))).applied, true)
   assert.equal((await ok(call('POST', '/events/receive', event))).applied, false)
   const hook = await ok(root.post('/api/v1/webhooks', {projectId:project.id,url:'https://webhooks.example.com/events',events:['task.created']}))
   webhookEdge.setSecret(hook.secret)
@@ -66,7 +65,7 @@ export function registerPublicApiTests({ test, api }) {
   assert.equal(forged.status,403);assert.equal(webhookEdge.effects.size,1)
   assert.deepEqual((await ok(root.get(`/api/v1/webhooks/${hook.id}/deliveries`))).deliveries.map(d=>[d.event_id,d.state,d.status]),[[event.envelope.id,'acknowledged',200]])
   await worker.restart()
-  assert.equal((await ok(tool('event_receive', event))).applied, false)
+  assert.equal((await ok(call('POST','/events/receive',event))).applied, false)
   await ok(root.delete(`/api/v1/webhooks/${hook.id}`))
   await ok(root.get(`/api/v1/webhooks/${hook.id}/event-preview?eventId=${event.envelope.id}`),404)
   assert.deepEqual(await ok(call('POST', '/tasks', { projectId: project.id, title: 'First task', estimateHours: 3, intent: 'create-first' })), a)
@@ -100,15 +99,15 @@ export function registerPublicApiTests({ test, api }) {
   const key = await issue(root, [p.id]), call = rest(worker, key), tool = mcp(call)
   // Official JSON-RPC initialize and tool schema edges; these do not qualify live vendor accounts.
   for (const name of ['Claude', 'ChatGPT', 'Gemini', 'Cursor']) {
-   const initialized = await ok(call('POST', '/mcp', { jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-03-26', capabilities: {}, clientInfo: { name, version: 'synthetic-pegboard-1' } } }))
-   assert.equal(initialized.result.protocolVersion, '2025-03-26'); assert.ok(initialized.result.capabilities.tools)
+   const initialized = await ok(call('POST', '/mcp', { jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-11-25', capabilities: {}, clientInfo: { name, version: 'synthetic-pegboard-1' } } }))
+   assert.equal(initialized.result.protocolVersion, '2025-11-25'); assert.ok(initialized.result.capabilities.tools)
    const listed = await ok(call('POST', '/mcp', { jsonrpc: '2.0', id: 2, method: ['tools','list'].join('/') }))
-   const readTool=listed.result.tools.find(t=>t.name==='task_read')
+   const readTool=listed.result.tools.find(t=>t.name==='pegboard.task.read')
    assert.equal((await ok(tool(readTool.name, { taskId: shared.id }))).id, shared.id)
   }
   for (const taskId of [hiddenTask.id, 'tsk_00000000000000000000']) {
    const a = await call('GET', `/tasks/${taskId}`), b = await tool('task_read', { taskId })
-   assert.equal(a.status, 404); assert.equal(b.status, 404); assert.equal(a.body.error, b.body.error)
+   assert.equal(a.status, 404); assert.equal(b.status, 404); assert.equal(a.body.error, b.body.code)
   }
   const seen = await ok(tool('task_read', { taskId: shared.id }))
   assert.deepEqual(seen.projects.map(p => p.id), [p.id]); assert.ok(!JSON.stringify(seen).includes(hidden.id) && !JSON.stringify(seen).includes('Outside key scope'))
@@ -122,7 +121,8 @@ export function registerPublicApiTests({ test, api }) {
   assert.deepEqual((await ok(mcp(personalScope)('task_read', {taskId:shared.id}))).tags.map(tag=>tag.id), [privateTag.id])
 
   const approval = await ok(tool('task_create', { title: 'Review my work', projectId: p.id, kind: 'approval', intent: 'approval' }))
-  await ok(tool('task_approve', { taskId: approval.id }), 403)
+  await ok(call('POST',`/tasks/${approval.id}/approve`,{}),403)
+  const refused = await tool('task_approve', {taskId:approval.id}); assert.equal(refused.status,400); assert.equal(refused.body.code,'tool_not_found')
   const reviewed = await ok(tool('task_read', { taskId: approval.id }))
   await ok(tool('task_update', { taskId: approval.id, revision: reviewed.revision, patch: { status: 'done' }, intent: 'bypass-approval' }), 409)
   assert.equal((await ok(root.get(`/api/v1/tasks/${approval.id}`))).status, 'todo')
