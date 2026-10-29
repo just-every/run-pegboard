@@ -1,3 +1,4 @@
+import {collaborationJourney} from './collaboration.mjs'
 import {accessPrivacyJourney} from './access-privacy.mjs'
 import {accessDiscoveryJourney} from './access-discovery.mjs'
 import {analystJourney} from './analytics.mjs'
@@ -26,7 +27,7 @@ import { planningCanvasJourney } from './planning-canvas.mjs'
 import { portfolioJourney } from './portfolios.mjs'
 import { timelineJourney } from './timeline.mjs'
 
-const journeyNames = ["access-privacy", "access-discovery", "analytics", "calendar-blocks", "capacity", "public-api", "approval-routing", "guests", "core", "recurrence", "approvals", "time-packets", "goals", "engineering", "meetings", "custody", "recovery", "departure", "canvas", "portfolio", "timeline", "register", "bundles"]
+const journeyNames = ["collaboration", "access-privacy", "access-discovery", "analytics", "calendar-blocks", "capacity", "public-api", "approval-routing", "guests", "core", "recurrence", "approvals", "time-packets", "goals", "engineering", "meetings", "custody", "recovery", "departure", "canvas", "portfolio", "timeline", "register", "bundles"]
 const selected = new Set(process.env.PEGBOARD_JOURNEY === undefined ? journeyNames : process.env.PEGBOARD_JOURNEY.split(',').map(name => name.trim()))
 for (const name of selected) if (!journeyNames.includes(name)) throw new Error(`Unknown PEGBOARD_JOURNEY: ${name}`)
 
@@ -52,6 +53,7 @@ try {
     usedWorker = true
     return true
   }
+  if(await select('collaboration'))await collaborationJourney({w,browser,ok})
   if(await select('access-privacy'))await accessPrivacyJourney({w,browser,owner,cookies})
   if(await select('access-discovery'))await accessDiscoveryJourney({w,browser,ok})
   if(await select('analytics'))await analystJourney({w,browser,owner,ok})
@@ -169,6 +171,7 @@ try {
     await newcomer.page.locator(`a[href="/app/tasks/${taskId}"]`).click()
     await newcomer.page.locator('form[aria-label="Comment"] textarea').fill('On my way')
     await newcomer.page.getByRole('button', { name: 'Comment', exact: true }).click()
+    await expect(newcomer.page.locator('[data-live-status]')).toContainText('Live')
     assert.ok((await newcomer.page.locator('main').innerText()).includes('On my way'))
     assert.equal(await newcomer.page.locator('form[aria-label="Edit task"]').count(), 0, 'a Commenter is not offered edit')
     await newcomer.context.close()
@@ -188,9 +191,11 @@ try {
     await editor.page.goto(taskUrl)
     assert.equal(await editor.page.locator('form[aria-label="Edit task"]').count(), 1)
     const grant = ok(await owner.get(`/api/v1/grants?objectType=project&objectId=${campaignId}`)).grants.find(g => g.grantee_id === eli.id)
+    await editor.page.route(`${w.origin}/api/v1/tasks/${taskId}`,route=>route.abort('internetdisconnected'))
     ok(await owner.delete(`/api/v1/grants/${grant.id}`))
     await editor.page.locator('form[aria-label="Comment"] textarea').fill('Still here?')
     await editor.page.getByRole('button', { name: 'Comment', exact: true }).click()
+    await expect(editor.page.locator('main')).toContainText('Not done')
     assert.ok((await editor.page.locator('main').innerText()).includes('Not done'))
     assert.ok(ok(await owner.get('/api/v1/admin/access-review')).audit.some(row => row.action === 'grant.revoked' && row.subject === `Eli ${size}`), 'the revocation is in the audit')
     await flat(editor.page); await editor.context.close(); await context.close()

@@ -1,3 +1,4 @@
+import {registerCollaborationTests} from './scenarios/collaboration.mjs'
 import { analystDatasetScenario } from './scenarios/analytics.mjs'
 import { registerCalendarBlockTests } from './scenarios/calendar-blocks.mjs'
 import { startCalendarServices } from './support/calendar-services.mjs'
@@ -42,6 +43,13 @@ describe('Work conversions through reviewed public doors',{concurrency:false},()
  before(async()=>{worker=await startWorker();root=worker.owner;peer=await worker.person('conversion-member@example.com','Mia Studio');guest=await worker.person('conversion-guest@example.com','Gus Client','guest')},{timeout:120000})
  after(()=>worker?.stop())
  registerConversionTests({test:it,api:()=>({root,peer,guest,worker})})
+})
+
+describe('Native text collaboration',{concurrency:false},()=>{
+ let worker
+ before(async()=>{worker=await startWorker()},{timeout:120000})
+ after(()=>worker?.stop())
+ registerCollaborationTests({test:it,context:()=>worker})
 })
 
 describe('PEG-001 one work graph', { concurrency: false }, () => {

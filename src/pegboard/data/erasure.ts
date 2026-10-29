@@ -66,6 +66,7 @@ export async function erasurePlan(db:D1Database,actor:Actor,workspace:string,typ
     await take('peg_workspace_members','operator_id=?',[id]);await take('peg_personal_layout','operator_id=?',[id]);await take('peg_personal_moves','operator_id=?',[id]);await take('peg_personal_rules','operator_id=?',[id]);await take('peg_personal_sections','operator_id=?',[id]);await take('peg_personal_settings','operator_id=?',[id])
     await take('peg_grants',"grantee_type='person' AND grantee_id=?",[id]);await take('peg_task_collaborators','operator_id=?',[id]);await take('peg_approvers','operator_id=?',[id]);await take('peg_inbox','operator_id=? OR request_id IN(SELECT id FROM peg_access_requests WHERE requester_id=?)',[id,id]);await take('peg_access_requests','requester_id=?',[id]);await take('peg_project_request_intake','requester_id=?',[id])
     await take('peg_rule_suggestions','requested_by=?',[id])
+    await take('peg_collaboration_intents','actor_id=? OR comment_id IN(SELECT id FROM peg_comments WHERE author_id=?)',[id,id]);await take('peg_comment_reactions','actor_id=? OR comment_id IN(SELECT id FROM peg_comments WHERE author_id=?)',[id,id]);await take('peg_comment_versions','actor_id=? OR comment_id IN(SELECT id FROM peg_comments WHERE author_id=?)',[id,id]);await take('peg_description_versions','actor_id=?',[id]);
     await take('peg_comments','author_id=?',[id]);await take('peg_attachments','created_by=?',[id])
     retained.local_auth_material=(await first<{n:number}>(db,'SELECT (SELECT COUNT(*) FROM oa_sessions WHERE operator_id=?)+(SELECT COUNT(*) FROM oa_tokens WHERE operator_id=?)+(SELECT COUNT(*) FROM oa_credentials WHERE operator_id=?)+(SELECT COUNT(*) FROM oa_external_identities WHERE operator_id=?) n',id,id,id,id))!.n
     retained.legacy_access_activity=(await first<{n:number}>(db,'SELECT COUNT(*) n FROM peg_audit WHERE actor_id=? OR subject_id=?',id,id))!.n
@@ -105,6 +106,8 @@ export async function erasurePlan(db:D1Database,actor:Actor,workspace:string,typ
     await take('peg_search_records',scoped('task_id'),tasks)
     // Child rows first, including all current caches, identity aliases and values.
     for(const table of ['peg_effort_allocations','peg_effort_mappings','peg_task_tags','peg_personal_layout','peg_personal_moves','peg_approval_reopen_guards','peg_decision_guards','peg_task_decisions','peg_approval_owners','peg_approval_tasks','peg_field_values','peg_task_collaborators','peg_task_refs'])await take(table,scoped('task_id'),tasks)
+    await take('peg_description_versions',scoped('task_id'),tasks)
+    for(const table of ['peg_collaboration_intents','peg_comment_reactions','peg_comment_versions'])await take(table,`comment_id IN(SELECT id FROM peg_comments WHERE ${scoped('task_id')} OR ${projectScoped('project_id')})`,[...tasks,...projects])
     for(const table of ['peg_history','peg_comments','peg_attachments'])await take(table,`${scoped('task_id')} OR ${projectScoped('project_id')}`,[...tasks,...projects])
     await take('peg_goal_links',`(source_type='task' AND ${scoped('source_id')}) OR (source_type='project' AND ${projectScoped('source_id')})`,[...tasks,...projects])
     await take('peg_inbox',`request_id IN(SELECT id FROM peg_access_requests WHERE (target_type='task' AND ${scoped('target_id')}) OR (target_type='project' AND ${projectScoped('target_id')}))`,[...tasks,...projects])

@@ -6,12 +6,12 @@ import { Heading } from '../../ui/heading'
 import { homeTabs } from '../../ui/home'
 import type { Viewer } from '../../ui/viewer'
 
-export interface ShellProps { viewer: Viewer; current: string; crumbs?: Tab[]; title: string; chip?: string; facts?: string[]; children: ReactNode }
-export function Shell({ viewer, current, crumbs, title, chip, facts = [], children }: ShellProps) {
+export interface ShellProps { viewer: Viewer; current: string; crumbs?: Tab[]; title: string; chip?: string; facts?: string[]; liveRegion?:string; children: ReactNode }
+export function Shell({ viewer, current, crumbs, title, chip, facts = [], children, liveRegion }: ShellProps) {
   return <>
     <AppBar viewer={viewer} tabs={homeTabs(viewer, current)} crumbs={crumbs} />
     <main className="board" id="main">
-      <Heading title={title} chip={chip ? <Flap text={chip} tone="quiet" /> : undefined} facts={facts} />
+      <Heading liveRegion={liveRegion} title={title} chip={chip ? <Flap text={chip} tone="quiet" /> : undefined} facts={facts} />
       <section className="page">{children}</section>
     </main>
   </>

@@ -1,4 +1,6 @@
-import {guarded, type revision} from '../decisions/revision'
+import {commentProject,mentionParticipants} from './participants'
+import {commentVersions} from '../revisions/comments'
+import {digest, guarded, revision} from '../decisions/revision'
 import { isRecoveryHidden } from '../recovery/visibility'
 import {registerView} from '../register/records'
 import {taskFields} from '../fields/values'
@@ -6,7 +8,7 @@ import {taskTags} from '../tags/tags'
 import {availabilityChoices} from '../capacity/availability'
 // What a person sees of a task: its own shared record, and of each project it hangs in only the ones they may read,
 // with the values, files and history those projects keep. Nothing of an unreadable project leaves this module.
-import { all, batch, bound, first, forbidden, invalid, newId, notFound, now } from '../db'
+import { all, batch, bound, conflict, first, forbidden, invalid, newId, notFound, now } from '../db'
 import type { FieldRow, SectionRow, TaskProjectRow, TaskRow } from '../model'
 import { rootOf, taskAccess } from '../authorization/effective'
 import { currentRef, aliases } from '../references/refs'
@@ -30,17 +32,19 @@ export async function viewTask(db: D1Database, actor: Actor, idOrRef: string) {
     projects.push({id:home.project_id,name:home.name,section:section?{id:section.id,name:section.name}:null,level:context.level,fields:await taskFields(db,actor,task.id,home.project_id)})
   }
   const history = await historyOf(db, task.id, readable)
-  const comments = (await all<{ id: string; internal_only: number; project_id: string | null; author_id: string; body: string; created_at: number }>(db, 'SELECT id,internal_only,project_id,author_id,body,created_at FROM peg_comments WHERE task_id=? ORDER BY created_at', task.id)).filter(comment => (access.role !== 'guest' || !comment.internal_only) && (comment.project_id === null || readable.has(comment.project_id)))
+  const comments = (await all<{ id: string; internal_only: number; project_id: string | null; author_id: string; body: string; created_at: number; version:number; deleted_at:number|null }>(db, 'SELECT id,internal_only,project_id,author_id,body,created_at,version,deleted_at FROM peg_comments WHERE task_id=? ORDER BY created_at', task.id)).filter(comment => (access.role !== 'guest' || !comment.internal_only) && (comment.project_id === null || readable.has(comment.project_id)))
   const files = await all<{ id: string; project_id: string | null; name: string; content_type: string; size: number; created_by: string; created_at: number }>(db, `SELECT id,project_id,name,content_type,size,created_by,created_at FROM peg_attachments WHERE task_id=? AND NOT EXISTS(SELECT 1 FROM peg_recovery r WHERE r.object_type='attachment' AND r.object_id=peg_attachments.id AND r.restored_at IS NULL) AND NOT EXISTS(SELECT 1 FROM peg_proof_versions v JOIN peg_recovery r ON r.object_type='proof_version' AND r.object_id=v.id AND r.restored_at IS NULL WHERE v.attachment_id=peg_attachments.id) ORDER BY created_at`, task.id)
   const collaborators = (await all<{ operator_id: string }>(db, 'SELECT operator_id FROM peg_task_collaborators WHERE task_id=?', task.id)).map(row => row.operator_id)
   const subtasks = []
   for (const child of await all<TaskRow>(db, 'SELECT * FROM peg_tasks WHERE parent_id=? ORDER BY created_at', task.id)) {
     if ((await taskAccess(db, actor, child)).capabilities.has('read')) subtasks.push({ id: child.id, ref: await currentRef(db, child.id), title: child.title, status: child.status })
   }
-  const names = await displayNames(db, [task.owner_id, ...collaborators, ...history.map(entry => entry.actor_id), ...comments.map(comment => comment.author_id), ...files.map(file => file.created_by)])
+  const descriptionVersions=await all<{version:number;text:string;actor_id:string|null;created_at:number}>(db,'SELECT * FROM peg_description_versions WHERE task_id=? ORDER BY version',task.id)
+  const expandedComments=await Promise.all(comments.map(async comment=>({...comment,versions:await commentVersions(db,comment.id),reactions:await all<{actor_id:string;reaction:string}>(db,'SELECT actor_id,reaction FROM peg_comment_reactions WHERE comment_id=? AND active=1',comment.id)})))
+  const names = await displayNames(db, [task.owner_id, ...collaborators, ...history.map(entry => entry.actor_id), ...comments.map(comment => comment.author_id), ...files.map(file => file.created_by),...descriptionVersions.flatMap(v=>v.actor_id?[v.actor_id]:[]),...expandedComments.flatMap(c=>[...c.versions.map(v=>v.actor_id),...c.reactions.map(r=>r.actor_id)])])
   const name = (id: string) => names.get(id) ?? 'Former member'
   const internal = access.role !== 'guest'
-  const mentionChoices=await availabilityChoices(db,actor,task.workspace_id,[task.owner_id,...collaborators].filter((v,i,a)=>a.indexOf(v)===i).map(id=>({value:id,label:name(id)})),task.start_date,task.due_date)
+  const mentionChoices=await availabilityChoices(db,actor,task.workspace_id,await mentionParticipants(db,actor,task,access),task.start_date,task.due_date)
   const visibleHistory=await Promise.all(history.map(async entry=>{const detail=shareHistory(entry.detail,readable);if(entry.kind.startsWith('dependency.'))for(const key of ['predecessor','successor'])if(typeof detail[key]==='string'){const linked=await openTask(db,actor,detail[key] as string).catch(()=>null);if(!linked)delete detail[key]}return {...entry,detail}}))
   return {
     id: task.id, ref: await currentRef(db, task.id), aliases: await aliases(db, task.id), title: task.title, description: task.description, kind: await first(db,'SELECT 1 FROM peg_approval_tasks WHERE task_id=?',task.id) ? 'approval' : task.kind, parentId: task.parent_id,
@@ -52,7 +56,11 @@ export async function viewTask(db: D1Database, actor: Actor, idOrRef: string) {
     mentionChoices,tags:await taskTags(db,actor,task.id), capabilities: [...access.capabilities], level: access.level, projects, subtasks,
     meetingCitations: await all<{meetingId:string;segmentIndex:number}>(db,`SELECT m.id AS meetingId,p.segment_index AS segmentIndex FROM peg_meeting_proposals p JOIN peg_meetings m ON m.id=p.meeting_id JOIN oa_operators o ON o.id=m.created_by WHERE p.task_id=? AND m.created_by=? AND m.revoked_at IS NULL AND o.status='active' AND o.role IN ('owner','admin')`,task.id,actor.id),
     history: visibleHistory.filter(entry => internal || (!entry.kind.startsWith('internal.') && !(entry.kind === 'comment.added' && entry.project_id === null))).map(entry => ({ id: entry.id, at: entry.at, actor: name(entry.actor_id), kind: entry.kind, projectId: entry.project_id, detail: entry.kind==='fields.changed'?{}:shareHistory(entry.detail, readable) })),
-    comments: comments.map(comment => ({ id: comment.id, author: name(comment.author_id), body: comment.body, at: comment.created_at })),
+    descriptionVersion:descriptionVersions.at(-1)?.version??0,
+    descriptionVersions:descriptionVersions.map(v=>({version:v.version,text:v.text,actor:v.actor_id?name(v.actor_id):'Earlier text, editor not recorded',at:v.created_at})),
+    comments: expandedComments.map(comment => ({ id: comment.id, author: name(comment.author_id), body: comment.body, at: comment.created_at,version:comment.version,deleted:comment.deleted_at!==null,canEdit:comment.author_id===actor.id&&access.capabilities.has('comment')&&comment.deleted_at===null,
+      versions:comment.versions.map(v=>({version:v.version,body:v.body,actor:name(v.actor_id),at:v.created_at,deleted:!!v.deleted})),
+      reactions:['like','celebrate','thanks'].map(reaction=>({reaction,count:comment.reactions.filter(r=>r.reaction===reaction).length,mine:comment.reactions.some(r=>r.reaction===reaction&&r.actor_id===actor.id),actors:comment.reactions.filter(r=>r.reaction===reaction).map(r=>name(r.actor_id))})) })),
     attachments: files.filter(file => file.project_id === null ? task.owner_id === actor.id : readable.has(file.project_id)).map(file => ({ id: file.id, projectId: file.project_id, name: file.name, contentType: file.content_type, size: file.size, by: name(file.created_by), at: file.created_at })),
     createdAt: task.created_at, updatedAt: task.updated_at, completedAt: task.completed_at,
   }
@@ -65,15 +73,23 @@ function shareHistory(detail: Record<string, unknown>, readable: Set<string>) {
   return out
 }
 
-export async function addComment(db: D1Database, actor: Actor, idOrRef: string, body: unknown, internalOnly = false, fence?: Awaited<ReturnType<typeof revision>>) {
+export async function addComment(db: D1Database, actor: Actor, idOrRef: string, body: unknown, internalOnly = false, fence?: Awaited<ReturnType<typeof revision>>, operationKey?:unknown) {
+  const localRevision=fence??await revision(db)
   const { task, access } = await openTask(db, actor, idOrRef)
   require(access, 'comment')
   if (internalOnly && access.role === 'guest') throw forbidden('internal')
   if (typeof body !== 'string' || !body.trim() || body.length > 10000) throw invalid('body')
-  const via = [...access.contexts].filter(([, effective]) => effective.capabilities.has('comment')).sort((a, b) => b[1].paths.length - a[1].paths.length)[0]?.[0] ?? null
+  const via = await commentProject(db,task,access)
+  const fingerprint=await digest(['comment',task.id,body.trim(),internalOnly])
+  if(operationKey!==undefined){
+    if(typeof operationKey!=='string'||!operationKey||operationKey.length>160)throw invalid('comment_key')
+    const saved=await first<{fingerprint:string;result:string}>(db,'SELECT * FROM peg_collaboration_intents WHERE actor_id=? AND operation_key=?',actor.id,operationKey)
+    if(saved){if(saved.fingerprint!==fingerprint)throw conflict('intent_changed');return JSON.parse(saved.result) as {id:string}}
+  }
   const id = newId('cmt')
   const statements = [reopenGuard(db,task.id,actor.id,'comment'),bound(db, 'INSERT INTO peg_comments(id,task_id,project_id,author_id,body,created_at,internal_only) VALUES (?,?,?,?,?,?,?)', [id, task.id, via, actor.id, body.trim(), now(), internalOnly ? 1 : 0]), historyStatement(db, task.id, via, actor.id, internalOnly ? 'internal.comment.added' : 'comment.added', {})]
-  if (fence) await guarded(db, fence, statements); else await batch(db, statements)
+  if(operationKey!==undefined)statements.push(bound(db,'INSERT INTO peg_collaboration_intents VALUES(?,?,?,?,?,?)',[actor.id,String(operationKey),task.id,id,fingerprint,JSON.stringify({id})]))
+  await guarded(db,localRevision,statements)
   return { id }
 }
 

@@ -1,9 +1,9 @@
 // A guest may choose only people who currently participate in a project they share.
 import { all, forbidden } from '../db'
-import { projectEffective, type TaskAccess } from '../authorization/effective'
+import { projectEffective, rootOf, taskAccess, type TaskAccess } from '../authorization/effective'
 import { loadProject } from '../authorization/grants'
 import { openProject, need } from '../workspace/projects'
-import { workspaceRole, type Actor } from '../workspace/people'
+import { displayNames, workspaceRole, type Actor } from '../workspace/people'
 
 export async function projectParticipants(db: D1Database, actor: Actor, projectId: string) {
   const { project, effective } = await openProject(db, actor, projectId)
@@ -34,4 +34,19 @@ export async function requireGuestParticipant(db: D1Database, actor: Actor, role
   if (role !== 'guest' || !ids.length) return
   const allowed = new Set((projectId ? await projectParticipants(db, actor, projectId) : access ? await taskParticipants(db, actor, access) : []).map(person => person.value))
   if (ids.some(id => !allowed.has(id))) throw forbidden('shared_project_participant')
+}
+
+export async function mentionParticipants(db:D1Database,actor:Actor,task:import('../model').TaskRow,access:TaskAccess) {
+ const via=await commentProject(db,task,access)
+ const published=new Set(via?(await participants(db,via,task.workspace_id)).map(p=>p.value):[actor.id])
+ const ids=[task.owner_id,...(await all<{operator_id:string}>(db,'SELECT operator_id FROM peg_task_collaborators WHERE task_id=? ORDER BY operator_id',task.id)).map(p=>p.operator_id)]
+ const names=await displayNames(db,ids)
+ const visible=[]
+ for(const id of [...new Set(ids)])if(published.has(id)&&(await taskAccess(db,{...actor,id,baseRole:'member',apiScope:undefined},task)).capabilities.has('read'))visible.push({value:id,label:names.get(id)??'Former member'})
+ return visible
+}
+
+export async function commentProject(db:D1Database,task:import('../model').TaskRow,access:TaskAccess) {
+ const homes=await all<{project_id:string}>(db,'SELECT project_id FROM peg_task_projects WHERE task_id=? ORDER BY added_at,project_id',(await rootOf(db,task)).id)
+ return homes.find(p=>access.contexts.get(p.project_id)?.capabilities.has('comment'))?.project_id??null
 }
