@@ -29,7 +29,7 @@ WHEN OLD.status<>NEW.status AND NEW.status='inactive' BEGIN
  UPDATE peg_template_rule_runs SET status='noop',outcome='identity_deactivated',finished_at=CAST((julianday('now')-2440587.5)*86400000 AS INTEGER) WHERE status IN ('queued','pending') AND activation_id IN (SELECT id FROM peg_template_rule_activations WHERE activated_by=NEW.id);
  UPDATE peg_webhooks SET revoked_at=COALESCE(revoked_at,CAST((julianday('now')-2440587.5)*86400000 AS INTEGER)) WHERE created_by=NEW.id;
  UPDATE peg_approval_links SET revoked_at=COALESCE(revoked_at,CAST((julianday('now')-2440587.5)*86400000 AS INTEGER)) WHERE recipient_id=NEW.id OR route_id IN (SELECT id FROM peg_approval_routes WHERE created_by=NEW.id);
- INSERT OR IGNORE INTO peg_identity_approval_cancellations SELECT id,NEW.id FROM peg_approval_routes WHERE withdrawn_at IS NULL;
+ INSERT OR IGNORE INTO peg_identity_approval_cancellations SELECT r.id,NEW.id FROM peg_approval_routes r,json_each(r.stages) s,json_each(s.value,'$.people') p WHERE r.withdrawn_at IS NULL AND p.value=NEW.id;
  INSERT OR IGNORE INTO peg_identity_request_cancellations SELECT id,NEW.id FROM peg_access_requests WHERE status='pending';
  UPDATE peg_access_requests SET status='stale' WHERE requester_id=NEW.id AND status='pending';
  DELETE FROM peg_inbox WHERE operator_id=NEW.id AND kind IN ('request','fallback');

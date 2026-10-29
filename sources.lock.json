@@ -199,7 +199,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "c17b0c366621be192f7678b11ef7caa337b2406aa2a549c8339242e2e7e1018c",
+      "sha256": "c30e23a4395b26c72765dc9ef47db2128a82365e117acfde11bb127baaac4d86",
       "executable": false
     },
     "AGENTS.md": {
@@ -215,7 +215,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "f670e09ef7f8739b9564dcc24b2a7835dae46457bea7851ae71f4b20a2a4b857",
+      "sha256": "474ba2c866685da47f0342bd52d399e81fe018e79c18b4e5faa460921dd4e299",
       "executable": false
     },
     "DEMO.md": {
@@ -243,7 +243,7 @@
       "executable": false
     },
     "docs/CLAIMS.md": {
-      "sha256": "79629f2b4e4e0f27f5123e664e8bd1a2c09098153d5c70642986bcb46f0169d3",
+      "sha256": "96c2f05b983c978ecb73e73ed9c673ea813690183fd626eb40d33e0caf55fb77",
       "executable": false
     },
     "docs/DATA-CUSTODY.md": {
@@ -639,7 +639,7 @@
       "executable": false
     },
     "migrations/core/0076_identity_lifecycle.sql": {
-      "sha256": "23b21f15b600b5a4c17d5fc9f67bfa515a9781e65b5cb46a2d48651d53b12e0a",
+      "sha256": "d2fdb895697b33ff3fcbd58e5aa62e5cd650d1dec6d5dff814832fe19bc19d42",
       "executable": false
     },
     "ONBOARDING.md": {
@@ -3695,7 +3695,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/access-review.tsx": {
-      "sha256": "cd843eaf6a93286d5ab6f9ad842ab9230359d51f7c2d69afdb61cfe588b6d771",
+      "sha256": "cb239655b1cf24c5dc973ebffb96932714594fc8a777e00af941512f405496ad",
       "executable": false
     },
     "src/pegboard/ui/pages/admin.tsx": {
@@ -4231,7 +4231,7 @@
       "executable": false
     },
     "tests/scenarios/identity-lifecycle.mjs": {
-      "sha256": "6b3c93a863a30a3fb2b40322f6e7e9feb987d22570ce68d0eb68b0c7f4019f73",
+      "sha256": "4ebc7683dd10703d5dae19c4877f8c8ae880db5df3bd41bc382096c95db4a493",
       "executable": false
     },
     "tests/scenarios/public-api.mjs": {
