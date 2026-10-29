@@ -1,4 +1,6 @@
 import { registerRuleAuditTests } from './scenarios/rule-audit.mjs'
+import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs'
+import { reportingScenario } from './scenarios/reporting.mjs'
 import { analystDatasetScenario } from './scenarios/analytics.mjs'
 import { registerCalendarBlockTests } from './scenarios/calendar-blocks.mjs'
 import { startCalendarServices } from './support/calendar-services.mjs'
@@ -2398,4 +2400,42 @@ describe('Local rule audit', {concurrency:false},()=>{
  before(async()=>{worker=await startWorker()},{timeout:120000})
  after(()=>worker?.stop())
  registerRuleAuditTests({test:it,context:()=>worker})
+})
+
+describe('Native reporting',{concurrency:false},()=>{
+ let worker
+ before(async()=>{worker=await startWorker()},{timeout:120000})
+ after(()=>worker?.stop())
+ it('reconciles dashboard history, real downloads and revoked access across three projects',async()=>{
+  const {files,report}=await reportingScenario(worker)
+  const csv=new TextDecoder().decode(files.csv),records=csvRecords(csv),columns=records[0]
+  const data=records.slice(1).map(values=>Object.fromEntries(columns.map((name,i)=>[name,values[i]])))
+  assert.equal(data[0].snapshot,report.id)
+  for(const [index,widget] of report.widgets.entries())assert.deepEqual(data.filter(r=>r.section==='value'&&r.widget===String(index)).map(r=>r.value),widget.values.map(v=>v.value===null?'':String(v.value)))
+  const scratch=await mkdtemp(join(tmpdir(),'pegboard-report-readers-'))
+  try {
+   for(const [format,bytes] of Object.entries(files))await writeFile(join(scratch,'report.'+format),bytes)
+   // Python's archive and XML readers independently open a real Excel workbook.
+   const workbook=JSON.parse(execFileSync('python3',['-c',`import json,sys,zipfile,xml.etree.ElementTree as E
+with zipfile.ZipFile(sys.argv[1]) as z:
+ assert z.testzip() is None
+ root=E.fromstring(z.read('xl/worksheets/sheet1.xml'))
+ ns={'s':'http://schemas.openxmlformats.org/spreadsheetml/2006/main'}
+ print(json.dumps([[(''.join(c.itertext()) if c.get('t')=='inlineStr' else (c.findtext('s:v',default='',namespaces=ns))) for c in row] for row in root.findall('s:sheetData/s:row',ns)]))`,join(scratch,'report.xlsx')],{encoding:'utf8'}))
+   assert.deepEqual(workbook,records,'every workbook cell reconciles to the same CSV record')
+   const pdf=new TextDecoder().decode(files.pdf)
+   assert.ok(pdf.startsWith('%PDF-1.4'))
+   assert.ok(pdf.includes('/MediaBox [0 0 612 792]'))
+   // PDF.js independently reads every Letter page and its plotted values.
+   const parsed=await getDocument({data:files.pdf,useSystemFonts:true}).promise
+   const lines=[]
+   for(let n=1;n<=parsed.numPages;n++){const page=await parsed.getPage(n);assert.deepEqual(page.view,[0,0,612,792]);lines.push(...(await page.getTextContent()).items.map(i=>i.str).filter(Boolean))}
+   assert.ok(lines.join(' ').includes(report.id))
+   const pdfRecords=[]
+   let lastKey
+   for(const line of lines){if(line.startsWith('section: '))pdfRecords.push({});if(!pdfRecords.length)continue;if(/^[A-Za-z]+:(?: |$)/.test(line)){const at=line.indexOf(':');lastKey=line.slice(0,at);pdfRecords.at(-1)[lastKey]=line.slice(at+1).replace(/^ /,'')}else if(lastKey)pdfRecords.at(-1)[lastKey]+=line}
+   assert.deepEqual(pdfRecords.map(row=>columns.map(name=>row[name]??'')),records.slice(1),'every parsed PDF record reconciles to the workbook and CSV')
+   await parsed.destroy()
+  } finally {await rm(scratch,{recursive:true,force:true})}
+ },{timeout:180000})
 })
