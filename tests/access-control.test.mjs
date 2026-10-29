@@ -1,3 +1,4 @@
+import { identityLifecycleScenario } from './scenarios/identity-lifecycle.mjs'
 import {accessPrivacyScenario} from './scenarios/access-privacy.mjs'
 import {startEngineeringServices} from './support/engineering-services.mjs'
 // PEG-020 and PEG-083's decision lifecycle, through real sign-in and the public doors: a role matrix over the project,
@@ -545,4 +546,10 @@ describe('Scoped guest work', { concurrency: false }, () => {
     for(const path of [`/api/v1/tasks/${shared.id}`,`/api/v1/attachments/${attachment.id}`,`/api/v1/projects/${project}/export`,`/app/tasks/${shared.id}`]) assert.equal((await editor.get(path)).status,404)
     assert.ok((await ok(root.get('/api/v1/admin/access-review'))).audit.some(row=>row.action==='grant.revoked'&&row.detail.grantId===grant.id))
   })
+})
+
+// One native lifecycle journey covers the supported case and every dangerous stale-authority refusal.
+it('cancels native identity authority through deactivation and requires explicit renewal after restart', { timeout: 180000 }, async () => {
+  const installation = await startWorker()
+  try { await identityLifecycleScenario(installation) } finally { await installation.stop() }
 })

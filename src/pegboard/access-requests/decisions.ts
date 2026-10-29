@@ -20,10 +20,10 @@ async function standing(db: D1Database, actor: Actor, requestId: string): Promis
   const target = request ? await loadTarget(db, request.target_type, request.target_id) : null
   const authority = request && target ? await authorityOver(db, actor.id, target, request.requester_id) : null
   // Whether the request exists is the business of those who may decide it.
-  if (!request || !target || !authority) throw notFound()
+  if (!request || !target || !authority || await first(db, 'SELECT 1 FROM peg_identity_request_cancellations WHERE request_id=? AND operator_id=?', requestId, actor.id)) throw notFound()
   return { request, target, authority }
 }
-const revisionOf = async (db: D1Database, request: RequestRow, target: Target) => stamp(JSON.stringify([request.id, request.status, request.level, request.policy_rev, await policyRevOf(db, target), request.requester_version]))
+const revisionOf = async (db: D1Database, request: RequestRow, target: Target, actor: Actor) => stamp(JSON.stringify([actor.id, (await operatorRow(db, actor.id))?.version, request.id, request.status, request.level, request.policy_rev, await policyRevOf(db, target), request.requester_version]))
 
 export async function previewRequest(db: D1Database, actor: Actor, requestId: string) {
   await expireDue(db)
@@ -43,7 +43,7 @@ export async function previewRequest(db: D1Database, actor: Actor, requestId: st
     grantable: levels.filter(level => rank(level) <= rank(authority.ceiling)),
     // A task request proposes only the narrow task grant; a broader project grant is a separate, explicit choice.
     scopes: target.type === 'task' ? [{ scope: 'task', label: 'This task only' }, ...(readable && authority.ceiling !== 'viewer' ? projects.map(project => ({ scope: `project:${project.id}`, label: `Whole project: ${project.name}` })) : [])] : [{ scope: request.target_type, label: request.target_type === 'portfolio' ? 'Portfolio membership only; no project access' : request.target_type === 'team' ? 'Team membership' : 'This project' }],
-    revision: await revisionOf(db, request, target),
+    revision: await revisionOf(db, request, target, actor),
   }
 }
 
@@ -78,7 +78,7 @@ export async function decideRequest(db: D1Database, actor: Actor, requestId: str
     [workspaceId, at, actor.id, action, request.target_type, request.target_id, request.requester_id, JSON.stringify(detail), request.id, action === 'request.approved' ? 'approved' : 'denied', actor.id, at])
   const notice = (status: string) => bound(db, `INSERT INTO peg_inbox(id,operator_id,kind,request_id,created_at) SELECT ?,?,'decision',?,? WHERE EXISTS (SELECT 1 FROM peg_access_requests WHERE id=? AND status=? AND decided_by=? AND decided_at=?)`, [newId('inb'), request.requester_id, request.id, at, request.id, status, actor.id, at])
 
-  if (target.type === 'portfolio' && input.revision !== await revisionOf(db, request, target)) throw conflict('stale_preview')
+  if (target.type === 'portfolio' && input.revision !== await revisionOf(db, request, target, actor)) throw conflict('stale_preview')
   if (target.type === 'portfolio' && input.scope !== undefined && input.scope !== '' && input.scope !== 'portfolio') throw invalid('scope')
 
   if (input.decision === 'deny') {
@@ -92,7 +92,7 @@ export async function decideRequest(db: D1Database, actor: Actor, requestId: str
   const level = input.level === undefined || input.level === '' ? request.level : input.level
   if (!isLevel(level)) throw invalid('level')
   if (rank(level) > rank(authority.ceiling)) throw forbidden(level === 'admin' ? 'delegate_admin' : 'delegate')
-  if (input.revision !== await revisionOf(db, request, target)) throw conflict('stale_preview')
+  if (input.revision !== await revisionOf(db, request, target, actor)) throw conflict('stale_preview')
   // A request made against an older policy, or by someone no longer in the standing they asked from, is stale: it grants nothing.
   const stale = request.policy_rev !== policy || !requester || requester.status !== 'active' || requester.version !== request.requester_version
   if (stale) {

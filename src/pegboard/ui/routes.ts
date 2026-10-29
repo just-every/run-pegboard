@@ -1,3 +1,4 @@
+import { lifecyclePreview } from '../admin/lifecycle'
 import { ownKey, readReport } from '../analytics-export/reports'
 import { AnalystReportPage } from './pages/analyst-report'
 import { operatorMail } from '../../mail.server.mjs'
@@ -340,7 +341,7 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
     if (section === 'access-review' || section === 'admin') {
       if (!isAdministrator(await workspaceRole(db, actor.id, workspace))) return refuse(db, actor, viewer, section)
       if (section === 'access-review') return page('Access review', h(AccessReviewPage, { viewer, review: await accessReview(db, actor, workspace, { action: url.searchParams.get('action') ?? undefined }) }))
-      return page('Administration', h(AdminPage, { viewer, workspace, settings: await workspaceSettings(db, workspace), people: await listPeople(db, actor, workspace) }))
+      return page('Administration', h(AdminPage, { viewer, workspace, settings: await workspaceSettings(db, workspace), people: await listPeople(db, actor, workspace), lifecycle: url.searchParams.has('person') ? await lifecyclePreview(db,actor,workspace,url.searchParams.get('person')!,url.searchParams.get('status')) : null }))
     }
   } catch (error) {
     if(section==='conversions'&&error instanceof PegError&&![403,404].includes(error.status))return errorDocument(error.status,error.code)

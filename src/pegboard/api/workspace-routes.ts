@@ -1,3 +1,4 @@
+import { lifecyclePreview, validateLifecycle } from '../admin/lifecycle'
 import { removalPreview, removeReviewedPerson } from '../admin/departure/removal'
 import {readableDefinitions} from '../fields/definitions'
 // /api/v1: workspaces, people, teams, projects and their settings.
@@ -52,6 +53,12 @@ export function workspaceRoutes(app: App) {
   app.get('/workspaces/:id/people/:operator/removal-preview', door(({ actor, db, params }) => removalPreview(db, actor, params.operator)))
   app.delete('/workspaces/:id/people/:operator', door(({ actor, db, params, input }) => removeReviewedPerson(db, actor, params.operator, input)))
   app.post('/workspaces/:id/people/:operator/remove', door(({ actor, db, params, input }) => removeReviewedPerson(db, actor, params.operator, input), { next: () => '/app/admin' }))
+  app.get('/workspaces/:id/people/:operator/lifecycle-preview', door(({ actor, db, params, query }) => lifecyclePreview(db, actor, params.id, params.operator, query.get('status'))))
+  app.post('/workspaces/:id/people/:operator/lifecycle', door(async ({ actor, db, params, input, request, env }) => {
+    await validateLifecycle(db, actor, params.id, params.operator, input)
+    await changeBaseAccount(db, actor, params.id, params.operator, { status: input.status }, () => operatorAuth(env).setOperatorStatus(request, params.operator, input.status))
+    return { id: params.operator, status: input.status }
+  }, { next: () => '/app/admin' }))
   app.post('/workspaces/:id/people/:operator/account', door(({ actor, db, params, input, request, env }) => {
     const auth = operatorAuth(env)
     return changeBaseAccount(db, actor, params.id, params.operator, { role: input.role, status: input.status }, () => input.status ? auth.setOperatorStatus(request, params.operator, input.status) : auth.setRole(request, params.operator, input.role))

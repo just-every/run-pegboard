@@ -78,7 +78,8 @@ export async function routeView(db:D1Database,actor:Actor,id:string){
  if(s.access.role==='guest'&&link)rev.until=Math.min(rev.until??Infinity,link.expires_at)
  if(s.access.role==='guest'&&(!link||state==='withdrawn'||state==='stale'))throw notFound()
  const externalLink=s.access.role!=='guest'||!!link
- const canDecide=externalLink&&state==='pending'&&active&&!votes.some(v=>v.actor_id===actor.id)&&s.access.capabilities.has('approve')&&s.access.role!=='agent'&&await independent(db,s.task.id,s.task.owner_id,actor.id)
+ const cancelled=!!await first(db,'SELECT 1 FROM peg_identity_approval_cancellations WHERE route_id=? AND operator_id=?',id,actor.id)
+ const canDecide=!cancelled&&externalLink&&state==='pending'&&active&&!votes.some(v=>v.actor_id===actor.id)&&s.access.capabilities.has('approve')&&s.access.role!=='agent'&&await independent(db,s.task.id,s.task.owner_id,actor.id)
  const canManage=s.access.capabilities.has('manage_shares')&&s.access.role!=='guest'&&s.access.role!=='agent'
  if(canManage&&route.kind==='proof')await proofContext(db,actor,s,route.version)
  const task=route.kind==='task'?{id:s.task.id,title:s.task.title,description:s.task.description,revision:route.version}:null
@@ -113,7 +114,7 @@ export async function changeRoute(db:D1Database,actor:Actor,id:string,input:Reco
 }
 export async function shareRoute(db:D1Database,actor:Actor,id:string,input:Record<string,any>){
  const view=await routeView(db,actor,id);if(!view.canManage)throw forbidden('manage_shares');if(input.token!==view.token||view.state!=='pending')throw conflict('approval_review_changed')
- const recipient=String(input.recipientId??''),expiresAt=timestamp(input.expiresAt);if(!expiresAt||!view.stages.some(s=>s.people?.includes(recipient)))throw invalid('approval_recipient')
+ const recipient=String(input.recipientId??''),expiresAt=timestamp(input.expiresAt);if(!expiresAt||!view.stages.some(s=>s.people?.includes(recipient))||!await workspaceRole(db,recipient,(await subject(db,actor,view.kind,view.subjectId)).task.workspace_id)||await first(db,'SELECT 1 FROM peg_identity_approval_cancellations WHERE route_id=? AND operator_id=?',id,recipient))throw invalid('approval_recipient')
  const link=newId('review')
  await guarded(db,view.rev,[bound(db,'UPDATE peg_approval_links SET revoked_at=? WHERE route_id=? AND recipient_id=? AND revoked_at IS NULL',[now(),id,recipient]),bound(db,'INSERT INTO peg_approval_links VALUES(?,?,?,?,?,NULL)',[link,id,recipient,view.version,expiresAt]),historyStatement(db,view.taskId,null,actor.id,'approval.shared',{routeId:id,recipient,version:view.version})])
  return {id:link,path:'/app/proof-reviews/'+link,recipientId:recipient,version:view.version}

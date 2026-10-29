@@ -30,6 +30,7 @@ export function accessRoutes(app: App) {
     if (!id || !who || (type !== 'team' && type !== 'project')) throw invalid('object')
     return explainStanding(db, actor, type, id, who)
   }))
+  app.get('/admin/access-review/download', door(async ({ actor, db, workspace }) => new Response(JSON.stringify(await accessReview(db, actor, workspace)), { headers: { 'content-type': 'application/json', 'content-disposition': 'attachment; filename="access-review.json"', 'cache-control': 'no-store' } })))
   app.get('/admin/access-review', door(({ actor, db, workspace, query }) => accessReview(db, actor, workspace, { action: query.get('action') ?? undefined, subjectId: query.get('subject') ?? undefined })))
 
   app.post('/access-requests', door(({ actor, db, delivery, input }) => submitRequest(db, delivery, actor, input), { next: (_, { input }) => `/app/link/${encodeURIComponent(String(input.targetId ?? ''))}?asked=1` }))
