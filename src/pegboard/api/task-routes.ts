@@ -45,7 +45,11 @@ export function taskRoutes(app: App) {
     if (!values || typeof values !== 'object') throw invalid('values')
     await setProjectFields(db, actor, params.id, input.projectId, values)
   }, { next: (_, { params }) => task(params.id) }))
-  app.post('/tasks/:id/comments', door(({ actor, db, params, input }) => addComment(db, actor, params.id, input.body, flag(input.internalOnly)), { next: (_, { params }) => task(params.id) }))
+  app.post('/tasks/:id/comments', door(async ({ actor, db, params, input }) => {
+    let body=input.body
+    if(input.mentionId){const view=await viewTask(db,actor,params.id),choice=view.mentionChoices.find(c=>c.value===input.mentionId);if(!choice)throw invalid('mention_participant');body='@'+choice.label.split(' · ')[0]+' '+String(body??'')}
+    return addComment(db, actor, params.id, body, flag(input.internalOnly))
+  }, { next: (_, { params }) => task(params.id) }))
   app.post('/tasks/:id/attachments', door(async ({ actor, db, params, request, query }) => {
     const type = request.headers.get('content-type') ?? ''
     if (type.includes('multipart/form-data')) {

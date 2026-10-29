@@ -1,7 +1,7 @@
 // The one public decision door: preview the exact requester, scope and grant, then approve or deny. Authority, expiry,
 // the requester's standing and the policy previewed are all rechecked inside the write itself; a stale, replayed or
 // unauthorised decision changes nothing.
-import { all, batch, bound, conflict, first, forbidden, invalid, newId, notFound, now } from '../db'
+import { all, batch, bound, conflict, first, forbidden, invalid, newId, notFound, now, placeholders } from '../db'
 import type { RequestRow } from '../model'
 import { epoch } from '../authorization/audit'
 import { taskAccess } from '../authorization/effective'
@@ -9,7 +9,9 @@ import { isLevel, levels, rank, type Level } from '../authorization/levels'
 import { loadProject } from '../authorization/grants'
 import { operatorRow, type Actor } from '../workspace/people'
 import { authorityOver, loadTarget, policyRevOf, workspaceOf, type Authority, type Target } from './authority'
-import { expireDue } from './requests'
+import { expireDue, processProjectRequests } from './requests'
+import { receiptProjects } from './visibility'
+import type { Delivery } from './notify'
 
 const stamp = async (text: string) => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text)))].slice(0, 12).map(byte => byte.toString(16).padStart(2, '0')).join('')
 
@@ -30,6 +32,7 @@ export async function previewRequest(db: D1Database, actor: Actor, requestId: st
   // Names of private work go only to deciders who may read it; a fallback decider gets the minimum.
   let name: string | null = null, readable = false
   if (target.type === 'team') { name = target.row.name; readable = authority.via !== 'fallback' }
+  else if (target.type === 'portfolio') { name = target.row.name; readable = true }
   else if (target.type === 'project') { name = target.row.name; readable = authority.via !== 'fallback' }
   else { const access = await taskAccess(db, actor, target.row); readable = access.capabilities.has('read'); name = readable ? target.row.title : null }
   const projects = target.type === 'task' ? await all<{ id: string; name: string }>(db, 'SELECT p.id,p.name FROM peg_task_projects tp JOIN peg_projects p ON p.id=tp.project_id WHERE tp.task_id=?', target.row.id) : []
@@ -39,20 +42,24 @@ export async function previewRequest(db: D1Database, actor: Actor, requestId: st
     requesterActive: requester?.status === 'active', createdAt: request.created_at, expiresAt: request.expires_at, via: authority.via,
     grantable: levels.filter(level => rank(level) <= rank(authority.ceiling)),
     // A task request proposes only the narrow task grant; a broader project grant is a separate, explicit choice.
-    scopes: target.type === 'task' ? [{ scope: 'task', label: 'This task only' }, ...(readable && authority.ceiling !== 'viewer' ? projects.map(project => ({ scope: `project:${project.id}`, label: `Whole project: ${project.name}` })) : [])] : [{ scope: request.target_type, label: request.target_type === 'team' ? 'Team membership' : 'This project' }],
+    scopes: target.type === 'task' ? [{ scope: 'task', label: 'This task only' }, ...(readable && authority.ceiling !== 'viewer' ? projects.map(project => ({ scope: `project:${project.id}`, label: `Whole project: ${project.name}` })) : [])] : [{ scope: request.target_type, label: request.target_type === 'portfolio' ? 'Portfolio membership only; no project access' : request.target_type === 'team' ? 'Team membership' : 'This project' }],
     revision: await revisionOf(db, request, target),
   }
 }
 
-export async function pendingFor(db: D1Database, actor: Actor) {
-  await expireDue(db)
-  const rows = await all<{ request_id: string; kind: string }>(db, `SELECT i.request_id,i.kind FROM peg_inbox i JOIN peg_access_requests r ON r.id=i.request_id WHERE i.operator_id=? AND i.kind IN ('request','fallback') AND r.status='pending' GROUP BY i.request_id ORDER BY MAX(i.created_at) DESC`, actor.id)
+export async function pendingFor(db: D1Database, actor: Actor, delivery: Delivery) {
+  const projects = await receiptProjects(db, actor)
+  await processProjectRequests(db, delivery, projects.filter(project => project.level === 'admin').map(project => project.id))
+  const rows = await all<{ request_id: string; kind: string }>(db, `SELECT i.request_id,i.kind FROM peg_inbox i JOIN peg_access_requests r ON r.id=i.request_id WHERE i.operator_id=? AND i.kind IN ('request','fallback') AND r.status='pending' AND r.expires_at>? GROUP BY i.request_id ORDER BY MAX(i.created_at) DESC`, actor.id, now())
   const out = []
   for (const row of rows) { try { out.push(await previewRequest(db, actor, row.request_id)) } catch { /* authority since revoked: it no longer lists */ } }
   return out
 }
 export async function decisionNotices(db: D1Database, actor: Actor) {
-  return all<{ request_id: string; created_at: number }>(db, "SELECT request_id,created_at FROM peg_inbox WHERE operator_id=? AND kind='decision' ORDER BY created_at DESC LIMIT 50", actor.id)
+  const projects = (await receiptProjects(db, actor)).map(project => project.id)
+  return all<{ request_id: string; created_at: number }>(db, `SELECT i.request_id,i.created_at FROM peg_inbox i JOIN peg_access_requests r ON r.id=i.request_id
+    WHERE i.operator_id=? AND i.kind='decision' AND (r.target_type<>'project' OR r.target_id IN (${placeholders(projects)}))
+    ORDER BY i.created_at DESC LIMIT 50`, actor.id, ...projects)
 }
 
 export interface Decision { decision?: unknown; level?: unknown; scope?: unknown; reason?: unknown; revision?: unknown }
@@ -70,6 +77,9 @@ export async function decideRequest(db: D1Database, actor: Actor, requestId: str
     `INSERT INTO peg_audit(workspace_id,at,actor_id,action,target_type,target_id,subject_id,detail) SELECT ?,?,?,?,?,?,?,? WHERE EXISTS (SELECT 1 FROM peg_access_requests WHERE id=? AND status=? AND decided_by=? AND decided_at=?)`,
     [workspaceId, at, actor.id, action, request.target_type, request.target_id, request.requester_id, JSON.stringify(detail), request.id, action === 'request.approved' ? 'approved' : 'denied', actor.id, at])
   const notice = (status: string) => bound(db, `INSERT INTO peg_inbox(id,operator_id,kind,request_id,created_at) SELECT ?,?,'decision',?,? WHERE EXISTS (SELECT 1 FROM peg_access_requests WHERE id=? AND status=? AND decided_by=? AND decided_at=?)`, [newId('inb'), request.requester_id, request.id, at, request.id, status, actor.id, at])
+
+  if (target.type === 'portfolio' && input.revision !== await revisionOf(db, request, target)) throw conflict('stale_preview')
+  if (target.type === 'portfolio' && input.scope !== undefined && input.scope !== '' && input.scope !== 'portfolio') throw invalid('scope')
 
   if (input.decision === 'deny') {
     const reason = typeof input.reason === 'string' ? input.reason.trim().slice(0, 280) : ''
@@ -92,7 +102,7 @@ export async function decideRequest(db: D1Database, actor: Actor, requestId: str
     throw conflict('stale')
   }
   // Where the grant lands: the object asked for, or, for a task, its narrow task grant unless a project grant was chosen and delegable.
-  let objectType: 'team' | 'project' | 'task' = request.target_type, objectId = request.target_id
+  let objectType: RequestRow['target_type'] = request.target_type, objectId = request.target_id
   if (target.type === 'task') {
     const scope = typeof input.scope === 'string' ? input.scope : 'task'
     if (scope !== 'task') {
@@ -109,10 +119,14 @@ export async function decideRequest(db: D1Database, actor: Actor, requestId: str
     bound(db, `UPDATE peg_access_requests SET status='approved',decided_by=?,decided_at=?,granted_level=?,grant_id=? WHERE id=? AND status='pending' AND expires_at>? AND policy_rev=?
       AND (SELECT value FROM peg_epoch WHERE id=1)=? AND (SELECT status FROM oa_operators WHERE id=?)='active' AND (SELECT version FROM oa_operators WHERE id=?)=requester_version AND (SELECT status FROM oa_operators WHERE id=?)='active'`,
       [actor.id, at, level, grantId, request.id, at, policy, seen, request.requester_id, request.requester_id, actor.id]),
-    bound(db, `INSERT INTO peg_grants(id,workspace_id,object_type,object_id,grantee_type,grantee_id,level,scope,source,request_id,created_by,created_at)
+    target.type === 'portfolio' ? bound(db, `INSERT INTO peg_portfolio_members(portfolio_id,operator_id,level,added_by,added_at,request_id)
+      SELECT target_id,requester_id,'viewer',?,?,id FROM peg_access_requests WHERE id=? AND status='approved' AND grant_id=?
+      ON CONFLICT(portfolio_id,operator_id) DO NOTHING`, [actor.id, at, request.id, grantId]) : bound(db, `INSERT INTO peg_grants(id,workspace_id,object_type,object_id,grantee_type,grantee_id,level,scope,source,request_id,created_by,created_at)
       SELECT ?,?,?,?,'person',requester_id,?,'full','request',id,?,? FROM peg_access_requests WHERE id=? AND status='approved' AND grant_id=?`, [grantId, workspaceId, objectType, objectId, level, actor.id, at, request.id, grantId]),
     audit('request.approved', { requestId: request.id, requestedLevel: request.level, grantedLevel: level, grantId, grantObject: `${objectType}:${objectId}`, via: authority.via }),
-    bound(db, `INSERT INTO peg_audit(workspace_id,at,actor_id,action,target_type,target_id,subject_id,detail) SELECT ?,?,?,'grant.created',?,?,?,? WHERE EXISTS (SELECT 1 FROM peg_grants WHERE id=?)`,
+    target.type === 'portfolio' ? bound(db, `INSERT INTO peg_audit(workspace_id,at,actor_id,action,target_type,target_id,subject_id,detail)
+      SELECT ?,?,?,'portfolio.member_set','portfolio',?,?,? WHERE EXISTS (SELECT 1 FROM peg_portfolio_members WHERE request_id=?)`,
+      [workspaceId, at, actor.id, objectId, request.requester_id, JSON.stringify({ level: 'viewer', source: 'request', requestId: request.id }), request.id]) : bound(db, `INSERT INTO peg_audit(workspace_id,at,actor_id,action,target_type,target_id,subject_id,detail) SELECT ?,?,?,'grant.created',?,?,?,? WHERE EXISTS (SELECT 1 FROM peg_grants WHERE id=?)`,
       [workspaceId, at, actor.id, objectType, objectId, request.requester_id, JSON.stringify({ grantId, grantee: `person:${request.requester_id}`, level, scope: 'full', source: 'request', requestId: request.id }), grantId]),
     notice('approved'),
     bound(db, 'UPDATE peg_epoch SET value=value+1 WHERE id=1 AND EXISTS (SELECT 1 FROM peg_grants WHERE id=?)', [grantId]),

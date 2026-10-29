@@ -1,8 +1,12 @@
+import { analystDatasetScenario } from './scenarios/analytics.mjs'
+import { registerCalendarBlockTests } from './scenarios/calendar-blocks.mjs'
+import { startCalendarServices } from './support/calendar-services.mjs'
 import {registerPublicApiTests,startWebhookEdge} from './scenarios/public-api.mjs'
 // PEG-001, through the public doors (the JSON API and the forms that post to it): one task across projects, what a guest
 // never learns, references that outlive a prefix change, and the PEG-083 join and request journeys on the same graph.
 import {createServer as createMailServer} from 'node:http'
 import assert from 'node:assert/strict'
+import {createHash} from 'node:crypto'
 import {execFileSync,spawnSync} from 'node:child_process'
 import {mkdtemp,readFile,writeFile,mkdir,symlink,rm} from 'node:fs/promises'
 import {tmpdir} from 'node:os'
@@ -1707,6 +1711,12 @@ describe('Analyst exports', {concurrency:false}, () => {
     const task=await ok(owner.post('/api/v1/tasks',{projectId:p.id,title:'Scoped before movement'}))
     const input={name:'Limited analyst',projects:[p.id],fields:{Tasks:['id','status']},expiresAt:Date.now()+86400000,consent:true}
     assert.equal((await mia.post('/api/v1/analytics/keys',input)).status,403)
+    assert.equal((await mia.get('/api/v1/analytics/keys')).status,403)
+    assert.equal((await mia.get('/app/settings/analytics')).status,403)
+    assert.equal((await owner.post('/api/v1/analytics/keys',{...input,projects:[]})).status,400)
+    assert.equal((await owner.post('/api/v1/analytics/keys',{...input,fields:{}})).status,400)
+    assert.equal((await owner.post('/api/v1/analytics/keys',{...input,expiresAt:Date.now()+31*86400000})).status,400)
+    assert.equal((await owner.post('/api/v1/analytics/keys',{...input,expiresAt:1})).status,400)
     assert.equal((await owner.post('/api/v1/analytics/keys',{...input,consent:false})).status,400)
     assert.equal((await owner.post('/api/v1/analytics/keys',{...input,fields:{Tasks:['description']}})).status,400)
     const key=await ok(owner.post('/api/v1/analytics/keys',input)),other=await ok(owner.post('/api/v1/analytics/keys',input))
@@ -1721,14 +1731,39 @@ describe('Analyst exports', {concurrency:false}, () => {
     await ok(owner.post(`/api/v1/tasks/${task.id}/move`,{from:p.id,to:outside.id}))
     assert.equal((await read(key.servicePath+'/Tasks?snapshot='+page.body['@pegboard.snapshot'])).status,410)
     assert.equal((await read(page.body['@odata.deltaLink'])).body.value[0].reason,'deleted')
+    const expiringReport=await ok(owner.post(`/api/v1/analytics/keys/${key.id}/reports`,{}))
     await w.sql(`UPDATE peg_analytics_keys SET expires_at=1 WHERE id='${key.id}'`)
-    assert.equal((await read(key.servicePath+'/Tasks')).status,401)
+    assert.equal((await owner.get(`/api/v1/analytics/keys/${key.id}/reports?snapshot=${expiringReport.snapshot}`)).status,401)
+    for(const path of [key.servicePath+'/Tasks',key.servicePath+'/$metadata',key.servicePath+'/Tasks?snapshot='+page.body['@pegboard.snapshot'],page.body['@odata.deltaLink']])assert.equal((await read(path)).status,401,'expiry refuses cached new fetches too')
     let admin=await w.person('analyst-admin@example.com','Analyst administrator')
     await ok(owner.post('/api/v1/workspaces/ws_main/people/'+admin.id+'/account',{role:'admin'}))
     admin=await w.signIn(admin.email,admin.name,admin.id)
     const delegated=await ok(admin.post('/api/v1/analytics/keys',input))
+    assert.deepEqual((await ok(admin.get('/api/v1/analytics/keys'))).keys.map(k=>k.id),[delegated.id])
+    assert.ok(!(await admin.get('/app/settings/analytics')).body.includes(key.id))
+    assert.equal((await admin.post(`/api/v1/analytics/keys/${key.id}/revoke`,{})).status,403)
+    assert.equal((await owner.post(`/api/v1/analytics/keys/${delegated.id}/revoke`,{})).status,403)
+    assert.equal((await mia.post(`/api/v1/analytics/keys/${delegated.id}/revoke`,{})).status,403)
+    assert.equal((await read(delegated.servicePath+'/Tasks',delegated.secret)).status,200,'failed cross-administrator revocation changes nothing')
+    const audit=await ok(admin.get('/api/v1/admin/audit?action=analytics.key_authorized'))
+    const expectedScope=createHash('sha256').update(JSON.stringify({issuer:admin.id,workspace:'ws_main',projects:[p.id],fields:{Tasks:['id','status']},expiresAt:input.expiresAt})).digest('hex')
+    const consent=audit.events.find(e=>e.target_id===delegated.id&&e.actor_id===admin.id)
+    assert.deepEqual(consent.metadata,{consent:true,expiresAt:input.expiresAt,scopeDigest:expectedScope},'the permanent consent receipt binds the exact issuer, project, fields and expiry')
+    assert.equal(delegated.scopeDigest,expectedScope)
+    assert.equal((await ok(admin.get('/api/v1/analytics/keys'))).keys[0].scopeDigest,expectedScope,'own-key listing reconciles with the original authorization')
+    const authorizedReport=await ok(admin.post(`/api/v1/analytics/keys/${delegated.id}/reports`,{}))
+    assert.equal((await owner.get(`/api/v1/analytics/keys/${delegated.id}/reports?snapshot=${authorizedReport.snapshot}`)).status,403)
+    const different=await ok(admin.post('/api/v1/analytics/keys',{...input,fields:{Tasks:['title']}}))
+    assert.notEqual(different.scopeDigest,delegated.scopeDigest,'different consent cannot reuse the original scope receipt')
+    assert.ok(!JSON.stringify(consent).includes(p.id)&&!JSON.stringify(consent).includes('Tasks'),'permanent audit retains no project or field contents')
+    assert.ok(!JSON.stringify(audit).includes(delegated.secret))
     await ok(owner.post('/api/v1/workspaces/ws_main/people/'+admin.id+'/account',{role:'member'}))
     assert.equal((await read(delegated.servicePath+'/Tasks',delegated.secret)).status,401)
+    assert.equal((await admin.get(`/api/v1/analytics/keys/${delegated.id}/reports?snapshot=${authorizedReport.snapshot}`)).status,401)
+  })
+
+  it('reconciles reviewed portfolio, goal, request and approval datasets with local scheduled reports', async () => {
+    await analystDatasetScenario({ w, owner, mia, ok, csvRecords })
   })
 
   it('keeps analyst credentials and cached export payloads out of native archives', async () => {
@@ -1738,6 +1773,8 @@ describe('Analyst exports', {concurrency:false}, () => {
     const feed=await fetch(new URL(key.servicePath+'/Tasks',w.origin),{headers:{authorization:'Bearer '+key.secret}})
     assert.equal(feed.status,200)
     const snapshot=(await feed.json())['@pegboard.snapshot']
+    await ok(owner.post(`/api/v1/analytics/keys/${key.id}/schedule`,{hours:24,consent:true}))
+    await ok(owner.post('/api/v1/analytics/reports/run-due',{}))
     const created=await ok(owner.post('/api/portability/exports',{}),201)
     let archive
     for(let page=0;page<100;page++){
@@ -1749,6 +1786,8 @@ describe('Analyst exports', {concurrency:false}, () => {
     assert.ok(!archive.includes(snapshot),'the export cache cannot travel')
     const rows=archive.trim().split('\n').map(line=>JSON.parse(line)).filter(part=>part.kind==='part').flatMap(part=>part.items).filter(item=>item.kind==='row')
     assert.ok(rows.some(item=>item.table==='peg_tasks'&&item.row.title==='Archived ordinary task'))
+    const consent=rows.find(item=>item.table==='peg_permanent_audit'&&item.row.action==='analytics.key_authorized'&&item.row.target_id===key.id)
+    assert.equal(JSON.parse(consent.row.detail).scopeDigest,key.scopeDigest,'the redacted consent receipt survives native export without the credential store')
     assert.ok(!rows.some(item=>item.table.startsWith('peg_analytics_')),'neither credential hashes nor temporary material travel')
   })
 
@@ -2074,7 +2113,7 @@ describe('Direct project duplication through reviewed public doors', { concurren
     ruleId = `${bundle.id}:priority`
     observer = await worker.person('synthetic-pegboard-6104@example.com', 'Campaign observer')
     await call(observer.post('/api/v1/access-requests', { targetId: source.id, level: 'viewer', message: 'Read campaign progress' }))
-    const request = (await call(observer.get('/api/v1/access-requests'))).mine[0]
+    const request = (await call(human.get('/api/v1/access-requests'))).toDecide.find(row => row.targetId === source.id && row.requester.id === observer.id)
     const requestReview = await call(human.get(`/api/v1/access-requests/${request.id}`))
     await call(human.post(`/api/v1/access-requests/${request.id}/decision`, { decision: 'approve', level: 'viewer', scope: 'full', revision: requestReview.revision }))
     noticesBefore = (await call(observer.get('/api/v1/access-requests'))).notices
@@ -2342,4 +2381,12 @@ describe('Approval routing custody', {concurrency:false},()=>{
  assert.deepEqual(receipts.map(r=>r.link_id),[link.id]);assert.equal(receipts[0].state,'accepted')
  const review=await pass(external.get('/api/v1/proof-reviews/'+link.id));assert.equal(review.material.version,2);assert.equal(review.state,'pending');assert.ok(!JSON.stringify(review).includes('Hidden internal comment'))
  })
+})
+
+
+describe('Calendar work blocks through provider schema edges', {concurrency:false}, () => {
+ let worker, services
+ before(async () => { services = await startCalendarServices(); worker = await startWorker({settings:{PEGBOARD_LOCAL_CALENDAR_ORIGINS:services.origins}}) }, {timeout:120000})
+ after(async () => { await worker?.stop(); await services?.stop() })
+ registerCalendarBlockTests({test:it,context:()=>({w:worker,services})})
 })

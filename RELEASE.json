@@ -165,6 +165,10 @@
     {
       "id": "0041_dependency_keys_sealed.sql",
       "buyerSteps": "Apply after the existing schema to retain encrypted dependency-key custody. Keep the generated installation key private and include it in recovery custody."
+    },
+    {
+      "id": "0071_blind_project_requests.sql",
+      "buyerSteps": "Apply migrations/core/0071_blind_project_requests.sql after the existing migrations, including 0070_analytics_portfolio_revision.sql. Preserve all previously applied migration names and bytes. This adds durable blind project-request intake without replaying it from archives."
     }
   ],
   "breaking": false,

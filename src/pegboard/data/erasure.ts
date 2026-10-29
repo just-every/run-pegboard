@@ -1,3 +1,4 @@
+import {capacityErasureSources,capacityErasureStatements} from '../capacity/custody'
 import { processorFollowups,followupStatements } from './processors'
 import { createPortability } from '@runeditrun/rer/modules/portability'
 import policy from '../portability/policy.mjs'
@@ -61,8 +62,9 @@ export async function erasurePlan(db:D1Database,actor:Actor,workspace:string,typ
     if(await first(db,"SELECT 1 FROM peg_approval_routes WHERE created_by=? OR instr(stages,?)>0 UNION SELECT 1 FROM peg_approval_votes WHERE actor_id=?",id,id,id))blockers.push('review_approval_custody_before_erasure')
     if(await first(db,'SELECT 1 FROM peg_proofs WHERE created_by=? UNION SELECT 1 FROM peg_proof_versions WHERE created_by=?',id,id))blockers.push('review_proof_custody_before_erasure')
     if(await first(db,'SELECT 1 FROM peg_time_entries WHERE person_id=?',id))blockers.push('retained_time_records_require_separate_review')
+    await take('peg_capacity_profiles','person_id=?',[id]);await take('peg_time_off','operator_id=?',[id]);await take('peg_availability_history','person_id=?',[id]);await take('peg_effort_allocations','person_id=?',[id]);await take('peg_resource_plans','person_id=?',[id]);
     await take('peg_workspace_members','operator_id=?',[id]);await take('peg_personal_layout','operator_id=?',[id]);await take('peg_personal_moves','operator_id=?',[id]);await take('peg_personal_rules','operator_id=?',[id]);await take('peg_personal_sections','operator_id=?',[id]);await take('peg_personal_settings','operator_id=?',[id])
-    await take('peg_grants',"grantee_type='person' AND grantee_id=?",[id]);await take('peg_task_collaborators','operator_id=?',[id]);await take('peg_approvers','operator_id=?',[id]);await take('peg_inbox','operator_id=? OR request_id IN(SELECT id FROM peg_access_requests WHERE requester_id=?)',[id,id]);await take('peg_access_requests','requester_id=?',[id])
+    await take('peg_grants',"grantee_type='person' AND grantee_id=?",[id]);await take('peg_task_collaborators','operator_id=?',[id]);await take('peg_approvers','operator_id=?',[id]);await take('peg_inbox','operator_id=? OR request_id IN(SELECT id FROM peg_access_requests WHERE requester_id=?)',[id,id]);await take('peg_access_requests','requester_id=?',[id]);await take('peg_project_request_intake','requester_id=?',[id])
     await take('peg_rule_suggestions','requested_by=?',[id])
     await take('peg_comments','author_id=?',[id]);await take('peg_attachments','created_by=?',[id])
     retained.local_auth_material=(await first<{n:number}>(db,'SELECT (SELECT COUNT(*) FROM oa_sessions WHERE operator_id=?)+(SELECT COUNT(*) FROM oa_tokens WHERE operator_id=?)+(SELECT COUNT(*) FROM oa_credentials WHERE operator_id=?)+(SELECT COUNT(*) FROM oa_external_identities WHERE operator_id=?) n',id,id,id,id))!.n
@@ -102,10 +104,11 @@ export async function erasurePlan(db:D1Database,actor:Actor,workspace:string,typ
     await take('peg_agent_outputs',`${scoped('task_id')} OR ${projectScoped('project_id')}`,[...tasks,...projects])
     await take('peg_search_records',scoped('task_id'),tasks)
     // Child rows first, including all current caches, identity aliases and values.
-    for(const table of ['peg_task_tags','peg_personal_layout','peg_personal_moves','peg_approval_reopen_guards','peg_decision_guards','peg_task_decisions','peg_approval_owners','peg_approval_tasks','peg_field_values','peg_task_collaborators','peg_task_refs'])await take(table,scoped('task_id'),tasks)
+    for(const table of ['peg_effort_allocations','peg_effort_mappings','peg_task_tags','peg_personal_layout','peg_personal_moves','peg_approval_reopen_guards','peg_decision_guards','peg_task_decisions','peg_approval_owners','peg_approval_tasks','peg_field_values','peg_task_collaborators','peg_task_refs'])await take(table,scoped('task_id'),tasks)
     for(const table of ['peg_history','peg_comments','peg_attachments'])await take(table,`${scoped('task_id')} OR ${projectScoped('project_id')}`,[...tasks,...projects])
     await take('peg_goal_links',`(source_type='task' AND ${scoped('source_id')}) OR (source_type='project' AND ${projectScoped('source_id')})`,[...tasks,...projects])
     await take('peg_inbox',`request_id IN(SELECT id FROM peg_access_requests WHERE (target_type='task' AND ${scoped('target_id')}) OR (target_type='project' AND ${projectScoped('target_id')}))`,[...tasks,...projects])
+    await take('peg_project_request_intake',projectScoped('target_id'),projects)
     await take('peg_access_requests',`(target_type='task' AND ${scoped('target_id')}) OR (target_type='project' AND ${projectScoped('target_id')})`,[...tasks,...projects])
     await take('peg_recurring_grants',`grant_id IN(SELECT id FROM peg_grants WHERE (object_type='task' AND ${scoped('object_id')}) OR (object_type='project' AND ${projectScoped('object_id')}))`,[...tasks,...projects])
     for(const table of ['peg_grants','peg_approvers','peg_template_origins'])await take(table,`(object_type='task' AND ${scoped('object_id')}) OR (object_type='project' AND ${projectScoped('object_id')})`,[...tasks,...projects])
@@ -150,7 +153,9 @@ export async function erasurePlan(db:D1Database,actor:Actor,workspace:string,typ
   }
   const counts=Object.fromEntries(selections.map(s=>[s.table,s.keys.length]))
   const processorRequests=await processorFollowups(db,selections)
-  const plan={type,id,name,tasks,projects,proofs,processorRequests,reopenTasks,selections,counts,blockers:[...new Set(blockers)],holds:holds.map(h=>({id:h.id,authority:h.authority,expiresAt:h.expires_at})),retained,externalLimits}
+  const capacitySources=type==='person'?await capacityErasureSources(db,id):[]
+  if(capacitySources.length)counts.capacity_source_mappings=capacitySources.length
+  const plan={type,id,name,capacitySources,tasks,projects,proofs,processorRequests,reopenTasks,selections,counts,blockers:[...new Set(blockers)],holds:holds.map(h=>({id:h.id,authority:h.authority,expiresAt:h.expires_at})),retained,externalLimits}
   return {...plan,revision,token:await digest([workspace,actor.id,revision,plan])}
 }
 export async function erase(db:D1Database,actor:Actor,workspace:string,input:Record<string,any>) {
@@ -177,6 +182,7 @@ export async function erase(db:D1Database,actor:Actor,workspace:string,input:Rec
     for(const task of plan.tasks)statements.push(bound(db,"INSERT INTO peg_data_erased_objects VALUES('task',?,?)",[task,at]))
     for(const project of plan.projects)statements.push(bound(db,"INSERT INTO peg_data_erased_objects VALUES('project',?,?)",[project,at]))
     if(plan.type==='person'){
+      statements.push(...capacityErasureStatements(db,plan.id,plan.capacitySources))
       statements.push(bound(db,'INSERT OR IGNORE INTO peg_erased_people VALUES(?,?)',[plan.id,at]),bound(db,"UPDATE oa_operators SET email=?,display_name='Erased actor',version=version+1 WHERE id=? AND status<>'active' AND role<>'owner'",[`erased-${plan.id}@invalid.example`,plan.id]))
       // Tokens and sessions can no longer authenticate an inactive, version-fenced identity. Their expired bytes use transient cleanup.
     }

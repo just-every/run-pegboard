@@ -6,6 +6,7 @@ import { openTask } from '../tasks/access'
 import { openProject } from '../workspace/projects'
 import { sheetView } from '../time/time'
 import { keyActor, standing, type AnalystKey } from './keys'
+import { relatedRows } from './related'
 import { datasets, type Dataset, type Fields } from './schema'
 
 interface Snapshot { id: string; key_id: string; captured_at: number; source_revision: number; expires_at: number }
@@ -15,7 +16,7 @@ export async function guard(db: D1Database, key: AnalystKey, expected: number, s
   try { return await batch(db, [bound(db, 'INSERT INTO peg_analytics_guards VALUES(?,?,?,?)', [newId('guard'), key.id, expected, deadline]), ...statements]) }
   catch (error) { if (/analyst_read_changed/.test(String(error))) throw conflict('analyst_read_changed'); throw error }
 }
-async function capture(db: D1Database, key: AnalystKey) {
+export async function capture(db: D1Database, key: AnalystKey) {
   const sourceRevision = await dataRevision(db)
   await standing(db, key)
   const actor = keyActor(key), fields: Fields = JSON.parse(key.fields), projects: string[] = JSON.parse(key.projects)
@@ -48,15 +49,22 @@ async function capture(db: D1Database, key: AnalystKey) {
       }
     }
   }
+  await relatedRows(db, key, tasks, add)
+  const dependencies = [
+    ...projects.map(id => ['project', id]), ...[...tasks].map(id => ['task', id]),
+    ...Object.entries(JSON.parse(key.scopes) as Record<string, string[]>).flatMap(([kind, ids]) => ids.map(id => [kind === 'portfolios' ? 'portfolio' : 'goal', id])),
+    ...(await all<{ id: string; task_id: string }>(db, 'SELECT id,task_id FROM peg_proofs')).filter(p => tasks.has(p.task_id)).map(p => ['proof', p.id]),
+  ]
   const capturedAt = now(), id = newId('snapshot'), expiresAt = Math.min(key.expires_at, capturedAt + 86400000)
   await guard(db, key, sourceRevision, [
     bound(db, 'DELETE FROM peg_analytics_snapshots WHERE expires_at<=?', [capturedAt]),
     bound(db, 'INSERT INTO peg_analytics_snapshots VALUES(?,?,?,?,?)', [id, key.id, capturedAt, sourceRevision, expiresAt]),
+    ...dependencies.map(([kind, object]) => bound(db, 'INSERT INTO peg_analytics_dependencies VALUES(?,?,?)', [id, kind, object])),
     ...rows.map(row => bound(db, 'INSERT INTO peg_analytics_rows VALUES(?,?,?,?,?,?,?)', [id, row.dataset, row.id, row.task_id, row.project_id, row.body, row.hash])),
   ])
   return { id, key_id: key.id, captured_at: capturedAt, source_revision: sourceRevision, expires_at: expiresAt }
 }
-async function load(db: D1Database, key: AnalystKey, id: string) {
+export async function load(db: D1Database, key: AnalystKey, id: string) {
   const snapshot = await first<Snapshot>(db, 'SELECT * FROM peg_analytics_snapshots WHERE id=? AND key_id=? AND expires_at>?', id, key.id, now())
   if (!snapshot) throw new PegError(410, 'snapshot_unavailable_refresh_required')
   return snapshot
@@ -85,6 +93,8 @@ export async function feed(db: D1Database, key: AnalystKey, dataset: Dataset, re
       }
     }
   }
+  const dependencies = await all<{ object_id: string }>(db, "SELECT object_id FROM peg_analytics_dependencies WHERE snapshot_id=? AND object_type='task'", snapshot.id)
+  if (dependencies.some(row => !currentTasks.has(row.object_id))) throw new PegError(410, 'snapshot_scope_changed_refresh_required')
   if (rows.some(row => row.task_id && (!currentTasks.has(row.task_id) || row.project_id && !currentPlacements.has(row.task_id + ':' + row.project_id))))
     throw new PegError(410, 'snapshot_scope_changed_refresh_required')
   let values = rows.map(row => ({ row, removed: false }))

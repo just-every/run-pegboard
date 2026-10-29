@@ -1,15 +1,51 @@
 import type { Context, Hono } from 'hono'
 import { runtimeBindings, type Bindings } from '../../auth.server'
-import { door, describe, json } from './door'
+import { door, describe, flag, json } from './door'
 import { authenticate, createKey, listKeys, revokeKey } from '../analytics-export/keys'
 import { datasets, metadata, type Dataset, type Fields } from '../analytics-export/schema'
 import { feed, guard } from '../analytics-export/snapshots'
+import { ownKey, createReport, readReport, reportCsv, saveSchedule, stopSchedule, processReports } from '../analytics-export/reports'
+import { administers } from '../workspace/people'
+import { all, forbidden, invalid, now } from '../db'
 import { dataRevision } from '../data/settings'
 
 export function analyticsRoutes(app: Hono<{ Bindings: Bindings }>) {
-  app.post('/analytics/keys', door(({ db, actor, workspace, input }) => createKey(db, actor, workspace, input)))
+  app.post('/analytics/reports/run-due', door(async ({ db, actor, workspace }) => {
+    if (!await administers(db, actor, workspace)) throw forbidden('administrator_required')
+    return processReports(db, actor.id, workspace)
+  }, { next: () => '/app/settings/analytics' }))
+  app.post('/analytics/keys/:id/reports', door(async ({ db, actor, workspace, params }) => {
+    const report = await createReport(db, await ownKey(db, actor, workspace, params.id))
+    return report
+  }, { next: (report, d) => `/app/settings/analytics/${d.params.id}?snapshot=${report.snapshot}&workspace=${encodeURIComponent(d.workspace)}` }))
+  app.get('/analytics/keys/:id/reports', door(async ({ db, actor, workspace, params, query }) => {
+    const key = await ownKey(db, actor, workspace, params.id)
+    if (query.has('snapshot')) {
+      const report = await readReport(db, key, query.get('snapshot')!)
+      if (query.has('dataset')) return new Response(reportCsv(report, query.get('dataset') as Dataset, JSON.parse(key.fields)), { headers: { 'content-type': 'text/csv; charset=utf-8', 'cache-control': 'private, no-store', 'x-content-type-options': 'nosniff', 'content-disposition': 'attachment; filename="analyst-export.csv"' } })
+      return report
+    }
+    return { runs: await all(db, 'SELECT due_at,snapshot_id FROM peg_analytics_runs WHERE key_id=? ORDER BY due_at DESC', key.id) }
+  }))
+  app.post('/analytics/keys/:id/schedule', door(async ({ db, actor, workspace, params, input, form }) => saveSchedule(db, await ownKey(db, actor, workspace, params.id), { ...input, consent: form ? flag(input.consent) : input.consent }), { next: () => '/app/settings/analytics' }))
+  app.post('/analytics/keys/:id/schedule/stop', door(async ({ db, actor, workspace, params }) => stopSchedule(db, await ownKey(db, actor, workspace, params.id)), { next: () => '/app/settings/analytics' }))
+  app.post('/analytics/keys', door(async ({ db, actor, workspace, input, form }) => {
+    if (form) {
+      const days = Number(input.expiryDays), fields: Record<string, string[]> = {}
+      if (!Number.isSafeInteger(days) || days < 1 || days > 30) throw invalid('analyst_scope_and_expiry')
+      for (const selected of input.fields ?? []) {
+        const [dataset, field, extra] = String(selected).split('.')
+        if (!field || extra) throw invalid('analyst_fields')
+        ;(fields[dataset] ??= []).push(field)
+      }
+      input = { ...input, projects: input.projects ?? [], portfolios: input.portfolios ?? [], goals: input.goals ?? [], fields, expiresAt: now() + days * 86400000, consent: flag(input.consent) }
+    }
+    const result = await createKey(db, actor, workspace, input)
+    // A form submitted with fetch keeps the credential only in the current document, never in a URL or session.
+    return json(result)
+  }))
   app.get('/analytics/keys', door(async ({ db, actor, workspace }) => ({ keys: await listKeys(db, actor, workspace) })))
-  app.post('/analytics/keys/:id/revoke', door(({ db, actor, workspace, params }) => revokeKey(db, actor, workspace, params.id)))
+  app.post('/analytics/keys/:id/revoke', door(({ db, actor, workspace, params }) => revokeKey(db, actor, workspace, params.id), { next: (_, context) => '/app/settings/analytics?workspace=' + encodeURIComponent(context.workspace) }))
   const read = async (c: Context<{ Bindings: Bindings }>) => {
     const headers = { 'odata-version': '4.0', 'cache-control': 'private, no-store', 'vary': 'Authorization', 'x-content-type-options': 'nosniff' }
     try {

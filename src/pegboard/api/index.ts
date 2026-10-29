@@ -1,4 +1,6 @@
+import { calendarRoutes } from './calendar-routes'
 import { publicRoutes } from './public-routes'
+import { capacityRoutes } from './capacity-routes'
 import {statusRoutes} from './status-routes'
 import {approvalRoutes} from './approval-routes'
 import {availabilityRoutes} from './availability-routes'
@@ -77,9 +79,12 @@ conversionRoutes(pegboardApi)
 templateRuleRoutes(pegboardApi)
 
 availabilityRoutes(pegboardApi)
+capacityRoutes(pegboardApi)
 noticeRoutes(pegboardApi)
 
 publicRoutes(pegboardApi)
 statusRoutes(pegboardApi)
 approvalRoutes(pegboardApi)
 ruleRoutes(pegboardApi)
+
+calendarRoutes(pegboardApi)

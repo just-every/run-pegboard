@@ -1,3 +1,10 @@
+import {accessPrivacyJourney} from './access-privacy.mjs'
+import {accessDiscoveryJourney} from './access-discovery.mjs'
+import {analystJourney} from './analytics.mjs'
+import { calendarBlocksJourney } from './calendar-blocks.mjs'
+import { startCalendarServices } from '../support/calendar-services.mjs'
+import {capacityJourney} from './capacity.mjs'
+import {startCapacityServices} from '../support/capacity-services.mjs'
 import {publicApiJourney} from './public-api.mjs'
 import {approvalRoutingJourney} from './approval-routing.mjs'
 import {guestJourney} from './guests.mjs'
@@ -19,13 +26,14 @@ import { planningCanvasJourney } from './planning-canvas.mjs'
 import { portfolioJourney } from './portfolios.mjs'
 import { timelineJourney } from './timeline.mjs'
 
-const journeyNames = ["public-api", "approval-routing", "guests", "core", "recurrence", "approvals", "time-packets", "goals", "engineering", "meetings", "custody", "recovery", "departure", "canvas", "portfolio", "timeline", "register", "bundles"]
+const journeyNames = ["access-privacy", "access-discovery", "analytics", "calendar-blocks", "capacity", "public-api", "approval-routing", "guests", "core", "recurrence", "approvals", "time-packets", "goals", "engineering", "meetings", "custody", "recovery", "departure", "canvas", "portfolio", "timeline", "register", "bundles"]
 const selected = new Set(process.env.PEGBOARD_JOURNEY === undefined ? journeyNames : process.env.PEGBOARD_JOURNEY.split(',').map(name => name.trim()))
 for (const name of selected) if (!journeyNames.includes(name)) throw new Error(`Unknown PEGBOARD_JOURNEY: ${name}`)
 
 // Harvest and QuickBooks Time schema fakes at the network edge; every Worker below reaches them through local origins.
 const engineering = await startEngineeringServices(), meetings = await startMeetingServices()
-const services = await startTimeServices(), settings = { PEGBOARD_LOCAL_TIME_SERVICE_ORIGINS: services.origins, PEGBOARD_VECTOR_ORIGIN:'https://vector.example.com',PEGBOARD_LOCAL_ENGINEERING_ORIGINS:engineering.origins, PEGBOARD_LOCAL_MEETING_ORIGINS:meetings.origins }
+const capacityServices = await startCapacityServices(), calendarServices = await startCalendarServices()
+const services = await startTimeServices(), settings = { PEGBOARD_LOCAL_CALENDAR_ORIGINS:calendarServices.origins, PEGBOARD_LOCAL_CAPACITY_ORIGINS:capacityServices.origins, PEGBOARD_LOCAL_TIME_SERVICE_ORIGINS: services.origins, PEGBOARD_VECTOR_ORIGIN:'https://vector.example.com',PEGBOARD_LOCAL_ENGINEERING_ORIGINS:engineering.origins, PEGBOARD_LOCAL_MEETING_ORIGINS:meetings.origins }
 let w = await startWorker({ settings })
 const browser = await chromium.launch({ headless: true, ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH?{executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH}:{}), args: ['--use-mock-keychain', '--password-store=basic', '--no-sandbox'] })
 const cookies = client => client.cookie.split('; ').map(pair => ({ name: pair.slice(0, pair.indexOf('=')), value: pair.slice(pair.indexOf('=') + 1), url: w.origin }))
@@ -44,6 +52,11 @@ try {
     usedWorker = true
     return true
   }
+  if(await select('access-privacy'))await accessPrivacyJourney({w,browser,owner,cookies})
+  if(await select('access-discovery'))await accessDiscoveryJourney({w,browser,ok})
+  if(await select('analytics'))await analystJourney({w,browser,owner,ok})
+  if(await select('calendar-blocks'))await calendarBlocksJourney({w,browser,services:calendarServices,ok})
+  if(await select('capacity'))await capacityJourney({w,browser,services:capacityServices,ok})
   if(await select('public-api'))await publicApiJourney({w,browser,owner,cookies})
   if(await select('approval-routing'))await approvalRoutingJourney({w,browser,owner,cookies})
   if(await select('guests'))await guestJourney({w,browser,owner,sizes,cookies})
@@ -912,6 +925,8 @@ try {
 } finally {
   await browser.close()
   await w.stop()
+  await capacityServices.stop()
+  await calendarServices.stop()
   await services.stop()
   await engineering.stop()
   await meetings.stop()
