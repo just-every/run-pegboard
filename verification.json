@@ -6,7 +6,7 @@
       "hosted": false,
       "commands": [
         "pnpm run check --profile first-party",
-        "node scripts/contract-docs.mjs check PEG-018 PEG-027 PEG-015 PEG-036 PEG-012 PEG-016 PEG-044 PEG-025 PEG-127"
+        "node scripts/contract-docs.mjs check PEG-018 PEG-027 PEG-015 PEG-036 PEG-012 PEG-016 PEG-044 PEG-025 PEG-127 PEG-008"
       ]
     },
     {
@@ -88,7 +88,8 @@
       "browser": true,
       "hosted": false,
       "commands": [
-        "pnpm run test:journeys:services"
+        "pnpm run test:journeys:services",
+        "timeout 240 node tests/journeys/browser-capture.mjs"
       ]
     },
     {

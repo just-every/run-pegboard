@@ -6,12 +6,11 @@ export function CapturePage({viewer,view,options,cancelled=false}:{viewer:Viewer
  const here=view?'/app/capture/'+view.id:'/app/capture'
  return <Shell viewer={viewer} current="/app/projects" title="Capture a page" facts={['Selected content only · Review before creating work']}>
   <Card title={view?'Review captured content':'Connect the capture extension'}>
-   <p id="capture-status" role="status">{cancelled?'Capture cancelled. No task was created.':!view?'Click the Pegboard extension here to connect this signed-in tab. Then select text on a source page and click the extension there. Keep both tabs open until you confirm.':'Captured content is untrusted plain text. Nothing runs or grants access.'}</p>
+   <p id="capture-status" role="status">{cancelled?'Capture cancelled. No task was created.':!view?'Click the Pegboard extension here to connect this signed-in tab. Then select text on a source page and click the extension there. Keep both tabs open until you confirm.':'Only the selected text is copied. This does not add anyone to the project.'}</p>
    <p id="capture-error" role="alert" hidden/>
    {view&&view.state==='created'?<a href={'/app/tasks/'+view.taskId}>Open captured task</a>:view&&<>
-    <h3 data-capture-title>{view.title}</h3><p><a href={view.url} target="_blank" rel="noopener noreferrer">Source page</a></p>
+    <h3 data-capture-title>{view.title}</h3><p><a href={view.url} target="_blank" rel="noopener noreferrer">{view.url}</a></p>
     <p className="task-description" data-capture-excerpt>{view.excerpt||'No text selected'}</p>
-    <p>Source identity <code>{view.sourceId}</code></p>
    </>}
   </Card>
   {view&&view.state==='pending'&&<>
@@ -19,7 +18,7 @@ export function CapturePage({viewer,view,options,cancelled=false}:{viewer:Viewer
     <form method="get" action={here} className="stack" aria-label="Choose capture project"><Pick label="Project" name="projectId" value={options.projects.some(p=>p.value===view.projectId)?view.projectId:undefined} blank="My tasks: private" options={options.projects}/><Submit quiet>Choose project</Submit></form>
     <Form action={'/api/v1/captures/'+view.id+'/review'} next={here} label="Review capture destination">
      <input type="hidden" name="projectId" value={view.projectId??''}/>
-     <Pick label="Owner" name="ownerId" value={view.ownerId??viewer.displayName} options={options.people}/>
+     <Pick label="Owner" name="ownerId" value={view.ownerId??options.people[0]?.value} options={options.people}/>
      <Submit quiet>Review destination</Submit>
     </Form>
    </Card>

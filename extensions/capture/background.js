@@ -30,7 +30,7 @@ chrome.action.onClicked.addListener(async tab=>{
   const sourceId=crypto.randomUUID(),proof=crypto.randomUUID()+crypto.randomUUID()
   const payload={sourceId,title:value.title,excerpt:value.excerpt,url:safeUrl(value.url),proofHash:await hash(proof)}
   await chrome.storage.session.set({['capture:'+sourceId]:{sourceTab:tab.id,documentId:captured.documentId,snapshot:await hash(value),proof,appTab:connection.tabId}})
-  await chrome.tabs.update(connection.tabId,{url:connection.origin+'/app/capture#'+encodeURIComponent(JSON.stringify(payload)),active:true})
+  await chrome.tabs.update(connection.tabId,{url:connection.origin+'/app/capture?intake='+sourceId+'#'+encodeURIComponent(JSON.stringify(payload)),active:true})
   await chrome.action.setBadgeText({text:'',tabId:tab.id})
  }catch(error){
   await chrome.action.setBadgeText({text:'!',tabId:tab.id})

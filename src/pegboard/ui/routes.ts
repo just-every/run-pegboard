@@ -187,7 +187,6 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
       const options=await captureOptions(db,actor,workspace,project||undefined)
       const response=await page('Capture a page',h(CapturePage,{viewer,view:view?{...view,projectId:project||null,ownerId:project!==view.projectId?null:view.ownerId,target:project!==view.projectId?null:view.target}:null,options,cancelled:url.searchParams.has('cancelled')}))
       response.headers.set('content-security-policy',response.headers.get('content-security-policy')+"; connect-src 'self'")
-      response.headers.set('referrer-policy','no-referrer')
       return response
     }
     if(section==='settings'&&id==='reports'&&!tail)return page('Report settings',h(ReportsSettings,{viewer,projects:await listProjects(db,actor,workspace),list:await dashboards(db,actor,workspace)}))
