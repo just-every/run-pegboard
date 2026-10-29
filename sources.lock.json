@@ -3603,7 +3603,7 @@
       "executable": false
     },
     "src/pegboard/tasks/tasks.ts": {
-      "sha256": "f1bf75426fbd44a86fb9f1374f5327e17c38df932937e9562569c1f29967fc47",
+      "sha256": "b5dbc2f54cf3d5561cf95aa1514a7770bd9a3ace6ecf1822800b3de51c8c3d04",
       "executable": false
     },
     "src/pegboard/tasks/view.ts": {
@@ -3799,11 +3799,11 @@
       "executable": false
     },
     "src/pegboard/ui/pages/project-settings.tsx": {
-      "sha256": "cea50c0b5ad0d0f1698d9f8587375c663f5b14fbd699fb3e1be24085a0437466",
+      "sha256": "ccf7c55bc469ba440ebc02e3744e6d741bbf3d20c7ef3458a0663471d1c41139",
       "executable": false
     },
     "src/pegboard/ui/pages/project.tsx": {
-      "sha256": "a88f1df0df316fb030d3f89e4418aaf521b53aa6a2174fdd1cc0c5759297a1d2",
+      "sha256": "328b3d411a0d1866bc0c7c53d5bcc64ee1ef9b87ee9fd632989319e2d57ccdb7",
       "executable": false
     },
     "src/pegboard/ui/pages/projects.tsx": {

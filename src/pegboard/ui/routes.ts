@@ -1,5 +1,9 @@
 import { dashboards, ownDashboard, readSnapshot } from '../reporting/dashboard'
 import { ReportsSettings, ReportsList, ReportPage } from './pages/reports'
+import { workView } from '../views/service'
+import { listWorkViews } from '../views/store'
+import { WorkViewPage, WorkViewContent } from './work-views/page'
+import { ViewSettingsPage } from './work-views/settings'
 import { ownKey, readReport } from '../analytics-export/reports'
 import { AnalystReportPage } from './pages/analyst-report'
 import { operatorMail } from '../../mail.server.mjs'
@@ -238,6 +242,14 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
       return page('Portfolio',h(PortfolioPage,{viewer,view,tab:['summary','timeline','workload','dashboard'].includes(tab)?tab:'summary',atInput,projectOptions:admin?(await listProjects(db,actor,workspace)).map(p=>({value:p.id,label:p.name})):[],people:admin?await peopleOptions(db,actor,workspace):[],drill:drillMetric?await portfolioDrill(db,actor,id,{metric:drillMetric,at}):null}))
     }
     if(section==='projects'&&id&&tail==='register'&&segments.length===4){const data=await board(db,actor,id);return page('Delivery register',h(RegisterPage,{viewer,view:await registerView(db,actor,id),people:await peopleOptions(db,actor,workspace),tasks:data.columns.flatMap(c=>c.tasks.map(t=>({value:t.id,label:t.title})))}))}
+    if(section==='projects'&&id&&(tail==='views'&&segments.length===4||tail==='settings'&&segments[4]==='views'&&segments.length===5)) {
+      const input=Object.fromEntries(url.searchParams),options={viewId:input.savedView||undefined,mode:input.mode,status:input.status,groupBy:input.groupBy,from:input.from,days:input.days}
+      const data=await workView(db,actor,id,options)
+      const body=tail==='settings'?h(ViewSettingsPage,{viewer,presets:await listWorkViews(db,actor,id),data,selected:input.savedView}):request.headers.has('x-work-view-refresh')?h(WorkViewContent,{data}):h(WorkViewPage,{viewer,data,presets:data,input})
+      const response=await page('Work views',body),headers=new Headers(response.headers)
+      headers.set('content-security-policy',headers.get('content-security-policy')+"; connect-src 'self'")
+      return new Response((await response.text()).replace('</head>','<link rel="stylesheet" href="/look/work-views.css"></head>'),{status:response.status,headers})
+    }
     if(section==='projects'&&id&&tail==='calendar'&&segments.length===4){
       const view=await scheduleView(db,actor,id),here=`/app/projects/${id}/calendar`
       return page('Calendar',h(CalendarPage,{viewer,view,blocks:{here,connections:await calendarChoices(db,actor,workspace),tasks:view.tasks.filter(t=>t.inProject).map(t=>({id:t.id,title:t.title})),blocks:await projectBlocks(db,actor,id),preview:url.searchParams.get('calendarPreview')?await blockPreview(db,actor,url.searchParams.get('calendarPreview')!):null},editor:view.project.canEdit?await editorFor(id,view.tasks.filter(t=>t.inProject).map(t=>({value:t.id,label:t.title})),here):null}))
