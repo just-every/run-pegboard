@@ -5,7 +5,7 @@ import { door } from './door'
 import { createProof,proofView,addProofVersion,proofDecisionPreview,decideProof,submitOutput,outputView } from '../records/custody'
 import { openTask } from '../tasks/access'
 export function recordRoutes(app:Hono<{Bindings:Bindings}>) {
-  
+
   app.post('/tasks/:id/proofs',door(({db,actor,params,input})=>createProof(db,actor,params.id,input)))
   app.get('/tasks/:id/proofs',door(async({db,actor,params})=>{
     const {task}=await openTask(db,actor,params.id),rows=await all<{id:string}>(db,'SELECT id FROM peg_proofs WHERE task_id=? ORDER BY id',task.id),proofs=[]
