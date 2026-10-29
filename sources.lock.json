@@ -199,7 +199,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "f6cf2933c4c1c7634be1efa7ed36b0f3f6251871c346866e6dee6a2d8a82883f",
+      "sha256": "4baeb5808e54fcf3a5900a4be3ff8aab7b5145e4cb9bb2bf2830c93414c12255",
       "executable": false
     },
     "AGENTS.md": {
@@ -215,7 +215,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "a5642679e28ee2f4b31b132dca25c043838a0c648fc23e209030acbdac17b145",
+      "sha256": "ee82c3eb9b22ec7c829d6fdc5c75f42d1b90adfd1e80a202618bbe39f2846031",
       "executable": false
     },
     "DEMO.md": {
@@ -243,7 +243,7 @@
       "executable": false
     },
     "docs/CLAIMS.md": {
-      "sha256": "cb883381d84bd5d14d1a6ce8b46fe7bec421691c790d27c5b03463a083c7a135",
+      "sha256": "b6b3fd3304e56e367caa0d98af81843214d0e7583a23289e8123c34fafc6898b",
       "executable": false
     },
     "docs/DATA-CUSTODY.md": {
@@ -1079,7 +1079,7 @@
       "executable": false
     },
     "public/look/work-views.js": {
-      "sha256": "78dcd455f79b08fcf7de59a607ce3f620f14396fc50965904bcf5f423e448de8",
+      "sha256": "f002068ad7d26d26369748806aff5fb4922181a093ec6beac2aa02d0002b09db",
       "executable": false
     },
     "public/personal-day.js": {
@@ -4215,7 +4215,7 @@
       "executable": false
     },
     "tests/journeys/work-views.mjs": {
-      "sha256": "620d30829a39c7927e841eaec93dcb53c25cb6d13f2c4097becbed5142df224a",
+      "sha256": "f278b8b6b8c770eb3e7b6b0df18954246ae57c25f8996da7cd2bc217f7c49479",
       "executable": false
     },
     "tests/journeys/workflow-bundles.mjs": {
@@ -4263,7 +4263,7 @@
       "executable": false
     },
     "tests/scenarios/work-views.mjs": {
-      "sha256": "5bd2aeabff4015924f3df85b8bea534131f7b2577b708cc7fa4aec7dfb51b997",
+      "sha256": "34590c36c53b945a92d37b69f9db2996f61b906c0e8288250523dd1a07ee1eeb",
       "executable": false
     },
     "tests/schedule.test.mjs": {
