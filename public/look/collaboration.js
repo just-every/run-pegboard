@@ -4,12 +4,21 @@
  if(!live)return
  const status=live.querySelector('[data-live-status]'),error=live.querySelector('[data-live-error]'),conflict=live.querySelector('[data-live-conflict]'),latest=live.querySelector('[data-live-latest]')
  const dirty=new Set(),pending=new Set(),intents=new WeakMap(),source=live.dataset.liveCollaboration
- let fingerprint='',activeRefresh=null,stopped=false,lastDocument=null
- const forms=()=>[...document.querySelectorAll('form')].filter(f=>f.action.includes('/api/v1/')&&(f.querySelector('[name=description]')||f.querySelector('[name=text]')||/\/brief\/restore$/.test(new URL(f.action).pathname)||/\/comments(?:\/|$)/.test(new URL(f.action).pathname)))
+ let fingerprint='',activeRefresh=null,stopped=false,lastDocument=null,timer=0
+ const actionOf=form=>new URL(form.getAttribute('action')||location.href,location.href).href
+ const forms=()=>[...document.querySelectorAll('form')].filter(f=>actionOf(f).includes('/api/v1/')&&(f.querySelector('[name=description]')||f.querySelector('[name=text]')||/\/brief\/restore$/.test(new URL(actionOf(f)).pathname)||/\/comments(?:\/|$)/.test(new URL(actionOf(f)).pathname)))
  const revision=f=>f.querySelector('[name=descriptionVersion],[name=version]')
  const message=text=>{error.textContent=text;error.hidden=false}
+ const reviewButton=document.createElement('button')
+ reviewButton.type='button';reviewButton.className='button quiet';reviewButton.textContent='Review latest text'
+ reviewButton.addEventListener('click',()=>{if(lastDocument)apply(lastDocument,true)})
+ const setConflict=visible=>{conflict.hidden=!visible;if(visible)conflict.append(reviewButton);else reviewButton.remove()}
+ const clearContext=()=>{
+  document.querySelector('.crumbs')?.remove();document.title='Work unavailable'
+  fingerprint='';lastDocument=null;dirty.clear();pending.clear();latest.replaceChildren()
+ }
  const refused=()=>{
-  stopped=true
+  stopped=true;clearInterval(timer);clearContext();setConflict(false)
   // Current authority wins over both cached remote context and unsent local text.
   const main=document.querySelector('main');main.replaceChildren()
   const heading=document.createElement('h1');heading.textContent='Not done'
@@ -72,7 +81,7 @@
     const select=region.querySelector('select');if(select&&[...select.options].some(o=>o.value===selected))select.value=selected
    }
   }
-  conflict.hidden=!collided||review
+  setConflict(collided&&!review)
   if(review){
    latest.replaceChildren()
    for(const region of doc.querySelectorAll('[data-live-region="brief"],[data-live-region="description"],[data-live-region="comments"]')){
@@ -100,7 +109,7 @@
    if(scope!==live.dataset.liveScope){
     const prior=JSON.parse(live.dataset.liveScope),current=JSON.parse(scope)
     const restricted=Array.isArray(prior)?prior[1].some(id=>!current[1].includes(id))||(prior[2]&&!current[2]):false
-    if(restricted){stopped=true;document.querySelector('main').replaceChildren();location.replace(location.href);return}
+    if(restricted){stopped=true;clearContext();document.querySelector('main').replaceChildren();location.replace(location.href);return}
     live.dataset.liveScope=scope
    }
    if(force||next!==fingerprint){
@@ -135,16 +144,16 @@
      else field.disabled=true
     }
     try{
-     const response=await fetch(form.action,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body),credentials:'same-origin',signal:AbortSignal.timeout(15000)})
+     const response=await fetch(actionOf(form),{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body),credentials:'same-origin',signal:AbortSignal.timeout(15000)})
      if([401,404].includes(response.status)){refused();return}
      if(!response.ok){
-      if(response.status===409){conflict.hidden=false;message('This revision changed. Your draft has not been sent over the newer text. Review the latest text and reconcile your draft.')}
+      if(response.status===409){setConflict(true);message('This revision changed. Your draft has not been sent over the newer text. Review the latest text and reconcile your draft.')}
       else message('This change was refused. Your draft is kept; check your current permissions and fields.')
       return
      }
      dirty.delete(form);intents.delete(form)
-     if(/\/comments$/.test(new URL(form.action).pathname))form.reset()
-     conflict.hidden=true;latest.hidden=true
+     if(/\/comments$/.test(new URL(actionOf(form)).pathname))form.reset()
+     setConflict(false);latest.hidden=true
     }catch{message('Save could not be confirmed. Your text is kept. Reconnect and retry the same change safely.')}
     finally{
      pending.delete(form)
@@ -154,11 +163,10 @@
    })
   }
  }
- live.querySelector('[data-live-review]').addEventListener('click',()=>{if(lastDocument)apply(lastDocument,true)})
  addEventListener('offline',()=>{status.textContent='Offline · unsent text is kept here.'})
  addEventListener('online',()=>refresh(true))
  addEventListener('pagehide',()=>{stopped=true;clearInterval(timer)})
  addEventListener('pageshow',event=>{if(event.persisted)location.reload()})
  bind();refresh(true)
- const timer=setInterval(()=>refresh(),1000)
+ timer=setInterval(()=>refresh(),1000)
 })()

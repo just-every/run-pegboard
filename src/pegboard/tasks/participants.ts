@@ -3,7 +3,7 @@ import { all, forbidden } from '../db'
 import { projectEffective, rootOf, taskAccess, type TaskAccess } from '../authorization/effective'
 import { loadProject } from '../authorization/grants'
 import { openProject, need } from '../workspace/projects'
-import { workspaceRole, type Actor } from '../workspace/people'
+import { displayNames, workspaceRole, type Actor } from '../workspace/people'
 
 export async function projectParticipants(db: D1Database, actor: Actor, projectId: string) {
   const { project, effective } = await openProject(db, actor, projectId)
@@ -38,9 +38,11 @@ export async function requireGuestParticipant(db: D1Database, actor: Actor, role
 
 export async function mentionParticipants(db:D1Database,actor:Actor,task:import('../model').TaskRow,access:TaskAccess) {
  const via=await commentProject(db,task,access)
- const choices=via?await participants(db,via,task.workspace_id):[{value:actor.id,label:actor.displayName}]
+ const published=new Set(via?(await participants(db,via,task.workspace_id)).map(p=>p.value):[actor.id])
+ const ids=[task.owner_id,...(await all<{operator_id:string}>(db,'SELECT operator_id FROM peg_task_collaborators WHERE task_id=? ORDER BY operator_id',task.id)).map(p=>p.operator_id)]
+ const names=await displayNames(db,ids)
  const visible=[]
- for(const person of choices)if((await taskAccess(db,{...actor,id:person.value,baseRole:'member',apiScope:undefined},task)).capabilities.has('read'))visible.push(person)
+ for(const id of [...new Set(ids)])if(published.has(id)&&(await taskAccess(db,{...actor,id,baseRole:'member',apiScope:undefined},task)).capabilities.has('read'))visible.push({value:id,label:names.get(id)??'Former member'})
  return visible
 }
 

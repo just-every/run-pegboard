@@ -127,12 +127,17 @@ export async function collaborationJourney({w,browser,ok}) {
   await g.page.goto(briefUrl);await expect(g.page.locator('[data-live-region="brief"]')).toContainText('Reconciled brief')
   assert.equal(await g.page.getByRole('button',{name:'Save new revision',exact:true}).count(),0)
   await proof(g.page,'guest-scoped-brief')
+  const guestTask=await g.context.newPage();await guestTask.goto(taskUrl)
+  await expect(guestTask.locator('[data-live-status]')).toContainText('Live')
   ok(await root.post('/api/v1/grants/'+share.id+'/revoke',{}))
   await expect(g.page.getByRole('heading',{name:'This work is no longer available.',exact:true})).toBeVisible()
   assert.ok(!(await g.page.content()).includes('Remote contribution'))
   assert.equal((await guest.get(taskApi)).status,404);assert.equal((await guest.get(brief)).status,404)
   assert.equal((await guest.get('/api/v1/projects/'+project.id+'/export?format=json')).status,404)
-  await proof(g.page,'revoked-reader')
+  await expect(guestTask.getByRole('heading',{name:'This work is no longer available.',exact:true})).toBeVisible()
+  assert.ok(!(await guestTask.content()).includes(project.name),'revocation clears the protected breadcrumb')
+  assert.ok(!(await guestTask.title()).includes(task.title),'revocation clears the protected document title')
+  await proof(guestTask,'revoked-reader')
   console.log('Native text collaboration: two browsers, preserved reconnect drafts, exact revisions and scoped guest reads passed at 1440px')
  }finally{for(const context of contexts)await context.close()}
 }

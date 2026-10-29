@@ -247,7 +247,7 @@
       "executable": false
     },
     "docs/COLLABORATION.md": {
-      "sha256": "32bbe512297399d6e688ee946575b42ee745f9b38b9b9ec39904980dd07bc7d0",
+      "sha256": "28bdb961f191f31760efe2e5526273d82c23e3a510623ac008ed7cdf1e2679ba",
       "executable": false
     },
     "docs/DATA-CUSTODY.md": {
@@ -1031,7 +1031,7 @@
       "executable": false
     },
     "public/look/collaboration.js": {
-      "sha256": "094409753f381b8196e1be366087d3e09463989341f5f5caece6c9d24e94a6ab",
+      "sha256": "13fbf7e5895fb05adeaffc53c1055174e34d74002d4fa0d47b64215f44a0b027",
       "executable": false
     },
     "public/look/controls.css": {
@@ -3579,7 +3579,7 @@
       "executable": false
     },
     "src/pegboard/tasks/participants.ts": {
-      "sha256": "f42b2b435566f39efd010f4e1303114fd05990b28f68482fdd96c1542a74b643",
+      "sha256": "9872e589b4f9f9ce7b4a48f6b7f35b71799a996370a5f17e4fd129650c67ae1c",
       "executable": false
     },
     "src/pegboard/tasks/personal.ts": {
@@ -3871,7 +3871,7 @@
       "executable": false
     },
     "src/pegboard/ui/rich-text.tsx": {
-      "sha256": "8b7957dc43e0570865b13259c63142912b6da41a320b117b07c0772c648998b4",
+      "sha256": "4ae0c7daf1024e68b8cce9fb1a80d0c4deee9887dcd14bf7dfe755a4be8610e6",
       "executable": false
     },
     "src/pegboard/ui/routes.ts": {
@@ -4099,7 +4099,7 @@
       "executable": false
     },
     "tests/journeys/collaboration.mjs": {
-      "sha256": "9490d9bdb13ab1ac043a8b3b0cf2daa1b20d8cef6ec6c1582d474b9c0beb4342",
+      "sha256": "92e7df06ff46c36640850235052f8424b8ab62d4caea4965e48d11ed44bc3057",
       "executable": false
     },
     "tests/journeys/conversion-hierarchy.mjs": {
