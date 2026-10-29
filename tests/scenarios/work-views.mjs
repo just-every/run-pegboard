@@ -54,6 +54,7 @@ export function registerWorkViewTests({test, context}) {
   const moves = [{taskId:date.id,due:'2026-07-09'}], plan = await pass(editor.post('/api/v1/schedule/preview',{moves}))
   assert.equal((await task(root,date.id)).dueDate,'2026-07-07','preview does not edit the graph')
   await pass(editor.post('/api/v1/schedule/apply',{moves,revision:plan.stamp}))
+  await pass(editor.post('/api/v1/schedule/apply',{moves,revision:plan.stamp}),409)
   for (const mode of modes) assert.equal((await read(editor,project,mode,saved)).rows.find(row=>row.id===date.id).dueDate,'2026-07-09',mode)
   assert.equal((await task(root,timed.id)).dueDate,'2026-07-08T14:00:00.000Z')
   await w.restart()

@@ -75,7 +75,7 @@ if (root) {
     try {
       if (form.matches('[data-date-edit]')) {
         let due = input.due
-        if (input.dateKind === 'instant' && due) due = new Date(due + 'Z').toISOString()
+        if (input.dateKind === 'instant' && due) due = new Date(due + 'Z').toISOString().replace('.000Z', 'Z')
         const moves = [{ taskId: input.taskId, due: due || null }]
         const plan = await post('/api/v1/schedule/preview', { moves })
         preview.replaceChildren()
