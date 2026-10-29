@@ -81,6 +81,8 @@ export function registerWorkViewTests({test, context}) {
   await pass(root.post(`/api/v1/tasks/${visible.id}/fields`,{projectId:project.id,values:{client_units:7,private_margin:913}}))
   const input = {name:'Shared client plan',mode:'table',filters:{status:[],ownerIds:[],dueFrom:null,dueTo:null},groupBy:`field:${hiddenField.id}`,sort:[{column:`field:${hiddenField.id}`,direction:'desc'}],columns:['title','dueDate',`field:${publicField.id}`,`field:${hiddenField.id}`],shared:true}
   const saved = await create(author,project,input), shown = await read(guest,project,'table',saved)
+  const authoredDefaults=await presets(author,project)
+  await pass(author.post(`/api/v1/projects/${project.id}/work-view-defaults`,{revision:authoredDefaults.defaultsRevision,scope:'personal',viewId:saved.id}))
   assert.deepEqual(shown.rows.map(row=>row.id),[visible.id])
   assert.deepEqual(shown.config.columns,['title','dueDate',`field:${publicField.id}`])
   assert.equal(shown.config.groupBy,null)
@@ -107,5 +109,16 @@ export function registerWorkViewTests({test, context}) {
   assert.equal((await guest.get(`/api/v1/projects/${project.id}/work-view?view=${saved.id}`)).status,404)
   assert.equal((await guest.get(`/api/v1/projects/${project.id}/work-views`)).status,404)
   assert.equal((await guest.get(`/api/v1/tasks/${visible.id}`)).status,404)
+  await pass(root.post(`/api/v1/workspaces/ws_main/people/${author.id}/account`,{status:'inactive'}))
+  const erasure=await pass(root.post('/api/v1/data/erasure-preview',{type:'person',id:author.id}))
+  assert.deepEqual(erasure.blockers,[])
+  assert.equal(erasure.counts.peg_work_views,1,'the exact person review includes the authored configuration')
+  assert.equal(erasure.counts.peg_work_view_defaults,1,'the exact person review includes personal default custody')
+  const erased=await pass(root.post('/api/v1/data/erase',{type:'person',id:author.id,token:erasure.token,confirm:true}))
+  assert.equal(erased.counts.peg_work_views,1)
+  assert.equal((await author.post(`/api/v1/work-views/${saved.id}`,{...input,revision:updated.revision})).status,401)
+  assert.ok(!(await presets(root,project)).views.some(view=>view.id===saved.id))
+  assert.equal((await task(root,visible.id)).title,'Assigned client delivery','erasing a configuration owner changes no shared task')
+
  })
 }
