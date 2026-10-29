@@ -22,7 +22,17 @@ without challenge, cookie, token or secret values. Native account role/status
 changes move the same authority epoch as Pegboard’s account doors. Proof
 versions/decisions and signed agent-output submissions use this audit too.
 Authorized search/export is paginated by event ID with exact action, actor and
-subject filters.
+subject filters. Local rule events also support exact rule, run, activation and
+operation identity filters; the browser exposes rule and run filters.
+
+Local rule creation, definition edits, activation and deactivation append explicit
+receipts in the same transaction as their configuration change. Matching triggers
+record queued runs, or an inactive blocked outcome. Processing appends applied,
+no-op or blocked receipts with the rule version, activation, run, triggering actor,
+activating administrator and any resulting operation identity. Missing dates and
+refused authority have explicit closed outcome codes. An HTTP success alone never
+stands in for a rule effect. Replay and restart append no second terminal success.
+Receipts contain no rule names, source values, action text or task bodies.
 
 Metadata accepts only a closed vocabulary of enums, numbers, booleans and opaque
 IDs. It does not copy request bodies, comments, file names or bodies, provider
@@ -114,6 +124,7 @@ Downloaded files, outside messages and declared processor copies need those
 systems’ deletion process. No provider-confirmed deletion or recall is claimed
 without a real receipt. Whole-workspace erasure, complete identity cleanup,
 product intake/import replay, live R2 qualification and autonomous agent execution
-remain explicit acceptance gaps. PEG-057/059/065 stay partial while the adopted
-owner-only review, hold precedence, retained-history and processor defaults await
-CT disposition.
+remain explicit acceptance gaps. PEG-057, PEG-059 and PEG-065 stay partial for their technical gaps. The recorded
+CT rulings approve scoped redacted audit, owner-reviewed erasure, hold precedence
+and separately consented processor custody; retained identity stores and external
+limits remain disclosed.

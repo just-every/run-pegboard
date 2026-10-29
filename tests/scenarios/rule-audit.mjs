@@ -75,6 +75,7 @@ export function registerRuleAuditTests({test,context}){
   const rule=await create(admin,project.id,'synthetic-pegboard-5713',{actions:[{kind:'comment',value:'synthetic-pegboard-5714'}]})
   const activation=await activate(admin,rule.id)
   const valid=await request(root,project.id,5715)
+  assert.deepEqual((await pass(root.get(`/api/v1/tasks/${valid.id}`))).comments.map(c=>c.body),['synthetic-pegboard-5714'])
   await pass(root.post(`/api/v1/workspaces/ws_main/people/${admin.id}/account`,{status:'inactive'}))
   const refused=await request(root,project.id,5716)
   const run=(await read(root,project.id)).runs.find(r=>r.task_id===refused.id)
@@ -86,6 +87,8 @@ export function registerRuleAuditTests({test,context}){
   await w.restart();assert.equal((await request(root,project.id,5716)).id,refused.id);await pass(root.post(path(project.id)+'/process',{}));assert.deepEqual(await audit(root,rule.id),events)
   const preview=await pass(root.post('/api/v1/data/erasure-preview',{type:'person',id:admin.id}));assert.deepEqual(preview.blockers,[])
   const erased=await pass(root.post('/api/v1/data/erase',{type:'person',id:admin.id,token:preview.token,confirm:true}));assert.equal(erased.outcome,'partial');assert.ok(erased.retained.local_auth_material>0)
+  assert.deepEqual((await pass(root.get(`/api/v1/tasks/${valid.id}`))).comments,[],'person erasure removes that actor’s comment content')
+  await pass(root.post(`/api/v1/tasks/${valid.id}/comments`,{body:'synthetic-pegboard-5718'}))
   const anonymous=await audit(root,rule.id)
   for(const e of events){const row=anonymous.find(r=>r.id===e.id);assert.deepEqual({...row,actor:e.actor},e);if(row.actor_id===admin.id)assert.equal(row.actor,'Erased actor')}
   assert.ok(!JSON.stringify(anonymous).includes(admin.name)&&!JSON.stringify(anonymous).includes(admin.email))
@@ -94,7 +97,7 @@ export function registerRuleAuditTests({test,context}){
    assert.deepEqual(await audit(copy.worker.owner,rule.id),anonymous)
    await pass(copy.worker.owner.post(path(project.id)+'/process',{}));assert.deepEqual(await audit(copy.worker.owner,rule.id),anonymous)
    const restored=await read(copy.worker.owner,project.id);assert.ok(restored.rules.every(r=>!r.enabled&&!r.activation_id));assert.equal(restored.runs.find(r=>r.task_id===valid.id).status,'applied')
-   assert.equal((await pass(copy.worker.owner.get(`/api/v1/tasks/${valid.id}`))).comments.length,1)
+   assert.deepEqual((await pass(copy.worker.owner.get(`/api/v1/tasks/${valid.id}`))).comments.map(c=>c.body),['synthetic-pegboard-5718'],'native restore preserves the later comment without resurrecting erased rule content')
   }finally{await copy.stop()}
  },{timeout:240000})
 }
