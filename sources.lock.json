@@ -3963,11 +3963,11 @@
       "executable": false
     },
     "src/pegboard/views/service.ts": {
-      "sha256": "f5dac215b63d71666b85e33cc75a39afab8ad46455d278b85bac9e32e2d4591e",
+      "sha256": "c6a0acd719c0f53043c0080e9fa70f3cb0a8e732fc9c6e16d6060a9971ab229b",
       "executable": false
     },
     "src/pegboard/views/store.ts": {
-      "sha256": "9cd4e6e50af0edf54b3deea53bc63572878005af843f6389aeb0cbe1741548bd",
+      "sha256": "73fb5ed127388c04e16b82eb0c4b4d2e3ee99beda2d770c4516cb28ce64ddb0f",
       "executable": false
     },
     "src/pegboard/views/workload.ts": {

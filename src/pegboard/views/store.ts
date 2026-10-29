@@ -7,8 +7,13 @@ import { columnSet, parseConfig, pruneConfig, type ViewConfig } from './config'
 
 export interface SavedView { id: string; project_id: string; owner_id: string; name: string; config: string; shared: number; revision: number; created_at: number; updated_at: number }
 interface DefaultRow { subject_id: string; view_id: string | null; updated_by: string; revision: number }
-export async function stableRead(db: D1Database, fence: Revision) {
-  if ((await revision(db)).value !== fence.value || fence.until !== null && fence.until <= now()) throw conflict('view_changed')
+/** Rebuild the whole snapshot after a concurrent write, including current permission checks. */
+export async function stableRead<T>(db: D1Database, read: (fence: Revision) => Promise<T>): Promise<T> {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const fence = await revision(db), result = await read(fence)
+    if ((await revision(db)).value === fence.value && (fence.until === null || fence.until > now())) return result
+  }
+  throw conflict('view_changed')
 }
 export async function ownerActor(db: D1Database, ownerId: string): Promise<Actor> {
   const owner = await operatorRow(db, ownerId)
@@ -40,28 +45,29 @@ export function availableColumns(fields: Awaited<ReturnType<typeof fieldLibrary>
     ...fields.map(field => ({ id: `field:${field.id}`, label: field.label }))]
 }
 export async function listWorkViews(db: D1Database, actor: Actor, projectId: string) {
-  const fence = await revision(db), { project, effective } = await openProject(db, actor, projectId)
-  const fields = (await fieldLibrary(db, projectId)).filter(field => fieldReadable(field, effective))
-  const owners = new Set((await readableTasks(db, actor, projectId)).map(task => task.owner_id))
-  const rows = await all<SavedView>(db, 'SELECT * FROM peg_work_views WHERE project_id=? AND (owner_id=? OR shared=1) ORDER BY name,id', projectId, actor.id)
-  const views = []
-  for (const row of rows) {
-    const context = await viewContext(db, actor, row).catch(error => { if (error?.status === 404) return null; throw error })
-    if (context) views.push(presentView(row, pruneConfig(context.config, context.allowed, row.owner_id === actor.id ? undefined : owners), actor))
-  }
-  const defaults = await all<DefaultRow>(db, 'SELECT * FROM peg_work_view_defaults WHERE project_id=? AND subject_id IN (?,?)', projectId, actor.id, '')
-  const personal = defaults.find(row => row.subject_id === actor.id), team = defaults.find(row => row.subject_id === '')
-  let teamDefaultId: string | null = null
-  if (team?.view_id && views.some(view => view.id === team.view_id && view.shared)) {
-    const issuer = await ownerActor(db, team.updated_by).catch(() => null)
-    const authority = issuer && await openProject(db, issuer, projectId).catch(() => null)
-    if (authority?.effective.capabilities.has('manage_settings')) teamDefaultId = team.view_id
-  }
-  const names = await displayNames(db, [...owners])
-  await stableRead(db, fence)
-  return { project: { id: project.id, name: project.name }, owners: [...owners].map(id => ({ id, name: names.get(id) ?? 'Former member' })), views, fields: safeDefinitions(fields), availableColumns: availableColumns(fields),
-    personalDefaultId: views.some(view => view.id === personal?.view_id) ? personal!.view_id : null,
-    teamDefaultId, defaultsRevision: fence.value, canSetTeamDefault: effective.capabilities.has('manage_settings') }
+  return stableRead(db, async fence => {
+    const { project, effective } = await openProject(db, actor, projectId)
+    const fields = (await fieldLibrary(db, projectId)).filter(field => fieldReadable(field, effective))
+    const owners = new Set((await readableTasks(db, actor, projectId)).map(task => task.owner_id))
+    const rows = await all<SavedView>(db, 'SELECT * FROM peg_work_views WHERE project_id=? AND (owner_id=? OR shared=1) ORDER BY name,id', projectId, actor.id)
+    const views = []
+    for (const row of rows) {
+      const context = await viewContext(db, actor, row).catch(error => { if (error?.status === 404) return null; throw error })
+      if (context) views.push(presentView(row, pruneConfig(context.config, context.allowed, row.owner_id === actor.id ? undefined : owners), actor))
+    }
+    const defaults = await all<DefaultRow>(db, 'SELECT * FROM peg_work_view_defaults WHERE project_id=? AND subject_id IN (?,?)', projectId, actor.id, '')
+    const personal = defaults.find(row => row.subject_id === actor.id), team = defaults.find(row => row.subject_id === '')
+    let teamDefaultId: string | null = null
+    if (team?.view_id && views.some(view => view.id === team.view_id && view.shared)) {
+      const issuer = await ownerActor(db, team.updated_by).catch(() => null)
+      const authority = issuer && await openProject(db, issuer, projectId).catch(() => null)
+      if (authority?.effective.capabilities.has('manage_settings')) teamDefaultId = team.view_id
+    }
+    const names = await displayNames(db, [...owners])
+    return { project: { id: project.id, name: project.name }, owners: [...owners].map(id => ({ id, name: names.get(id) ?? 'Former member' })), views, fields: safeDefinitions(fields), availableColumns: availableColumns(fields),
+      personalDefaultId: views.some(view => view.id === personal?.view_id) ? personal!.view_id : null,
+      teamDefaultId, defaultsRevision: fence.value, canSetTeamDefault: effective.capabilities.has('manage_settings') }
+  })
 }
 const nameOf = (value: unknown) => {
   if (typeof value !== 'string' || !value.trim() || value.length > 120) throw invalid('view_name')
