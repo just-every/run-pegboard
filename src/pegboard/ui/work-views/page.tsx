@@ -19,6 +19,7 @@ export function WorkViewPage({ viewer, data, presets, input }: { viewer:Viewer; 
       <nav className="work-view-nav" aria-label="Work views">{modes.map(view => { const params = new URLSearchParams(query); params.set('mode',view); return <a key={view} href={`${path}?${params}`} aria-current={mode===view?'page':undefined}>{modeLabel(view)}</a> })}</nav>
       <Card title="View this work"><p><a href={`/app/projects/${id}`}>Path</a> · <a href={`/app/projects/${id}/settings/views`}>Saved view settings</a> · <a href={`/app/projects/${id}/timeline`}>Schedule and dependencies</a></p>
         <form method="get" action={path} className="inline" aria-label="Filter and group work"><input type="hidden" name="mode" value={mode}/>
+          <input type="hidden" name="currentView" value={input.savedView ?? data.config.id ?? ''}/>
           <Pick label="Saved view" name="savedView" value={input.savedView ?? data.config.id ?? ''} blank="Project defaults" options={presets.views.map(view=>({value:view.id,label:view.name}))}/>
           <Pick label="Status filter" name="status" value={input.status??(data.config.filters.status.length===1?data.config.filters.status[0]:'all')} options={[{value:'all',label:'All statuses'},...statusOptions]}/>
           <Pick label="Group by" name="groupBy" value={input.groupBy??data.config.groupBy??''} blank="No grouping" options={data.availableColumns.map(column=>({value:column.id,label:column.label}))}/><Submit quiet>Show work</Submit>

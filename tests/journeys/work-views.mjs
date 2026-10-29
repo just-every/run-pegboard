@@ -4,6 +4,8 @@ import { join } from 'node:path'
 import { expect } from '@playwright/test'
 
 export async function workViewsJourney({w,browser,ok}) {
+ const gate=await workViewGateChecks({w,browser,ok})
+ try { for(const check of Object.values(gate.checks))await check() } finally { await gate.close() }
  const pass=async(request,status=200)=>ok(await request,status),owner=w.owner
  const editor=await w.person(['synthetic-pegboard-3011','example.com'].join('@'),'Mia Production')
  const guest=await w.person(['synthetic-pegboard-3012','example.com'].join('@'),'Gus Client','guest')
@@ -173,4 +175,98 @@ export async function workViewsJourney({w,browser,ok}) {
   assert.equal((await guest.get(`/api/v1/projects/${project.id}/work-view?view=${savedId}`)).status,404)
   await pass(owner.delete(`/api/v1/grants/${grant.id}`))
  } finally { for(const context of contexts)await context.close() }
+}
+
+// Gate regressions use the rendered controls and the same persisted records as the other work-view journey.
+export async function workViewGateChecks({w,browser,ok}) {
+ const pass=async request=>ok(await request),owner=w.owner
+ const editor=await w.person(['synthetic-pegboard-3021','example.com'].join('@'),'Saved filter editor')
+ const project=await pass(owner.post('/api/v1/projects',{name:'Saved view review'}))
+ await pass(owner.post('/api/v1/grants',{objectType:'project',objectId:project.id,granteeId:editor.id,level:'editor'}))
+ const task=await pass(owner.post('/api/v1/tasks',{projectId:project.id,title:'Owner-filtered production',ownerId:editor.id,status:'doing',startDate:'2026-07-06',dueDate:'2026-07-07'}))
+ await pass(owner.post('/api/v1/tasks',{projectId:project.id,title:'Completed owner work',status:'done',dueDate:'2026-07-07'}))
+ const config={name:'Current production',mode:'table',filters:{status:['doing'],ownerIds:[editor.id],dueFrom:'2026-07-01',dueTo:'2026-07-31'},groupBy:'owner',sort:[{column:'dueDate',direction:'desc'}],columns:['title','status','owner','dueDate'],shared:true}
+ const saved=await pass(owner.post(`/api/v1/projects/${project.id}/work-views`,config))
+ const context=await browser.newContext({viewport:{width:1440,height:900}})
+ await context.addCookies(owner.cookie.split('; ').map(pair=>({name:pair.slice(0,pair.indexOf('=')),value:pair.slice(pair.indexOf('=')+1),url:w.origin})))
+ const page=await context.newPage(),path=`${w.origin}/app/projects/${project.id}`
+ const proof=async name=>{
+  if(!process.env.PEGBOARD_PROOF_DIR)return
+  await mkdir(process.env.PEGBOARD_PROOF_DIR,{recursive:true})
+  for(const [width,height] of [[1440,900],[390,844]]){
+   await page.setViewportSize({width,height})
+   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`${name}: no page overflow at ${width}`)
+   await page.screenshot({path:join(process.env.PEGBOARD_PROOF_DIR,`work-views-gate-${name}-${width}.png`),fullPage:true})
+  }
+  await page.setViewportSize({width:1440,height:900})
+ }
+ const checks={
+  async 'selected preset retains its filter, grouping and mode'(){
+   await page.goto(`${path}/views?mode=list&status=done&groupBy=status`)
+   await page.getByLabel('Saved view',{exact:true}).selectOption(saved.id)
+   await page.getByRole('button',{name:'Show work',exact:true}).click()
+   await expect(page.locator('[data-work-content]')).toHaveAttribute('data-mode','table')
+   await expect(page.getByLabel('Status filter')).toHaveValue('doing')
+   await expect(page.getByRole('form',{name:'Filter and group work'}).getByLabel('Group by')).toHaveValue('owner')
+   assert.deepEqual(await page.locator('[data-work-row]').evaluateAll(rows=>rows.map(row=>row.dataset.workRow)),[task.id])
+   await proof('selected-preset')
+   await page.getByLabel('Status filter').selectOption('done')
+   await page.getByRole('button',{name:'Show work',exact:true}).click()
+   assert.deepEqual(await page.locator('[data-work-row]').evaluateAll(rows=>rows.map(row=>row.dataset.workRow)),[],'an explicit override still applies to the selected preset')
+  },
+  async 'renaming an empty preset preserves its owner predicate'(){
+   await pass(owner.patch(`/api/v1/tasks/${task.id}`,{status:'done'}))
+   await page.goto(`${path}/settings/views?savedView=${saved.id}`)
+   const form=page.getByRole('form',{name:'Save view configuration'})
+   await form.getByLabel('View name',{exact:true}).fill('Renamed production')
+   const savedResponse=page.waitForResponse(r=>r.url().endsWith(`/work-views/${saved.id}`)&&r.request().method()==='POST')
+   await form.getByRole('button',{name:'Save view',exact:true}).click()
+   assert.equal((await savedResponse).status(),200)
+   await page.waitForLoadState('networkidle')
+   const stored=(await pass(owner.get(`/api/v1/projects/${project.id}/work-views`))).views.find(view=>view.id===saved.id)
+   assert.deepEqual(stored.filters,config.filters,'a rename must retain the saved owner even when its last matching task completed')
+   for(const key of ['mode','groupBy','sort','columns'])assert.deepEqual(stored[key],config[key],key)
+   await expect(form.locator(`input[name="owners[]"][value="${editor.id}"]`)).toBeChecked()
+   await proof('empty-preset-settings')
+   await pass(owner.patch(`/api/v1/tasks/${task.id}`,{status:'doing'}))
+   await page.goto(`${path}/views?savedView=${saved.id}`)
+   assert.deepEqual(await page.locator('[data-work-row]').evaluateAll(rows=>rows.map(row=>row.dataset.workRow)),[task.id],'reopened matching work returns under the retained filter')
+  },
+  async 'pending date approval survives committed refresh and reconnect'(){
+   await pass(owner.patch(`/api/v1/tasks/${task.id}`,{status:'doing'}))
+   const hiddenProject=await pass(owner.post('/api/v1/projects',{name:'Private schedule review'}))
+   const hidden=await pass(owner.post('/api/v1/tasks',{projectId:hiddenProject.id,title:'Private dependent delivery',startDate:'2026-07-08',dueDate:'2026-07-08'}))
+   await pass(owner.post('/api/v1/dependencies',{predecessor:task.id,successor:hidden.id,type:'fs'}))
+   // The editor can edit the source task but needs an authorized approver for the hidden dependent.
+   await context.clearCookies()
+   await context.addCookies(editor.cookie.split('; ').map(pair=>({name:pair.slice(0,pair.indexOf('=')),value:pair.slice(pair.indexOf('=')+1),url:w.origin})))
+   await page.goto(`${path}/views?mode=table`)
+   const dates=page.locator(`[data-work-row="${task.id}"]`).getByRole('form',{name:'Change due date for Owner-filtered production'})
+   await dates.getByLabel('Due date',{exact:true}).fill('2026-07-10')
+   await dates.getByRole('button',{name:'Preview date change'}).click()
+   const response=page.waitForResponse(r=>r.url().endsWith('/schedule/apply')&&r.request().method()==='POST')
+   await page.getByRole('button',{name:'Submit for authorized approval',exact:true}).click()
+   const pending=await (await response).json()
+   assert.equal(pending.status,'pending')
+   for(let poll=0;poll<2;poll++)await page.waitForResponse(r=>r.request().headers()['x-work-view-refresh']==='1'&&r.status()===200)
+   assert.ok((await pass(editor.get('/api/v1/schedule/pending'))).pending.some(row=>row.id===pending.id),'approval is still pending after committed refreshes')
+   assert.equal((await pass(owner.get(`/api/v1/tasks/${task.id}`))).dueDate,'2026-07-07')
+   await expect(page.locator('[data-live-status]')).toContainText('Awaiting authorized approval')
+   await expect(page.locator('[data-date-preview]')).toContainText('2026-07-10')
+   await expect(page.getByRole('button',{name:'Submit for authorized approval',exact:true}),'a submitted proposal cannot be accidentally submitted twice').toHaveCount(0)
+   assert.ok(!(await page.content()).includes(hidden.title),'the pending receipt never reveals hidden dependent work')
+   await proof('pending-approval')
+   await context.setOffline(true)
+   await expect(page.locator('[data-live-status]')).toContainText('Offline')
+   await expect(page.locator('[data-live-status]')).toContainText('Awaiting authorized approval')
+   await context.setOffline(false)
+   await page.waitForResponse(r=>r.request().headers()['x-work-view-refresh']==='1'&&r.status()===200)
+   await expect(page.locator('[data-date-preview]')).toContainText('2026-07-10')
+   const decision=await pass(owner.get(`/api/v1/schedule/sets/${pending.id}`))
+   await pass(owner.post(`/api/v1/schedule/sets/${pending.id}/approve`,{revision:decision.revision}))
+   await expect(page.locator(`[data-work-row="${task.id}"] [data-summary]`)).toContainText('2026-07-10')
+   await expect(page.locator('[data-live-status]')).not.toContainText('Awaiting authorized approval')
+  }
+ }
+ return {checks,close:()=>context.close()}
 }

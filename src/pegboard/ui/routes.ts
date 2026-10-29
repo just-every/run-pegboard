@@ -238,6 +238,12 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
     }
     if(section==='projects'&&id&&tail==='register'&&segments.length===4){const data=await board(db,actor,id);return page('Delivery register',h(RegisterPage,{viewer,view:await registerView(db,actor,id),people:await peopleOptions(db,actor,workspace),tasks:data.columns.flatMap(c=>c.tasks.map(t=>({value:t.id,label:t.title})))}))}
     if(section==='projects'&&id&&(tail==='views'&&segments.length===4||tail==='settings'&&segments[4]==='views'&&segments.length===5)) {
+      if(tail==='views'&&url.searchParams.has('currentView')) {
+        // A newly selected preset supplies its own settings; the previous view's controls are not overrides.
+        if(url.searchParams.get('savedView')!==url.searchParams.get('currentView')) for(const key of ['mode','status','groupBy'])url.searchParams.delete(key)
+        url.searchParams.delete('currentView')
+        return Response.redirect(url.toString(),303)
+      }
       const input=Object.fromEntries(url.searchParams),options={viewId:input.savedView||undefined,mode:input.mode,status:input.status,groupBy:input.groupBy,from:input.from,days:input.days}
       const data=await workView(db,actor,id,options)
       const body=tail==='settings'?h(ViewSettingsPage,{viewer,presets:await listWorkViews(db,actor,id),data,selected:input.savedView}):request.headers.has('x-work-view-refresh')?h(WorkViewContent,{data}):h(WorkViewPage,{viewer,data,presets:data,input})

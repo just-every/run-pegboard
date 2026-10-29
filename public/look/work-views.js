@@ -2,8 +2,8 @@
 const root = document.querySelector('[data-work-view]')
 if (root) {
   const status = root.querySelector('[data-live-status]'), preview = root.querySelector('[data-date-preview]')
-  let reading = false, ended = false, writing = false
-  const message = text => { status.textContent = text }
+  let reading = false, ended = false, writing = false, pendingId = null
+  const message = text => { status.textContent = pendingId ? 'Awaiting authorized approval. No dates changed on submission. ' + text : text }
   const offline = 'Offline — stale view. Changes are not sent until you reconnect and review them.'
   const syncDraft = row => { if (row.querySelector('form[data-dirty="1"]')) row.dataset.dirty = '1'; else delete row.dataset.dirty }
   const refuse = () => {
@@ -19,6 +19,23 @@ if (root) {
     const response = await fetch(url, { credentials: 'same-origin', cache: 'no-store', ...options })
     if ([401, 403, 404].includes(response.status) || response.redirected) { refuse(); throw new Error('Access ended') }
     return response
+  }
+  const shiftsList = shifts => {
+    const list = document.createElement('ul'); list.className = 'rows'
+    for (const shift of shifts) {
+      const item = document.createElement('li')
+      item.textContent = `${shift.title}: ${shift.from.start ?? 'No start'} to ${shift.from.due ?? 'No due'} → ${shift.to.start ?? 'No start'} to ${shift.to.due ?? 'No due'} · ${shift.owner} · ${shift.estimateHours} planned hours`
+      list.append(item)
+    }
+    return list
+  }
+  const showPending = proposal => {
+    preview.replaceChildren()
+    const title = document.createElement('h2'); title.textContent = 'Awaiting authorized approval'
+    const note = document.createElement('p'); note.textContent = proposal.stale ? 'The submitted change needs a fresh review because committed values changed. No dates changed on submission.' : 'The submitted change is pending. No dates changed on submission.'
+    const link = document.createElement('a'); link.href = root.querySelector('a[href$="/timeline"]').href; link.textContent = 'Review schedule decisions'
+    preview.append(title, shiftsList(proposal.shifts), note, link)
+    preview.dataset.pendingId = proposal.id
   }
   const refresh = async () => {
     if (reading || ended || writing) return
@@ -59,7 +76,22 @@ if (root) {
       }
       current.replaceWith(fresh)
       if (focused?.isConnected) focused.focus({ preventScroll: true })
-      message(conflict ? 'Conflict — a remote edit needs review. Your draft has not been sent.' : 'Live — committed values checked. Local drafts are not shared.')
+      if (pendingId) {
+        const response = await request('/api/v1/schedule/pending', { signal: AbortSignal.timeout(5000) })
+        if (!response.ok) throw new Error('Approval state unavailable')
+        const proposal = (await response.json()).pending.find(proposal => proposal.id === pendingId)
+        if (proposal) { if (preview.dataset.pendingId === pendingId) showPending(proposal) }
+        else {
+          if (preview.dataset.pendingId === pendingId) {
+            preview.replaceChildren()
+            const note = document.createElement('p'); note.textContent = 'The submitted request is no longer pending. Review the current committed dates and schedule decisions.'; preview.append(note)
+            delete preview.dataset.pendingId
+          }
+          pendingId = null
+        }
+      }
+      if (!navigator.onLine) { message(offline); return }
+      message(conflict ? 'Conflict — a remote edit needs review. Your draft has not been sent.' : pendingId ? 'Committed values checked. The proposal is separate from live dates.' : 'Live — committed values checked. Local drafts are not shared.')
     } catch { if (!ended) message(!navigator.onLine ? offline : 'Connection unavailable — stale view. Keep your draft and reconnect before sending changes.') }
     finally { reading = false }
   }
@@ -94,14 +126,9 @@ if (root) {
         const moves = [{ taskId: input.taskId, due: due || null }]
         const plan = await post('/api/v1/schedule/preview', { moves })
         preview.replaceChildren()
+        delete preview.dataset.pendingId
         const title = document.createElement('h2'); title.textContent = 'Review date changes'; preview.append(title)
-        const list = document.createElement('ul'); list.className = 'rows'
-        for (const shift of plan.shifts) {
-          const item = document.createElement('li')
-          item.textContent = `${shift.title}: ${shift.from.start ?? 'No start'} to ${shift.from.due ?? 'No due'} → ${shift.to.start ?? 'No start'} to ${shift.to.due ?? 'No due'} · ${shift.owner} · ${shift.estimateHours} planned hours`
-          list.append(item)
-        }
-        preview.append(list)
+        preview.append(shiftsList(plan.shifts))
         const note = document.createElement('p')
         note.textContent = plan.blocked ? 'This change cannot be applied because it would move completed work.' : plan.waits ? 'Some affected work needs its authorized approver. No dates will change now.' : 'Apply confirms this exact set. Current permissions and record versions are checked again.'
         preview.append(note)
@@ -122,9 +149,15 @@ if (root) {
             if (changed.has(node.dataset.workRow)) node.querySelectorAll('[data-date-edit]').forEach(dateForm => { delete dateForm.dataset.dirty })
             syncDraft(node)
           })
-          preview.replaceChildren()
+          if (result.status === 'pending') {
+            pendingId = result.id
+            // Retain the reviewed dates as a receipt, without a second submission control.
+            preview.querySelector('[data-date-apply]')?.remove()
+            preview.querySelector('[data-cancel-date]')?.remove()
+            preview.dataset.pendingId = pendingId
+          } else preview.replaceChildren()
         }
-        message(result.status === 'pending' ? 'Awaiting authorized approval. No dates changed.' : 'Change committed. Refreshing visible values.')
+        message(result.status === 'pending' ? 'Checking the submitted request.' : 'Change committed. Refreshing visible values.')
       }
     } catch (error) { if (!ended) message(error.message) }
     finally { writing = false; if (button.isConnected) button.disabled = false }
