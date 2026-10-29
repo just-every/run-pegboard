@@ -24,3 +24,10 @@
 .work-timeline{display:grid;gap:12px}
 .work-timeline .track{height:16px;margin-block:8px}
 @media(max-width:600px){.work-view-nav a{flex:1 0 26%;text-align:center}.work-table-scroll{margin-inline:-6px}.work-columns{display:grid;gap:10px}.work-content .inline{display:grid}.work-content .button{width:100%}}
+.work-values{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px 18px;margin-block:12px}
+.work-values div{min-width:0}
+.work-values dt{font-size:13px;color:var(--grey)}
+.work-values dd{margin:4px 0 0;font-size:15px}
+.work-content[data-mode=board]{grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));align-items:start}
+.work-content[data-mode=board] .rows{gap:14px}
+.work-content[data-mode=board] .rows>li{border:1px solid var(--edge);border-radius:8px;padding:14px}

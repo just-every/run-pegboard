@@ -1087,11 +1087,11 @@
       "executable": false
     },
     "public/look/work-views.css": {
-      "sha256": "7a429670dd82c876ee6ff32461c6b9ebaca2319b773b9534592d56798fa47e2b",
+      "sha256": "e442e9caf7c46868ac98ee797588d0168ccab3c92e9d655a26a2792a817c1be2",
       "executable": false
     },
     "public/look/work-views.js": {
-      "sha256": "3f033a013a306b71ddf14ae5af26f8c2080f3485b0595d7d57476d4662d6cde7",
+      "sha256": "78dcd455f79b08fcf7de59a607ce3f620f14396fc50965904bcf5f423e448de8",
       "executable": false
     },
     "public/personal-day.js": {
@@ -3931,11 +3931,11 @@
       "executable": false
     },
     "src/pegboard/ui/work-views/page.tsx": {
-      "sha256": "525a082bab8c7bd90d9e0ef306281b69277c4e011c2321d5b76595207eed2c74",
+      "sha256": "c28518c5e29ec424de5bddd4790ea138c983302994149b0a3bab20ed93a4bb34",
       "executable": false
     },
     "src/pegboard/ui/work-views/rows.tsx": {
-      "sha256": "71d09c14dc66dcf3571fc3c1f7d32a6682c294f7cffaca03dcd5c96793927af4",
+      "sha256": "7f4af16794053461b5fde4701ecb7cdd1cd6c02495c589ebcac0d860b288d05f",
       "executable": false
     },
     "src/pegboard/ui/work-views/settings.tsx": {
@@ -3955,7 +3955,7 @@
       "executable": false
     },
     "src/pegboard/views/rows.ts": {
-      "sha256": "bd7088c7572b114f98878a9162697633a8a8b235a3476c70a673aac2d5e4602b",
+      "sha256": "5b09c64d78189aa753bbf684c06a490588c4099a9123ab17f41df2a4c9a1a88d",
       "executable": false
     },
     "src/pegboard/views/service.ts": {
@@ -4251,7 +4251,7 @@
       "executable": false
     },
     "tests/journeys/work-views.mjs": {
-      "sha256": "5bff27eaee5bdc7ff1180ed5e3af8697a11f4b2cb54408d5763cbad3cfcc68b0",
+      "sha256": "620d30829a39c7927e841eaec93dcb53c25cb6d13f2c4097becbed5142df224a",
       "executable": false
     },
     "tests/journeys/workflow-bundles.mjs": {

@@ -48,7 +48,7 @@ export function WorkViewContent({data}:{data:Data}) {
       {row.canEdit&&<DraftWarning/>}
     </div>
   </li>
-  return <section className="work-content" data-work-content data-revision={data.revision} data-schema={JSON.stringify(columns)}>
+  return <section className="work-content" data-work-content data-mode={data.config.mode} data-revision={data.revision} data-schema={JSON.stringify(columns)}>
     {data.config.mode==='table'?<Card title="Task table"><WorkTable rows={data.rows} columns={columns} availableColumns={data.availableColumns} projectId={data.project.id}/></Card>:<>
       {data.config.mode==='timeline'&&<Card title="Schedule overview"><TimelineRange rows={data.rows}/></Card>}
       {data.config.mode==='workload'&&data.workload&&<Card title="Committed workload"><p>Capacity for the same filtered work. Completed tasks stay in the task list and add no committed hours.</p>{data.workload.people.map(person=><section key={person.id}><h3>{person.name}</h3><p>{person.hours} committed h · {person.days.reduce((sum,day)=>sum+day.availableHours,0)} available h · {person.zone}</p><ul className="rows">{person.days.map(day=><li key={day.date}>{day.date} · {day.hours} h committed · {day.availableHours} h available</li>)}</ul></section>)}</Card>}

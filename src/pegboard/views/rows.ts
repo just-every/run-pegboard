@@ -59,7 +59,7 @@ export async function canonicalRows(db: D1Database, actor: Actor, owner: Actor, 
 }
 export type WorkRow = Awaited<ReturnType<typeof canonicalRows>>[number]
 export function columnValue(row: WorkRow, column: string): unknown {
-  if (column.startsWith('field:')) return row.fields.find(field => field.id === column.slice(6))?.value ?? null
+  if (column.startsWith('field:')) { const field = row.fields.find(field => field.id === column.slice(6)); return field?.error ?? field?.value ?? null }
   if (column === 'owner') return row.owner.name
   if (column === 'section') return row.section?.name ?? null
   return row[column as keyof WorkRow]

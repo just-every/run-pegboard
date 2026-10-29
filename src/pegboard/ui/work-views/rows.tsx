@@ -9,7 +9,7 @@ export const summary = (row: WorkRow) => `${row.title} · ${row.status} · ${dat
 const fence = (row: WorkRow, projectId: string) => <><input type="hidden" name="projectId" value={projectId}/><input type="hidden" name="revision" value={row.revision}/></>
 
 export function DraftWarning() {
-  return <><p data-draft-warning hidden role="alert"/><button className="button quiet" type="button" data-refresh-task>Discard draft and refresh task</button></>
+  return <><p data-draft-warning hidden role="alert"/><button className="button quiet" type="button" data-refresh-task hidden>Discard draft and refresh task</button></>
 }
 export function TaskEdit({ row, projectId }: { row: WorkRow; projectId: string }) {
   if (!row.canEdit) return null
@@ -34,5 +34,5 @@ export function CardMove({ row, projectId, sections }: { row: WorkRow; projectId
   </form>
 }
 export function DisplayColumns({ row, columns, labels }: { row: WorkRow; columns: string[]; labels: Map<string,string> }) {
-  return <dl>{columns.filter(column => column !== 'title').map(column => <div key={column}><dt>{labels.get(column)}</dt><dd>{column === 'dueDate' ? dateValue(row.dueDate) : column === 'startDate' ? dateValue(row.startDate) : textValue(columnValue(row, column))}</dd></div>)}</dl>
+  return <dl className="work-values">{columns.filter(column => column !== 'title').map(column => <div key={column}><dt>{labels.get(column)}</dt><dd>{column === 'dueDate' ? dateValue(row.dueDate) : column === 'startDate' ? dateValue(row.startDate) : textValue(columnValue(row, column))}</dd></div>)}</dl>
 }

@@ -55,7 +55,7 @@ if (root) {
     if (!response.ok) throw new Error(response.status === 409 ? 'Conflict — reviewed values changed. Your draft is retained. Refresh this task before saving again.' : 'Change refused: ' + String(result.error ?? 'unavailable').replaceAll('_', ' '))
     return result
   }
-  const dirty = event => { const row = event.target.closest('[data-work-row]'); if (row) row.dataset.dirty = '1' }
+  const dirty = event => { const row = event.target.closest('[data-work-row]'); if (row) { row.dataset.dirty = '1'; const discard = row.querySelector('[data-refresh-task]'); if (discard) discard.hidden = false } }
   root.addEventListener('focusin', event => { if (event.target.matches('input,select,textarea')) dirty(event) })
   root.addEventListener('input', dirty)
   root.addEventListener('change', dirty)

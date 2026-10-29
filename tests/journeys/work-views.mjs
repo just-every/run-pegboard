@@ -40,6 +40,10 @@ export async function workViewsJourney({w,browser,ok}) {
  try {
   // Enter from the project's ordinary public navigation and configure a reusable named view under Settings.
   await a.page.goto(path)
+  await proof('project-path',a.page)
+  await a.page.goto(`${path}/settings`)
+  await proof('project-settings',a.page)
+  await a.page.goto(path)
   await a.page.getByRole('link',{name:'Work views',exact:true}).click()
   await expect(a.page.locator('[data-work-row]')).toHaveCount(5)
   await proof('entry',a.page)
