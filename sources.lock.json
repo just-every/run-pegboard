@@ -715,7 +715,7 @@
       "executable": false
     },
     "public/capture.js": {
-      "sha256": "11c13be6061bab8a190f664498e63bf5a0d3522c790480dca92655811e7a8876",
+      "sha256": "6cc1293bbc5829f73867f03b5dfd3f817cc96be6a2e935b9baf0f10c093d0bf8",
       "executable": false
     },
     "public/docs.css": {
@@ -3259,7 +3259,7 @@
       "executable": false
     },
     "src/pegboard/capture/browser.ts": {
-      "sha256": "0eff24b7f65b870ef238fc41e4973bf6eae1fca8dde8f6cc39a2878b7f2b4564",
+      "sha256": "9c1d9534f157b7b7a8d77b31afc3226be711f8eb5571589e4f24b709ca5c33d8",
       "executable": false
     },
     "src/pegboard/connectors/calendars/edge.ts": {
@@ -3335,7 +3335,7 @@
       "executable": false
     },
     "src/pegboard/data/erasure.ts": {
-      "sha256": "5ad05d9ca1ce8e865d2bddcbc8f9dd0d4da648f849f4cefd257bf785aac7041b",
+      "sha256": "37cbeab0535d2d233f1d4f5c5b3ca71518299c596e41b5b42fa3879a841d7ab8",
       "executable": false
     },
     "src/pegboard/data/expiry.ts": {
@@ -4139,7 +4139,7 @@
       "executable": false
     },
     "tests/journeys/browser-capture.mjs": {
-      "sha256": "d69b16ae87ae31c39cf3e32a1a9169fd2aabe8c4db4297899b6874a55e813eb4",
+      "sha256": "6adbee5a4ba6bb4b43489066d11feb186631c0363740f789cb27e453a62e2972",
       "executable": false
     },
     "tests/journeys/calendar-blocks.mjs": {
@@ -4247,7 +4247,7 @@
       "executable": false
     },
     "tests/scenarios/browser-capture.mjs": {
-      "sha256": "bb9c5935a436af885f35ca440733f38aa1d03b8de533d4be4777d16263d86097",
+      "sha256": "33b8d0d747f59348cd40663309a5a1a2c37fe2c2e637c07e63b5ffcbbe719943",
       "executable": false
     },
     "tests/scenarios/calendar-blocks.mjs": {

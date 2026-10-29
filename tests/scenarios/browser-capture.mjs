@@ -24,6 +24,16 @@ export function registerBrowserCaptureTests({test,context}) {
   assert.deepEqual(task.projects.map(p=>p.id),[project.id]);assert.deepEqual(task.captureSources.map(s=>({sourceId:s.sourceId,url:s.url,capturedBy:s.capturedBy})),[{sourceId:payload.input.sourceId,url:'https://example.test/research',capturedBy:root.id}])
   assert.equal(task.history.filter(e=>e.kind==='created').length,1);assert.equal(task.history.filter(e=>e.kind==='capture.created'&&e.actor==='Wes Holloway').length,1)
   assert.equal((await ok(root.get(`/api/v1/projects/${project.id}`))).columns.flatMap(s=>s.tasks).length,1)
+  const exported=await ok(root.post('/api/portability/exports',{}),201)
+  let archive
+  for(let step=0;step<40;step++){
+   const progress=await ok(root.post(`/api/portability/exports/${exported.id}/advance`,{maxParts:16}))
+   if(progress.phase==='complete'){archive=await ok(root.get(`/api/portability/exports/${exported.id}/download`));break}
+  }
+  assert.ok(archive,'native capture archive completes')
+  const archiveText=JSON.stringify(archive)
+  assert.ok(archiveText.includes(payload.input.sourceId)&&archiveText.includes('https://example.test/research'),'native archives retain task source identity')
+  assert.ok(!archiveText.includes(payload.proof)&&!archiveText.includes(payload.input.proofHash)&&!archiveText.includes(reviewed.reviewToken),'live capture authority never travels in an archive')
   const cancelled=capturePayload(),cancel=await ok(root.post('/api/v1/captures',cancelled.input))
   await ok(root.post(`/api/v1/captures/${cancel.id}/cancel`,{}));await ok(root.post('/api/v1/captures',cancelled.input),409);await ok(root.post(`/api/v1/captures/${cancel.id}/confirm`,{proof:cancelled.proof}),409)
   const erased=await ok(root.post('/api/v1/data/erasure-preview',{type:'task',id:task.id}))
@@ -76,5 +86,13 @@ export function registerBrowserCaptureTests({test,context}) {
   assert.equal((await ok(renewed.get('/api/v1/tasks/'+privateTask.id))).personal,true)
   await ok(root.get('/api/v1/tasks/'+privateTask.id),404);await ok(outsider.get('/api/v1/tasks/'+privateTask.id),404)
   assert.deepEqual((await ok(renewed.get('/api/v1/my-tasks'))).tasks.map(t=>t.id),[privateTask.id])
+  const space=await ok(root.post('/api/v1/workspaces',{name:'Capture division'})),email=['capture-division','example.test'].join(String.fromCharCode(64))
+  const added=await ok(root.post(`/api/v1/workspaces/${space.id}/people`,{email,displayName:'Division member',role:'member'})),division=await w.signIn(email,'Division member',added.id)
+  const divisionPayload=capturePayload(),divisionIntent=await ok(division.post('/api/v1/captures',divisionPayload.input))
+  const divisionReview=await ok(division.post(`/api/v1/captures/${divisionIntent.id}/review`,{ownerId:division.id}))
+  const divisionTask=await ok(division.post(`/api/v1/captures/${divisionIntent.id}/confirm`,{reviewToken:divisionReview.reviewToken,proof:divisionPayload.proof}))
+  assert.equal((await ok(division.get('/api/v1/tasks/'+divisionTask.id))).personal,true)
+  await ok(root.get('/api/v1/tasks/'+divisionTask.id),404)
+
  })
 }

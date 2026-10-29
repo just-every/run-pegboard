@@ -94,6 +94,7 @@ export async function browserCaptureJourney({w}){
   const replay=await ok(w.owner.post('/api/v1/captures/'+intent.id+'/confirm',{reviewToken:review.reviewToken}))
   assert.equal(replay.id,taskId);assert.equal((await ok(w.owner.get(`/api/v1/projects/${project.id}`))).counts.tasks,1)
   intent=await capture();await destination(app,project,w.owner);await app.getByRole('button',{name:'Cancel capture',exact:true}).click()
+  await expect(app.getByRole('status')).toContainText('No task was created')
   assert.equal((await ok(w.owner.get(`/api/v1/projects/${project.id}`))).counts.tasks,1)
   intent=await capture();await destination(app,project,w.owner)
   await source.goto(sourceOrigin.replace('127.0.0.1','localhost')+'/different-document')

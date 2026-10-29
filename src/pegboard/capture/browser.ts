@@ -2,7 +2,7 @@ import { all, bound, conflict, first, forbidden, invalid, newId, notFound, now }
 import { digest, guarded, revision } from '../decisions/revision'
 import { openProject, need, listProjects } from '../workspace/projects'
 import { projectEffective } from '../authorization/effective'
-import { workspaceRole, type Actor } from '../workspace/people'
+import { workspacesOf, workspaceRole, type Actor } from '../workspace/people'
 import { projectParticipants } from '../tasks/participants'
 import { openTask } from '../tasks/access'
 import { prepareTask } from '../tasks/tasks'
@@ -24,6 +24,13 @@ export function safeSource(value:unknown) {
  if(!['https:','http:'].includes(url.protocol)||url.username||url.password)throw invalid('capture_source')
  url.search='';url.hash=''
  return url.href
+}
+async function currentWorkspace(db:D1Database,actor:Actor) {
+ const spaces=await workspacesOf(db,actor),workspace=spaces.includes('ws_main')?'ws_main':spaces[0]
+ if(!workspace)throw forbidden('human_capture')
+ const role=await workspaceRole(db,actor.id,workspace)
+ if(!role||role==='agent')throw forbidden('human_capture')
+ return workspace
 }
 async function own(db:D1Database,actor:Actor,session:string,id:string) {
  const intent=await first<Intent>(db,'SELECT * FROM peg_capture_intents WHERE id=? AND actor_id=? AND session_hash=?',id,actor.id,await digest(session))
@@ -52,20 +59,22 @@ export async function beginCapture(db:D1Database,actor:Actor,session:string,inpu
  const sourceId=text(input.sourceId,100,'capture_identity'),title=text(input.title,300,'capture_title'),excerpt=text(input.excerpt,12000,'capture_excerpt',true)
  const url=safeSource(input.url),proofHash=text(input.proofHash,64,'capture_proof')
  if(!/^[a-f0-9]{64}$/.test(proofHash))throw invalid('capture_proof')
- if(!await workspaceRole(db,actor.id,'ws_main'))throw forbidden('human_capture')
- if(await workspaceRole(db,actor.id,'ws_main')==='agent')throw forbidden('human_capture')
+ await currentWorkspace(db,actor)
  const payloadHash=await digest([sourceId,title,excerpt,url,proofHash]),sessionHash=await digest(session)
+ if(await first(db,"SELECT 1 FROM peg_data_erased_objects WHERE object_type='capture_source' AND object_id=?",await digest([actor.id,sourceId])))throw conflict('capture_unavailable')
  const prior=await first<Intent>(db,'SELECT * FROM peg_capture_intents WHERE actor_id=? AND source_id=?',actor.id,sourceId)
  if(prior){
   if(prior.payload_hash!==payloadHash||prior.session_hash!==sessionHash)throw conflict('capture_changed')
   return captureView(db,actor,session,prior.id)
  }
+ // Restored archives retain source identities, never a live preview or its authority.
+ if(await first(db,'SELECT 1 FROM peg_capture_sources WHERE captured_by=? AND source_id=?',actor.id,sourceId))throw conflict('capture_finished')
  const id=newId('capture'),at=now()
  await db.prepare('INSERT INTO peg_capture_intents(id,actor_id,session_hash,source_id,source_url,title,excerpt,proof_hash,payload_hash,created_at,expires_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)').bind(id,actor.id,sessionHash,sourceId,url,title,excerpt,proofHash,payloadHash,at,at+15*60*1000).run()
  return captureView(db,actor,session,id)
 }
 async function destination(db:D1Database,actor:Actor,projectId:string|null,ownerId:string) {
- if(!projectId){if(ownerId!==actor.id)throw forbidden('personal_capture_owner');return {name:'My tasks',visibility:'Private: only you',workspace:'ws_main'}}
+ if(!projectId){if(ownerId!==actor.id)throw forbidden('personal_capture_owner');return {name:'My tasks',visibility:'Private: only you',workspace:await currentWorkspace(db,actor)}}
  const {project,effective}=await openProject(db,actor,projectId);need(effective,'edit')
  const role=await workspaceRole(db,ownerId,project.workspace_id)
  if(!role||role==='agent')throw forbidden('capture_owner')
@@ -97,8 +106,8 @@ export async function confirmCapture(db:D1Database,actor:Actor,session:string,id
  }
  if(!intent.owner_id||!intent.review_token||input.reviewToken!==intent.review_token||intent.review_revision!==rev.value)throw conflict('capture_review_changed')
  if(typeof input.proof!=='string'||await digest(input.proof)!==intent.proof_hash)throw forbidden('capture_source_permission')
- await destination(db,actor,intent.project_id,intent.owner_id)
- const task=await prepareTask(db,actor,{title:intent.title,description:intent.excerpt,ownerId:intent.owner_id,...(intent.project_id?{projectId:intent.project_id}:{})},{queueRules:false})
+ const target=await destination(db,actor,intent.project_id,intent.owner_id)
+ const task=await prepareTask(db,actor,{workspaceId:target.workspace,title:intent.title,description:intent.excerpt,ownerId:intent.owner_id,...(intent.project_id?{projectId:intent.project_id}:{})},{queueRules:false})
  try {
   await guarded(db,rev,[bound(db,'INSERT INTO peg_capture_guards VALUES(?,?)',[id,intent.review_token]),...task.statements,
    bound(db,'INSERT INTO peg_capture_sources VALUES(?,?,?,?,?,?)',[task.id,intent.id,intent.source_id,intent.source_url,actor.id,now()]),
