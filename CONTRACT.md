@@ -296,8 +296,8 @@ PEG-018 candidate provenance: native reporting is judged from the code and publi
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
 | Published | 1 | 0 | 0 | 1 |
-| Target and push further | 20 | 15 | 55 | 90 |
-| All | 21 | 15 | 55 | 91 |
+| Target and push further | 20 | 16 | 54 | 90 |
+| All | 21 | 16 | 54 | 91 |
 
 | Clause | Title | Kind | Status | Evidence | Gap |
 | --- | --- | --- | --- | --- | --- |
