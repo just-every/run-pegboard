@@ -1,3 +1,5 @@
+import { credentialReview } from '../public-api/credentials'
+import { lifecycleReview } from './lifecycle'
 // The access review: every current grant with who gave it and how, the people, the requests and the audit, for the
 // workspace's administrators, plus the granting paths that explain one person's standing on one object.
 import { all, batch, bound, forbidden, notFound, now } from '../db'
@@ -27,6 +29,8 @@ export async function accessReview(db: D1Database, actor: Actor, workspaceId: st
   const named = (id: string | null) => id ? people.get(id) ?? 'Former member' : 'System'
   const objectName = (type: string, id: string) => type === 'team' ? teams.get(id) ?? id : type === 'project' ? projects.get(id) ?? id : type === 'portfolio' ? portfolios.get(id) ?? id : id
   return {
+    lifecycle: await lifecycleReview(db, actor, workspaceId),
+    nativeCredentials: await credentialReview(db, actor, workspaceId),
     portfolioMemberships: memberships.map(row => ({ portfolioId: row.portfolio_id, portfolio: portfolios.get(row.portfolio_id) ?? row.portfolio_id, operatorId: row.operator_id, member: named(row.operator_id), level: row.level, by: named(row.added_by), at: row.added_at, requestId: row.request_id })),
     grants: grants.map(grant => ({ id: grant.id, objectType: grant.object_type, objectId: grant.object_id, object: objectName(grant.object_type, grant.object_id), grantee: grant.grantee_type === 'person' ? named(grant.grantee_id) : `Team ${teams.get(grant.grantee_id) ?? grant.grantee_id}`, granteeType: grant.grantee_type, granteeId: grant.grantee_id, level: grant.level, scope: grant.scope, source: grant.source, requestId: grant.request_id, by: named(grant.created_by), at: grant.created_at })),
     requests: (await all<{ id: string; status: string; requester_id: string; target_type: string; target_id: string; level: string; granted_level: string | null; decided_by: string | null; created_at: number; decided_at: number | null }>(db, 'SELECT id,status,requester_id,target_type,target_id,level,granted_level,decided_by,created_at,decided_at FROM peg_access_requests WHERE workspace_id=? ORDER BY created_at DESC LIMIT 100', workspaceId))

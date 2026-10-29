@@ -96,6 +96,7 @@ export function translate(error: unknown): unknown {
   // Base's own account refusals (its policy and last-owner guard) keep their status and code.
   if (error instanceof Error && error.name === 'AuthError') { const { code, status } = error as Error & { code: string; status: number }; return new PegError(status, code) }
   if (error instanceof Error && /goal_owner_transfer_required/.test(error.message)) return new PegError(409, 'goal_owner_transfer_required')
+  if (error instanceof Error && /identity_erased/.test(error.message)) return new PegError(409, 'identity_erased')
   if (error instanceof Error && /last_owner/.test(error.message)) return new PegError(409, 'last_owner')
   return error
 }

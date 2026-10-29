@@ -1,0 +1,66 @@
+import assert from 'node:assert/strict'
+import { mkdir } from 'node:fs/promises'
+import { join } from 'node:path'
+import { expect } from '@playwright/test'
+import { identityFixture, identityOk as ok } from '../scenarios/identity-lifecycle.mjs'
+
+export async function identityLifecycleJourney({ w, browser }) {
+  const f = await identityFixture(w)
+  const context = await browser.newContext({ viewport: { width: 1440, height: 900 } })
+  await context.addCookies(f.owner.cookie.split('; ').map(pair => ({ name: pair.slice(0, pair.indexOf('=')), value: pair.slice(pair.indexOf('=') + 1), url: w.origin })))
+  const page = await context.newPage()
+  const proof = async name => {
+    // The flow asserts at 1440. Both release widths show the same state, without another registration.
+    if (!process.env.PEGBOARD_PROOF_DIR) return
+    await mkdir(process.env.PEGBOARD_PROOF_DIR, { recursive: true })
+    for (const [width, height] of [[1440, 900], [390, 844]]) {
+      await page.setViewportSize({ width, height })
+      assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${name} fits at ${width}`)
+      await page.screenshot({ path: join(process.env.PEGBOARD_PROOF_DIR, `identity-${name}-${width}.png`), fullPage: true })
+    }
+    await page.setViewportSize({ width: 1440, height: 900 })
+  }
+  const personRow = () => page.locator('.rows > li').filter({ has: page.getByText('Lifecycle member', { exact: true }) })
+  try {
+    await page.goto(w.origin + '/app/admin')
+    await personRow().getByRole('link', { name: 'Review deactivation', exact: true }).click()
+    await expect(page.getByRole('heading', { name: 'Review deactivation', exact: true })).toBeVisible()
+    assert.ok(!(await page.locator('main').innerText()).includes('Private lifecycle'))
+    const form = () => page.getByRole('form', { name: 'Confirm account status' })
+    assert.equal(await form().getByRole('checkbox').isChecked(), false)
+    await proof('deactivation-review')
+    await form().getByRole('button', { name: 'Deactivate account', exact: true }).click()
+    await expect(page.locator('main')).toContainText('confirm_lifecycle')
+    await ok(f.member.get(`/api/v1/tasks/${f.task.id}`))
+    await page.goto(w.origin + `/app/admin?person=${f.member.id}&status=inactive`)
+    await form().getByRole('checkbox').check()
+    await form().getByRole('button', { name: 'Deactivate account', exact: true }).click()
+    await page.waitForURL(w.origin + '/app/admin')
+    await expect(personRow()).toContainText('inactive')
+    await ok(f.member.get('/api/v1/me'), 401)
+    await proof('inactive')
+    await personRow().getByRole('link', { name: 'Review reactivation', exact: true }).click()
+    await expect(page.getByRole('heading', { name: 'Review reactivation', exact: true })).toBeVisible()
+    await expect(page.locator('main')).toContainText('Old sessions, credentials, proof links, personal rules and prior pending decision authority stay invalid')
+    await proof('reactivation-review')
+    await form().getByRole('checkbox').check()
+    await form().getByRole('button', { name: 'Reactivate account', exact: true }).click()
+    await page.waitForURL(w.origin + '/app/admin')
+    await ok(f.member.get('/api/v1/me'), 401)
+    for (const transport of ['rest', 'mcp']) await ok(f.bearer(f.key.secret, transport), 401)
+    const renewed = await w.signIn(f.member.email, f.member.name, f.member.id)
+    await ok(renewed.get(`/api/v1/proof-reviews/${f.link.id}`), 404)
+    assert.deepEqual((await ok(renewed.get('/api/v1/my-tasks'))).rules, [])
+    await page.goto(w.origin + '/app/access-review')
+    await expect(page.getByRole('list', { name: 'Account lifecycle' })).toContainText(f.member.id)
+    await expect(page.getByRole('list', { name: 'Access requests' })).toContainText('stale')
+    await expect(page.getByRole('link', { name: 'Download access review', exact: true })).toHaveAttribute('href', '/api/v1/admin/access-review/download')
+    const download = await page.request.get(w.origin + '/api/v1/admin/access-review/download')
+    assert.equal(download.status(), 200)
+    const report = await download.text()
+    for (const secret of [f.key.secret, f.link.id, 'token_hash', 'Private lifecycle work', 'Private lifecycle section']) assert.ok(!report.includes(secret))
+    await proof('access-review')
+    assert.equal(await page.locator('button,a').evaluateAll(elements => elements.filter(el => !el.textContent.trim() && el.querySelector('svg,img') && !el.getAttribute('aria-label')).length), 0, 'all icon controls have accessible labels')
+    console.log('Native identity review, cancellation, reactivation and redacted download passed; changed screens shown at 1440 and 390')
+  } finally { await context.close() }
+}
