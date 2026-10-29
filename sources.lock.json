@@ -622,6 +622,10 @@
       "sha256": "a7e27df3438c7ee56a3bd0c59536b54fe60ad2f078180b953ed44cd3fb2d723c",
       "executable": false
     },
+    "migrations/core/0073_native_reporting.sql": {
+      "sha256": "291c5db30beeccd2ba366bb39006df6986de93e17d2e460a24d149e9cdc5f1ed",
+      "executable": false
+    },
     "ONBOARDING.md": {
       "sha256": "24b685d6eddeae5480ce4dfbf44c0590e54bcfe83641373de5bba985765380bd",
       "executable": false
@@ -3031,7 +3035,7 @@
       "executable": false
     },
     "src/pegboard/api/index.ts": {
-      "sha256": "9f18711ba70071ed81b1f15c9f20616cddcd3bc5090ba3ae8b103489871bf86a",
+      "sha256": "4ddcd11d38df0d7abb9b2daf8b0eb27d923bd036fc300c9ee5600b4d54bb6546",
       "executable": false
     },
     "src/pegboard/api/meeting-routes.ts": {
@@ -3064,6 +3068,10 @@
     },
     "src/pegboard/api/register-routes.ts": {
       "sha256": "68a1b664162693763d9ad5570ca143a03246701d18a95311f527b9f4ded832da",
+      "executable": false
+    },
+    "src/pegboard/api/reporting-routes.ts": {
+      "sha256": "5c12205c91019950da41baa1f003d6f99d85597bfe5faeb4d50f7ea42014d406",
       "executable": false
     },
     "src/pegboard/api/rule-routes.ts": {
@@ -3387,7 +3395,7 @@
       "executable": false
     },
     "src/pegboard/portability/policy.mjs": {
-      "sha256": "cd227f74eff8c47911cdc9a091f55cbc83e2a07b7eadad3b070aaad638657d6d",
+      "sha256": "92e8b318656a5e232fa85f152070e07da52e7990c48a94ffd583b2060c1fcd7f",
       "executable": false
     },
     "src/pegboard/portfolios/portfolios.ts": {
@@ -3468,6 +3476,18 @@
     },
     "src/pegboard/register/records.ts": {
       "sha256": "7f156db1666330d41781beacb259bc519313ec471c9ca43c46060d0d60e729bd",
+      "executable": false
+    },
+    "src/pegboard/reporting/dashboard.ts": {
+      "sha256": "1490a339597db3535002c60213e6443883b8846b6bd84576d3180c16369036cd",
+      "executable": false
+    },
+    "src/pegboard/reporting/definition.ts": {
+      "sha256": "63abb1781e695c626ac922ef035799c3a3402815990076b75ac4690bd428d3df",
+      "executable": false
+    },
+    "src/pegboard/reporting/exports.ts": {
+      "sha256": "980b261869a3a41d73cb4a8f69e5518f5391cb1cd7a77a32759f03130fb8dfe8",
       "executable": false
     },
     "src/pegboard/revisions/briefs.ts": {
