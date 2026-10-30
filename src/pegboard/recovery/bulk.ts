@@ -34,7 +34,7 @@ async function subject(db:D1Database,actor:Actor,workspace:string,id:string,writ
  }
  return {task,access}
 }
-function parse(input:BulkInput) {
+export function parseBulk(input:BulkInput) {
  if(!input||!Array.isArray(input.taskIds)||!input.taskIds.length||input.taskIds.length>50||input.taskIds.some(id=>typeof id!=='string'||!id||id.length>100))throw invalid('bulk_tasks')
  if(!input.patch||typeof input.patch!=='object'||Array.isArray(input.patch)||Object.keys(input.patch).some(key=>!Object.prototype.hasOwnProperty.call(fields,key)))throw invalid('bulk_patch')
  const patch:Partial<Record<Field,Value>>={}
@@ -75,7 +75,7 @@ const dependency=(db:D1Database,id:string)=>first(db,'SELECT 1 FROM peg_dependen
 export async function bulkPreview(db:D1Database,actor:Actor,workspace:string,input:BulkInput,schedule?:RuleScheduleEffects) {
  const rev=await revision(db)
  await human(db,actor,workspace)
- const {taskIds,patch}=parse(input),tasks: {id:string;title:string;effects:Effect[];reopensApproval:boolean}[]=[],conflicts:UndoConflict[]=[]
+ const {taskIds,patch}=parseBulk(input),tasks: {id:string;title:string;effects:Effect[];reopensApproval:boolean}[]=[],conflicts:UndoConflict[]=[]
  if(schedule&&(!isRuleScheduleEffects(schedule)||schedule.workspace!==workspace||schedule.actorId!==actor.id||taskIds.length!==1||taskIds[0]!==schedule.taskId))throw invalid('rule_schedule_validation')
  const selected=schedule?[...new Set([...taskIds,...schedule.changes.map(c=>c.taskId)])].sort():taskIds
  for(const id of selected){

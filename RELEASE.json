@@ -169,6 +169,10 @@
     {
       "id": "0071_blind_project_requests.sql",
       "buyerSteps": "Apply migrations/core/0071_blind_project_requests.sql after the existing migrations, including 0070_analytics_portfolio_revision.sql. Preserve all previously applied migration names and bytes. This adds durable blind project-request intake without replaying it from archives."
+    },
+    {
+      "id": "0082_search_and_bulk_selection.sql",
+      "buyerSteps": "Apply migrations/core/0082_search_and_bulk_selection.sql after 0081_rule_audit_correlations.sql and all existing migrations. Preserve previously applied migration names and bytes. This adds private saved search filters and reviewed bulk-selection receipts."
     }
   ],
   "breaking": false,
