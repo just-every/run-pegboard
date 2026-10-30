@@ -99,8 +99,8 @@ export async function applyBlock(env: Bindings, db: D1Database, actor: Actor, id
 async function blockFor(db: D1Database, actor: Actor, id: string) {
  const block = await first<Block>(db, 'SELECT * FROM peg_calendar_blocks WHERE id=?', id)
  if (!block) throw invalid('calendar_block')
- if (block.restored_inactive) throw conflict('calendar_archive_history')
  const connection = await connectionFor(db, actor, block.connection_id), task = await work(db, actor, block.task_id, connection)
+ if (block.restored_inactive) throw conflict('calendar_archive_history')
  return { block, connection, task }
 }
 export async function syncBlock(env: Bindings, db: D1Database, actor: Actor, id: string, input: Record<string, any>) {

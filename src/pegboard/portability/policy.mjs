@@ -1,6 +1,27 @@
 // One policy for native CLI and the HTTP archive doors. No active source-installation authority travels.
 const revoked=1
-const importSafety={peg_local_rule_runs:{status:['pending'],activation_id:[null],outcome:['restored_inactive']},peg_template_rule_runs:{status:['pending'],activation_id:[null],outcome:['restored_inactive']},peg_calendar_connections:{active:[0],restored_inactive:[1]},peg_calendar_blocks:{restored_inactive:[1]},peg_access_requests:{status:['stale'],expires_at:[0]},peg_capacity_feeds:{active:[0],fetched_at:[null]},peg_local_rules:{enabled:[0],activation_id:[null],activated_by:[null]},peg_approval_routes:{withdrawn_at:[revoked]},peg_approval_links:{revoked_at:[revoked]},peg_status_rights_requests:{handler_until:[0]},peg_template_rules:{enabled:[0],activation_id:[null]},peg_bundle_adoptions:{enabled:[0]},peg_bundle_jobs:{status:['cancelled'],finished_at:[1]},peg_meetings:{revoked_at:[revoked],segments:['[]']},peg_meeting_proposals:{title:[''],owner_id:[null],due_date:[null],date_resolved:[0]},peg_engineering_links:{revoked_at:[revoked],source_status:[null],source_owner:[null],mapped_owner:[null],source_version:[null],indicator:[null],pending_status:[null],state:['stale'],cause:['restored_inactive']},peg_recurrences:{active:[0],held:[1]},peg_grants:{revoked_at:[revoked]},peg_goal_sources:{token_hash:[null],ended_at:[revoked],ended_cause:['restored_inactive']},peg_processor_policies:{approved:[0],sharing:[0],training:[0]}}
+const importSafety={
+ peg_local_rule_runs:{status:['pending'],activation_id:[null],outcome:['restored_inactive']},
+ peg_template_rule_runs:{status:['pending'],activation_id:[null],outcome:['restored_inactive']},
+ peg_calendar_connections:{active:[0],restored_inactive:[1]},
+ peg_calendar_blocks:{restored_inactive:[1]},
+ peg_access_requests:{status:['stale'],expires_at:[0]},
+ peg_capacity_feeds:{active:[0],fetched_at:[null]},
+ peg_local_rules:{enabled:[0],activation_id:[null],activated_by:[null]},
+ peg_approval_routes:{withdrawn_at:[revoked]},
+ peg_approval_links:{revoked_at:[revoked]},
+ peg_status_rights_requests:{handler_until:[0]},
+ peg_template_rules:{enabled:[0],activation_id:[null]},
+ peg_bundle_adoptions:{enabled:[0]},
+ peg_bundle_jobs:{status:['cancelled'],finished_at:[1]},
+ peg_meetings:{revoked_at:[revoked],segments:['[]']},
+ peg_meeting_proposals:{title:[''],owner_id:[null],due_date:[null],date_resolved:[0]},
+ peg_engineering_links:{revoked_at:[revoked],source_status:[null],source_owner:[null],mapped_owner:[null],source_version:[null],indicator:[null],pending_status:[null],state:['stale'],cause:['restored_inactive']},
+ peg_recurrences:{active:[0],held:[1]},
+ peg_grants:{revoked_at:[revoked]},
+ peg_goal_sources:{token_hash:[null],ended_at:[revoked],ended_cause:['restored_inactive']},
+ peg_processor_policies:{approved:[0],sharing:[0],training:[0]}
+}
 export default {
  product:'runeditrun/foundation',
  includeTables:['oa_operators','oa_bootstrap','oa_external_identities','oa_invitation_cancellations','oa_auth_settings','oa_auth_audit','oa_domain_rules','oa_logout_events','oc_owner_claims','oc_idp_grants'],
@@ -37,8 +58,8 @@ export default {
  exportRow(table,row){return inactiveRow(table,row)},
 }
 
-// Both transfer directions apply the same deterministic floor, including archives
-// created before these inactive-state rules were introduced.
+// Both transfer directions apply the same deterministic floor. Compatible staged
+// rows never get to choose their own source execution authority.
 function inactiveRow(table,row){
  if(table==='peg_access_requests')return row.status==='pending'?{...row,status:'stale',expires_at:0}:row
  if((table==='peg_local_rule_runs'||table==='peg_template_rule_runs')&&row.status==='queued')return {...row,status:'pending',activation_id:null,outcome:'restored_inactive'}

@@ -117,3 +117,30 @@ product intake/import replay, live R2 qualification and autonomous agent executi
 remain explicit acceptance gaps. PEG-057/059/065 stay partial while the adopted
 owner-only review, hold precedence, retained-history and processor defaults await
 CT disposition.
+
+### Current database archive coverage
+
+[Archive store inventory](./ARCHIVE-STORES.md) names every current migrated store,
+its retained data, inactive transformation or explicit exclusion. The archive
+manifest independently declares its actual table counts and source identity.
+Owner-only Data settings can create an archive, resume it after restart, inspect
+progress and content digest, download completed data or discard transfer staging.
+These downloads include private personal work; keep them private.
+
+Calendar connection and task-event mappings now travel without credentials.
+Connections restore inactive and every restored block remains historical even
+following fresh connection consent. Old preview, sync and delete operations
+cannot resume provider writes. A new reservation uses a new reviewed operation;
+no existing provider event is automatically adopted or removed. Login tokens
+are excluded, pending access requests become stale, and pending bundle jobs are
+cancelled. Human decisions and notification receipts remain historical records.
+
+Restore preserves the original owner identity. An already claimed installation
+is not an eligible empty destination; use native CLI restore before owner claim
+and establish fresh native sign-in configuration. The HTTP archive API uses the
+same policy and refuses an occupied destination rather than replacing its owner.
+The database journey covers retained PDF originals and two proof-version links;
+it does not establish PEG-082's R2, exact-limit or migrated byte-custody claims.
+PEG-084's suppression, authenticated-sender and explicit send reauthorization
+qualification remain pending under its account dependencies. Future product
+import, agent and connector stores inherit the same archive obligation.

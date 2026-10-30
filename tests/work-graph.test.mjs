@@ -1,3 +1,4 @@
+import {registerArchiveCustodyTests} from './scenarios/archive-custody.mjs'
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs'
 import { reportingScenario } from './scenarios/reporting.mjs'
 import { analystDatasetScenario } from './scenarios/analytics.mjs'
@@ -2430,4 +2431,17 @@ with zipfile.ZipFile(sys.argv[1]) as z:
    await parsed.destroy()
   } finally {await rm(scratch,{recursive:true,force:true})}
  },{timeout:180000})
+})
+
+// One end-to-end custody journey, with a larger fixed installation run separately.
+describe('Data custody archive round trip', {concurrency:false},()=>{
+ let worker,services,mail,mailCalls=0,mailOrigin
+ before(async()=>{
+  services=await startCalendarServices()
+  mail=createMailServer(async(req,res)=>{for await(const chunk of req){}mailCalls++;res.writeHead(200,{'content-type':'application/json'});res.end(JSON.stringify({id:'synthetic-pegboard-5899'}))})
+  await new Promise(resolve=>mail.listen(0,'127.0.0.1',resolve));mailOrigin='http://127.0.0.1:'+mail.address().port
+  worker=await startWorker({settings:{PEGBOARD_LOCAL_CALENDAR_ORIGINS:services.origins,PEGBOARD_LOCAL_APPROVAL_MAIL_ORIGIN:mailOrigin}})
+ },{timeout:120000})
+ after(async()=>{await worker?.stop();await services?.stop();if(mail)await new Promise(resolve=>mail.close(resolve))})
+ registerArchiveCustodyTests({test:it,context:()=>({w:worker,services,mailOrigin,mailCalls:()=>mailCalls})})
 })

@@ -1,3 +1,4 @@
+import {archiveCustodyJourney} from './archive-custody.mjs'
 import {reportingJourney} from './reporting.mjs'
 import {accessPrivacyJourney} from './access-privacy.mjs'
 import {accessDiscoveryJourney} from './access-discovery.mjs'
@@ -27,7 +28,7 @@ import { planningCanvasJourney } from './planning-canvas.mjs'
 import { portfolioJourney } from './portfolios.mjs'
 import { timelineJourney } from './timeline.mjs'
 
-const journeyNames = ["reporting", "access-privacy", "access-discovery", "analytics", "calendar-blocks", "capacity", "public-api", "approval-routing", "guests", "core", "recurrence", "approvals", "time-packets", "goals", "engineering", "meetings", "custody", "recovery", "departure", "canvas", "portfolio", "timeline", "register", "bundles"]
+const journeyNames = ["archive-custody", "reporting", "access-privacy", "access-discovery", "analytics", "calendar-blocks", "capacity", "public-api", "approval-routing", "guests", "core", "recurrence", "approvals", "time-packets", "goals", "engineering", "meetings", "custody", "recovery", "departure", "canvas", "portfolio", "timeline", "register", "bundles"]
 const selected = new Set(process.env.PEGBOARD_JOURNEY === undefined ? journeyNames : process.env.PEGBOARD_JOURNEY.split(',').map(name => name.trim()))
 for (const name of selected) if (!journeyNames.includes(name)) throw new Error(`Unknown PEGBOARD_JOURNEY: ${name}`)
 
@@ -917,6 +918,7 @@ try {
     const download=await page.request.get(w.origin+await page.getByRole('link',{name:'Export this page as JSON'}).getAttribute('href'));assert.equal(download.status(),200);assert.ok((await download.json()).events.every(e=>e.target_id===p.id))
     await context.close();console.log(`Data custody at ${size}px passed`)
   }
+  if(await select('archive-custody'))await archiveCustodyJourney({w,browser,ok,services:calendarServices})
   if(await select('recovery'))await recoveryJourney({w,browser,sizes,ok})
   if(await select('departure'))await memberRemovalJourney({w,browser,sizes,ok})
   if(await select('canvas'))await planningCanvasJourney({w,browser,sizes,ok})
