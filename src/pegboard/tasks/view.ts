@@ -51,8 +51,8 @@ export async function viewTask(db: D1Database, actor: Actor, idOrRef: string) {
     deliveryRecords:(await Promise.all(projects.filter(p=>access.contexts.get(p.id)!.paths.some(path=>path.scope!=='assignee'&&path.capabilities.includes('read'))).map(async p=>(await registerView(db,actor,p.id)).records.filter(r=>r.task_id===task.id).map(r=>({id:r.id,title:r.title,link:`/app/projects/${p.id}/register#${r.id}`}))))).flat(),
     mentionChoices,tags:await taskTags(db,actor,task.id), capabilities: [...access.capabilities], level: access.level, projects, subtasks,
     meetingCitations: await all<{meetingId:string;segmentIndex:number}>(db,`SELECT m.id AS meetingId,p.segment_index AS segmentIndex FROM peg_meeting_proposals p JOIN peg_meetings m ON m.id=p.meeting_id JOIN oa_operators o ON o.id=m.created_by WHERE p.task_id=? AND m.created_by=? AND m.revoked_at IS NULL AND o.status='active' AND o.role IN ('owner','admin')`,task.id,actor.id),
-    history: visibleHistory.filter(entry => internal || (!entry.kind.startsWith('internal.') && !(entry.kind === 'comment.added' && entry.project_id === null))).map(entry => ({ id: entry.id, at: entry.at, actor: name(entry.actor_id), kind: entry.kind, projectId: entry.project_id, detail: entry.kind==='fields.changed'?{}:shareHistory(entry.detail, readable) })),
-    comments: comments.map(comment => ({ id: comment.id, author: name(comment.author_id), body: comment.body, at: comment.created_at })),
+    history: visibleHistory.filter(entry => internal || (!entry.kind.startsWith('internal.') && !(entry.kind === 'comment.added' && entry.project_id === null))).map(entry => ({ id: entry.id, at: entry.at, actor: (entry.detail.preparedBy as Actor['preparedBy'])?.label ?? name(entry.actor_id), kind: entry.kind, projectId: entry.project_id, detail: entry.kind==='fields.changed'?{}:shareHistory(entry.detail, readable) })),
+    comments: comments.map(comment => ({ id: comment.id, author: (history.find(entry => entry.detail.commentId === comment.id)?.detail.preparedBy as Actor['preparedBy'])?.label ?? name(comment.author_id), body: comment.body, at: comment.created_at })),
     attachments: files.filter(file => file.project_id === null ? task.owner_id === actor.id : readable.has(file.project_id)).map(file => ({ id: file.id, projectId: file.project_id, name: file.name, contentType: file.content_type, size: file.size, by: name(file.created_by), at: file.created_at })),
     createdAt: task.created_at, updatedAt: task.updated_at, completedAt: task.completed_at,
   }
@@ -72,7 +72,7 @@ export async function addComment(db: D1Database, actor: Actor, idOrRef: string, 
   if (typeof body !== 'string' || !body.trim() || body.length > 10000) throw invalid('body')
   const via = [...access.contexts].filter(([, effective]) => effective.capabilities.has('comment')).sort((a, b) => b[1].paths.length - a[1].paths.length)[0]?.[0] ?? null
   const id = newId('cmt')
-  const statements = [reopenGuard(db,task.id,actor.id,'comment'),bound(db, 'INSERT INTO peg_comments(id,task_id,project_id,author_id,body,created_at,internal_only) VALUES (?,?,?,?,?,?,?)', [id, task.id, via, actor.id, body.trim(), now(), internalOnly ? 1 : 0]), historyStatement(db, task.id, via, actor.id, internalOnly ? 'internal.comment.added' : 'comment.added', {})]
+  const statements = [reopenGuard(db,task.id,actor.id,'comment'),bound(db, 'INSERT INTO peg_comments(id,task_id,project_id,author_id,body,created_at,internal_only) VALUES (?,?,?,?,?,?,?)', [id, task.id, via, actor.id, body.trim(), now(), internalOnly ? 1 : 0]), historyStatement(db, task.id, via, actor.id, internalOnly ? 'internal.comment.added' : 'comment.added', { commentId: id, ...(actor.preparedBy ? {preparedBy: actor.preparedBy} : {}) })]
   if (fence) await guarded(db, fence, statements); else await batch(db, statements)
   return { id }
 }

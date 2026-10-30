@@ -114,6 +114,15 @@
       "commands": [
         "pnpm run test:conversions"
       ]
+    },
+    {
+      "name": "agent-door",
+      "browser": true,
+      "hosted": false,
+      "commands": [
+        "pnpm run build",
+        "node node_modules/@runeditrun/rer/cli/agent-door.mjs . deploy.json"
+      ]
     }
   ],
   "nightly": []

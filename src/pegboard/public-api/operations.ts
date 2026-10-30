@@ -11,14 +11,14 @@ import { readableTasks, rollup, myTasks } from '../tasks/board'
 import type { Actor } from '../workspace/people'
 import type { ApiKey } from './credentials'
 
-export interface Access { key: ApiKey; actor: Actor }
+export interface Access { key: ApiKey | null; actor: Actor }
 const projectScope = async (db: D1Database, access: Access, id: string) => {
- if (!(JSON.parse(access.key.projects) as string[]).includes(id)) throw notFound()
+ if (access.key && !(JSON.parse(access.key.projects) as string[]).includes(id)) throw notFound()
  return openProject(db, access.actor, id)
 }
 async function taskScope(db: D1Database, access: Access, id: string) {
  const opened = await openTask(db, access.actor, id)
- if (opened.access.personal ? !access.key.personal : ![...opened.access.contexts.keys()].some(id => JSON.parse(access.key.projects).includes(id))) throw notFound()
+ if (access.key && (opened.access.personal ? !access.key.personal : ![...opened.access.contexts.keys()].some(id => JSON.parse(access.key!.projects).includes(id)))) throw notFound()
  return opened
 }
 async function readTask(db: D1Database, access: Access, id: string) {
@@ -26,16 +26,17 @@ async function readTask(db: D1Database, access: Access, id: string) {
  const rev = await revision(db)
  const task = await viewTask(db, access.actor, id)
  // Restrict project-specific fields and history even when the sponsor has a broader human grant.
- const projects: string[] = JSON.parse(access.key.projects), visible = new Set(projects)
+ const projects: string[] = access.key ? JSON.parse(access.key.projects) : task.projects.map(p => p.id), visible = new Set(projects)
  return { ...task, projects: task.projects.filter(p => visible.has(p.id)),
   history: task.history.filter(h => !h.projectId || visible.has(h.projectId)),
   attachments: task.attachments.filter(a => !a.projectId || visible.has(a.projectId)),
   revision: await digest([task.id, rev]) }
 }
-const writable = (access: Access) => { if (!access.key.writable) throw forbidden('read_only_key') }
+const writable = (access: Access) => { if (access.key && !access.key.writable) throw forbidden('read_only_key') }
 const canonical = (value: any): any => Array.isArray(value) ? value.map(canonical) : value && typeof value === 'object' ? Object.fromEntries(Object.keys(value).sort().map(key => [key, canonical(value[key])])) : value
 const intent = (input: Record<string, any>) => { if (typeof input.intent !== 'string' || !/^[\w.-]{1,120}$/.test(input.intent)) throw invalid('idempotency_key_required'); return input.intent }
 async function once(db: D1Database, access: Access, name: string, input: Record<string, any>, perform: () => Promise<unknown>) {
+ if (!access.key) return perform()
  const id = intent(input), fingerprint = await digest(canonical([name, input]))
  const existing = await first<{ fingerprint: string; response: string | null }>(db, 'SELECT fingerprint,response FROM peg_api_intents WHERE key_id=? AND intent=?', access.key.id, id)
  if (existing) {
@@ -57,9 +58,9 @@ async function signature(secret: string, value: unknown) {
  return [...new Uint8Array(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(JSON.stringify(value))))].map(n => n.toString(16).padStart(2, '0')).join('')
 }
 async function personalReview(db: D1Database, access: Access) {
- if (!access.key.personal) throw notFound()
+ if (access.key && !access.key.personal) throw notFound()
  const fence = await revision(db), rows = await sections(db, access.actor)
- return { fence: {...fence, apiKeyId: access.key.id}, value: { sections: rows, revision: await digest([access.actor.id, fence, rows]) } }
+ return { fence: {...fence, apiKeyId: access.key?.id}, value: { sections: rows, revision: await digest([access.actor.id, fence, rows]) } }
 }
 export async function execute(db: D1Database, access: Access, name: string, input: Record<string, any>) {
  const problem = validateTool(name,input)
@@ -70,10 +71,10 @@ export async function execute(db: D1Database, access: Access, name: string, inpu
  if (name === 'task_create') {
   writable(access)
   if (input.projectId) need((await projectScope(db, access, input.projectId)).effective,'edit')
-  else if (!key.personal) throw notFound()
+  else if (key && !key.personal) throw notFound()
   if (!['task', 'approval', undefined].includes(input.kind)) throw invalid('kind')
   return once(db, access, name, input, async () => {
-   const rev = {...await revision(db),apiKeyId:key.id}
+   const rev = {...await revision(db),apiKeyId:key?.id}
    const created = await prepareTask(db, actor, { title: input.title, description: input.description, projectId: input.projectId, estimateHours: input.estimateHours, kind: input.kind })
    await guarded(db, rev, created.statements)
    if (created.projectId) await processTemplateRuleRuns(db, created.projectId)
@@ -85,7 +86,7 @@ export async function execute(db: D1Database, access: Access, name: string, inpu
   const opened = await taskScope(db, access, String(input.taskId))
   require(opened.access,name === 'task_comment' ? 'comment' : 'edit')
   return once(db, access, name, input, async () => {
-   const fence = {...await revision(db),apiKeyId:key.id}
+   const fence = {...await revision(db),apiKeyId:key?.id}
    if (name === 'task_comment') return addComment(db, actor, input.taskId, input.body, false, fence)
    const current = await readTask(db, access, input.taskId)
    if (input.revision !== current.revision) throw conflict('task_revision_changed')
@@ -108,7 +109,7 @@ export async function execute(db: D1Database, access: Access, name: string, inpu
  if (name === 'personal_sections') return (await personalReview(db, access)).value
  if (name === 'personal_section_save' || name === 'personal_task_place') {
   writable(access)
-  if (!key.personal) throw notFound()
+  if (key && !key.personal) throw notFound()
   if (name === 'personal_section_save' && input.id && !(await sections(db, actor)).some(row => row.id === input.id)) throw notFound()
   if (name === 'personal_task_place' && !(await taskScope(db, access, input.taskId)).access.personal) throw notFound()
   return once(db, access, name, input, async () => {
@@ -120,10 +121,11 @@ export async function execute(db: D1Database, access: Access, name: string, inpu
   })
  }
  if (name === 'personal_tasks') {
-  if (!key.personal) throw notFound()
+  if (key && !key.personal) throw notFound()
   return { tasks: (await myTasks(db, actor)).filter(t => t.personal) }
  }
  if (name === 'events_list') {
+  if (!key) throw forbidden('native_client_required')
   const limit = Number(input.limit ?? 50)
   if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100) throw invalid('event_page')
   const cursor = input.cursor ? await first<{after_id:number}>(db,'SELECT after_id FROM peg_api_cursors WHERE id=? AND key_id=?',String(input.cursor),key.id) : {after_id:0}
@@ -147,6 +149,7 @@ export async function execute(db: D1Database, access: Access, name: string, inpu
   return { events, next, signing: 'HMAC-SHA256 using SHA256 of the JSON encoded bearer credential' }
  }
  if (name === 'event_receive') {
+  if (!key) throw forbidden('native_client_required')
   const envelope = input.envelope
   if (!envelope || envelope.audience !== key.id || typeof envelope.id !== 'string' || !/^evt_[a-f0-9]{20}$/.test(envelope.id) || typeof input.signature !== 'string') throw forbidden('event_signature')
   const expected = await signature(key.token_hash, envelope)
