@@ -55,5 +55,6 @@ ul.plain{margin:6px 0 0;padding-left:18px}
 .report-values { max-height: 320px; overflow: auto; }
 .report-values details { font-size: 14px; }
 .report-values summary { cursor: pointer; padding: 8px 0; }
+.report-values a { overflow-wrap: anywhere; }
 .report-widgets code, [data-report-snapshot] { overflow-wrap: anywhere; }
 @media (max-width: 1023px) { .report-widgets { grid-template-columns: minmax(0, 1fr); } }

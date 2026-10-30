@@ -4,7 +4,8 @@ import { toCsv } from '../tasks/board'
 /** All formats contain the same definitions, plotted values and event references. */
 export function exportRecords(report:Report):Record<string,string|number|null>[] {
  const records:Record<string,string|number|null>[]=[{section:'snapshot',snapshot:report.id,name:report.name,capturedAt:report.capturedAt,start:report.definition.start,end:report.definition.end,timezone:report.definition.timezone,status:report.definition.status,projects:report.definition.projects.join(';'),unknown:report.unknown.join(';')}]
- for(const [index,widget] of report.widgets.entries())for(const point of widget.values)records.push({section:'value',widget:index,kind:widget.kind,measure:widget.measure,group:widget.group,label:point.label,value:point.value,scope:point.scope??null,sources:point.sourceIds.join(';'),events:point.eventIds.join(';')})
+ for(const [index,widget] of report.widgets.entries())for(const point of widget.values)records.push({section:'value',widget:index,kind:widget.kind,measure:widget.measure,group:widget.group,basis:widget.basis??'',label:point.label,value:point.value,scope:point.scope??null,sources:point.sourceIds.join(';'),events:point.eventIds.join(';'),metrics:point.metricIds?.join(';')??''})
+ for(const row of report.metrics??[])records.push({section:'metric',metric:row.measure+':'+row.id,measure:row.measure,task:row.taskId,value:row.value,day:row.day,status:row.status,project:row.projectId??'',sheet:row.sheetId??'',subjectKind:row.subjectKind??'',subject:row.subjectId??'',state:row.state??'',sources:row.taskIds?.join(';')??row.taskId,person:row.personId??'',label:row.label??''})
  for(const source of report.sources){records.push({section:'source',task:source.id,title:source.title,due:source.due});for(const event of source.events)records.push({section:'event',task:source.id,event:event.seq,at:event.at,kind:event.kind,status:event.status,effort:event.effort,due:event.due,dueKnown:event.due_known,projects:event.projects.join(';')})}
  return records
 }
@@ -40,10 +41,19 @@ export function reportXlsx(report:Report) {
 }
 /** Letter pages; every record is emitted and paginated, never silently truncated. */
 export function reportPdf(report:Report) {
- const escape=(s:string)=>s.replace(/[^\x20-\x7e]/gu,c=>'[U+'+c.codePointAt(0)!.toString(16).toUpperCase()+']').replace(/[\\()]/g,c=>'\\'+c)
- const lines=['Pegboard report',report.name,'Snapshot '+report.id,'Window '+report.definition.start+' to '+report.definition.end+' '+report.definition.timezone,'Unknown history: '+(report.unknown.join(', ')||'none'),...exportRecords(report).flatMap(row=>Object.entries(row).filter(([,v])=>v!==null).flatMap(([k,v])=>{const text=k+': '+String(v);return text.match(/.{1,85}/gu)??['']}))]
+ const punctuation='€\u0081‚ƒ„…†‡ˆ‰Š‹Œ\u008dŽ\u008f\u0090‘’“”•–—˜™š›œ\u009džŸ'
+ const escape=(s:string)=>[...s].map(c=>{
+  const code=c.codePointAt(0)!,byte=code>=160&&code<=255?code:punctuation.includes(c)?128+punctuation.indexOf(c):null
+  return byte!==null?'\\'+byte.toString(8).padStart(3,'0'):code>=32&&code<=126?(/[\\()]/.test(c)?'\\'+c:c):'[U+'+code.toString(16).toUpperCase()+']'
+ }).join('')
+ const wrap=(text:string)=>{
+  const lines:string[]=[];let rest=text
+  while(rest.length>85){let end=85;while(end>0&&/\s/.test(rest[end-1]))end--;if(!end)end=85;lines.push((lines.length?'+':'')+rest.slice(0,end));rest=rest.slice(end)}
+  lines.push((lines.length?'+':'')+rest);return lines
+ }
+ const lines=['Pegboard report',...wrap(report.name),'Snapshot '+report.id,'Window '+report.definition.start+' to '+report.definition.end+' '+report.definition.timezone,'Unknown history: '+(report.unknown.join(', ')||'none'),...exportRecords(report).flatMap(row=>Object.entries(row).filter(([,v])=>v!==null).flatMap(([k,v])=>wrap(k+': '+String(v))))]
  const pages:Array<string[]>=[];for(let i=0;i<lines.length;i+=49)pages.push(lines.slice(i,i+49))
- const objects=['','<< /Type /Catalog /Pages 2 0 R >>',`<< /Type /Pages /Count ${pages.length} /Kids [${pages.map((_,i)=>`${4+i*2} 0 R`).join(' ')}] >>`,'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>']
+ const objects=['','<< /Type /Catalog /Pages 2 0 R >>',`<< /Type /Pages /Count ${pages.length} /Kids [${pages.map((_,i)=>`${4+i*2} 0 R`).join(' ')}] >>`,'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>']
  pages.forEach((page,i)=>{const stream='BT /F1 10 Tf 13 TL 36 756 Td '+page.map((line,j)=>(j?'T* ':'')+'('+escape(line)+') Tj').join('\n')+' ET';objects.push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents ${5+i*2} 0 R >>`,`<< /Length ${utf8(stream).length} >>\nstream\n${stream}\nendstream`)})
  let text='%PDF-1.4\n',offsets=[0];for(let i=1;i<objects.length;i++){offsets.push(utf8(text).length);text+=`${i} 0 obj\n${objects[i]}\nendobj\n`}
  const xref=utf8(text).length;text+=`xref\n0 ${objects.length}\n0000000000 65535 f \n`+offsets.slice(1).map(n=>String(n).padStart(10,'0')+' 00000 n \n').join('')+`trailer\n<< /Size ${objects.length} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`
