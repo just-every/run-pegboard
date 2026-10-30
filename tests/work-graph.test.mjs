@@ -1,3 +1,4 @@
+import { registerRuleAuditTests } from './scenarios/rule-audit.mjs'
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs'
 import { reportingScenario } from './scenarios/reporting.mjs'
 import { analystDatasetScenario } from './scenarios/analytics.mjs'
@@ -2401,6 +2402,13 @@ describe('Calendar work blocks through provider schema edges', {concurrency:fals
  registerCalendarBlockTests({test:it,context:()=>({w:worker,services})})
 })
 
+// One bounded rule-audit suite owns lifecycle and durable outcome journeys.
+describe('Local rule audit', {concurrency:false},()=>{
+ let worker
+ before(async()=>{worker=await startWorker()},{timeout:120000})
+ after(()=>worker?.stop())
+ registerRuleAuditTests({test:it,context:()=>worker})
+})
 
 describe('Native reporting',{concurrency:false},()=>{
  let worker

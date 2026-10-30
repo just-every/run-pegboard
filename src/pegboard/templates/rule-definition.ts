@@ -52,5 +52,6 @@ export async function loadTemplateRule(db:D1Database,actor:Actor,id:string){
  if(!rule)throw notFound()
  await ruleAdministrator(db,actor,rule.project_id);return rule
 }
-export const ruleEvent=(db:D1Database,ruleId:string,action:string,actorId:string|null,runId:string|null=null)=>bound(db,'INSERT INTO peg_template_rule_events VALUES(?,?,?,?,?,?)',[newId('ruleevent'),ruleId,runId,actorId,action,now()])
+export const ruleEvent=(db:D1Database,ruleId:string,action:string,actorId:string|null,runId:string|null=null,previous?:TemplateRule)=>bound(db,`INSERT INTO peg_template_rule_events(id,rule_id,run_id,actor_id,action,at,definition_version,activation_id)
+ SELECT ?,id,?,?,?,?,version,COALESCE(?,activation_id) FROM peg_template_rules WHERE id=?`,[newId('ruleevent'),runId,actorId,action,now(),previous?.activation_id??null,ruleId])
 export const ruleInput=(rule:TemplateRule,definition:TemplateRuleDefinition,startDate:string,token?:string)=>({templateId:definition.templateId,version:definition.templateVersion,startDate,name:definition.name,roles:definition.roles,keepUnassigned:definition.keepUnassigned,targetProjectId:rule.project_id,...(token?{token}:{})})
