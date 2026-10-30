@@ -33,6 +33,8 @@ Authorized administrators use `GET /api/v1/admin/audit` and its `export` door.
 Exact query filters `rule`, `run`, `activation`, `operation` and `event` select opaque
 identities without expanding the existing workspace or personal scope. The browser
 audit search offers rule and run IDs alongside action, actor and subject filters.
+Run receipts display their task, triggering event and work-action count for direct
+correlation with the scoped operation.
 
 Local configuration emits `rule.created`, `rule.edited`, `rule.activated` and
 `rule.deactivated`. Matching native triggers emit `rule.run_queued` or an inactive

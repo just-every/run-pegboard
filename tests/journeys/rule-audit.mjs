@@ -59,7 +59,7 @@ export async function ruleAuditJourney({w,browser}){
   await form.getByLabel('Run ID',{exact:true}).fill(run.id)
   await form.getByRole('button',{name:'Search audit',exact:true}).focus();await page.keyboard.press('Enter')
   await expect(list.getByRole('listitem')).toHaveCount(2)
-  await expect(list).toContainText(run.activation_id);await expect(list).toContainText(run.operation_id)
+  await expect(list).toContainText(run.activation_id);await expect(list).toContainText(run.operation_id);await expect(list).toContainText(run.event_id);await expect(list).toContainText(applied.id)
   await expect(list).not.toContainText('rule.run_noop')
   const link=page.getByRole('link',{name:'Export this page as JSON',exact:true})
   await link.focus();await expect(link).toBeFocused()
