@@ -173,6 +173,10 @@
     {
       "id": "0082_portfolio_capacity.sql",
       "buyerSteps": "Apply migrations/core/0082_portfolio_capacity.sql after 0081_rule_audit_correlations.sql and all existing migrations. This adds human-reviewed portfolio capacity application and undo records. Preserve all previously applied migration names and bytes."
+    },
+    {
+      "id": "0083_search_and_bulk_selection.sql",
+      "buyerSteps": "Apply migrations/core/0083_search_and_bulk_selection.sql after 0082_portfolio_capacity.sql and all existing migrations. Preserve previously applied migration names and bytes. This adds private saved search filters and reviewed bulk-selection receipts."
     }
   ],
   "breaking": false,
