@@ -5,7 +5,7 @@ Base discovers portable tables from the live schema; it does not use a fixed pro
 allowlist. An archive manifest declares its exact included and excluded table names,
 row counts, schema, source identity, ordered part checksums and closing digest.
 
-Current migration inventory: 159 included unchanged, 20 included with
+Current migration inventory: 158 included unchanged, 21 included with
 inactive normalization, 62 excluded (241 total, including engine and
 runtime bookkeeping). Tables Base creates dynamically for transfer jobs, snapshots,
 staging and lease bookkeeping are always excluded by its reserved prefix.
@@ -30,6 +30,9 @@ Sign-in tokens and sessions, API and analyst keys, provider secrets and active s
 capabilities are excluded. Grants and approval routes are revoked, pending access
 requests become stale, goal-source tokens are cleared, feeds disconnected, recurring
 jobs held, processor consent denied, rules disabled and queued rule work pending.
+Personal section rules retain their definitions and previous moves but restore
+inactive. Opening My tasks does not run them. Only their person can explicitly
+activate a displayed rule; another owner or administrator cannot activate it.
 Queued or pending bundle jobs become cancelled. Completed outcomes, immutable audit,
 notices and human decisions remain provenance and do not independently authorize a
 send, approval or job. Readiness and discussion notice tables are delivery receipts,
@@ -180,7 +183,7 @@ remain unproved. No receiving duty is waived by an excluded runtime cache.
 | `peg_personal_layout` | included | Retain every row and writable cell, including relationships and byte payloads. |
 | `peg_personal_moves` | included | Retain every row and writable cell, including relationships and byte payloads. |
 | `peg_personal_revision` | included | Retain every row and writable cell, including relationships and byte payloads. |
-| `peg_personal_rules` | included | Retain every row and writable cell, including relationships and byte payloads. |
+| `peg_personal_rules` | inactive | Retain the person, group and section mapping; set `restored_inactive` until that person explicitly activates the rule. |
 | `peg_personal_sections` | included | Retain every row and writable cell, including relationships and byte payloads. |
 | `peg_personal_settings` | included | Retain every row and writable cell, including relationships and byte payloads. |
 | `peg_portfolio_filters` | included | Retain every row and writable cell, including relationships and byte payloads. |
@@ -321,3 +324,11 @@ row, relationship and digest comparison is unchanged. The inspection copy keeps
 export audit activity out of the reserved restore destination.
 The fixed run allows ten minutes per native CLI invocation within its overall
 20-minute journey deadline; ordinary bounded verification keeps its existing limit.
+
+The same journey exercises an explicit native ownership handoff after restore:
+the current owner grants the successor owner status through the existing account
+door, then steps down. The previous session is invalid, a newly signed-in former
+owner cannot create or read archives, and the successor starts a separate transfer
+that survives restart. A successor cannot read another person's transfer staging.
+This does not permit restoring over a preclaimed destination or silently replacing
+its owner. Fresh hosted sign-in and sender qualification remain separate duties.

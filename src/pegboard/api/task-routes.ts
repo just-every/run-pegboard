@@ -1,6 +1,6 @@
 import {projectParticipants,taskParticipants} from '../tasks/participants'
 import {openTask} from '../tasks/access'
-import { visibilityPreview, sharePersonal, saveSettings, section, place, addRule, undoMove, personalMeta } from '../tasks/personal'
+import { visibilityPreview, sharePersonal, saveSettings, section, place, addRule, activateRule, undoMove, personalMeta } from '../tasks/personal'
 // /api/v1: tasks, their projects, fields, comments and files, and the lists a person starts from.
 import type { Hono } from 'hono'
 import type { Bindings } from '../../auth.server'
@@ -68,6 +68,7 @@ export function taskRoutes(app: App) {
   app.post('/my-tasks/sections',door(({actor,db,input})=>section(db,actor,input as never)))
   app.post('/my-tasks/:id/layout',door(({actor,db,params,input,form})=>place(db,actor,params.id,{...input,...('today' in input?{today:form?flag(input.today):input.today}:{})})))
   app.post('/my-tasks/rules',door(({actor,db,input})=>addRule(db,actor,input as never)))
+  app.post('/my-tasks/rules/:id/activate',door(({actor,db,params,input})=>activateRule(db,actor,params.id,input.confirm),{next:()=>'/app/my-tasks'}))
   app.post('/my-tasks/moves/:id/undo',door(({actor,db,params})=>undoMove(db,actor,params.id)))
   app.get('/tasks/:id/visibility-preview',door(({actor,db,params,query})=>visibilityPreview(db,actor,params.id,query.get('projectId')??'')))
   app.post('/tasks/:id/share-personal',door(({actor,db,params,input})=>sharePersonal(db,actor,params.id,input as never),{next:(_, {params})=>task(params.id)}))

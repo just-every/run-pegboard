@@ -134,6 +134,10 @@ cannot resume provider writes. A new reservation uses a new reviewed operation;
 no existing provider event is automatically adopted or removed. Login tokens
 are excluded, pending access requests become stale, and pending bundle jobs are
 cancelled. Human decisions and notification receipts remain historical records.
+Personal section rules also restore inactive: merely opening My tasks cannot move
+work. Their own person reviews the displayed group and destination and chooses
+**Activate rule** to resume that local routing. Other people, including installation
+owners, cannot activate someone else's personal rule.
 
 Restore preserves the original owner identity. An already claimed installation
 is not an eligible empty destination; use native CLI restore before owner claim

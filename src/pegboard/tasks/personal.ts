@@ -1,4 +1,4 @@
-import {guarded, type Revision} from '../decisions/revision'
+import {guarded, revision, type Revision} from '../decisions/revision'
 // Private layout and explicit, revision-bound visibility decisions.
 import {
   all,
@@ -216,7 +216,7 @@ export async function addRule(
     throw invalid('rule')
   const id = newId('rule')
   await batch(db, [
-    bound(db, 'INSERT INTO peg_personal_rules VALUES(?,?,?,?)', [
+    bound(db, 'INSERT INTO peg_personal_rules(id,operator_id,group_name,section_id) VALUES(?,?,?,?)', [
       id,
       actor.id,
       input.group,
@@ -224,6 +224,14 @@ export async function addRule(
     ]),
   ])
   return { id }
+}
+export async function activateRule(db: D1Database, actor: Actor, id: string, confirm: unknown) {
+  const rev = await revision(db)
+  const rule = await first(db, `SELECT r.id FROM peg_personal_rules r JOIN peg_personal_sections s ON s.id=r.section_id AND s.operator_id=r.operator_id WHERE r.id=? AND r.operator_id=?`, id, actor.id)
+  if (!rule || actor.apiScope) throw notFound()
+  if (confirm !== true && confirm !== 'yes') throw invalid('confirmation_required')
+  await guarded(db, rev, [bound(db, 'UPDATE peg_personal_rules SET restored_inactive=0 WHERE id=? AND operator_id=?', [id, actor.id])])
+  return { id, active: true }
 }
 export async function undoMove(db: D1Database, actor: Actor, id: string) {
   const move = await first<{
@@ -261,7 +269,7 @@ export async function personalMeta(db: D1Database, actor: Actor) {
   return {
     settings: await settings(db, actor),
     sections: await sections(db, actor),
-    rules: await all<{ id: string; group_name: string; section_id: string }>(
+    rules: await all<{ id: string; group_name: string; section_id: string; restored_inactive: number }>(
       db,
       'SELECT * FROM peg_personal_rules WHERE operator_id=? ORDER BY id',
       actor.id,
@@ -287,7 +295,7 @@ export async function applyRules(
 ) {
   for (const rule of await all<{ id: string; section_id: string }>(
     db,
-    'SELECT * FROM peg_personal_rules WHERE operator_id=? AND group_name=? ORDER BY rowid',
+    'SELECT * FROM peg_personal_rules WHERE operator_id=? AND group_name=? AND restored_inactive=0 ORDER BY rowid',
     actor.id,
     group,
   )) {

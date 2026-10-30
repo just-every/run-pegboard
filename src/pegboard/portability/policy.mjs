@@ -1,6 +1,7 @@
 // One policy for native CLI and the HTTP archive doors. No active source-installation authority travels.
 const revoked=1
 const importSafety={
+ peg_personal_rules:{restored_inactive:[1]},
  peg_local_rule_runs:{status:['pending'],activation_id:[null],outcome:['restored_inactive']},
  peg_template_rule_runs:{status:['pending'],activation_id:[null],outcome:['restored_inactive']},
  peg_calendar_connections:{active:[0],restored_inactive:[1]},

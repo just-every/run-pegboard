@@ -241,8 +241,10 @@ export function MyTasksPage({
           <ul className="rows">
             {meta.rules.map((r) => (
               <li key={r.id}>
-                {r.group_name} →{' '}
+                <span className="grow">{r.group_name} →{' '}
                 {meta.sections.find((s) => s.id === r.section_id)?.name}
+                {r.restored_inactive ? ' · Restored inactive' : ''}</span>
+                {!!r.restored_inactive && <Form action={`/api/v1/my-tasks/rules/${r.id}/activate`} next={here} label="Activate restored section rule"><input type="hidden" name="confirm" value="yes"/><Submit quiet>Activate rule</Submit></Form>}
               </li>
             ))}
           </ul>
