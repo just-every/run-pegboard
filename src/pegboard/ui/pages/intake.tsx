@@ -20,6 +20,10 @@ export function IntakeScreen({viewer,form,receipt}:{viewer?:Viewer;form:Safe;rec
 export function PublicIntakeScreen({form,action,receipt}:{form:Safe;action:string;receipt?:{receipt:string;deadline:number;acknowledgment:string}}) {
  return <><AppBar/><main className="board" id="main"><Heading title="Request intake" facts={[]}/><section className="page">{receipt?<Card title={receipt.acknowledgment}><p role="status">Receipt <code>{receipt.receipt}</code></p><p>Triage deadline: {when(receipt.deadline)}</p><p>This receipt grants no workspace access. No email has been sent.</p></Card>:<IntakeForm form={form} action={action}/>}</section></main></>
 }
+export function PublishedIntakeScreen({capability,back}:{capability:string;back:string}) {
+ const link='/intake/'+capability
+ return <><AppBar/><main className="board" id="main"><Heading title="Request intake" facts={[]}/><section className="page"><Card title="Public form published"><p>Copy this submission-only link now. It is not shown again.</p><p><a href={link}>Open public form</a></p><label className="field">Public form link<input className="input" aria-label="Public form link" readOnly value={link}/></label><p><a href={back}>Return to intake settings</a></p></Card></section></main></>
+}
 export function IntakeSettings({viewer,project,list,review,people,capability}:{viewer:Viewer;project:{id:string;name:string};list:Awaited<ReturnType<typeof projectForms>>;review:Awaited<ReturnType<typeof reviewForm>>|null;people:{value:string;label:string}[];capability?:string|null}) {
  const here=`/app/projects/${project.id}/settings/intake`
  return <Shell viewer={viewer} current="/app/settings" title="Intake settings" crumbs={[{label:project.name,href:`/app/projects/${project.id}`},{label:'Settings',href:`/app/projects/${project.id}/settings`},{label:'Intake',href:here,current:true}]}>

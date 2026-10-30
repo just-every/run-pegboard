@@ -22,7 +22,9 @@ fixed owner's current authority. Republish explicitly to obtain a new link.
 A source request key and exact payload fingerprint bind one persisted task and
 one acknowledgment. Concurrent retries and receiver restart retain those identities;
 a changed payload refuses. An erased task leaves an opaque source tombstone and
-cannot be recreated by replay. Public receipts contain no task ID, project metadata,
+cannot be recreated by replay. Explicit project erasure removes its forms and
+submission records through the existing reviewed custody door; person erasure
+anonymizes intake attribution. Public receipts contain no task ID, project metadata,
 member identity or submitted field contents. They provide the receipt and triage
 deadline on the page; no mail delivery is implied.
 

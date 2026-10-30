@@ -2,16 +2,16 @@ import { createElement as h } from 'react'
 import type { Hono } from 'hono'
 import { runtimeBindings, type Bindings } from '../../auth.server'
 import { appDocument } from '../../ui/document.server'
-import { PegError, first } from '../db'
+import { PegError } from '../db'
 import { describe, door, json } from './door'
-import { administer, formRow, internalForm, projectForms, publicForm, publishForm, reviewForm, revokeForm, safeForm, saveForm } from '../intake/forms'
-import { limitPublic, submitIntake, type Submission } from '../intake/submissions'
+import { formRow, internalForm, projectForms, publicForm, publishForm, reviewForm, revokeForm, safeForm, saveForm } from '../intake/forms'
+import { limitPublic, submitIntake } from '../intake/submissions'
 import { triageQueue, triageSubmission } from '../intake/triage'
-import { PublicIntakeScreen } from '../ui/pages/intake'
+import { PublicIntakeScreen,PublishedIntakeScreen } from '../ui/pages/intake'
 export async function intakeDocument(title:string,body:ReturnType<typeof h>) {
  const response=await appDocument(title,body),headers=new Headers(response.headers)
- headers.set('referrer-policy','no-referrer')
- return new Response((await response.text()).replace('</body>','<script src="/look/intake.js" defer></script></body>'),{status:response.status,headers})
+ headers.set('referrer-policy','strict-origin')
+ return new Response((await response.text()).replace('</head>','<link rel="stylesheet" href="/look/intake.css"></head>').replace('</body>','<script src="/look/intake.js" defer></script></body>'),{status:response.status,headers})
 }
 async function readSubmission(request:Request) {
  const type=request.headers.get('content-type')??''
@@ -19,7 +19,7 @@ async function readSubmission(request:Request) {
  const reader=request.body?.getReader();let length=0,raw='';const decoder=new TextDecoder()
  if(reader)try{for(;;){const {done,value}=await reader.read();if(done)break;length+=value.byteLength;if(length>20000){await reader.cancel();throw new PegError(413,'intake_too_large')}raw+=decoder.decode(value,{stream:true})}raw+=decoder.decode()}finally{reader.releaseLock()}
  if(type.includes('application/json')){try{const input=JSON.parse(raw);if(!input||typeof input!=='object'||Array.isArray(input))throw Error();return input}catch{throw new PegError(400,'invalid_json')}}
- const fields=new URLSearchParams(raw),input:Record<string,any>={answers:{}}
+ const fields=new URLSearchParams(raw),input:Record<string,any>=Object.assign(Object.create(null),{answers:Object.create(null)})
  for(const [key,value]of fields){if(fields.getAll(key).length!==1)throw new PegError(400,'intake_duplicate_field');if(key.startsWith('answer.'))input.answers[key.slice(7)]=value;else input[key]=value}
  return input
 }
@@ -39,7 +39,8 @@ export async function publicIntakePage(request:Request,original:Bindings):Promis
 export function intakeRoutes(app:Hono<{Bindings:Bindings}>) {
  app.post('/projects/:id/intake/forms',door(async({db,actor,params,input,form})=>{
   const value=form?{name:input.name,fields:[{id:'title',label:input.titleLabel,required:true},{id:'kind',label:input.branchLabel,required:true,choices:String(input.choices??'').split(',').map(v=>v.trim())},{id:'details',label:input.detailLabel,required:true,when:{field:'kind',equals:input.branchValue}}],mapping:{title:'title',description:['kind','details'],ownerId:input.ownerId,priority:input.priority},hours:input.hours}:input
-  return saveForm(db,actor,params.id,value)
+  const result=await saveForm(db,actor,params.id,value)
+  return form?new Response(null,{status:303,headers:{location:`/app/projects/${params.id}/settings/intake?review=${result.id}`,'cache-control':'no-store'}}):result
  },{next:(r,{params})=>`/app/projects/${params.id}/settings/intake?review=${r.id}`}))
  app.get('/projects/:id/intake/forms',door(({db,actor,params})=>projectForms(db,actor,params.id)))
  app.post('/intake/forms/:id/draft',door(async({db,actor,params,input})=>saveForm(db,actor,(await formRow(db,params.id)).project_id,input,params.id)))
@@ -50,7 +51,7 @@ export function intakeRoutes(app:Hono<{Bindings:Bindings}>) {
   const row=await formRow(db,params.id),path=`/app/projects/${row.project_id}/settings/intake`
   if(!r.capability)return new Response(null,{status:303,headers:{location:path,'cache-control':'no-store'}})
   // A capability is returned once in this response, never put into a redirect query or saved in plaintext.
-  return intakeDocument('Public intake link',h('main',{className:'board',id:'main'},h('section',{className:'page'},h('article',{className:'card panel'},h('h1',null,'Public form published'),h('p',null,'Copy this submission-only link now. It is not shown again.'),h('a',{href:'/intake/'+r.capability},'Open public form'),h('input',{className:'input','aria-label':'Public form link',readOnly:true,value:'/intake/'+r.capability}),h('p',null,h('a',{href:path},'Return to intake settings'))))))
+  return intakeDocument('Public intake link',h(PublishedIntakeScreen,{capability:r.capability,back:path}))
  }))
  app.post('/intake/forms/:id/revoke',door(({db,actor,params})=>revokeForm(db,actor,params.id)))
  app.get('/intake/forms/:id',door(async({db,actor,params})=>safeForm(await internalForm(db,actor,params.id))))

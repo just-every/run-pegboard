@@ -34,7 +34,7 @@ export async function intakeJourney({w,browser}) {
   await expect(page.getByText('Owner: Intake designer.',{exact:false})).toBeVisible()
   await proof('publication-review');await flat(page)
   const publish=page.getByRole('form',{name:'Publish intake form'})
-  await publish.getByLabel('Audience').selectOption('public')
+  await publish.getByLabel('Audience',{exact:true}).selectOption('public')
   await publish.getByLabel('I approve these exact prompts, task mappings and audience').check()
   await publish.getByRole('button',{name:'Publish reviewed form'}).click()
   await expect(page.getByRole('heading',{name:'Public form published'})).toBeVisible()

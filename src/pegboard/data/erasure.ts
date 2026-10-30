@@ -116,6 +116,8 @@ export async function erasurePlan(db:D1Database,actor:Actor,workspace:string,typ
     await take('peg_task_projects',`${scoped('task_id')} OR ${projectScoped('project_id')}`,[...tasks,...projects])
     await take('peg_tasks',scoped('id'),tasks)
     await take('peg_webhooks',projectScoped('project_id'),projects)
+    await take('peg_intake_submissions',`form_id IN(SELECT id FROM peg_intake_forms WHERE ${projectScoped('project_id')})`,projects)
+    await take('peg_intake_forms',projectScoped('project_id'),projects)
     await take('peg_project_fields',projectScoped('project_id'),projects)
     const fieldRevisions=await selectKeys(db,'peg_field_versions',`field_id IN(SELECT id FROM peg_field_definitions WHERE ${projectScoped('authority_project')})`,projects)
     await take('peg_field_definitions',projectScoped('authority_project'),projects)
@@ -183,6 +185,7 @@ export async function erase(db:D1Database,actor:Actor,workspace:string,input:Rec
     for(const task of plan.tasks)statements.push(bound(db,"INSERT INTO peg_data_erased_objects VALUES('task',?,?)",[task,at]))
     for(const project of plan.projects)statements.push(bound(db,"INSERT INTO peg_data_erased_objects VALUES('project',?,?)",[project,at]))
     if(plan.type==='person'){
+      statements.push(bound(db,"UPDATE peg_intake_submissions SET source_actor=CASE WHEN source_actor=? THEN 'erased' ELSE source_actor END,triaged_by=CASE WHEN triaged_by=? THEN NULL ELSE triaged_by END WHERE source_actor=? OR triaged_by=?",[plan.id,plan.id,plan.id,plan.id]))
       statements.push(...capacityErasureStatements(db,plan.id,plan.capacitySources))
       statements.push(bound(db,'INSERT OR IGNORE INTO peg_erased_people VALUES(?,?)',[plan.id,at]),bound(db,"UPDATE oa_operators SET email=?,display_name='Erased actor',version=version+1 WHERE id=? AND status<>'active' AND role<>'owner'",[`erased-${plan.id}@invalid.example`,plan.id]))
       // Tokens and sessions can no longer authenticate an inactive, version-fenced identity. Their expired bytes use transient cleanup.
