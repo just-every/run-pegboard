@@ -43,6 +43,11 @@ work changes. Dates, descriptions, names, rule action text and credentials remai
 outside permanent metadata. The operation identifies the exact scoped work
 result; it grants no additional read authority.
 
+A rule that evaluates already-current values records `rule.run_noop` with
+`no_changes` and no operation identity. Its existing native run still finishes
+as applied; the audit describes the actual work result without changing rule
+execution semantics.
+
 Deactivation or editing never rewrites earlier receipts. Restored rules remain
 inactive, erased actors retain anonymized attribution, and existing run receipts
 survive native archive restore. Queue and terminal receipts share the original
@@ -58,6 +63,10 @@ template and workflow bundle receipts. Template actions begin with
 `template_rule.`; bundle actions begin with `bundle_rule.`. Configuration events
 name the version and activation being reviewed or retired. Queue and outcome
 events bind the native run and triggering task to their actor and activation.
+An edited template definition names its retired activation and prior version
+separately from the new inactive version. A local bundle override records an edit
+only for its changed component and records the renewed adoption epoch for each
+installed rule; subsequent run receipts identify that exact activation.
 Bundle rule and activation identities are opaque digests, with numeric adoption
 epochs retained separately. Copy a receipt's `metadata.ruleId` into Rule ID on
 Permanent audit to inspect its complete history. Activation ID, Operation ID and
