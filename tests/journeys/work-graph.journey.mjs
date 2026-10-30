@@ -1,3 +1,4 @@
+import { portfolioCapacityJourney } from './portfolio-capacity.mjs'
 import {reportingJourney} from './reporting.mjs'
 import {workViewsJourney} from './work-views.mjs'
 import {accessPrivacyJourney} from './access-privacy.mjs'
@@ -28,7 +29,7 @@ import { planningCanvasJourney } from './planning-canvas.mjs'
 import { portfolioJourney } from './portfolios.mjs'
 import { timelineJourney } from './timeline.mjs'
 
-const journeyNames = ["reporting", "work-views", "access-privacy", "access-discovery", "analytics", "calendar-blocks", "capacity", "public-api", "approval-routing", "guests", "core", "recurrence", "approvals", "time-packets", "goals", "engineering", "meetings", "custody", "recovery", "departure", "canvas", "portfolio", "timeline", "register", "bundles"]
+const journeyNames = ["reporting", "work-views", "access-privacy", "access-discovery", "analytics", "calendar-blocks", "capacity", "portfolio-capacity", "public-api", "approval-routing", "guests", "core", "recurrence", "approvals", "time-packets", "goals", "engineering", "meetings", "custody", "recovery", "departure", "canvas", "portfolio", "timeline", "register", "bundles"]
 const selected = new Set(process.env.PEGBOARD_JOURNEY === undefined ? journeyNames : process.env.PEGBOARD_JOURNEY.split(',').map(name => name.trim()))
 for (const name of selected) if (!journeyNames.includes(name)) throw new Error(`Unknown PEGBOARD_JOURNEY: ${name}`)
 
@@ -60,6 +61,7 @@ try {
   if(await select('work-views'))await workViewsJourney({w,browser,ok})
   if(await select('analytics'))await analystJourney({w,browser,owner,ok})
   if(await select('calendar-blocks'))await calendarBlocksJourney({w,browser,services:calendarServices,ok})
+  if(await select('portfolio-capacity'))await portfolioCapacityJourney({w,browser})
   if(await select('capacity'))await capacityJourney({w,browser,services:capacityServices,ok})
   if(await select('public-api'))await publicApiJourney({w,browser,owner,cookies})
   if(await select('approval-routing'))await approvalRoutingJourney({w,browser,owner,cookies})
