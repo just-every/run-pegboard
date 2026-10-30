@@ -9,7 +9,10 @@ read access or permission to act as a person. Public work is attributed to
 “Public intake”, separately from the publisher who authorized the mapping.
 
 Every question must map to the retained task title or description; a draft
-with an unmapped answer refuses. Only text and bounded choices are supported. A branch can depend on an earlier
+with an unmapped answer refuses. If the complete mapped description, including
+question labels, exceeds the task's text capacity, both submission doors refuse
+without a task or acknowledgment; accepted requests retain every mapped answer.
+Only text and bounded choices are supported. A branch can depend on an earlier
 choice; required validation runs independently on the server. Unknown fields,
 hidden-branch answers, attachments and identity or mapping overrides refuse
 without creating work. Files are explicitly unsupported, including multipart

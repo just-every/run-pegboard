@@ -140,5 +140,35 @@ export async function intakeScenario(w) {
  console.log('PROBE PEG-007 triage: queue and triage routes -> waiting, visible overdue escalation, then triaged')
  console.log('PROBE PEG-007 erasure and authority: replay of erased task and old publication after publisher role renewal -> refused without work creation')
  console.log('PROBE PEG-007 privacy: anonymous routes -> prompts and receipt only; private work, identity claims, attachments, stale and revoked publication refused')
+ await retainedAnswersScenario(w,ok,call)
  return {project,form,item}
+}
+
+async function retainedAnswersScenario(w,ok,call) {
+ const project=await ok(w.owner.post('/api/v1/projects',{name:'synthetic-pegboard-retained-intake'}))
+ const details=Array.from({length:5},(_,i)=>({id:'detail'+i,label:('Question '+i+' ').padEnd(120,'q'),required:true}))
+ const config={name:'Long text request',fields:[{id:'title',label:'Request title',required:true},...details],mapping:{title:'title',description:details.map(f=>f.id),ownerId:w.owner.id,priority:'normal'},hours:8}
+ const form=await ok(w.owner.post(`/api/v1/projects/${project.id}/intake/forms`,config)),base=`/api/v1/intake/forms/${form.id}`
+ const review=await ok(w.owner.get(base+'/review'))
+ const publication=await ok(w.owner.post(base+'/publish',{version:form.version,review:review.review,audience:'public',consent:true}))
+ const path='/api/v1/public-intake/'+publication.capability
+ const answers={title:'Retain every requested answer',...Object.fromEntries(details.map((field,i)=>[field.id,('Answer '+i+' ').padEnd(3880,'x')+' synthetic-pegboard-end']))}
+ const input={version:form.version,requestKey:'synthetic-pegboard-long-public',answers}
+ // The wire payload fits, but adding the reviewed question labels would overflow the task description.
+ assert.ok(Buffer.byteLength(JSON.stringify(input))<20000)
+ await ok(call('POST',path,input),400)
+ await ok(w.owner.post(base+'/submit',{...input,requestKey:'synthetic-pegboard-long-internal'}),400)
+ assert.deepEqual((await ok(w.owner.get(`/api/v1/projects/${project.id}/intake`))).items,[],'neither intake door acknowledges a task that would lose answers')
+ const accepted={...answers,[details.at(-1).id]:'synthetic-pegboard-complete-final-answer'}
+ const receipt=await ok(call('POST',path,{...input,requestKey:'synthetic-pegboard-complete-public',answers:accepted}))
+ const queue=await ok(w.owner.get(`/api/v1/projects/${project.id}/intake`))
+ assert.deepEqual(queue.items.map(item=>item.id),[receipt.receipt])
+ const task=await ok(w.owner.get('/api/v1/tasks/'+queue.items[0].taskId))
+ assert.equal(task.description,details.map(field=>field.label+': '+accepted[field.id]).join('\n'))
+ const internal=await ok(w.owner.post(base+'/submit',{...input,requestKey:'synthetic-pegboard-complete-internal',answers:accepted}))
+ const internalQueue=await ok(w.owner.get(`/api/v1/projects/${project.id}/intake`))
+ const internalTask=await ok(w.owner.get('/api/v1/tasks/'+internalQueue.items.find(item=>item.id===internal.receipt).taskId))
+ assert.equal(internalTask.description,task.description)
+ assert.equal((await ok(w.owner.get(`/api/v1/projects/${project.id}`))).columns.flatMap(column=>column.tasks).length,2)
+ console.log('PROBE PEG-007 retained answers: public and internal submission routes -> oversized mappings refused with no task; fitting mappings preserve every answer exactly')
 }

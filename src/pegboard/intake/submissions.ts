@@ -33,6 +33,9 @@ export async function submitIntake(db:D1Database,source:{actor:Actor;formId:stri
   if(Number(input.version)!==row.version)throw conflict('intake_version')
   const {actor:publisher,definition,project}=await published(db,row),publicSource='capability'in source
   const answers=answersFor(definition,input.answers),sourceActor=publicSource?'public_intake':source.actor.id
+  const description=definition.mapping.description.filter(id=>answers[id]).map(id=>definition.fields.find(f=>f.id===id)!.label+': '+answers[id]).join('\n')
+  // Task creation bounds descriptions. Refuse before writing rather than acknowledge lost answers.
+  if(description.length>20000)throw invalid('intake_mapping_too_large')
   const fingerprint=await digest([row.version,answers,sourceActor,publicSource?row.public_hash:null])
   const previous=await first<Submission>(db,'SELECT * FROM peg_intake_submissions WHERE form_id=? AND request_key=?',row.id,key)
   if(previous){
@@ -41,7 +44,7 @@ export async function submitIntake(db:D1Database,source:{actor:Actor;formId:stri
    return {...acknowledgment(previous),replayed:true}
   }
   const calendar=JSON.parse(row.published_calendar!),at=now(),deadline=Date.parse(writeStamp(addWorkingTime(readStamp(new Date(at).toISOString(),calendar.zone),definition.hours*3600000,calendar),calendar.zone))
-  const prepared=await prepareTask(db,publicSource?publisher:source.actor,{projectId:row.project_id,title:answers[definition.mapping.title],description:definition.mapping.description.filter(id=>answers[id]).map(id=>definition.fields.find(f=>f.id===id)!.label+': '+answers[id]).join('\n'),ownerId:definition.mapping.ownerId,priority:definition.mapping.priority},{queueRules:false,sourceActorId:publicSource?'public_intake':undefined})
+  const prepared=await prepareTask(db,publicSource?publisher:source.actor,{projectId:row.project_id,title:answers[definition.mapping.title],description,ownerId:definition.mapping.ownerId,priority:definition.mapping.priority},{queueRules:false,sourceActorId:publicSource?'public_intake':undefined})
   const submission:Submission={id:newId('submission'),form_id:row.id,form_version:row.version,request_key:key,fingerprint,task_id:prepared.id,source_actor:sourceActor,submitted_at:at,deadline,triaged_at:null,escalated_at:null}
   try {
    await guarded(db,rev,[bound(db,'INSERT INTO peg_intake_guards VALUES(?,?,?)',[newId('guard'),row.id,row.version]),...prepared.statements,bound(db,'INSERT INTO peg_intake_submissions(id,form_id,form_version,request_key,fingerprint,task_id,source_actor,submitted_at,deadline,calendar) VALUES(?,?,?,?,?,?,?,?,?,?)',[submission.id,row.id,row.version,key,fingerprint,prepared.id,sourceActor,at,deadline,JSON.stringify(calendar)]),historyStatement(db,prepared.id,row.project_id,sourceActor,'intake.submitted',{formId:row.id,version:row.version,deadline})])
