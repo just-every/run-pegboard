@@ -98,7 +98,9 @@ export function registerRuleAuditTests({test,context}){
   assert.equal((await read(root,scoped.id)).runs.length,2,'repeated non-transitions produce no extra rule run')
   await w.restart();await pass(root.post(path(scoped.id)+'/process',{}))
   assert.equal((await read(root,scoped.id)).runs.length,2)
-  w.widerAudit=await widerRuleAudit(w)
+  const snapshots=await widerRuleAudit(w),copy=await restoreCanvasInstallation(root)
+  try{for(const snapshot of snapshots)assert.deepEqual(await audit(copy.worker.owner,snapshot.id),snapshot.events)}
+  finally{await copy.stop()}
  },{timeout:180000})
  test('attributes background refusal to the former activating administrator and retains anonymized rule audit through native archive restore',async()=>{
   const w=context(),root=w.owner
@@ -184,7 +186,6 @@ export function registerRuleAuditTests({test,context}){
   const copy=await restoreCanvasInstallation(root)
   try{
    assert.deepEqual(await audit(copy.worker.owner,rule.id),anonymous)
-   for(const snapshot of w.widerAudit??[])assert.deepEqual(await audit(copy.worker.owner,snapshot.id),snapshot.events)
    const restoredBundle=await audit(copy.worker.owner,bundleQueued.metadata.ruleId,'&run='+bundleJob.id)
    assert.deepEqual(restoredBundle.map(e=>[e.action,e.result]),[['bundle_rule.run_queued','queued'],['bundle_rule.run_blocked','blocked']])
    assert.deepEqual(restoredBundle[0],bundleQueued);assert.equal(restoredBundle[1].metadata.outcome,'restored_inactive');assert.equal(restoredBundle[1].actor_id,root.id)
