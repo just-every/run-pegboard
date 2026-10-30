@@ -199,7 +199,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "16be172224990396990ce9b9ff4c735cb7110ee802e0e6d0a140fd0146a71d22",
+      "sha256": "f97fe77e14e07a3f42b4211cdf1edf14132dc0e6e66270bb66f10c9a3bacadcb",
       "executable": false
     },
     "AGENTS.md": {
@@ -215,7 +215,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "a063ec46074ce606ec619a30e9bd835af69580abff759026ab1793f39547f4b2",
+      "sha256": "9966da789e1479e5f36bbba04cff554c6b5a499865c66c5eb56217ed0005bd20",
       "executable": false
     },
     "DEMO.md": {
@@ -243,7 +243,7 @@
       "executable": false
     },
     "docs/CLAIMS.md": {
-      "sha256": "6828265fb185b5164dc340cb9b6c7d780aca98dfce89c26eb66d25fca79ab53d",
+      "sha256": "b9ed8aa4fc2b812e5e25329a64ee812426767ff2c8a495181a0d60339a663ebe",
       "executable": false
     },
     "docs/DATA-CUSTODY.md": {
@@ -251,7 +251,7 @@
       "executable": false
     },
     "docs/DATA-RECORD-API.md": {
-      "sha256": "c676be36bec1afbe4869c790d7091cfee986c5daed523e50ed6884a69f72af65",
+      "sha256": "429b77d330f49210c8836314631440572040b7fa2494d36be22a19ff6b527f2c",
       "executable": false
     },
     "docs/ENGINEERING-HANDOFF.md": {
@@ -644,6 +644,10 @@
     },
     "migrations/core/0077_wider_rule_audit.sql": {
       "sha256": "06fbe67fefa214defc2df85cf059a8f561165d30a31353de7cccfee2c12cc7a7",
+      "executable": false
+    },
+    "migrations/core/0078_rule_audit_correlations.sql": {
+      "sha256": "14cb5fea3b643fcfbd201b74f3e05be9935d67e5f445a853a35f08c9108896e8",
       "executable": false
     },
     "ONBOARDING.md": {
@@ -3143,7 +3147,7 @@
       "executable": false
     },
     "src/pegboard/audit/bundle-rules.ts": {
-      "sha256": "40212e853cd8bd708e88b346e86abfb994d33a9b6612e484d75aa4f643ef84f3",
+      "sha256": "19605ccc08658fa5c4385a123b4a534f0cb534f8aa49d9265ae43d1c056d93f5",
       "executable": false
     },
     "src/pegboard/audit/metadata.ts": {
@@ -3175,7 +3179,7 @@
       "executable": false
     },
     "src/pegboard/bundles/adoption.ts": {
-      "sha256": "45ae090e6c0b8cff11caf066421c315e356d6f3d5291619668e6b5225fefed78",
+      "sha256": "31719744c0ec1b51dd5c90f8ac084812dc44094f99cca384318bfe67110f19d5",
       "executable": false
     },
     "src/pegboard/bundles/definitions.ts": {
@@ -3535,7 +3539,7 @@
       "executable": false
     },
     "src/pegboard/rules/execution.ts": {
-      "sha256": "9df02cc2f8bf6e8e9172b9d0d36b454a1ea797607c8cc6d55b243729964398a1",
+      "sha256": "04317ad73382e940ea77f0121e5760edde68165d56e6232985f3913b7998a0d1",
       "executable": false
     },
     "src/pegboard/rules/requests.ts": {
@@ -4247,7 +4251,7 @@
       "executable": false
     },
     "tests/scenarios/rule-audit.mjs": {
-      "sha256": "7471b6155924e92708aa5f3de94e1692ade91e7ab761c470d6d04fbc9cd13faf",
+      "sha256": "1a7e7872116004c2b496123875a75cc753186517b11b6e3a67f7d76cb4f228cb",
       "executable": false
     },
     "tests/scenarios/schedule-calendar.mjs": {
