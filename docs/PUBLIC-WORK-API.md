@@ -88,15 +88,21 @@ public surface.
 
 ## MCP connections
 
-Configure the installation's HTTPS MCP URL and the Bearer credential in your
-client's private connection settings. The server supports JSON-RPC initialize,
-initialized notification, ping, tool listing and tool calls, with protocol
-versions `2024-11-05`, `2025-03-26` and `2025-06-18`. Initialize returns the
-negotiated protocol, tool capability and human-approval instructions. Tool
-schemas declare required inputs; the server validates work and permissions
-through the common services. A failed tool call returns `isError: true` and a
-structured status and error in its text content. Unknown methods and tools
-return JSON-RPC errors. No request parameter can select a different actor.
+Configure the installation's canonical `/mcp` URL and Bearer credential in the
+client's private settings. `/api/v1/public/mcp` is an alias of that same shared
+door. The supported MCP eras are `2026-07-28` and `2025-11-25`; earlier eras are
+refused with `UnsupportedProtocolVersion`. Use the protocol's method/name headers
+and metadata for the selected era. Native tools use the `pegboard.area.verb`
+names listed in [the agent-door declaration](AGENT-DOOR.md), with structured
+results, output schemas and typed `com.runeditrun/error` metadata. Mutations use
+`idempotency_key`; native task and personal revisions remain required. REST keeps
+its existing operation names and `intent` fields.
+
+An owner must first adopt a complete local policy through `/agents`, or pair the
+installation to Business and receive its signed policy. Unset, unanswered,
+blocked, paused, expired and revoked-consent calls make no native change. Company
+policy holds expose exact summaries for a real native person to decide. Approving
+a door action never supplies a native human work-approval decision.
 
 Claude, ChatGPT, Gemini and Cursor are covered by named MCP initialize and tool
 schema-edge requests in `tests/scenarios/public-api.mjs`. These results are
@@ -106,7 +112,7 @@ installed-client qualification remain outside these receipts.
 
 ## Signed events and reviewed webhook delivery
 
-`events_list` returns currently permitted task identifiers, event IDs, kind,
+The REST `events_list` operation returns currently permitted task identifiers, event IDs, kind,
 time and credential audience with an HMAC-SHA256 signature. Event IDs and page cursors are opaque; pages contain only currently permitted events. The signing key is
 the hexadecimal SHA256 digest of the JSON-encoded Bearer credential. Verify the
 signature over the exact JSON envelope bytes. `event_receive` verifies the
@@ -161,16 +167,7 @@ current creator's exact audited review and a one-use secret. PEG-062 inherits
 the nonhuman approval boundary and PEG-032 inherits credential cancellation.
 The clause's acceptance text is unchanged.
 
-## Shared agent-door source
+## Shared agent door
 
-`base-copies.json` records the shared agent-door, Business settings and native
-operator-auth runtime source at Base commit
-`d555e789cffb744a9f83d76ebe42a2e3bdd7a055`. Additive migrations retain the
-existing installation's applied schema history. Runtime source custody and the
-published `@runeditrun/rer` CLI pin are separate.
-
-The recorded modules are not mounted in the production Worker yet. The existing
-REST and MCP surface described above remains the supported interface; company
-policy adoption, shared approval pages and Business-bound agent credentials are
-not currently available in Pegboard. No additional agent capability, provider,
-spend enforcement or native authority is implied by the source copies.
+The active core registry, signed policy, current-person mapping and known limits
+are documented in [Company agents in Pegboard](AGENT-DOOR.md).

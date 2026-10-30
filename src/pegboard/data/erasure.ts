@@ -153,6 +153,9 @@ export async function erasurePlan(db:D1Database,actor:Actor,workspace:string,typ
   }
   const counts=Object.fromEntries(selections.map(s=>[s.table,s.keys.length]))
   const processorRequests=await processorFollowups(db,selections)
+  // Door arguments, retained receipts and reviews need a separately reviewed client disposition.
+  // Do not claim a native deletion erases these decision stores. The migration fences capture races.
+  if(await first(db,'SELECT 1 FROM agent_door_audit LIMIT 1'))blockers.push('review_agent_door_custody_before_erasure')
   const capacitySources=type==='person'?await capacityErasureSources(db,id):[]
   if(capacitySources.length)counts.capacity_source_mappings=capacitySources.length
   const plan={type,id,name,capacitySources,tasks,projects,proofs,processorRequests,reopenTasks,selections,counts,blockers:[...new Set(blockers)],holds:holds.map(h=>({id:h.id,authority:h.authority,expiresAt:h.expires_at})),retained,externalLimits}
