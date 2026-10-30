@@ -4,7 +4,7 @@ import { guarded, revision } from '../decisions/revision'
 import { auditStatement } from '../authorization/audit'
 import { operatorRow, workspaceRole, type Actor } from '../workspace/people'
 import { calendarEdge, type Service } from '../connectors/calendars/edge'
-export interface Connection { id: string; workspace_id: string; owner_id: string; owner_version: number; service: Service; calendar_id: string; active: number; revision: number }
+export interface Connection { id: string; workspace_id: string; owner_id: string; owner_version: number; service: Service; calendar_id: string; active: number; revision: number; restored_inactive: number }
 export async function calendarAdmin(db: D1Database, actor: Actor, workspace: string) {
  if (actor.apiScope || await workspaceRole(db, actor.id, workspace) !== 'owner') throw forbidden('installation_owner')
 }
@@ -12,7 +12,7 @@ export async function connectionFor(db: D1Database, actor: Actor, id: string, in
  const row = await first<Connection>(db, 'SELECT * FROM peg_calendar_connections WHERE id=? AND owner_id=?', id, actor.id)
  if (!row) throw forbidden('calendar_owner')
  await calendarAdmin(db, actor, row.workspace_id)
- if ((await operatorRow(db, actor.id))?.version !== row.owner_version || !inactive && !row.active) throw conflict('calendar_connection_ended')
+ if ((await operatorRow(db, actor.id))?.version !== row.owner_version || !inactive && (!row.active || row.restored_inactive)) throw conflict('calendar_connection_ended')
  return row
 }
 export async function calendarSettings(db: D1Database, actor: Actor, workspace: string) {
@@ -30,7 +30,7 @@ export async function connectCalendar(env: Bindings, db: D1Database, actor: Acto
  await calendarAdmin(db, actor, workspace)
  const old = await first<Connection>(db, 'SELECT * FROM peg_calendar_connections WHERE owner_id=? AND service=? AND calendar_id=?', actor.id, input.service, calendar)
  const id = old?.id ?? newId('calendar')
- await guarded(db, rev, [old ? bound(db, 'UPDATE peg_calendar_connections SET active=1,revision=revision+1,owner_version=? WHERE id=?', [person.version, id])
+ await guarded(db, rev, [old ? bound(db, 'UPDATE peg_calendar_connections SET active=1,restored_inactive=0,revision=revision+1,owner_version=? WHERE id=?', [person.version, id])
   : bound(db, 'INSERT INTO peg_calendar_connections(id,workspace_id,owner_id,owner_version,service,calendar_id) VALUES(?,?,?,?,?,?)', [id, workspace, actor.id, person.version, input.service, calendar]),
   auditStatement(db, { workspaceId: null, actorId: actor.id, action: 'calendar.connected', targetType: 'calendar', targetId: id, detail: { service: input.service } })])
  return { id, service: input.service, active: true }

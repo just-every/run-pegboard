@@ -55,7 +55,9 @@ export function registerCalendarBlockTests({ test, context }) {
   }
   assert.ok(archive, 'the native archive completes')
   const text = JSON.stringify(archive)
-  assert.ok(!text.includes(token) && !text.includes(calendarId), 'credentials and calendar account identity do not travel in the archive')
+  assert.ok(!text.includes(token), 'one-use credentials never travel in the archive')
+  const records=archive.trim().split('\n').map(line=>JSON.parse(line)),rows=records.filter(r=>r.kind==='part').flatMap(r=>r.items)
+  assert.ok(rows.some(r=>r.table==='peg_calendar_connections'&&r.row.calendar_id===calendarId&&r.row.active===0&&r.row.restored_inactive===1), 'noncredential calendar identity travels only as inactive provenance')
  })
  test('refuses unsafe calendar authority and stale reviews, exposes simultaneous task and provider conflicts and leaves deadlines untouched', async () => {
   const { w, services } = context(), root = w.owner, member = await w.person(['calendar-member', 'example.test'].join(String.fromCharCode(64)), 'Calendar member'), guest = await w.person(['calendar-guest', 'example.test'].join(String.fromCharCode(64)), 'Calendar guest', 'guest')
