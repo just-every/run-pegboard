@@ -129,7 +129,7 @@ export function registerArchiveCustodyTests({test,context}){
   try{
    copy=await restoreCanvasInstallation(owner,{archive:exported.text,roundTrip:true,interruptImport:scale,cliTimeout:scale?600000:180000,settings:{PEGBOARD_LOCAL_CALENDAR_ORIGINS:services.origins,PEGBOARD_LOCAL_APPROVAL_MAIL_ORIGIN:mailOrigin},
     async beforeImport({scratch,cli}){
-     const corrupted=exported.text.replace(archive.parts[0].sha256,'0'.repeat(64));await writeFile(join(scratch,'exports/corrupt.rer'),corrupted)
+     const corrupted=exported.text.replace(archive.parts[0].sha256,'0'.repeat(64));await writeFile(join(scratch,'exports/corrupt.rer'),corrupted,{mode:0o600})
      const refused=cli('import','--input','exports/corrupt.rer','--yes');assert.notEqual(refused.status,0);assert.match(refused.stdout+refused.stderr,/part_checksum/)
     },
     async afterImport({cli}){

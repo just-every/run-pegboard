@@ -4223,7 +4223,7 @@
       "executable": false
     },
     "tests/scenarios/archive-custody.mjs": {
-      "sha256": "76a51c2d00d5d1dbe49a6d9e3aa03be64feea94c54d6140b4f1c833a045e5392",
+      "sha256": "5396959a0a684b9fc5f24bc5f8527b2d54fb3f5dba1dae982bf00463f664c9d5",
       "executable": false
     },
     "tests/scenarios/calendar-blocks.mjs": {
