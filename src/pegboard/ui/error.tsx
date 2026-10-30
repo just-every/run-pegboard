@@ -2,6 +2,10 @@ import { appDocument } from '../../ui/document.server'
 import { AppBar } from '../../ui/bar'
 
 const sayings: Record<string, string> = {
+  capacity_review_changed:'The work, availability or access changed. Compare the current portfolio scenarios again before approving.',
+  capacity_not_feasible:'This scenario is not verified feasible. Review the shortage or limited context before choosing another alternative.',
+  capacity_undo_changed:'The assignment, allocation or access changed. Review undo again; later human edits are preserved.',
+
   approval_revision_changed:'The material, reviewers or access changed. Open a fresh review before deciding.',
   approval_review_changed:'The routing plan or material changed. Preview the plan again.',
   use_routed_approval:'This work uses named review stages. Open its routed approval to decide.',
