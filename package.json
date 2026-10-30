@@ -44,7 +44,7 @@
     "test:graph:custody": "rer queue test:graph:custody -- sh -c \"node --test --test-name-pattern='^(?:Data custody|PEG-064 retained graph recovery)(?: |$)' tests/work-graph.test.mjs\"",
     "test:graph:services": "rer queue test:graph:services -- sh -c \"node --test --test-name-pattern='^(?:Native reporting|Goal visibility and accountability|Engineering handoff|Meeting review|Analyst exports|Project planning canvas)(?: |$)' tests/work-graph.test.mjs\"",
     "test:journeys:core": "rer queue test:journeys:core -- sh -c \"PEGBOARD_JOURNEY=access-privacy,access-discovery,public-api,guests,core,recurrence,approvals,approval-routing,time-packets,goals node tests/journeys/work-graph.journey.mjs\"",
-    "test:journeys:services": "rer queue test:journeys:services -- sh -c \"PEGBOARD_JOURNEY=reporting,analytics,calendar-blocks,engineering,meetings,custody,recovery,departure node tests/journeys/work-graph.journey.mjs\"",
+    "test:journeys:services": "rer queue test:journeys:services -- sh -c \"PEGBOARD_JOURNEY=rule-audit,reporting,analytics,calendar-blocks,engineering,meetings,custody,recovery,departure node tests/journeys/work-graph.journey.mjs\"",
     "test:journeys:planning": "rer queue test:journeys:planning -- sh -c \"PEGBOARD_JOURNEY=capacity,canvas,portfolio,timeline,register,bundles node tests/journeys/work-graph.journey.mjs\"",
     "test:conversions": "rer queue test:conversions -- sh -c \"node tests/journeys/conversions.mjs\""
   },

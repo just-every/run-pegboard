@@ -33,7 +33,7 @@ export async function updateTemplateRule(db:D1Database,actor:Actor,id:string,inp
  if(Number(input.ruleVersion)!==rule.version)throw conflict('rule_version_changed')
  const definition=ruleDefinition(input);await validatePinnedTemplate(db,actor,rule.workspace_id,definition)
  const encoded=JSON.stringify(definition),version=rule.version+1,at=now()
- await guarded(db,rev,[bound(db,'UPDATE peg_template_rules SET name=?,version=?,definition=?,enabled=0,activation_id=NULL WHERE id=?',[text(input.name,'rule_name'),version,encoded,id]),bound(db,'INSERT INTO peg_template_rule_versions VALUES(?,?,?,?,?)',[id,version,encoded,actor.id,at]),bound(db,"UPDATE peg_template_rule_runs SET status='pending',outcome='definition_changed' WHERE rule_id=? AND status='queued'",[id]),ruleEvent(db,id,'definition_changed_review_required',actor.id)])
+ await guarded(db,rev,[bound(db,'UPDATE peg_template_rules SET name=?,version=?,definition=?,enabled=0,activation_id=NULL WHERE id=?',[text(input.name,'rule_name'),version,encoded,id]),bound(db,'INSERT INTO peg_template_rule_versions VALUES(?,?,?,?,?)',[id,version,encoded,actor.id,at]),bound(db,"UPDATE peg_template_rule_runs SET status='pending',outcome='definition_changed' WHERE rule_id=? AND status='queued'",[id]),ruleEvent(db,id,'definition_changed_review_required',actor.id,null,rule)])
  return {id,version}
 }
 const selectedRunIds=(input:Record<string,any>)=>{
@@ -77,6 +77,6 @@ export async function activateTemplateRule(db:D1Database,actor:Actor,id:string,i
 }
 export async function deactivateTemplateRule(db:D1Database,actor:Actor,id:string){
  const rev=await revision(db),rule=await loadTemplateRule(db,actor,id)
- await guarded(db,rev,[bound(db,'UPDATE peg_template_rules SET enabled=0,activation_id=NULL WHERE id=?',[id]),bound(db,"UPDATE peg_template_rule_runs SET status='pending',outcome='activation_required' WHERE rule_id=? AND status='queued'",[id]),ruleEvent(db,id,'deactivated',actor.id)])
+ await guarded(db,rev,[bound(db,'UPDATE peg_template_rules SET enabled=0,activation_id=NULL WHERE id=?',[id]),bound(db,"UPDATE peg_template_rule_runs SET status='pending',outcome='activation_required' WHERE rule_id=? AND status='queued'",[id]),ruleEvent(db,id,'deactivated',actor.id,null,rule)])
  return {id:rule.id}
 }

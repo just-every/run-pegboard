@@ -1,3 +1,4 @@
+import {bundleRunEvent} from '../audit/bundle-rules'
 import {permanentEvent} from '../audit/search'
 import {prepareWorkActions} from './work-actions'
 import {PegError,all,bound,first,newId,now} from '../db'
@@ -11,7 +12,9 @@ import {prepareRuleScheduleEffects} from './schedule-effects'
 export async function bundleQueueStatements(db:D1Database,projectId:string|null,taskId:string){
  if(!projectId)return []
  const rules=await all<{bundle_id:string;item_key:string;config:string;version:number;epoch:number;activated_by:string}>(db,"SELECT i.*,a.epoch,a.activated_by FROM peg_bundle_items i JOIN peg_bundle_adoptions a ON a.bundle_id=i.bundle_id AND a.project_id=i.project_id WHERE i.project_id=? AND i.kind='rule' AND a.enabled=1",projectId)
- return rules.map(r=>bound(db,"INSERT INTO peg_bundle_jobs(id,bundle_id,project_id,item_key,task_id,epoch,config,actor_id,status,created_at,finished_at,definition_version) VALUES(?,?,?,?,?,?,?,?,'queued',?,NULL,?)",[newId('bundlejob'),r.bundle_id,projectId,r.item_key,taskId,r.epoch,r.config,r.activated_by,now(),r.version]))
+ const statements=[]
+ for(const r of rules){const id=newId('bundlejob'),job={id,bundle_id:r.bundle_id,project_id:projectId,item_key:r.item_key,task_id:taskId,epoch:r.epoch,actor_id:r.activated_by,definition_version:r.version};statements.push(bound(db,"INSERT INTO peg_bundle_jobs(id,bundle_id,project_id,item_key,task_id,epoch,config,actor_id,status,created_at,finished_at,definition_version) VALUES(?,?,?,?,?,?,?,?,'queued',?,NULL,?)",[id,r.bundle_id,projectId,r.item_key,taskId,r.epoch,r.config,r.activated_by,now(),r.version]),await bundleRunEvent(db,job,'bundle_rule.run_queued','queued','queued'))}
+ return statements
 }
 export async function processBundleJobs(db:D1Database,bundleId?:string){
  const jobs=await all<{id:string;bundle_id:string;project_id:string;item_key:string;task_id:string;epoch:number;config:string;actor_id:string;definition_version:number|null}>(db,"SELECT * FROM peg_bundle_jobs WHERE status='queued'"+(bundleId?' AND bundle_id=?':'')+' ORDER BY created_at,id LIMIT 100',...(bundleId?[bundleId]:[])),result={applied:0,cancelled:0,pending:0}
@@ -33,14 +36,14 @@ export async function processBundleJobs(db:D1Database,bundleId?:string){
    if(preview.conflicts.length)throw new PegError(409,preview.conflicts[0].reason)
    const work=await prepareWorkActions(db,actor,opened.task,job.project_id,config.actions)
    const prepared=preview.canApply||work.effects.length?await prepareBulkEffects(db,actor,project.project.workspace_id,preview,'bundle.rule_applied',work.effects.length?[job.task_id]:[]):null,at=now()
-   await guarded(db,rev,[...(prepared?.statements??[]),...work.statements,...(prepared?work.record(prepared.result.id):[]),...(work.effects.length?[permanentEvent(db,{workspace:project.project.workspace_id,actor:actor.id,action:'rule.work_applied',type:'task',id:job.task_id,metadata:{id:job.id,count:work.effects.length}})]:[]),bound(db,'INSERT INTO peg_rule_effect_runs VALUES(?,?,?,?,?,?,?,?)',[job.id,prepared?.result.id??null,job.task_id,job.project_id,job.definition_version!,job.epoch,job.actor_id,work.effects.length]),bound(db,"UPDATE peg_bundle_jobs SET status='applied',finished_at=?,outcome_reason=? WHERE id=? AND status='queued'",[at,prepared?'recorded_effects':'no_changes',job.id])]);result.applied++
+   await guarded(db,rev,[...(prepared?.statements??[]),...work.statements,...(prepared?work.record(prepared.result.id):[]),...(work.effects.length?[permanentEvent(db,{workspace:project.project.workspace_id,actor:actor.id,action:'rule.work_applied',type:'task',id:job.task_id,metadata:{id:job.id,count:work.effects.length}})]:[]),bound(db,'INSERT INTO peg_rule_effect_runs VALUES(?,?,?,?,?,?,?,?)',[job.id,prepared?.result.id??null,job.task_id,job.project_id,job.definition_version!,job.epoch,job.actor_id,work.effects.length]),bound(db,"UPDATE peg_bundle_jobs SET status='applied',finished_at=?,outcome_reason=? WHERE id=? AND status='queued'",[at,prepared?'recorded_effects':'no_changes',job.id]),await bundleRunEvent(db,job,prepared?'bundle_rule.run_applied':'bundle_rule.run_noop',prepared?'applied':'noop',prepared?'recorded_effects':'no_changes',job.actor_id,prepared?.result.id)]);result.applied++
   }catch(error){
    if(!(error instanceof PegError&&[400,403,404,409].includes(error.status)))throw error
    // Concurrent processing must not relabel a run another worker already committed.
    if((await first<{status:string}>(db,'SELECT status FROM peg_bundle_jobs WHERE id=?',job.id))?.status!=='queued')continue
    if(error.code==='review_changed')throw error
    const pending=['rule_schedule_pending','rule_schedule_impossible','activating_admin_unavailable','activation_scope_changed','activation_changed'].includes(error.code)
-   await guarded(db,rev,[bound(db,"UPDATE peg_bundle_jobs SET status=?,finished_at=?,outcome_reason=? WHERE id=? AND status='queued'",[pending?'pending':'cancelled',now(),error.code,job.id])]);if(pending)result.pending++;else result.cancelled++
+   await guarded(db,rev,[bound(db,"UPDATE peg_bundle_jobs SET status=?,finished_at=?,outcome_reason=? WHERE id=? AND status='queued'",[pending?'pending':'cancelled',now(),error.code,job.id]),await bundleRunEvent(db,job,'bundle_rule.run_blocked','blocked',error.code)]);if(pending)result.pending++;else result.cancelled++
   }
  }
  return result
