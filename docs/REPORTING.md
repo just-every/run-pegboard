@@ -32,8 +32,42 @@ hours from the most recent recorded doing transition to the recorded completion
 of currently completed work. Status age sums hours since each current status
 began. Estimate and deadline edits do not restart the doing interval; completion
 counts once even when its deadline changes in the same edit. Missing duration or deadline history produces Unknown rather than a
-fabricated total. The current slice does not report approved time, capacity,
-requests or approvals.
+fabricated total.
+
+Business measures freeze the same authorized snapshot with their native source
+records. They describe current business state, rather than inventing earlier
+planning or approval states:
+
+- Approved hours include only currently approved timesheet entries that the
+  reader may open through the native timesheet door, with signed approved
+  adjustments and the selected project. Recorded work dates stay calendar dates;
+  a report timezone never moves an entry into another work day. Draft or returned
+  entries, notes and adjustment reasons are excluded.
+- Committed hours are current scheduled participant effort, spread with the same
+  working calendars as Workload. Reviewed Split, Sum and per-person allocations
+  are retained; shared tasks count once. Undated participant effort is available
+  separately as Unscheduled hours, with no invented daily bucket.
+- Available hours count each distinct participant assigned to selected open work
+  once per local calendar day, including their native leave and working hours.
+  Overload hours compare selected scheduled demand with each person's daily
+  availability before summing. Hidden and unselected commitments never enter
+  these totals. Unknown native availability stays Unknown. These are current
+  plans for the selected days; no historical availability claim is made.
+- Requests count deduplicated native project intake created during the selected
+  local-day window. The source task's current status supplies the grouping.
+  Membership access requests are not work intake.
+- Pending and approved reviews include task and proof reviews created during the
+  selected local days, using their current native decision state. Pending includes
+  reopened, stale and changes-requested reviews; rejected and withdrawn reviews
+  are excluded. An unselected proof attachment cannot contribute a count.
+
+Each business value links to its frozen source records and permitted native task,
+timesheet or proof context. A new capture reflects changed work; existing snapshots
+retain their captured values. Downloads recheck timesheet, proof, capacity and
+current selected-project authority as well as task export rights. Becoming an
+ordinary member cannot retain someone else's timesheet download through a saved
+report. Availability and overload use a daily line, source table or single number;
+burn charts retain their explicit task count or effort definitions.
 
 Membership changes outside the selected project scope disclose neither a source
 event nor its timestamp. Upgrading this privacy correction expires prior cached
@@ -43,8 +77,9 @@ Every displayed value links to its source task rows and event references. CSV,
 real XLSX and paginated US Letter PDF contain the same snapshot definition,
 values, source rows and source events; there is no hidden row limit. The workbook
 uses literal string cells, never formulas. CSV neutralizes formula-like text
-with an apostrophe. PDF represents characters outside its built-in font as
-explicit Unicode code points. Downloads are private, are available for at most
+with an apostrophe. PDF preserves its built-in font’s Western punctuation and Latin characters;
+other characters are represented as explicit Unicode code points. A plus at the
+start of a wrapped field line marks continuation, preserving spaces at the wrap. Downloads are private, are available for at most
 24 hours and recheck current access; losing a selected project or source task
 refuses a saved download. Erasure removes cached payloads and event references.
 Already downloaded external copies cannot be recalled. Cached snapshots and read
