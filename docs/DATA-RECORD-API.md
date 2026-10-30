@@ -26,3 +26,24 @@ clauses; their completion is not claimed here.
 The current ordinary attachment door retains its existing 524,288-byte database
 limit. PEG-082’s larger guarantees require its complete registered R2 upload
 implementation; these custody APIs do not lower that contractual requirement.
+
+## Local rule audit
+
+Authorized administrators use `GET /api/v1/admin/audit` and its `export` door.
+Exact query filters `rule`, `run`, `activation` and `operation` select opaque
+identities without expanding the existing workspace or personal scope. The browser
+audit search offers rule and run IDs alongside action, actor and subject filters.
+
+Local configuration emits `rule.created`, `rule.edited`, `rule.activated` and
+`rule.deactivated`. Matching native triggers emit `rule.run_queued` or an inactive
+`rule.run_blocked`; processing emits `rule.run_applied`, `rule.run_noop` or
+`rule.run_blocked`. Receipts bind version and activation, trigger and activating
+actors, run and task identities, closed outcome codes and the operation ID when
+work changes. Dates, descriptions, names, rule action text and credentials remain
+outside permanent metadata. The operation identifies the exact scoped work
+result; it grants no additional read authority.
+
+Deactivation or editing never rewrites earlier receipts. Restored rules remain
+inactive, erased actors retain anonymized attribution, and existing run receipts
+survive native archive restore. These records do not expand PEG-012 rule behavior
+or qualify product imports, autonomous agent execution or future integration doors.

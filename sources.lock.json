@@ -199,7 +199,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "bc33c3169bf43cfd0c71b7922978dbf3147c4f2b94b03d74eaa5f809aad9674b",
+      "sha256": "70d170ec40ed8eca3637ebbdfc832f0d69c6502b72fe87b75ffa153042d437c8",
       "executable": false
     },
     "AGENTS.md": {
@@ -215,7 +215,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "8509a99cbcac42571a0589c4336874e9021c1f64bf0db01de2cfebdb27bb23b8",
+      "sha256": "a46545e21f6f2f7789ac2203628b0eaab570cfc1f0e61012be7b1822890a4918",
       "executable": false
     },
     "DEMO.md": {
@@ -243,15 +243,15 @@
       "executable": false
     },
     "docs/CLAIMS.md": {
-      "sha256": "765213a90c5cd5ebb021bdf9fd0c09df756cb79395e95ca9bfdb113747a5f8dd",
+      "sha256": "4be266f531347052c8ff084afbc03ec8704aa8804174712a53b70076439dc365",
       "executable": false
     },
     "docs/DATA-CUSTODY.md": {
-      "sha256": "ae8af796d04bd674a67273baf716494cf13443187596e031d1981a515eeecf00",
+      "sha256": "b530a7bcac2457471300d1d1048a76b718f1012c938fc35fe29a5fd8838b740c",
       "executable": false
     },
     "docs/DATA-RECORD-API.md": {
-      "sha256": "1aaf3d44df77cb33168ce75d695209a3dd0deed25bf3868be6c6d5a15e9edfdb",
+      "sha256": "fed70cda83feb20a57f1b074c546a9c69c1c20007777aa0e6e8289b46d5fd972",
       "executable": false
     },
     "docs/ENGINEERING-HANDOFF.md": {
@@ -4235,7 +4235,7 @@
       "executable": false
     },
     "tests/scenarios/rule-audit.mjs": {
-      "sha256": "18ba7795fc62c8a67707237f9ebacfd2668fb7264ce320f92ea8504bbfa0bfc0",
+      "sha256": "3502feb943fbb6ac89b0ab34da6c6f4bc94f1d658458e890840a1f35ce06203c",
       "executable": false
     },
     "tests/scenarios/schedule-calendar.mjs": {
@@ -4283,7 +4283,7 @@
       "executable": false
     },
     "tests/work-graph.test.mjs": {
-      "sha256": "be56fb86a7609393a8eda11bb886f09af0be643d0a481391cca40b66db15f407",
+      "sha256": "52c09527f8593c89f2c57c3756aa710e998cdcbc3f1e9e65d03a98d0ed0ccd52",
       "executable": false
     },
     "tsconfig.json": {
