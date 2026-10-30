@@ -96,6 +96,7 @@ export function registerRuleAuditTests({test,context}){
   assert.equal((await read(root,scoped.id)).runs.length,2,'repeated non-transitions produce no extra rule run')
   await w.restart();await pass(root.post(path(scoped.id)+'/process',{}))
   assert.equal((await read(root,scoped.id)).runs.length,2)
+  await widerRuleAudit(w)
  },{timeout:180000})
  test('attributes background refusal to the former activating administrator and retains anonymized rule audit through native archive restore',async()=>{
   const w=context(),root=w.owner
@@ -190,4 +191,74 @@ export function registerRuleAuditTests({test,context}){
    assert.deepEqual((await pass(copy.worker.owner.get(`/api/v1/tasks/${valid.id}`))).comments.map(c=>c.body),['synthetic-pegboard-5718'],'native restore preserves the later comment without resurrecting erased rule content')
   }finally{await copy.stop()}
  },{timeout:360000})
+}
+
+// The existing rule families must leave the same permanent, content-free trail.
+async function widerRuleAudit(w){
+ const root=w.owner,project=await pass(root.post('/api/v1/projects',{name:'synthetic-pegboard-5901'}))
+ const definition={kind:'task',roles:['Producer'],phases:['Production'],fields:[],tasks:[{key:'produce',title:'synthetic-pegboard-5902',role:'Producer',phase:'Production',start:0,due:1,hours:1}],dependencies:[],rules:[]}
+ const template=await pass(root.post('/api/v1/templates',{name:'synthetic-pegboard-5903',definition}))
+ const route=`/api/v1/projects/${project.id}/template-rules`,config={name:'synthetic-pegboard-5904',workName:'synthetic-pegboard-5905',templateId:template.id,templateVersion:1,roles:{Producer:root.id},dateSource:'task_start',offsetDays:0}
+ const rule=await pass(root.post(route,config))
+ const enable=async(client,id)=>{const preview=await pass(client.post(`/api/v1/template-rules/${id}/preview`,{sampleSourceDate:'2026-07-02'}));return pass(client.post(`/api/v1/template-rules/${id}/activate`,{sampleSourceDate:'2026-07-02',token:preview.token}))}
+ const activation=await enable(root,rule.id)
+ const trigger=await pass(root.post('/api/v1/tasks',{projectId:project.id,title:'synthetic-pegboard-5906',startDate:'2026-07-02'}))
+ let view=await pass(root.get(route)),run=view.runs.find(r=>r.task_id===trigger.id)
+ assert.equal(run.status,'applied');assert.equal(run.result.taskIds.length,1)
+ const generated=await pass(root.get(`/api/v1/tasks/${run.result.taskIds[0]}`));assert.equal(generated.title,'synthetic-pegboard-5902');assert.equal(generated.owner.id,root.id)
+ let events=await audit(root,rule.id)
+ assert.deepEqual(events.map(e=>e.action),['template_rule.created','template_rule.activated','template_rule.run_queued','template_rule.run_applied'])
+ for(const e of events.slice(2)){assert.equal(e.actor_id,root.id);assert.equal(e.metadata.runId,run.id);assert.equal(e.metadata.activationId,activation.activationId);assert.equal(e.metadata.version,1);assert.equal(e.metadata.triggerActorId,root.id)}
+ assert.equal(events.at(-1).metadata.count,1)
+ const noop=await pass(root.post('/api/v1/tasks',{projectId:project.id,title:'synthetic-pegboard-5907'}))
+ run=(await pass(root.get(route))).runs.find(r=>r.task_id===noop.id)
+ assert.equal(run.status,'noop');assert.deepEqual((await audit(root,rule.id,'&run='+run.id)).map(e=>[e.action,e.result]),[['template_rule.run_queued','queued'],['template_rule.run_noop','noop']])
+ await pass(root.post(`/api/v1/template-rules/${rule.id}/deactivate`,{}))
+ assert.equal((await audit(root,rule.id)).at(-1).metadata.activationId,activation.activationId,'deactivation retains the retired activation identity')
+ const waiting=await pass(root.post('/api/v1/tasks',{projectId:project.id,title:'synthetic-pegboard-5908',startDate:'2026-07-02'}))
+ run=(await pass(root.get(route))).runs.find(r=>r.task_id===waiting.id)
+ assert.equal(run.status,'pending');assert.equal((await audit(root,rule.id,'&run='+run.id))[0].result,'blocked')
+ const renewed=await enable(root,rule.id)
+ assert.notEqual(renewed.activationId,activation.activationId)
+ assert.deepEqual((await audit(root,rule.id,'&run='+run.id)).filter(e=>e.action!=='template_rule.run_reviewed').map(e=>e.action),['template_rule.run_blocked','template_rule.run_queued','template_rule.run_applied'])
+ await pass(root.post(`/api/v1/template-rules/${rule.id}`,{...config,name:'synthetic-pegboard-5909',ruleVersion:1,offsetDays:1}))
+ const edited=(await audit(root,rule.id)).at(-1);assert.equal(edited.action,'template_rule.edited');assert.equal(edited.metadata.version,2);assert.equal(edited.metadata.activationId,renewed.activationId)
+ events=await audit(root,rule.id)
+ await w.restart();await pass(root.post(route+'/process',{}));assert.deepEqual(await audit(root,rule.id),events)
+ const exported=await pass(root.get(`/api/v1/admin/audit/export?rule=${rule.id}&limit=500`));assert.deepEqual(exported.events,events)
+ for(const forbidden of ['synthetic-pegboard-5902','synthetic-pegboard-5903','synthetic-pegboard-5904','synthetic-pegboard-5905','synthetic-pegboard-5909',root.cookie])assert.ok(!JSON.stringify(exported).includes(forbidden))
+ // A bundle run is bound to an opaque component and the exact adoption epoch.
+ const bundled=await pass(root.post('/api/v1/projects',{name:'synthetic-pegboard-5910'}))
+ const member=await w.person(['synthetic-pegboard-5911','example.com'].join('@'),'synthetic-pegboard-5911')
+ await pass(root.post('/api/v1/grants',{objectType:'project',objectId:bundled.id,granteeId:member.id,level:'editor'}))
+ const bundle=await pass(root.post('/api/v1/workflow-bundles',{name:'synthetic-pegboard-5912'})),base=`/api/v1/workflow-bundles/${bundle.id}`,key='synthetic-pegboard-5913'
+ const publish=async(version,priority,actions=[])=>pass(root.post(base+'/versions',{version,key,kind:'rule',name:'synthetic-pegboard-5914',priority,actions}))
+ const adopt=async()=>{const preview=await pass(root.post(base+'/preview',{projectIds:[bundled.id]}));return pass(root.post(base+'/adopt',{projectIds:[bundled.id],keys:[key],revision:preview.token}))}
+ await publish(1,'high',[{kind:'comment',value:'synthetic-pegboard-5915'}]);await adopt()
+ let all=(await pass(root.get('/api/v1/admin/audit?action=bundle_rule.created&limit=500'))).events
+ const bundleRule=all.find(e=>e.metadata.bundleId===bundle.id);assert.ok(bundleRule);assert.match(bundleRule.metadata.ruleId,/^[a-f0-9]{64}$/)
+ const id=bundleRule.metadata.ruleId,work=await pass(member.post('/api/v1/tasks',{projectId:bundled.id,title:'synthetic-pegboard-5916'}))
+ assert.deepEqual((await audit(root,id)).map(e=>e.action),['bundle_rule.created','bundle_rule.activated','bundle_rule.run_queued'])
+ assert.equal((await audit(root,id)).at(-1).actor_id,member.id)
+ await pass(root.post(base+'/jobs/process',{}))
+ let job=(await pass(root.get(base))).jobs.find(j=>j.task_id===work.id)
+ const terminal=(await audit(root,id)).at(-1)
+ assert.equal(terminal.action,'bundle_rule.run_applied');assert.equal(terminal.actor_id,root.id);assert.equal(terminal.metadata.runId,job.id);assert.equal(terminal.metadata.operationId,job.operation_id);assert.equal(terminal.metadata.version,2);assert.equal(terminal.metadata.triggerActorId,member.id)
+ assert.equal((await pass(member.get(`/api/v1/tasks/${work.id}`))).comments[0].body,'synthetic-pegboard-5915')
+ await publish(2,'normal');await adopt()
+ const unchanged=await pass(member.post('/api/v1/tasks',{projectId:bundled.id,title:'synthetic-pegboard-5917'}))
+ await pass(root.post(base+'/jobs/process',{}));job=(await pass(root.get(base))).jobs.find(j=>j.task_id===unchanged.id)
+ assert.equal(job.outcome_reason,'no_changes');assert.deepEqual((await audit(root,id,'&run='+job.id)).map(e=>[e.action,e.result]),[['bundle_rule.run_queued','queued'],['bundle_rule.run_noop','noop']])
+ const cancelled=await pass(member.post('/api/v1/tasks',{projectId:bundled.id,title:'synthetic-pegboard-5918'}))
+ await pass(root.post(base+`/projects/${bundled.id}/override`,{key,priority:'urgent'}))
+ job=(await pass(root.get(base))).jobs.find(j=>j.task_id===cancelled.id)
+ const blocked=await audit(root,id,'&run='+job.id);assert.deepEqual(blocked.map(e=>[e.action,e.result]),[['bundle_rule.run_queued','queued'],['bundle_rule.run_blocked','blocked']]);assert.equal(blocked[1].metadata.outcome,'activation_changed')
+ const disabled=await pass(member.post('/api/v1/tasks',{projectId:bundled.id,title:'synthetic-pegboard-5919'}))
+ await pass(root.post(base+`/projects/${bundled.id}/disable`,{}))
+ job=(await pass(root.get(base))).jobs.find(j=>j.task_id===disabled.id);assert.equal(job.status,'cancelled')
+ assert.deepEqual((await audit(root,id,'&run='+job.id)).map(e=>e.action),['bundle_rule.run_queued','bundle_rule.run_blocked'])
+ events=await audit(root,id);await w.restart();await pass(root.post(base+'/jobs/process',{}));assert.deepEqual(await audit(root,id),events)
+ const bundleExport=await pass(root.get(`/api/v1/admin/audit/export?rule=${id}&limit=500`));assert.deepEqual(bundleExport.events,events)
+ for(const forbidden of [key,'synthetic-pegboard-5912','synthetic-pegboard-5914','synthetic-pegboard-5915',member.name,member.email,root.cookie])assert.ok(!JSON.stringify(bundleExport).includes(forbidden))
+ assert.equal((await member.get(`/api/v1/admin/audit/export?rule=${id}`)).status,403)
 }

@@ -1,3 +1,4 @@
+import {bundleRunEvent} from '../audit/bundle-rules'
 import {all,bound,conflict,first,forbidden,notFound,now} from '../db'
 import {rootOf} from '../authorization/effective'
 import {digest,guarded,revision} from '../decisions/revision'
@@ -59,6 +60,7 @@ export async function approvePendingRuleSchedule(db:D1Database,actor:Actor,bundl
  await guarded(db,rev,[...operation.statements,...work.statements,...work.record(operation.result.id),
   bound(db,'INSERT INTO peg_rule_effect_runs VALUES(?,?,?,?,?,?,?,?)',[job.id,operation.result.id,job.task_id,job.project_id,job.definition_version,job.epoch,job.actor_id,work.effects.length]),
   bound(db,"UPDATE peg_bundle_jobs SET status='applied',finished_at=?,outcome_reason='recorded_effects_after_review' WHERE id=? AND status='pending'",[now(),job.id]),
+  await bundleRunEvent(db,job,'bundle_rule.run_applied','applied','recorded_effects_after_review',actor.id,operation.result.id),
   permanentEvent(db,{workspace:bundle.workspace_id,actor:actor.id,action:'rule.schedule_approved',type:'task',id:job.task_id,metadata:{runId:job.id,operationId:operation.result.id,activation:job.epoch,activatingAdmin:job.actor_id}})])
  return {status:'applied' as const,id:job.id,operationId:operation.result.id}
 }
