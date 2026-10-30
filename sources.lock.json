@@ -199,7 +199,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "ef33cc9329c18cd4ae69b941a580113fcaacb71bf0bae4850a7f32a6ead9f800",
+      "sha256": "910085b2e4fcc4c55e67aeeadd484a2be8967fbd1f740773cfed8279f9c93e1e",
       "executable": false
     },
     "AGENTS.md": {
@@ -215,7 +215,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "1c17cf36550039f38919266d831e5fb27f5f7ad4cf5eaaf9176b78bff4a4595e",
+      "sha256": "d433289e70ebc2eba0ae17c76fbaff1e730f13043db62960a308438604d1da1b",
       "executable": false
     },
     "DEMO.md": {
@@ -243,7 +243,7 @@
       "executable": false
     },
     "docs/CLAIMS.md": {
-      "sha256": "000997b80bc0c45d6fdb690d24037c3fbced5533b69888b501ba8d1fe2270a90",
+      "sha256": "4532b8a96c16db8c54e8743864e0d9488c2968ba1ab26732a593c5648a7a5ee8",
       "executable": false
     },
     "docs/DATA-CUSTODY.md": {
@@ -303,7 +303,7 @@
       "executable": false
     },
     "docs/WORKLOAD.md": {
-      "sha256": "3e7cb0e0b60c4b0be5a097b42b8d199ecedf3da289bd4f05115f594e31b3939c",
+      "sha256": "53464c25f09b0fd710d047ba80d8b714b290c387e89f9f7f40ec70f4d2ba3dd0",
       "executable": false
     },
     "edition.json": {
@@ -3247,7 +3247,7 @@
       "executable": false
     },
     "src/pegboard/capacity/portfolio-plans.ts": {
-      "sha256": "55ba5642582c4875908567930498a01ae2753035162985c9dc38315e3b21c074",
+      "sha256": "e2da021550f1fe855d47ff34ce3fdb736f28d4909f88f0c9e3d55be974f9cbcc",
       "executable": false
     },
     "src/pegboard/capacity/profiles.ts": {
@@ -4219,7 +4219,7 @@
       "executable": false
     },
     "tests/journeys/portfolio-capacity.mjs": {
-      "sha256": "dbdda860eb3b8e4c9f329c7baee08922f7b32f828190673fb6dbde726fd56c17",
+      "sha256": "1d4f0d434128a38bc3f3e08a4e93bc105212583e6d1d77d74f670d6e752d6884",
       "executable": false
     },
     "tests/journeys/portfolios.mjs": {
@@ -4303,7 +4303,7 @@
       "executable": false
     },
     "tests/scenarios/portfolio-capacity.mjs": {
-      "sha256": "a12f7c689ffa014147e90a1873cf25968d5d1be78c3f524eace82741ea4f18c8",
+      "sha256": "656a3f476c340ad4ec750dc00037bf7193d1da664c11ab17949e510338d731ab",
       "executable": false
     },
     "tests/scenarios/public-api.mjs": {

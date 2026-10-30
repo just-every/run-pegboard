@@ -81,6 +81,9 @@ another current-authority review: it reverts only the owner and effort transfer,
 preserving later text, estimates and dates. A later owner or allocation edit,
 including a changed value subsequently restored, prevents undo. Erasure includes
 the affected undo snapshots, so they cannot restore an erased participant.
+If the reassigned task has since received human approval, undo is refused rather
+than silently reopening that sign-off. The current assignment, approval and
+history remain intact; ordinary selective undo retains later estimates and dates.
 
 Scoped-agent generation, ranking, schedule alternatives, routed approvals and
 autonomous execution remain unimplemented. No model, processor or spending

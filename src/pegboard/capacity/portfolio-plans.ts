@@ -110,6 +110,7 @@ export async function portfolioCapacityUndoPreview(db:D1Database,actor:Actor,id:
  const {task}=await editable(db,actor,op.task_id)
  const current=await allocations(db,task.id),people=await capacityPeople(db,actor,scope.workspace),reasons:string[]=[]
  if(op.undone_at)reasons.push('Already undone.')
+ if(task.status==='done'&&await first(db,'SELECT 1 FROM peg_approval_tasks WHERE task_id=?',task.id))reasons.push('Later approval completion is preserved.')
  if(task.owner_id!==op.to_id||await epoch(db,task.id,'owner_id')!==op.owner_epoch||await epoch(db,task.id,'capacity_allocations')!==op.allocation_epoch||JSON.stringify(current)!==op.after_allocations)reasons.push('Later assignment or allocation edits are preserved.')
  if(!people.some(p=>p.id===op.from_id)||(JSON.parse(op.before_allocations) as Allocation[]).some(a=>!people.some(p=>p.id===a.person_id)))reasons.push('Original people are no longer available.')
  if((await first<Commitment>(db,'SELECT * FROM peg_capacity_commitments WHERE task_id=?',task.id))?.locked)reasons.push('This commitment is now locked.')
