@@ -41,7 +41,7 @@ undeclared local edits. Applied migration history remains the edition's
 responsibility: never refresh a copied schema over an applied migration. If the
 edition uses a source lock, refresh it
 with its existing authoring command after staging intentional changes. See the
-[edition authoring guide](../../export/EDITION-AUTHORING.md) for offline refresh,
+[edition authoring guide](https://github.com/runeditrun/base/blob/2135c394939f4a737adabdc8003b0e667b31ac5a/export/EDITION-AUTHORING.md) for offline refresh,
 adaptations and copy verification.
 
 ## Wire the edition
@@ -514,7 +514,7 @@ The directory must preserve Base's paths and executable modes. It is the source
 at that declared SHA; the CLI cannot authenticate an archive's commit without
 Git history. Copy mapping and byte digests follow the same rules as a checkout.
 History-dependent refresh operations require the historical source evidence
-described in the [authoring guide](../../edition-authoring/README.md); they fail
+described in the [authoring guide](https://github.com/runeditrun/base/blob/2135c394939f4a737adabdc8003b0e667b31ac5a/edition-authoring/README.md); they fail
 closed when that evidence is absent.
 
 ## Interim policy boundaries

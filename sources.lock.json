@@ -212,7 +212,7 @@
       "executable": false
     },
     "base-copies.json": {
-      "sha256": "d7725b63a293f5cd32936b928b6e6901ff7ee81f57ccc8ce55fef12c1ce4e049",
+      "sha256": "29a9418a6fcd140a1d77354b65c1e45b47f953195842671fe23e71ad342e5cd4",
       "executable": false
     },
     "CLAUDE.md": {
@@ -2060,7 +2060,7 @@
       "executable": false
     },
     "src/modules/agent-door/ADOPTING.md": {
-      "sha256": "d42162ddfe66be6212df5ed7d7b06bb79c86a94219b6e8ca039fb6bd52b3fc4b",
+      "sha256": "c7926464c1d7fc1dc7abf6741862916716dee3d382c84a96b8a21e38e161a65a",
       "executable": false
     },
     "src/modules/agent-door/approval-execution.ts": {

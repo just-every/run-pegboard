@@ -2820,7 +2820,16 @@
         "modules/agent-door/transport.ts",
         "modules/agent-door/types.ts",
         "modules/agent-door/wire.ts"
-      ]
+      ],
+      "adapted": {
+        "src/modules/agent-door/ADOPTING.md": "2135c394939f4a737adabdc8003b0e667b31ac5a"
+      },
+      "acknowledged": {
+        "src/modules/agent-door/ADOPTING.md": {
+          "sha256": "c7926464c1d7fc1dc7abf6741862916716dee3d382c84a96b8a21e38e161a65a",
+          "mode": "100644"
+        }
+      }
     },
     {
       "path": "src/modules/ai/client.mjs",
