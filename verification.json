@@ -64,7 +64,23 @@
       "browser": false,
       "hosted": false,
       "commands": [
-        "pnpm run test:graph:portfolios"
+        "pnpm run test:graph:portfolios:core"
+      ]
+    },
+    {
+      "name": "capacity",
+      "browser": false,
+      "hosted": false,
+      "commands": [
+        "pnpm run test:graph:capacity"
+      ]
+    },
+    {
+      "name": "workflow-rules",
+      "browser": false,
+      "hosted": false,
+      "commands": [
+        "pnpm run test:graph:workflow-rules"
       ]
     },
     {
