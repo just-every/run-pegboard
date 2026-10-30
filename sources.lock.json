@@ -212,7 +212,7 @@
       "executable": false
     },
     "base-copies.json": {
-      "sha256": "2f6a826f62738c76bbfad6654567aa636006155bdeb2ac261e75d184cb33a24b",
+      "sha256": "d7725b63a293f5cd32936b928b6e6901ff7ee81f57ccc8ce55fef12c1ce4e049",
       "executable": false
     },
     "CLAUDE.md": {
@@ -4732,7 +4732,7 @@
       "executable": false
     },
     "tests/journeys/public-api.mjs": {
-      "sha256": "c3d406b382613c3410068614addc8c1ffd66336b87381431d25ba5e4e6c892ad",
+      "sha256": "b0fb45eec46e2f676fd5ed459a668a6f84b21bd3aa095234438b483ac3690440",
       "executable": false
     },
     "tests/journeys/recovery.mjs": {

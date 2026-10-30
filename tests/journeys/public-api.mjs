@@ -15,7 +15,7 @@ export async function publicApiJourney({w,browser,owner,cookies}) {
  const call=async(name,args)=>{
   const m=message({jsonrpc:'2.0',id:1,method:'tools/call',params:{name,arguments:args}})
   const response=await fetch(w.origin+'/api/v1/public/mcp',{method:'POST',headers:{authorization:'Bearer '+key.secret,'content-type':'application/json',...m.headers},body:JSON.stringify(m.body)})
-  assert.equal(response.status,200);const message=await response.json();assert.equal(message.result.isError,false,JSON.stringify(message));return JSON.parse(message.result.content[0].text)
+  assert.equal(response.status,200);const reply=await response.json();assert.equal(reply.result.isError,false,JSON.stringify(reply));return JSON.parse(reply.result.content[0].text)
  }
  const task=await call('task_create',{title:'Connected draft',projectId:project.id,intent:'browser-create'})
  const initial=await call('task_read',{taskId:task.id})
