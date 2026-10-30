@@ -1,3 +1,5 @@
+import { portfolioCapacityScenarios } from './scenarios/portfolio-capacity.mjs'
+portfolioCapacityScenarios()
 import { startCapacityServices } from './support/capacity-services.mjs'
 // PEG-013 through the public doors: a two-level portfolio of 20 projects with shared tasks and a private project, live rollups
 // from Tasks, a limited stakeholder's authorized totals, each default risk threshold at a pinned clock, the versioned policy,

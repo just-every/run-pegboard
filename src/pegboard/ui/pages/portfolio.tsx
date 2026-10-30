@@ -16,7 +16,7 @@ export function PortfolioPage({ viewer, view, tab, drill, atInput, projectOption
   const flags = view.projects.flatMap(p => p.flags.map(f => ({ ...f, project: p })))
   return <Shell viewer={viewer} current="/app/portfolios" title={view.portfolio.name} chip={s.computed.state === 'at_risk' ? 'AT RISK' : s.computed.state === 'unknown' ? 'UNKNOWN' : 'CLEAR'} facts={[`Owner: ${view.portfolio.owner}`, `${s.projects} project${s.projects === 1 ? '' : 's'} you can read`, `Evaluated ${evaluated}`]}>
     <Card title="Views">
-      <nav className="inline" aria-label="Portfolio tabs">{tabs.map(name => <a key={name} className={name === tab ? 'button primary' : 'button quiet'} aria-current={name === tab ? 'page' : undefined} href={`${here}?tab=${name}${keep}`}>{name[0].toUpperCase() + name.slice(1)}</a>)}</nav>
+      <p><a href={here+'/capacity'}>Portfolio capacity</a></p><nav className="inline" aria-label="Portfolio tabs">{tabs.map(name => <a key={name} className={name === tab ? 'button primary' : 'button quiet'} aria-current={name === tab ? 'page' : undefined} href={`${here}?tab=${name}${keep}`}>{name[0].toUpperCase() + name.slice(1)}</a>)}</nav>
       <form method="get" action={here} className="inline" aria-label="Evaluate as of"><input type="hidden" name="tab" value={tab} />
         <Field label="Evaluate as of (UTC)" name="at" type="datetime-local" value={atInput ?? ''} />
         {view.filters.length > 0 && <Pick label="Saved filter" name="filter" blank="No filter" value={view.filter?.id ?? ''} options={view.filters.map(f => ({ value: f.id, label: f.name }))} />}
