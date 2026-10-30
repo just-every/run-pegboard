@@ -52,6 +52,14 @@
       ]
     },
     {
+      "name": "interfaces",
+      "browser": false,
+      "hosted": false,
+      "commands": [
+        "pnpm run test:graph:interfaces"
+      ]
+    },
+    {
       "name": "access-control",
       "browser": false,
       "hosted": false,
@@ -65,6 +73,22 @@
       "hosted": false,
       "commands": [
         "pnpm run test:graph:portfolios"
+      ]
+    },
+    {
+      "name": "portfolio-rules",
+      "browser": false,
+      "hosted": false,
+      "commands": [
+        "pnpm run test:graph:portfolio-rules"
+      ]
+    },
+    {
+      "name": "portfolio-templates",
+      "browser": false,
+      "hosted": false,
+      "commands": [
+        "pnpm run test:graph:portfolio-templates"
       ]
     },
     {

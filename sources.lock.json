@@ -667,7 +667,7 @@
       "executable": false
     },
     "package.json": {
-      "sha256": "871089ec4d550f703fb7f5d43611ac0958d42570d5f2fb40f018555f6a214d35",
+      "sha256": "da2d6b4147640cdf7b3d1244b490c3ce4fb4aaec37cdec7fa49876ad50a427fc",
       "executable": false
     },
     "packaging.json": {
@@ -4411,7 +4411,7 @@
       "executable": false
     },
     "verification.json": {
-      "sha256": "be8d14777b88b1605bb5ec552d2d784cd9212231545428ef5914b8880400b8ac",
+      "sha256": "41cfd4a8e6aef3c96498ede5bca8fb28f15a142324a085e865aa0c9f2063d6eb",
       "executable": false
     },
     "VERIFY-WORKFLOW.md": {
