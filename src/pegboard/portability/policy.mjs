@@ -23,8 +23,9 @@ export default {
   return true
  },
  importSafety,
- importRow(table,row){if(table==='peg_local_rule_runs'&&row.status==='queued')return {...row,status:'pending',activation_id:null,outcome:'restored_inactive'};if(table==='peg_template_rule_runs'&&row.status==='queued')return {...row,status:'pending',activation_id:null,outcome:'restored_inactive'};if(table==='peg_bundle_jobs'&&row.status==='queued')return {...row,status:'cancelled',finished_at:1};return importSafety[table]?{...row,...Object.fromEntries(Object.entries(importSafety[table]).map(([key,values])=>[key,values[0]]))}:row},
+ importRow(table,row){if(table==='peg_guest_share_reviews'&&row.status==='pending')return {...row,status:'cancelled',review_until:0};if(table==='peg_local_rule_runs'&&row.status==='queued')return {...row,status:'pending',activation_id:null,outcome:'restored_inactive'};if(table==='peg_template_rule_runs'&&row.status==='queued')return {...row,status:'pending',activation_id:null,outcome:'restored_inactive'};if(table==='peg_bundle_jobs'&&row.status==='queued')return {...row,status:'cancelled',finished_at:1};return importSafety[table]?{...row,...Object.fromEntries(Object.entries(importSafety[table]).map(([key,values])=>[key,values[0]]))}:row},
  exportRow(table,row){
+  if(table==='peg_guest_share_reviews'&&row.status==='pending')return {...row,status:'cancelled',review_until:0}
   if(table==='peg_intake_forms')return {...row,...Object.fromEntries(Object.entries(importSafety.peg_intake_forms).map(([key,values])=>[key,values[0]]))}
   if(table==='peg_capacity_feeds')return {...row,active:0,fetched_at:null}
   if(table==='peg_status_rights_requests')return {...row,handler_until:0}

@@ -1,21 +1,21 @@
-import type {guestPreview as readGuestPreview} from '../../guests/preview'
+import type {guestPreview as readGuestPreview,guestShareReview,guestShareHistory} from '../../guests/preview'
 import type {FieldRow} from '../../model'
 import type {changePreview} from '../../fields/values'
 import {fieldTypes} from '../../fields/definitions'
 import type { board } from '../../tasks/board'
 import type { SharePreview } from '../../workspace/projects'
 import type { Viewer } from '../../../ui/viewer'
-import { Area, Card, Field, Form, Pick, Shell, Submit, levelLabel, levelOptions } from '../shell'
+import { Area, Card, Field, Form, Pick, Shell, Submit, when, levelLabel, levelOptions } from '../shell'
 
 type Board = Awaited<ReturnType<typeof board>>
 export interface Grantee { value: string; label: string }
 export interface GrantLine { id: string; grantee: string; level: string; scope: string; source: string; by: string }
-export interface Props { viewer: Viewer; id: string; data: Board; guestPeople:Grantee[]; guestPreview:Awaited<ReturnType<typeof readGuestPreview>>|null; grants: GrantLine[] | null; people: Grantee[]; teams: Grantee[]; preview: SharePreview | null; proposal: Record<string, string>; sourceProjects:Grantee[];library:FieldRow[];fieldPreview:Awaited<ReturnType<typeof changePreview>>|null;sectionList: { id: string; name: string; mapsTo: string | null }[] }
+export interface Props { viewer: Viewer; id: string; data: Board; guestCandidates:Grantee[]; guestShares:Awaited<ReturnType<typeof guestShareHistory>>|null; guestReview:Awaited<ReturnType<typeof guestShareReview>>|null; guestPeople:Grantee[]; guestPreview:Awaited<ReturnType<typeof readGuestPreview>>|null; grants: GrantLine[] | null; people: Grantee[]; teams: Grantee[]; preview: SharePreview | null; proposal: Record<string, string>; sourceProjects:Grantee[];library:FieldRow[];fieldPreview:Awaited<ReturnType<typeof changePreview>>|null;sectionList: { id: string; name: string; mapsTo: string | null }[] }
 
 const visibilityLabel = (value: string) => value === 'private' ? 'Private to members' : value === 'team' ? 'Team only' : 'Shared with workspace'
 const mapsLabel = (value: string | null) => value === 'todo' ? 'To do' : value === 'doing' ? 'Doing' : value === 'done' ? 'Done' : 'No status'
 
-export function ProjectSettingsPage({ viewer, id, data, grants, people, teams, preview, proposal, sectionList,library,fieldPreview,sourceProjects,guestPreview,guestPeople }: Props) {
+export function ProjectSettingsPage({ viewer, id, data, grants, people, teams, preview, proposal, sectionList,library,fieldPreview,sourceProjects,guestPreview,guestPeople,guestCandidates,guestShares,guestReview }: Props) {
   const can = (capability: string) => (data.capabilities as string[]).includes(capability)
   const back = `/app/projects/${id}/settings`
   const project = data.project
@@ -76,6 +76,30 @@ export function ProjectSettingsPage({ viewer, id, data, grants, people, teams, p
         <div className="inline"><Pick label="Team" name="granteeId" options={teams} blank="Choose a team" /><Pick label="Level" name="level" value="viewer" options={levelOptions()} /><Submit>Give the team access</Submit></div>
       </Form>
     </Card>}
+    {guestShares&&<Card title="Reviewed guest sharing" id="guest-share-review">
+      <p>{guestShares.accounting.members} members · {guestShares.accounting.freeGuests} free guests. Sharing an existing guest does not add a member.</p>
+      <p>Review the recipient and permitted content before granting access. This creates no grant and sends no invitation or message.</p>
+      <form method="post" action={`/api/v1/projects/${id}/guest-shares/preview`} className="stack" aria-label="Review initial guest share">
+        <Pick label="Existing guest" name="recipientId" options={guestCandidates} blank="Choose a guest"/>
+        <Pick label="Guest level" name="level" value="viewer" options={levelOptions(['viewer','commenter','editor'])}/>
+        <Pick label="Guest work scope" name="scope" value="full" options={[{value:'full',label:'Full selected level'},{value:'approve',label:'Approve only (Viewer level)'},{value:'assignee',label:'Assigned tasks only (Editor level)'}]}/>
+        <Field label="Access expires at (UTC, optional)" name="expiresAt" type="datetime-local"/>
+        <Submit quiet>Review guest share</Submit>
+      </form>
+      {guestReview&&<section aria-label="Guest share review">
+        <h3>Review before sharing</h3>
+        <p>Recipient {guestCandidates.find(p=>p.value===guestReview.recipientId)?.label??'Former guest'} · {levelLabel(guestReview.proposal.level)} · {guestReview.proposal.scope} · {guestReview.proposal.expiresAt?`Expires ${when(guestReview.proposal.expiresAt)}`:'No expiry'}</p>
+        <h3>Excluded from this share</h3><p>{guestReview.manifest.withheld.taskIds.length} tasks, {guestReview.manifest.withheld.fieldIds.length} fields, {guestReview.manifest.withheld.commentIds.length} comments and {guestReview.manifest.withheld.attachmentIds.length} files excluded.</p><ul>{guestReview.manifest.exclusions.map((text:string)=><li key={text}>{text}</li>)}</ul>
+        {guestReview.content&&<><h3>Permitted content</h3><ul className="rows">{guestReview.content.tasks.map(task=><li key={task.id}><span className="grow"><strong>{task.title}</strong> · {task.status}<p>Owner {task.owner.name}</p>{task.description&&<p>{task.description}</p>}{task.projects.flatMap(p=>p.fields).map(field=><p key={field.id}>{field.label}: {field.display}</p>)}{task.comments.map(comment=><p key={comment.id}>{comment.author}: {comment.body}</p>)}{task.attachments.map(file=><p key={file.id}>File: {file.name}</p>)}<p>Allowed actions: {task.capabilities.join(', ')}</p></span></li>)}{!guestReview.content.tasks.length&&<li>No currently readable tasks. Assigned-task access opens only work assigned to this guest.</li>}</ul><p>Review valid until {when(guestReview.reviewUntil)}. New shared work follows these scope rules; changed content before confirmation requires a fresh review.</p></>}
+        {guestReview.stale&&<p role="status">This review changed or expired. Review the guest share again before granting access.</p>}
+        {guestReview.status==='pending'&&<Form action={`/api/v1/projects/${id}/guest-shares/${guestReview.id}/decision`} next={`${back}#guest-share-history`} label="Confirm guest share">
+          <input type="hidden" name="fingerprint" value={guestReview.fingerprint}/>
+          {!guestReview.stale&&<button className="button primary" name="decision" value="approve" type="submit">Grant exactly this access</button>}
+          <button className="button quiet" name="decision" value="cancel" type="submit">Cancel guest share</button>
+        </Form>}
+      </section>}
+    </Card>}
+    {guestShares&&<Card title="Guest share decisions" id="guest-share-history"><ul className="rows">{guestShares.decisions.map(decision=><li key={decision.id}><span className="grow"><strong>{guestCandidates.find(p=>p.value===decision.recipientId)?.label??'Former guest'}</strong> · {decision.status}<p>{levelLabel(decision.proposal.level)} · {decision.proposal.scope} · {decision.proposal.expiresAt?when(decision.proposal.expiresAt):'No expiry'} · {when(decision.decidedAt)}</p><p>Reviewed by <code>{decision.actorId}</code> · {decision.manifest.taskIds.length} permitted tasks · {decision.manifest.attachmentIds.length} permitted files</p><p>Content receipt <code>{decision.fingerprint}</code></p><details><summary>Recorded exclusions</summary><ul>{decision.manifest.exclusions.map((text:string)=><li key={text}>{text}</li>)}</ul></details></span></li>)}{!guestShares.decisions.length&&<li>No reviewed guest decisions yet.</li>}</ul></Card>}
     {guestPeople.length>0&&<Card title="Guest portal preview">
       <p>Inspect a current guest share. This preview changes no permissions and sends no message.</p>
       <form method="get" action={back} className="stack" aria-label="Preview guest portal"><Pick label="Guest recipient" name="recipient" options={guestPeople}/><Submit quiet>Preview guest portal</Submit></form>

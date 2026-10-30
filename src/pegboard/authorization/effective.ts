@@ -10,6 +10,16 @@ export interface Path { via: string; level: Level; capabilities: Capability[]; s
 export interface Effective { role: WorkspaceRole | null; level: Level | null; capabilities: Set<Capability>; paths: Path[] }
 const none = (role: WorkspaceRole | null): Effective => ({ role, level: null, capabilities: new Set(), paths: [] })
 
+// Only the server's read preview can attach a proposed path. It never writes a grant,
+// and no session or API input can carry this WeakMap entry into an action.
+type ProposedPath = Pick<GrantRow, 'object_id' | 'level' | 'scope'>
+const proposedPaths = new WeakMap<Actor, ProposedPath>()
+export function previewGuestActor(actor: Actor, path: ProposedPath): Actor {
+  const recipient = { ...actor }
+  proposedPaths.set(recipient, path)
+  return recipient
+}
+
 const cap = (level: Level, ceiling: Level): Level => rank(level) > rank(ceiling) ? ceiling : level
 function pathCapabilities(level: Level, grant?: GrantRow): Capability[] {
   let caps = capabilitiesOf(level)
@@ -60,6 +70,8 @@ export async function projectEffective(db: D1Database, actor: Actor, project: Pr
   if (!role) return none(null)
   const paths: Path[] = []
   const occurrence=!!await first(db,"SELECT 1 FROM peg_template_origins WHERE object_type='project' AND object_id=?",project.id)
+  const proposed = proposedPaths.get(actor)
+  if (role === 'guest' && proposed?.object_id === project.id) paths.push({ via: 'Proposed guest share', level: proposed.level, scope: proposed.scope, capabilities: proposed.scope === 'approve' ? ['read', 'approve'] : capabilitiesOf(proposed.level), source: 'direct' })
   if (isAdministrator(role)) paths.push({ via: 'Workspace administrator', level: 'admin', capabilities: capabilitiesOf('admin'), source: 'role' })
   if (project.owner_id === actor.id) paths.push({ via: 'Project owner', level: 'admin', capabilities: capabilitiesOf('admin'), source: 'owner' })
   for (const grant of await activeGrants(db, 'project', project.id, 'person', [actor.id])) {

@@ -36,7 +36,7 @@ import {Card,Shell} from './shell'
 import {CalendarPage} from './pages/calendar'
 import {schedulePreview} from './schedule-preview'
 import type {ScheduleEditorProps} from './schedule-editor'
-import {guestPreview} from '../guests/preview'
+import {guestPreview,guestShareReview,guestShareHistory} from '../guests/preview'
 import {taskParticipants} from '../tasks/participants'
 import {openTask} from '../tasks/access'
 import {definitions as ruleDateFields} from '../fields/definitions'
@@ -318,11 +318,14 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
       const grants = can('manage_shares') ? await grantsOn(db, actor, 'project', id) : null
       const guestPeople=[]
       for(const guestId of new Set((grants??[]).filter(g=>g.grantee_type==='person').map(g=>g.grantee_id)))if(await workspaceRole(db,guestId,(await openProject(db,actor,id)).project.workspace_id)==='guest'){const name=await displayNames(db,[guestId]);guestPeople.push({value:guestId,label:name.get(guestId)??'Guest'})}
+      const guestCandidates = can('manage_shares') ? (await all<{id:string;display_name:string}>(db,"SELECT o.id,o.display_name FROM oa_operators o JOIN peg_workspace_members m ON m.operator_id=o.id WHERE m.workspace_id=? AND m.role='guest' AND o.role='member' AND o.status='active' ORDER BY o.display_name", workspace)).map(p=>({value:p.id,label:p.display_name})) : []
+      const guestShares = can('manage_shares') && !['guest','agent'].includes(viewer.role) ? await guestShareHistory(db,actor,id) : null
+      const guestReview = guestShares && url.searchParams.get('guestReview') ? await guestShareReview(db,actor,id,url.searchParams.get('guestReview')!) : null
       const names = await displayNames(db, grants?.flatMap(grant => [grant.grantee_id, grant.created_by]) ?? [])
       const teams = await teamOptions(db, actor, workspace)
       const teamNames = new Map(teams.map(team => [team.value, team.label]))
       return page('Project settings', h(ProjectSettingsPage, {
-        viewer, id, data, guestPeople, guestPreview:can('manage_shares')&&url.searchParams.get('recipient')?await guestPreview(db,actor,id,url.searchParams.get('recipient')!):null, sourceProjects:(await listProjects(db,actor,workspace)).map(p=>({value:p.id,label:p.name})), library:can('manage_fields')?await catalogue(db,actor,workspace):[], fieldPreview:can('manage_fields')&&url.searchParams.get('fieldId')?await changePreview(db,actor,url.searchParams.get('fieldId')!,Object.fromEntries(url.searchParams)):null, people: await peopleOptions(db, actor, workspace), teams, proposal, sectionList: (await listSections(db, id)).map(section => ({ id: section.id, name: section.name, mapsTo: section.maps_to })),
+        viewer, id, data, guestPeople, guestCandidates, guestShares, guestReview, guestPreview:can('manage_shares')&&url.searchParams.get('recipient')?await guestPreview(db,actor,id,url.searchParams.get('recipient')!):null, sourceProjects:(await listProjects(db,actor,workspace)).map(p=>({value:p.id,label:p.name})), library:can('manage_fields')?await catalogue(db,actor,workspace):[], fieldPreview:can('manage_fields')&&url.searchParams.get('fieldId')?await changePreview(db,actor,url.searchParams.get('fieldId')!,Object.fromEntries(url.searchParams)):null, people: (await peopleOptions(db, actor, workspace)).filter(p=>!guestCandidates.some(g=>g.value===p.value)), teams, proposal, sectionList: (await listSections(db, id)).map(section => ({ id: section.id, name: section.name, mapsTo: section.maps_to })),
         preview: can('manage_shares') && Object.keys(proposal).length ? await previewShare(db, actor, id, proposal).catch(() => null) : null,
         grants: grants && grants.map(grant => ({ id: grant.id, grantee: grant.grantee_type === 'team' ? `Team ${teamNames.get(grant.grantee_id) ?? ''}` : names.get(grant.grantee_id) ?? 'Former member', level: grant.level, scope: grant.scope, source: grant.source, by: names.get(grant.created_by) ?? 'Former member' })),
       }))

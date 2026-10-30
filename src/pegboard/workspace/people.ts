@@ -52,6 +52,16 @@ export const workspacesOf = async (db: D1Database, actor: Actor): Promise<string
 }
 export const administers = async (db: D1Database, actor: Actor, workspaceId: string) => isAdministrator(await workspaceRole(db, actor.id, workspaceId))
 
+/** Account counts are administration data, never a guest directory or a billing estimate. */
+export async function guestAccounting(db: D1Database, workspaceId: string) {
+  const counts = await first<{ members: number; freeGuests: number }>(db, `SELECT
+    COALESCE(SUM(CASE WHEN o.role IN ('owner','admin') OR m.role NOT IN ('guest','agent') THEN 1 ELSE 0 END),0) members,
+    COALESCE(SUM(CASE WHEN o.role NOT IN ('owner','admin') AND m.role='guest' THEN 1 ELSE 0 END),0) freeGuests
+    FROM oa_operators o LEFT JOIN peg_workspace_members m ON m.operator_id=o.id AND m.workspace_id=?
+    WHERE o.status='active' AND (o.role IN ('owner','admin') OR m.operator_id IS NOT NULL)`, workspaceId)
+  return counts!
+}
+
 export async function displayNames(db: D1Database, ids: string[]): Promise<Map<string, string>> {
   const unique = [...new Set(ids.filter(Boolean))]
   if (!unique.length) return new Map([['','Unassigned']])

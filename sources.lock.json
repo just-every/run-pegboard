@@ -215,7 +215,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "f4857437d3b8cd70bca85de79544263343e9d45ca44cbef2a3e8f6216b378569",
+      "sha256": "7e52a17db6fb2940eb961f10287285f744e128c10d027087ccd36793e88b30b5",
       "executable": false
     },
     "DEMO.md": {
@@ -664,6 +664,10 @@
     },
     "migrations/core/0081_rule_audit_correlations.sql": {
       "sha256": "14cb5fea3b643fcfbd201b74f3e05be9935d67e5f445a853a35f08c9108896e8",
+      "executable": false
+    },
+    "migrations/core/0082_guest_share_reviews.sql": {
+      "sha256": "3cc582725f58b44f55b2bfccf5fb76f822e4f29fc37f5b37df592d8000b3b0fc",
       "executable": false
     },
     "ONBOARDING.md": {
@@ -3027,7 +3031,7 @@
       "executable": false
     },
     "src/pegboard/api/access-routes.ts": {
-      "sha256": "919baecab1e0aa71ebfba615f49c24577203b222b8bb50dd95b75536e115ed48",
+      "sha256": "068ffa98aa40f119e51e7d2aa49d5a9763a73823015194dbb0f90e12e1290e8e",
       "executable": false
     },
     "src/pegboard/api/analytics-routes.ts": {
@@ -3207,11 +3211,11 @@
       "executable": false
     },
     "src/pegboard/authorization/effective.ts": {
-      "sha256": "d18449a414af87ff1d3c2aa3f54e05de7830d7a0c5818a45967af80f74053d99",
+      "sha256": "eb15f534e12a34ebeb341b56d0f92ea066525844eded7dfc58077c4439fd8161",
       "executable": false
     },
     "src/pegboard/authorization/grants.ts": {
-      "sha256": "5d5398212fdea19e9c0d7c2d8c6d0c6f291e88ebf83e5c69eb9f40c8da85b1ac",
+      "sha256": "19f6622ce6be832d8895edc1b837545b92f507792cf68923dda78d9ad5feca4d",
       "executable": false
     },
     "src/pegboard/authorization/levels.ts": {
@@ -3439,7 +3443,7 @@
       "executable": false
     },
     "src/pegboard/guests/preview.ts": {
-      "sha256": "d85a3acbc67093f30c757d038be245b83d76277fcf6ab74938ec973ef82c7316",
+      "sha256": "954d615c939178bdf260b0089e09ff7a1ac44691e844c7d185ab2446b0509633",
       "executable": false
     },
     "src/pegboard/intake/forms.ts": {
@@ -3479,7 +3483,7 @@
       "executable": false
     },
     "src/pegboard/portability/policy.mjs": {
-      "sha256": "125726b779575eb2cf5955e44cf74aa5f42f85b06ddd913f5672840848df780a",
+      "sha256": "58e9810d3f2a470ca43e0fcf0a00b7ae31b626138dce8cb210810ec2fe83e4ed",
       "executable": false
     },
     "src/pegboard/portfolios/portfolios.ts": {
@@ -3879,7 +3883,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/project-settings.tsx": {
-      "sha256": "5928d8d62886c21cadc52615bcade822e6e286a6e76c668fcb36bb6b76e8ec6f",
+      "sha256": "7bd1f91872a67713751e6cc65465d565cacba755e8a32f0c25f951b16fa04f9c",
       "executable": false
     },
     "src/pegboard/ui/pages/project.tsx": {
@@ -3975,7 +3979,7 @@
       "executable": false
     },
     "src/pegboard/ui/routes.ts": {
-      "sha256": "7be8b549ab20447756b183d2fc56aded9d463d6e637313b25b1e42c8fbdc6c09",
+      "sha256": "ddf7cc4c91cff5b00247eca544af89d9d1d4ae2cf6ad2a63ea24f38ddedcc58d",
       "executable": false
     },
     "src/pegboard/ui/schedule-editor.tsx": {
@@ -4035,7 +4039,7 @@
       "executable": false
     },
     "src/pegboard/workspace/people.ts": {
-      "sha256": "91e8bdb5658f61141c0b34fe1724ef38030bd20829d80be2f0c5987b6e7f7d4a",
+      "sha256": "384e3fb16a841657998d83c9a4c5de4825fa836bb53fa35e861c1c7d40ed397d",
       "executable": false
     },
     "src/pegboard/workspace/projects.ts": {
@@ -4207,7 +4211,7 @@
       "executable": false
     },
     "tests/access-control.test.mjs": {
-      "sha256": "f47b04ed3e2c7a1e7e7f9d9e900d6ceccf5a694309f9269bc2e79409c92b21a9",
+      "sha256": "2f4e3172bb465d76731ee8dd48d89df173fdf1306612176000c0038e1906ce7a",
       "executable": false
     },
     "tests/journeys/access-discovery.mjs": {
@@ -4255,7 +4259,7 @@
       "executable": false
     },
     "tests/journeys/guests.mjs": {
-      "sha256": "60a4ed7898588aa8477fda7c6d6e4e57de5e34063eee24ed4f65188b3e1f4e5d",
+      "sha256": "1270171c674c9371f5a6d9b1a04e7e38e8160498a25b4c8ddfec591a6574e1cd",
       "executable": false
     },
     "tests/journeys/intake.mjs": {
