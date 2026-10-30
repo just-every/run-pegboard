@@ -68,12 +68,17 @@ export const grantStatements = (db: D1Database, actorId: string, workspaceId: st
   ] }
 }
 
-export async function createGrant(db: D1Database, actor: Actor, input: GrantInput): Promise<GrantRow> {
+export async function authorizeGrant(db: D1Database, actor: Actor, input: GrantInput) {
   validate(input)
   const standing = await objectStanding(db, actor, input.objectType, input.objectId)
   if (input.objectType === 'task' ? !standing.effective.capabilities.has('manage_shares') : !canDelegate(standing.effective, input.level)) throw forbidden(input.level === 'admin' ? 'delegate_admin' : 'manage_shares')
   if (input.objectType === 'task' && input.level === 'admin') throw invalid('task_level')
   await checkGrantee(db, standing.workspaceId, input)
+  return standing
+}
+
+export async function createGrant(db: D1Database, actor: Actor, input: GrantInput): Promise<GrantRow> {
+  const standing = await authorizeGrant(db, actor, input)
   const { id, statements } = grantStatements(db, actor.id, standing.workspaceId, input, { source: 'direct' })
   await batch(db, statements)
   return (await first<GrantRow>(db, 'SELECT * FROM peg_grants WHERE id=?', id))!

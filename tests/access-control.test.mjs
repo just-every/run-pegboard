@@ -4,7 +4,7 @@ import {startEngineeringServices} from './support/engineering-services.mjs'
 // task, export, webhook and admin doors; capability changes seen at once; and every way an access request can fail to grant.
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { startWorker } from './support/worker.mjs'
+import { startWorker, proofDocument } from './support/worker.mjs'
 import { createDepartureFixture, choicesFor } from './support/departure.mjs'
 
 let w, owner, P, T, who = {}
@@ -487,6 +487,188 @@ describe('Scoped guest work', { concurrency: false }, () => {
     for (const person of [editor, peer]) await ok(root.post('/api/v1/grants', { objectType:'project', objectId:project, granteeId:person.id, level:'editor' }))
   }, { timeout: 120000 })
   after(() => worker?.stop())
+  it('reviews initial guest access without granting, commits exact roles once, and retains decisions after revocation', async () => {
+    const makeGuest = name => worker.person(`synthetic-pegboard-${name}${String.fromCharCode(64)}example.test`,name,'guest')
+    const project = await ok(root.post('/api/v1/projects',{name:'Reviewed client work',description:'synthetic-pegboard-940'}))
+    const descriptionGuest=await makeGuest('description')
+    const descriptionBase=`/api/v1/projects/${project.id}/guest-shares`
+    const descriptionReview=await ok(root.post(descriptionBase+'/preview',{recipientId:descriptionGuest.id,level:'editor'}))
+    assert.deepEqual(descriptionReview.tasks,[])
+    assert.equal(descriptionReview.project.description,'synthetic-pegboard-940','an empty project still discloses its description in review')
+    assert.equal((await descriptionGuest.get(`/api/v1/projects/${project.id}`)).status,404)
+    const descriptionGrant=await ok(root.post(`${descriptionBase}/${descriptionReview.id}/decision`,{decision:'approve',fingerprint:descriptionReview.fingerprint}))
+    assert.equal((await ok(descriptionGuest.get(`/api/v1/projects/${project.id}`))).project.description,descriptionReview.project.description)
+    assert.ok((await ok(descriptionGuest.get(`/app/projects/${project.id}`))).includes('synthetic-pegboard-940'))
+    assert.equal((await ok(root.get(`/api/v1/projects/${project.id}/guest-preview?recipient=${descriptionGuest.id}`))).project.description,descriptionReview.project.description)
+    await ok(root.delete(`/api/v1/grants/${descriptionGrant.grantId}`))
+    assert.equal((await descriptionGuest.get(`/api/v1/projects/${project.id}`)).status,404)
+    console.log('PROBE PEG-019 BLOCKING-A: empty project with description -> Editor preview includes exact description; before confirmation 404; confirmed API and page show reviewed description; revocation 404')
+    const internal = await ok(root.post('/api/v1/projects',{name:'Internal workspace work'}))
+    const task = await ok(root.post('/api/v1/tasks',{title:'Reviewed deliverable',description:'Visible brief',projectId:internal.id}))
+    await ok(root.post(`/api/v1/tasks/${task.id}/comments`,{body:'synthetic-pegboard-911'}))
+    await ok(root.post(`/api/v1/tasks/${task.id}/projects`,{projectId:project.id}))
+    await ok(root.post(`/api/v1/tasks/${task.id}/comments`,{body:'synthetic-pegboard-912',internalOnly:true}))
+    const hiddenTask = await ok(root.post('/api/v1/tasks',{title:'synthetic-pegboard-913',projectId:project.id,internalOnly:true}))
+    await ok(root.post(`/api/v1/projects/${internal.id}/fields`,{key:'internal',label:'synthetic-pegboard-914'}))
+    await ok(root.post(`/api/v1/tasks/${task.id}/fields`,{projectId:internal.id,values:{internal:'synthetic-pegboard-915'}}))
+    const file = await ok(root.post(`/api/v1/tasks/${task.id}/attachments?projectId=${internal.id}&name=synthetic-pegboard-916.txt`,'synthetic-pegboard-916',{'content-type':'text/plain'}))
+    const internalField=await ok(root.post(`/api/v1/projects/${project.id}/fields`,{key:'members',label:'synthetic-pegboard-918',visibility:'internal'}))
+    await ok(root.post(`/api/v1/tasks/${task.id}/fields`,{projectId:project.id,values:{members:'synthetic-pegboard-919'}}))
+    const roleFields={}
+    for(const visibility of ['everyone','editors','admins']){
+      roleFields[visibility]=await ok(root.post(`/api/v1/projects/${project.id}/fields`,{key:visibility,label:`synthetic-pegboard-field-${visibility}`,visibility}))
+      await ok(root.post(`/api/v1/tasks/${task.id}/fields`,{projectId:project.id,values:{[visibility]:`synthetic-pegboard-value-${visibility}`}}))
+    }
+    const visibleFile = await ok(root.post(`/api/v1/tasks/${task.id}/attachments?projectId=${project.id}&name=synthetic-pegboard-917.txt`,'synthetic-pegboard-917',{'content-type':'text/plain'}))
+    const listing = () => ok(root.get(`/api/v1/projects/${project.id}/guest-shares`))
+    const grants = async () => (await ok(root.get(`/api/v1/grants?objectType=project&objectId=${project.id}`))).grants
+    const preview = (guest,extra={}) => ok(root.post(`/api/v1/projects/${project.id}/guest-shares/preview`,{recipientId:guest.id,level:'viewer',...extra}))
+    const decide = (review,extra={}) => root.post(`/api/v1/projects/${project.id}/guest-shares/${review.id}/decision`,{decision:'approve',fingerprint:review.fingerprint,...extra})
+    const cancelledGuest = await makeGuest('cancelled'), cancelled = await preview(cancelledGuest)
+    assert.deepEqual(await grants(),[])
+    assert.equal((await cancelledGuest.get(`/api/v1/tasks/${task.id}`)).status,404)
+    assert.deepEqual(cancelled.tasks.map(t=>t.id),[task.id])
+    assert.deepEqual(cancelled.manifest.attachmentIds,[visibleFile.id])
+    assert.ok(!cancelled.manifest.fields.includes(internalField.id))
+    assert.deepEqual(cancelled.manifest.withheld.taskIds,[hiddenTask.id])
+    assert.ok(cancelled.manifest.withheld.attachmentIds.includes(file.id))
+    assert.ok(cancelled.manifest.withheld.fieldIds.includes(internalField.id))
+    for(const marker of ['911','912','913','914','915','916','918','919']) assert.ok(!JSON.stringify(cancelled).includes(`synthetic-pegboard-${marker}`))
+    await ok(decide(cancelled,{decision:'cancel'}))
+    assert.equal((await decide(cancelled)).status,409)
+    assert.deepEqual(await grants(),[])
+    assert.equal((await editor.post(`/api/v1/projects/${project.id}/guest-shares/preview`,{recipientId:cancelledGuest.id})).status,404)
+    const expiresAt = Date.now()+3600000, baseline=(await listing()).accounting
+    let approver
+    for(const [name,level,scope,caps] of [
+      ['reader','viewer','full',['read','export']],['commenter','commenter','full',['read','export','comment']],
+      ['approver','viewer','approve',['read','approve']],['editor','editor','full',['read','export','comment','edit']],
+      ['assigned','editor','assignee',['read','export','comment','edit']],
+    ]) {
+      const guest=await makeGuest(name)
+      if(scope==='assignee') await ok(root.patch(`/api/v1/tasks/${task.id}`,{ownerId:guest.id}))
+      const review=await preview(guest,{level,scope,expiresAt})
+      const before=(await grants()).length
+      assert.equal((await guest.get(`/api/v1/tasks/${task.id}`)).status,404)
+      assert.deepEqual(review.tasks.map(t=>t.id),[task.id])
+      assert.equal(review.project.description,scope==='assignee'?null:'synthetic-pegboard-940')
+      assert.deepEqual(review.tasks[0].capabilities.sort(),caps.sort())
+      const visibleFields=[roleFields.everyone.id,...(caps.includes('edit')?[roleFields.editors.id]:[])].sort()
+      assert.deepEqual(review.tasks[0].projects.find(p=>p.id===project.id).fields.map(f=>f.id).sort(),visibleFields)
+      assert.ok(review.manifest.withheld.fieldIds.includes(roleFields.admins.id))
+      const result=await ok(decide(review))
+      assert.equal((await grants()).length,before+1)
+      const received=await ok(guest.get(`/api/v1/tasks/${task.id}`))
+      assert.deepEqual(received.capabilities.sort(),caps.sort())
+      assert.deepEqual(received.projects.find(p=>p.id===project.id).fields.map(f=>f.id).sort(),visibleFields)
+      assert.equal((await guest.patch(`/api/v1/tasks/${task.id}`,{priority:'high'})).status,caps.includes('edit')?200:403)
+      assert.equal((await guest.post(`/api/v1/tasks/${task.id}/comments`,{body:'Visible client reply'})).status,caps.includes('comment')?200:403)
+      for(const path of [`/api/v1/tasks/${hiddenTask.id}`,`/api/v1/attachments/${file.id}`,`/api/v1/projects/${internal.id}/export`])assert.equal((await guest.get(path)).status,404)
+      assert.equal((await guest.get('/api/v1/workspaces/ws_main/people')).status,403)
+      assert.equal((await guest.post(`/api/v1/projects/${project.id}/guest-shares/preview`,{recipientId:cancelledGuest.id})).status,scope==='assignee'?404:403)
+      const exported = await guest.get(`/api/v1/projects/${project.id}/export`)
+      assert.equal(exported.status,scope==='assignee'?404:scope==='approve'?403:200)
+      if(exported.status===200)for(const marker of ['911','912','913','914','915','916','918','919'])assert.ok(!exported.body.includes(`synthetic-pegboard-${marker}`))
+      if(scope==='assignee') {
+        const peerTask=await ok(root.post('/api/v1/tasks',{title:'Peer only work',projectId:project.id}))
+        assert.equal((await guest.patch(`/api/v1/tasks/${peerTask.id}`,{priority:'low'})).status,404)
+      }
+      if(scope==='approve')approver=guest
+      await ok(root.delete(`/api/v1/grants/${result.grantId}`))
+      assert.equal((await guest.get(`/api/v1/tasks/${task.id}`)).status,404)
+      assert.equal((await guest.get(`/api/v1/attachments/${visibleFile.id}`)).status,404)
+      assert.equal((await decide(review)).status,409)
+      const record=(await listing()).decisions.find(d=>d.id===review.id)
+      assert.equal(record.actorId,root.id);assert.equal(record.recipientId,guest.id)
+      assert.deepEqual(record.proposal,{objectType:'project',objectId:project.id,granteeType:'person',granteeId:guest.id,level,scope,expiresAt})
+      assert.deepEqual(record.manifest,review.manifest);assert.equal(record.fingerprint,review.fingerprint)
+    }
+    assert.deepEqual((await listing()).accounting,{members:baseline.members,freeGuests:baseline.freeGuests+5})
+    assert.deepEqual(await grants(),[])
+    assert.equal((await approver.get(`/api/v1/projects/${project.id}/guest-shares`)).status,404)
+    const assetProject=await ok(root.post('/api/v1/projects',{name:'Reviewed proof share'}))
+    const assetTask=await ok(root.post('/api/v1/tasks',{title:'Client proof asset',projectId:assetProject.id}))
+    const assetFile=await ok(root.post(`/api/v1/tasks/${assetTask.id}/attachments?projectId=${assetProject.id}&name=synthetic-pegboard-921.pdf`,proofDocument('Reviewed asset'),{'content-type':'application/pdf'}))
+    const proof=await ok(root.post(`/api/v1/tasks/${assetTask.id}/proofs`,{attachmentId:assetFile.id}))
+    const assetBase=`/api/v1/projects/${assetProject.id}/guest-shares`
+    const assetReview=await ok(root.post(assetBase+'/preview',{recipientId:approver.id,level:'viewer',scope:'approve'}))
+    const assetGrant=await ok(root.post(`${assetBase}/${assetReview.id}/decision`,{decision:'approve',fingerprint:assetReview.fingerprint}))
+    const config={mode:'ordered',stages:[{name:'Client sign-off',people:[approver.id],quorum:1}]}
+    const routing=await ok(root.post(`/api/v1/approval-routing/proof/${proof.id}/preview`,config))
+    const route=await ok(root.post(`/api/v1/approval-routing/proof/${proof.id}`,{...config,token:routing.token}))
+    const managerView=await ok(root.get(`/api/v1/approvals/${route.id}`))
+    const link=await ok(root.post(`/api/v1/approvals/${route.id}/share`,{recipientId:approver.id,expiresAt,token:managerView.token}))
+    const guestView=await ok(approver.get(`/api/v1/proof-reviews/${link.id}`))
+    await ok(approver.post(`/api/v1/proof-reviews/${link.id}/decision`,{token:guestView.token,version:guestView.version,action:'approve',reason:'Reviewed asset sign-off'}))
+    const signed=(await ok(root.get(`/api/v1/approvals/${route.id}`))).votes
+    assert.equal(signed.length,1);assert.equal(signed[0].actor_id,approver.id);assert.equal(signed[0].version,proof.versionId)
+    await worker.sql(`UPDATE peg_grants SET expires_at=1 WHERE id='${assetGrant.grantId}'`)
+    assert.equal((await approver.get(`/api/v1/proof-reviews/${link.id}`)).status,404)
+    await ok(root.delete(`/api/v1/grants/${assetGrant.grantId}`))
+    for(const path of [`/api/v1/proof-reviews/${link.id}`,`/api/v1/proof-reviews/${link.id}/material`,`/api/v1/attachments/${assetFile.id}`,`/app/proof-reviews/${link.id}`])assert.equal((await approver.get(path)).status,404)
+    assert.deepEqual((await ok(root.get(`/api/v1/approvals/${route.id}`))).votes,signed)
+
+    console.log('PROBE PEG-019 initial-share: preview -> zero grants; five exact roles -> one grant each; cancel and replay -> no extra authority; hidden records, links and exports -> refused; history and free-guest counts retained')
+  })
+
+  it('requires fresh guest review after changed content, proposals, expiry or authority, including restart and concurrent confirmation', async () => {
+    const project=await ok(root.post('/api/v1/projects',{name:'Fresh review required'}))
+    const guest=await worker.person(`synthetic-pegboard-stale${String.fromCharCode(64)}example.test`,'Review guest','guest')
+    const base=`/api/v1/projects/${project.id}/guest-shares`
+    const preview=()=>ok(root.post(base+'/preview',{recipientId:guest.id,level:'editor',scope:'full'}))
+    const decide=(review,extra={})=>root.post(`${base}/${review.id}/decision`,{decision:'approve',fingerprint:review.fingerprint,...extra})
+    let review=await preview()
+    await ok(root.patch(`/api/v1/projects/${project.id}`,{description:'synthetic-pegboard-941'}))
+    assert.equal((await decide(review)).status,409,'a changed project description requires a fresh review even without tasks')
+    assert.equal((await guest.get(`/api/v1/projects/${project.id}`)).status,404)
+    review=await preview()
+    assert.equal(review.project.description,'synthetic-pegboard-941')
+    const task=await ok(root.post('/api/v1/tasks',{title:'Reviewed source',projectId:project.id}))
+    review=await preview()
+    await ok(root.patch(`/api/v1/tasks/${task.id}`,{description:'Changed after review'}))
+    assert.equal((await decide(review)).status,409)
+    assert.equal((await guest.get(`/api/v1/tasks/${task.id}`)).status,404)
+    for(const input of [{level:'admin'},{scope:'approve'},{recipientId:peer.id},{expiresAt:1},{fingerprint:'synthetic-pegboard-920'}]){
+      review=await preview();assert.equal((await decide(review,input)).status,409)
+    }
+    review=await preview()
+    await ok(root.patch('/api/v1/workspaces/ws_main/settings',{guestsAllowed:false}))
+    assert.ok([403,400,409].includes((await decide(review)).status))
+    await ok(root.patch('/api/v1/workspaces/ws_main/settings',{guestsAllowed:true}))
+    assert.equal((await decide(review)).status,409)
+    review=await preview()
+    await worker.sql(`UPDATE peg_guest_share_reviews SET review_until=1 WHERE id='${review.id}'`)
+    assert.equal((await decide(review)).status,409)
+    const expiring=await ok(root.post(base+'/preview',{recipientId:guest.id,level:'viewer',expiresAt:Date.now()+60000}))
+    await worker.sql(`UPDATE peg_guest_share_reviews SET review_until=1 WHERE id='${expiring.id}'`)
+    assert.equal((await decide(expiring)).status,409)
+    const manager=await worker.person(`synthetic-pegboard-reviewer${String.fromCharCode(64)}example.test`,'Reviewing manager')
+    const authority=await ok(root.post('/api/v1/grants',{objectType:'project',objectId:project.id,granteeId:manager.id,level:'admin'}))
+    review=await ok(manager.post(base+'/preview',{recipientId:guest.id,level:'viewer'}))
+    assert.equal((await decide(review)).status,404,'another human cannot adopt a review they did not make')
+    await ok(root.delete(`/api/v1/grants/${authority.id}`))
+    assert.equal((await manager.post(`${base}/${review.id}/decision`,{decision:'approve',fingerprint:review.fingerprint})).status,404)
+    review=await preview()
+    await worker.restart()
+    const results=await Promise.all([decide(review),decide(review)])
+    assert.deepEqual(results.map(r=>r.status).sort(),[200,409])
+    const grants=(await ok(root.get(`/api/v1/grants?objectType=project&objectId=${project.id}`))).grants
+    assert.equal(grants.filter(g=>g.grantee_id===guest.id).length,1)
+    assert.equal((await ok(root.get(base))).decisions.filter(d=>d.id===review.id).length,1)
+    await ok(root.delete(`/api/v1/grants/${grants[0].id}`))
+    assert.equal((await decide(review)).status,409)
+    const erasedReview=await preview()
+    await ok(root.post(`/api/v1/workspaces/ws_main/people/${guest.id}/account`,{status:'inactive'}))
+    const erasure=await ok(root.post('/api/v1/data/erasure-preview',{type:'person',id:guest.id}))
+    assert.deepEqual(erasure.blockers,[])
+    await ok(root.post('/api/v1/data/erase',{type:'person',id:guest.id,token:erasure.token,confirm:true}))
+    assert.equal((await guest.get(`/api/v1/tasks/${task.id}`)).status,401)
+    assert.equal((await decide(erasedReview)).status,409)
+    assert.equal((await ok(root.get(`/api/v1/grants?objectType=project&objectId=${project.id}`))).grants.some(g=>g.grantee_id===guest.id),false)
+    console.log('PROBE PEG-019 erasure: inactive guest -> native reviewed erasure; old session and pending review -> no reads or new grant')
+    console.log('PROBE PEG-019 recheck: changed content, role, scope, recipient, expiry and authority -> no grant; restart and concurrent confirmation -> one grant; revoke then replay -> refused')
+  })
+
   it('lets a guest Editor assign only shared participants, complete work and submit assigned time', async () => {
     assert.deepEqual((await ok(editor.get(`/api/v1/projects/${project}/participants`))).participants.map(p=>p.value).sort(), [root.id,editor.id,peer.id].sort())
     task = await ok(editor.post('/api/v1/tasks', { title:'Guest deliverable', projectId:project, ownerId:peer.id }))

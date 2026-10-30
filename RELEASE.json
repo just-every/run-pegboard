@@ -173,6 +173,10 @@
     {
       "id": "0082_portfolio_capacity.sql",
       "buyerSteps": "Apply migrations/core/0082_portfolio_capacity.sql after 0081_rule_audit_correlations.sql and all existing migrations. This adds human-reviewed portfolio capacity application and undo records. Preserve all previously applied migration names and bytes."
+    },
+    {
+      "id": "0083_guest_share_reviews.sql",
+      "buyerSteps": "Apply migrations/core/0083_guest_share_reviews.sql after 0082_portfolio_capacity.sql and all existing migrations. This adds exact initial guest-share reviews and retained decisions. Preserve all previously applied migration names and bytes."
     }
   ],
   "breaking": false,
