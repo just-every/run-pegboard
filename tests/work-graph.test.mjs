@@ -1,5 +1,6 @@
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs'
 import { reportingScenario } from './scenarios/reporting.mjs'
+import { registerRuleAuditTests } from './scenarios/rule-audit.mjs'
 import { analystDatasetScenario } from './scenarios/analytics.mjs'
 import { registerCalendarBlockTests } from './scenarios/calendar-blocks.mjs'
 import { startCalendarServices } from './support/calendar-services.mjs'
@@ -2430,4 +2431,10 @@ with zipfile.ZipFile(sys.argv[1]) as z:
    await parsed.destroy()
   } finally {await rm(scratch,{recursive:true,force:true})}
  },{timeout:180000})
+// One bounded rule-audit suite owns lifecycle and durable outcome journeys.
+describe('Local rule audit', {concurrency:false},()=>{
+ let worker
+ before(async()=>{worker=await startWorker()},{timeout:120000})
+ after(()=>worker?.stop())
+ registerRuleAuditTests({test:it,context:()=>worker})
 })
