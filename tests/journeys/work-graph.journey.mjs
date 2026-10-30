@@ -1,5 +1,6 @@
 import { intakeJourney } from './intake.mjs'
 import {reportingJourney} from './reporting.mjs'
+import {ruleAuditJourney} from './rule-audit.mjs'
 import {workViewsJourney} from './work-views.mjs'
 import {accessPrivacyJourney} from './access-privacy.mjs'
 import {accessDiscoveryJourney} from './access-discovery.mjs'
@@ -29,7 +30,7 @@ import { planningCanvasJourney } from './planning-canvas.mjs'
 import { portfolioJourney } from './portfolios.mjs'
 import { timelineJourney } from './timeline.mjs'
 
-const journeyNames = ["intake", "reporting", "work-views", "access-privacy", "access-discovery", "analytics", "calendar-blocks", "capacity", "public-api", "approval-routing", "guests", "core", "recurrence", "approvals", "time-packets", "goals", "engineering", "meetings", "custody", "recovery", "departure", "canvas", "portfolio", "timeline", "register", "bundles"]
+const journeyNames = ["intake", "reporting", "rule-audit", "work-views", "access-privacy", "access-discovery", "analytics", "calendar-blocks", "capacity", "public-api", "approval-routing", "guests", "core", "recurrence", "approvals", "time-packets", "goals", "engineering", "meetings", "custody", "recovery", "departure", "canvas", "portfolio", "timeline", "register", "bundles"]
 const selected = new Set(process.env.PEGBOARD_JOURNEY === undefined ? journeyNames : process.env.PEGBOARD_JOURNEY.split(',').map(name => name.trim()))
 for (const name of selected) if (!journeyNames.includes(name)) throw new Error(`Unknown PEGBOARD_JOURNEY: ${name}`)
 
@@ -56,6 +57,7 @@ try {
     return true
   }
   if(await select('intake'))await intakeJourney({w,browser})
+  if(await select('rule-audit'))await ruleAuditJourney({w,browser})
   if(await select('access-privacy'))await accessPrivacyJourney({w,browser,owner,cookies})
   if(await select('access-discovery'))await accessDiscoveryJourney({w,browser,ok})
   if(await select('reporting'))await reportingJourney({w,browser})

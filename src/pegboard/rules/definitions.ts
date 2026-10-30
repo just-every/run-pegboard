@@ -1,3 +1,4 @@
+import {localRuleEvent} from '../audit/search'
 import {definitions as projectFields} from '../fields/definitions'
 import {fieldReadable} from '../workspace/projects'
 import {workActions,type WorkAction} from '../bundles/action-config'
@@ -44,7 +45,7 @@ export async function saveRule(db:D1Database,actor:Actor,projectId:string,input:
  const name=text(input.name,'rule_name'),existing=id?await loadRule(db,actor,id):null
  if(existing&&(existing.project_id!==projectId||Number(input.version)!==existing.version))throw conflict('rule_changed')
  const ruleId=id??newId('localrule')
- await guarded(db,rev,[existing?bound(db,'UPDATE peg_local_rules SET name=?,definition=?,version=version+1,enabled=0,activation_id=NULL,activated_by=NULL WHERE id=?',[name,JSON.stringify(d),ruleId]):bound(db,'INSERT INTO peg_local_rules(id,project_id,name,definition,created_at) VALUES(?,?,?,?,?)',[ruleId,projectId,name,JSON.stringify(d),now()])])
+ await guarded(db,rev,[existing?bound(db,'UPDATE peg_local_rules SET name=?,definition=?,version=version+1,enabled=0,activation_id=NULL,activated_by=NULL WHERE id=?',[name,JSON.stringify(d),ruleId]):bound(db,'INSERT INTO peg_local_rules(id,project_id,name,definition,created_at) VALUES(?,?,?,?,?)',[ruleId,projectId,name,JSON.stringify(d),now()]),localRuleEvent(db,{projectId,actor:actor.id,action:existing?'rule.edited':'rule.created',ruleId,version:existing?existing.version+1:1,previousActivationId:existing?.activation_id,previousVersion:existing?.version})])
  return {id:ruleId}
 }
 export async function rulePreview(db:D1Database,actor:Actor,id:string,input:Record<string,any>){
@@ -57,7 +58,7 @@ export async function activateRule(db:D1Database,actor:Actor,id:string,input:Rec
  const rev=await revision(db),preview=await rulePreview(db,actor,id,{})
  if(input.token!==preview.token)throw conflict('rule_review_changed')
  const activation=newId('localactivation'),r=preview.rule
- await guarded(db,rev,[bound(db,'INSERT INTO peg_local_rule_activations VALUES(?,?,?,?,?,?)',[activation,id,r.version,r.definition,actor.id,now()]),bound(db,'UPDATE peg_local_rules SET enabled=1,activation_id=?,activated_by=? WHERE id=?',[activation,actor.id,id])])
+ await guarded(db,rev,[bound(db,'INSERT INTO peg_local_rule_activations VALUES(?,?,?,?,?,?)',[activation,id,r.version,r.definition,actor.id,now()]),bound(db,'UPDATE peg_local_rules SET enabled=1,activation_id=?,activated_by=? WHERE id=?',[activation,actor.id,id]),localRuleEvent(db,{projectId:r.project_id,actor:actor.id,action:'rule.activated',ruleId:id,version:r.version,activationId:activation,activatedById:actor.id})])
  return {id,activationId:activation}
 }
 export async function rulesView(db:D1Database,actor:Actor,projectId:string){
@@ -68,6 +69,6 @@ export async function rulesView(db:D1Database,actor:Actor,projectId:string){
 }
 
 export async function deactivateRule(db:D1Database,actor:Actor,id:string){
- const rev=await revision(db);await loadRule(db,actor,id)
- await guarded(db,rev,[bound(db,'UPDATE peg_local_rules SET enabled=0,activation_id=NULL,activated_by=NULL WHERE id=?',[id])]);return {id}
+ const rev=await revision(db),rule=await loadRule(db,actor,id)
+ await guarded(db,rev,[bound(db,'UPDATE peg_local_rules SET enabled=0,activation_id=NULL,activated_by=NULL WHERE id=?',[id]),localRuleEvent(db,{projectId:rule.project_id,actor:actor.id,action:'rule.deactivated',ruleId:id,version:rule.version,activationId:rule.activation_id,activatedById:rule.activated_by})]);return {id}
 }
