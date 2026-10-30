@@ -311,3 +311,11 @@ native CLI doors and emits the independently compared counts and file digests.
 It does not dispatch a live provider, simulate R2 qualification or bypass the
 empty-installation requirement. The browser selector is `PEGBOARD_JOURNEY=archive-custody`;
 its assertions run at 1440 pixels, with optional review captures at 1440 and 390.
+
+The fixed run also stops its own native import after durable staging is reported.
+A fresh invocation against the same destination must clean that abandoned staging
+and restore the original archive once. The native runner restages from the archive;
+it does not claim to reuse a transferred chunk. No partial product graph is
+published, and the final row, relationship and digest comparison is unchanged.
+The fixed run allows ten minutes per native CLI invocation within its overall
+20-minute journey deadline; ordinary bounded verification keeps its existing limit.

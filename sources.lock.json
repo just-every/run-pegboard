@@ -199,7 +199,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "945c6f3d3831f81f011ad39aa06a87c89a56d518a585e15729588fbb7f71cc2a",
+      "sha256": "8a5df91608d1c1adbe29faf69df06437f5ada41ea961a7e081bd04f51cb60576",
       "executable": false
     },
     "AGENTS.md": {
@@ -215,7 +215,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "87139fb531d5de2c6ba596e43815b0cba0e2342383b47f13c1987907d4b4c672",
+      "sha256": "6713a869957018fe7ae1d7cfbe797966d620952236315bcc0f524350badcb750",
       "executable": false
     },
     "DEMO.md": {
@@ -239,7 +239,7 @@
       "executable": false
     },
     "docs/ARCHIVE-STORES.md": {
-      "sha256": "98c613073de5b3901753bbaa7f78ad233e211223373b8e4979fe8ab8e3a17dc2",
+      "sha256": "a60e870e2ec51acbcedbcc2602258713857664dc5c6f8c4a76e6157f251eda04",
       "executable": false
     },
     "docs/CALENDAR-BLOCKS.md": {
@@ -247,7 +247,7 @@
       "executable": false
     },
     "docs/CLAIMS.md": {
-      "sha256": "866a48632bcf8d569929529eb9ce11690864fe32be0aa5eb6505b35575addb53",
+      "sha256": "c3db1130f13fe81bb47adbacf01b2147a3ba08c6651314cdb4dc6aa024fba902",
       "executable": false
     },
     "docs/DATA-CUSTODY.md": {
@@ -4223,7 +4223,7 @@
       "executable": false
     },
     "tests/scenarios/archive-custody.mjs": {
-      "sha256": "905e5dd6d0c69e36ec38598758cfa855fb93451eff5401b64266b97c2b146156",
+      "sha256": "0151da146c0ca5c5e043ad8f45f7d7677303fb75312a60c888d9b953adbd919f",
       "executable": false
     },
     "tests/scenarios/calendar-blocks.mjs": {
@@ -4263,7 +4263,7 @@
       "executable": false
     },
     "tests/support/canvas-restore.mjs": {
-      "sha256": "17570dc4edc929df9e60819c201676bcd96a69c45d5378aad7e69b4e37341e3d",
+      "sha256": "d6e015d5c5d58bd1ebc9a43c8fb2a953a680779b5eb12c3fd12cc96e360cf683",
       "executable": false
     },
     "tests/support/capacity-services.mjs": {

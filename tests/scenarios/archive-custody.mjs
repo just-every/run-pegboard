@@ -127,7 +127,7 @@ export function registerArchiveCustodyTests({test,context}){
   let copy
   const calls=services.state.google.calls.length,sends=mailCalls()
   try{
-   copy=await restoreCanvasInstallation(owner,{archive:exported.text,roundTrip:true,settings:{PEGBOARD_LOCAL_CALENDAR_ORIGINS:services.origins,PEGBOARD_LOCAL_APPROVAL_MAIL_ORIGIN:mailOrigin},
+   copy=await restoreCanvasInstallation(owner,{archive:exported.text,roundTrip:true,interruptImport:scale,cliTimeout:scale?600000:180000,settings:{PEGBOARD_LOCAL_CALENDAR_ORIGINS:services.origins,PEGBOARD_LOCAL_APPROVAL_MAIL_ORIGIN:mailOrigin},
     async beforeImport({scratch,cli}){
      const corrupted=exported.text.replace(archive.parts[0].sha256,'0'.repeat(64));await writeFile(join(scratch,'exports/corrupt.rer'),corrupted)
      const refused=cli('import','--input','exports/corrupt.rer','--yes');assert.notEqual(refused.status,0);assert.match(refused.stdout+refused.stderr,/part_checksum/)
@@ -188,7 +188,7 @@ export function registerArchiveCustodyTests({test,context}){
    const newBlock=await pass(root.post(`/api/v1/calendar-previews/${fresh.id}/apply`,{slot:0,credential:'synthetic-pegboard-251'}))
    assert.notEqual(newBlock.transaction_id,block.transaction_id);assert.notEqual(newBlock.event_id,block.event_id)
    assert.ok(services.state.google.events.has(block.event_id),'the original provider event is untouched')
-   console.log(JSON.stringify({archiveCustody:true,scale,members,tasks,parts:archive.parts.length,sourceIdentity:archive.manifest.sourceIdentity,bytes:files.map(f=>({size:f.bytes.length,digest:f.digest})),tables:archive.manifest.tables.length,providerDispatchDuringRestore:0,mailDispatchDuringRestore:mailCalls()-sends}))
+   console.log(JSON.stringify({archiveCustody:true,scale,members,tasks,parts:archive.parts.length,sourceIdentity:archive.manifest.sourceIdentity,bytes:files.map(f=>({size:f.bytes.length,digest:f.digest})),tables:archive.manifest.tables.length,providerDispatchDuringRestore:0,mailDispatchDuringRestore:mailCalls()-sends,nativeImportRestarted:scale}))
   }finally{await copy?.stop()}
  },{timeout:scaleTimeout()})
 }
