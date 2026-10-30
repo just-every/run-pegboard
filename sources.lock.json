@@ -251,7 +251,7 @@
       "executable": false
     },
     "docs/DATA-RECORD-API.md": {
-      "sha256": "429b77d330f49210c8836314631440572040b7fa2494d36be22a19ff6b527f2c",
+      "sha256": "e9513786a60b08350a11d4271e7011f2e9c432aff1df8356214e0e198efd9602",
       "executable": false
     },
     "docs/ENGINEERING-HANDOFF.md": {
@@ -667,7 +667,7 @@
       "executable": false
     },
     "package.json": {
-      "sha256": "f7ca5180c771909a924a541b0d8ecb86b7682c8ffd6e789e50a7f860d7dcf29f",
+      "sha256": "48cff4d08431dbf330270b4c9e7fe9c062e0562f3ad1319ea7df2f6f4002978b",
       "executable": false
     },
     "packaging.json": {
@@ -3743,7 +3743,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/audit.tsx": {
-      "sha256": "61d3c60a7f2e557f54f34feccfb37d07c9b6d0d50cacdd97005b57b16783aa6a",
+      "sha256": "bfbf58c918d6beaf7f398c480ddbdcf03268c8ea033a044c48c2e3e4b531b66e",
       "executable": false
     },
     "src/pegboard/ui/pages/availability.tsx": {
@@ -4243,7 +4243,7 @@
       "executable": false
     },
     "tests/journeys/rule-audit.mjs": {
-      "sha256": "b706f5ec4632557952b569705eb0016314cba08715e1586b3eb125b513129540",
+      "sha256": "b06bc200527f0e24f843739f50f6f01dd938942d8c7137a8a59e1a591349bafa",
       "executable": false
     },
     "tests/journeys/schedule-settings.mjs": {
@@ -4319,7 +4319,7 @@
       "executable": false
     },
     "tests/scenarios/rule-audit.mjs": {
-      "sha256": "1a7e7872116004c2b496123875a75cc753186517b11b6e3a67f7d76cb4f228cb",
+      "sha256": "763cccec3a28190d83b3d91a7cb45f094422b3cd84e7e342550a67ce2b2a5ea9",
       "executable": false
     },
     "tests/scenarios/schedule-calendar.mjs": {
