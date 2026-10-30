@@ -84,6 +84,22 @@ export function registerSheetsExportTests({ test, context }) {
   const cfg = await ok(root.post('/api/v1/sheets', seeded.input)), preview = () => ok(root.post(`/api/v1/sheets/${cfg.id}/reviews`, { credential })), send = review => root.post(`/api/v1/sheet-reviews/${review.id}/send`, { credential, confirm: true })
   let review = await preview(), sent = writes(edge)
   await ok(send({ id: review.id }), 200); sent++
+  for (const audience of [
+   { id: 'synthetic-pegboard-775', type: 'anyone', role: 'publishedReader', view: 'published' },
+   { id: 'synthetic-pegboard-776', type: 'domain', domain: 'example.test', role: 'publishedReader', view: 'published' },
+  ]) {
+   review = await preview()
+   const unchanged = structuredClone([...edge.state.tabs])
+   // Publishing with automatic republishing does not alter ordinary file permissions.
+   edge.state.publishedPermissions = [audience]
+   const refused = await send(review)
+   assert.equal(refused.status, 409, 'a newly published audience must block the reviewed refresh')
+   assert.equal(writes(edge), sent, 'a published destination receives no write')
+   assert.deepEqual([...edge.state.tabs], unchanged, 'refusal leaves existing external cells unchanged')
+   await ok(root.post(`/api/v1/sheets/${cfg.id}/reviews`, { credential }), 409)
+   await ok(root.post('/api/v1/sheets', seeded.input), 409)
+   edge.state.publishedPermissions = []
+  }
   review = await preview(); await ok(root.patch(`/api/v1/tasks/${seeded.shared.id}`, { title: 'Concurrent native edit' })); await ok(send(review), 409); assert.equal(writes(edge), sent)
   review = await preview(); edge.state.permissions[1].role = 'writer'; await ok(send(review), 409); assert.equal(writes(edge), sent)
   review = await preview(); await ok(send(review)); sent++

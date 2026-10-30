@@ -13,9 +13,11 @@ use an official-schema HTTP edge labelled schema-fake. No Google registration,
 OAuth consent or live provider qualification is claimed. The credential is used
 only for the current invocation and is never persisted or included in an archive.
 
-A group, domain, public link, incomplete audience or non-writable destination is
-refused. The send rechecks current source export rights, selected field access,
-source content and the reviewed destination audience. Changed content or an
+Every permission page requests published-view permissions as well as ordinary
+file permissions. A published web view, group, domain, public link, incomplete
+audience or non-writable destination is refused, including publication enabled
+after review with automatic republishing. The send rechecks current source export
+rights, selected field access, source content and the reviewed destination audience. Changed content or an
 unknown audience requires a fresh exact review. Source reads reuse the native
 task and field permission services. Personal work outside the selected projects
 is excluded. Unselected fields and notes are not sent.
