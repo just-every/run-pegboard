@@ -10,13 +10,14 @@ export async function seedPortfolioCapacity(w) {
  for(const [p,skills] of [[designer,'design'],[alternate,'design'],[unqualified,'writing']])await ok(owner.post(api+'/capacity-profile',{personId:p.id,zone:'UTC',week,skills}))
  const portfolio=await ok(owner.post('/api/v1/portfolios',{name:'Thirty project capacity'})),child=await ok(owner.post('/api/v1/portfolios',{name:'Nested work',parentId:portfolio.id}))
  await ok(owner.post('/api/v1/portfolios/'+portfolio.id+'/members',{operatorId:reviewer.id,level:'viewer'}))
- const projects=[],reviewerGrants=[]
+ const projects=[],reviewerGrants=[],alternateGrants=[]
  for(let i=0;i<30;i++){
   const project=await ok(owner.post('/api/v1/projects',{name:i===2?'Locked client commitment':'Capacity project '+(i+1),visibility:i<3?'private':'workspace'}));projects.push(project)
   await ok(owner.post('/api/v1/portfolios/'+(i<15?portfolio.id:child.id)+'/projects',{projectId:project.id}))
   if(i<3)for(const p of [designer,alternate,unqualified,reviewer]){
    const grant=await ok(owner.post('/api/v1/grants',{objectType:'project',objectId:project.id,granteeId:p.id,level:'editor'}))
    if(p.id===reviewer.id)reviewerGrants.push(grant)
+   if(p.id===alternate.id)alternateGrants.push(grant)
   }
  }
  const tasks=[]
@@ -27,7 +28,7 @@ export async function seedPortfolioCapacity(w) {
  await ok(owner.post('/api/v1/tasks/'+tasks[0].id+'/projects',{projectId:projects[1].id}))
  const path='/api/v1/portfolios/'+portfolio.id+'/capacity',period={from:'2026-11-02',days:2}
  const input={...period,alternatives:[{taskId:tasks[0].id,personId:alternate.id},{taskId:tasks[1].id,personId:alternate.id}]}
- return {owner,designer,alternate,unqualified,reviewer,portfolio,child,projects,tasks,reviewerGrants,api,path,period,input}
+ return {owner,designer,alternate,unqualified,reviewer,portfolio,child,projects,tasks,reviewerGrants,alternateGrants,api,path,period,input}
 }
 export function portfolioCapacityScenarios(){
  describe('Human portfolio capacity',{concurrency:false},()=>{
@@ -57,6 +58,15 @@ export function portfolioCapacityScenarios(){
     assert.equal((await task(tasks[0].id)).owner.id,designer.id)
     await ok(owner.patch('/api/v1/tasks/'+tasks[0].id,{estimateHours:8}))
     await ok(reviewer.post(path+'/apply',{...input,choice:0,token:plan.token}),409)
+    // Shared-task access through another home cannot replace a revoked required grant.
+    for(const [person,grant] of [[reviewer,f.reviewerGrants[0]],[alternate,f.alternateGrants[0]]]){
+     plan=await compare()
+     await ok(owner.delete('/api/v1/grants/'+grant.id))
+     await ok(reviewer.post(path+'/apply',{...input,choice:0,token:plan.token}),409)
+     assert.equal((await task(tasks[0].id)).owner.id,designer.id)
+     assert.equal((await compare()).alternatives[0].feasible,false)
+     Object.assign(grant,await ok(owner.post('/api/v1/grants',{objectType:'project',objectId:projects[0].id,granteeId:person.id,level:'editor'})))
+    }
     plan=await compare()
     const leave=await ok(alternate.post(api+'/time-off',{start:'2026-11-02',end:'2026-11-02'}))
     await ok(reviewer.post(path+'/apply',{...input,choice:0,token:plan.token}),409)
@@ -106,6 +116,11 @@ export function portfolioCapacityScenarios(){
     assert.deepEqual(verified.people.find(p=>p.id===designer.id).days.map(d=>d.hours),[8,2])
     assert.deepEqual(verified.people.find(p=>p.id===alternate.id).days.map(d=>d.hours),[8,0],'completed hidden work is excluded from committed workload')
     assert.equal(verified.tasks.find(t=>t.id===tasks[0].id).allocations[0].sourcePerson,'synthetic-pegboard-designer')
+    await ok(owner.delete('/api/v1/grants/'+f.reviewerGrants[0].id))
+    await ok(reviewer.post(path+'/apply',{...input,choice:0,token:plan.token}),403)
+    assert.equal((await task(tasks[0].id)).owner.id,alternate.id)
+    assert.equal((await task(tasks[0].id)).history.filter(h=>h.kind==='capacity.portfolio_applied').length,1)
+    await ok(owner.post('/api/v1/grants',{objectType:'project',objectId:projects[0].id,granteeId:reviewer.id,level:'editor'}))
     await ok(owner.patch('/api/v1/tasks/'+tasks[0].id,{title:'Later human title',priority:'high'}))
     let undo=await ok(reviewer.get(path+'/'+applied.id+'/undo-preview'));assert.ok(undo.canUndo)
     await ok(reviewer.post(path+'/'+applied.id+'/undo',{token:undo.token}))
@@ -121,8 +136,22 @@ export function portfolioCapacityScenarios(){
     assert.equal(undo.canUndo,false)
     await ok(reviewer.post(path+'/'+second.id+'/undo',{token:undo.token}),409)
     assert.equal((await task(tasks[1].id)).owner.id,alternate.id,'even restored later assignment is retained')
-    // Erasing a prior non-owner participant removes undo snapshots; replay cannot resurrect them.
     await ok(owner.patch('/api/v1/tasks/'+tasks[1].id,{ownerId:designer.id}))
+    plan=await compare()
+    const allocationApplication=await ok(reviewer.post(path+'/apply',{...input,choice:0,token:plan.token}))
+    // Later human allocation edits stay protected even when their values are restored.
+    for(const sourcePerson of ['synthetic-pegboard-edited','synthetic-pegboard-designer']){
+     const edited={...effort,people:[{personId:alternate.id,sourcePerson}]}
+     const preview=await ok(owner.post('/api/v1/tasks/'+tasks[0].id+'/effort/preview',edited))
+     await ok(owner.post('/api/v1/tasks/'+tasks[0].id+'/effort/apply',{...edited,token:preview.token}))
+    }
+    undo=await ok(reviewer.get(path+'/'+allocationApplication.id+'/undo-preview'))
+    assert.equal(undo.canUndo,false)
+    await ok(reviewer.post(path+'/'+allocationApplication.id+'/undo',{token:undo.token}),409)
+    assert.equal((await task(tasks[0].id)).owner.id,alternate.id)
+    assert.deepEqual((await view()).tasks.find(t=>t.id===tasks[0].id).allocations.map(a=>[a.personId,a.hours,a.sourcePerson]),[[alternate.id,8,'synthetic-pegboard-designer']])
+    await ok(owner.patch('/api/v1/tasks/'+tasks[0].id,{ownerId:designer.id}))
+    // Erasing a prior non-owner participant removes undo snapshots; replay cannot resurrect them.
     const sharedEffort={source:'native',sourceItem:'synthetic-pegboard-7805',sourceMode:'per-person',people:[{personId:designer.id,sourcePerson:'synthetic-pegboard-designer',hours:6},{personId:unqualified.id,sourcePerson:'synthetic-pegboard-writer',hours:2}]}
     const sharedPreview=await ok(owner.post('/api/v1/tasks/'+tasks[0].id+'/effort/preview',sharedEffort))
     await ok(owner.post('/api/v1/tasks/'+tasks[0].id+'/effort/apply',{...sharedEffort,token:sharedPreview.token}))
