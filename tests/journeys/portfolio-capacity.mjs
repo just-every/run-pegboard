@@ -1,0 +1,106 @@
+import assert from 'node:assert/strict'
+import { mkdir } from 'node:fs/promises'
+import { join } from 'node:path'
+import { expect } from '@playwright/test'
+import { seedPortfolioCapacity,ok } from '../scenarios/portfolio-capacity.mjs'
+
+// One native sanity flow at 1440; release captures show the same changed states at both widths.
+export async function portfolioCapacityJourney({w,browser}) {
+ const f=await seedPortfolioCapacity(w),{owner,reviewer,alternate,designer,unqualified,portfolio,tasks,path,api,input}=f
+ const context=await browser.newContext({viewport:{width:1440,height:900}})
+ await context.addCookies(reviewer.cookie.split('; ').map(pair=>({name:pair.slice(0,pair.indexOf('=')),value:pair.slice(pair.indexOf('=')+1),url:w.origin})))
+ const page=await context.newPage(),here=w.origin+'/app/portfolios/'+portfolio.id+'/capacity',period='?from=2026-11-02&days=2'
+ const proof=async name=>{
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'capacity page fits at assertion width')
+  assert.deepEqual(await page.locator('main p,main a,main button,main label,main li,main input,main select').evaluateAll(elements=>elements.filter(e=>e.getBoundingClientRect().width&&parseFloat(getComputedStyle(e).fontSize)<13).map(e=>e.tagName)),[],'readable touched text')
+  assert.equal(await page.locator('main button,main a').evaluateAll(elements=>elements.filter(e=>!e.textContent.trim()&&e.querySelector('svg,img')).length),0,'controls have visible labels')
+  if(!process.env.PEGBOARD_PROOF_DIR)return
+  await mkdir(process.env.PEGBOARD_PROOF_DIR,{recursive:true})
+  for(const width of [1440,390]){
+   await page.setViewportSize({width,height:width===1440?900:844})
+   await page.screenshot({path:join(process.env.PEGBOARD_PROOF_DIR,'portfolio-capacity-'+name+'-'+width+'.png'),fullPage:true})
+  }
+  await page.setViewportSize({width:1440,height:900})
+ }
+ const tabTo=async target=>{
+  for(let i=0;i<100;i++){
+   if(await target.evaluate(el=>el===document.activeElement))return
+   await page.keyboard.press('Tab')
+  }
+  assert.fail('Keyboard did not reach the requested control')
+ }
+ const compare=async(person1=alternate.id,task2=tasks[1].id,person2=alternate.id)=>{
+  await page.goto(here+period)
+  const form=page.getByRole('form',{name:'Compare human scenarios'})
+  await form.getByLabel('Task for scenario 1',{exact:true}).selectOption(tasks[0].id)
+  await form.getByLabel('Alternate for scenario 1',{exact:true}).selectOption(person1)
+  await form.getByLabel('Task for scenario 2',{exact:true}).selectOption(task2)
+  await form.getByLabel('Alternate for scenario 2',{exact:true}).selectOption(person2)
+  const submit=form.getByRole('button',{name:'Compare alternatives',exact:true})
+  await tabTo(submit);await page.keyboard.press('Enter')
+  await expect(page.getByRole('heading',{name:'Exact human review',exact:true})).toBeVisible()
+ }
+ try{
+  await page.goto(w.origin+'/app/portfolios/'+portfolio.id)
+  await page.getByRole('link',{name:'Portfolio capacity',exact:true}).click()
+  await compare()
+  assert.deepEqual(await page.locator('[data-capacity-source]').evaluateAll(rows=>rows.map(e=>e.getAttribute('data-capacity-source')).sort()),tasks.map(t=>t.id).sort())
+  const scenario=page.getByRole('region',{name:'Review scenario 1',exact:true})
+  await expect(scenario).toContainText('Drew Designer → Alex Alternate · 8 participant-hours transferred')
+  await expect(scenario).toContainText('Dates unchanged: 2026-11-02 to 2026-11-02')
+  await expect(scenario).toContainText('2026-11-02: 8 committed h · 8 available h')
+  await expect(page.getByRole('heading',{name:'Human scenario 2: Feasible for this period',exact:true})).toBeVisible()
+  await proof('comparison')
+  // A stale rendered approval refuses without a reassignment, then a fresh comparison succeeds.
+  await ok(owner.patch('/api/v1/tasks/'+tasks[0].id,{estimateHours:9}))
+  await tabTo(page.getByRole('button',{name:'Approve scenario 1',exact:true}));await page.keyboard.press('Enter')
+  await expect(page.locator('body')).toContainText('The work, availability or access changed. Compare the current portfolio scenarios again before approving.')
+  assert.equal((await ok(owner.get('/api/v1/tasks/'+tasks[0].id))).owner.id,designer.id)
+  await ok(owner.patch('/api/v1/tasks/'+tasks[0].id,{estimateHours:8}))
+  await compare()
+  await tabTo(page.getByRole('button',{name:'Approve scenario 1',exact:true}));await page.keyboard.press('Enter')
+  await expect(page.getByRole('heading',{name:'Attributed applications',exact:true})).toBeVisible()
+  await expect(page.locator('[data-current-person="'+alternate.id+'"]')).toContainText('2026-11-02: 8 committed h · 8 available h')
+  await expect(page.locator('[data-current-person="'+designer.id+'"]')).toContainText('2026-11-02: 8 committed h · 8 available h')
+  const actual=await ok(owner.get('/api/v1/tasks/'+tasks[0].id))
+  assert.equal(actual.history.filter(h=>h.kind==='capacity.portfolio_applied').length,1)
+  assert.deepEqual([actual.startDate,actual.dueDate],['2026-11-02','2026-11-02'])
+  await proof('verified')
+  await page.getByRole('link',{name:'Review undo',exact:true}).click()
+  await expect(page.getByRole('heading',{name:'Review selective undo',exact:true})).toBeVisible()
+  await proof('undo')
+  await tabTo(page.getByRole('button',{name:'Undo reviewed reassignment',exact:true}));await page.keyboard.press('Enter')
+  await expect(page.getByRole('heading',{name:'Review selective undo',exact:true})).toHaveCount(0)
+  assert.equal((await ok(owner.get('/api/v1/tasks/'+tasks[0].id))).owner.id,designer.id)
+  await compare(unqualified.id,tasks[2].id)
+  await expect(page.getByText('Alternate does not have every required skill.',{exact:true})).toBeVisible()
+  await expect(page.getByText('This commitment is locked for capacity plans.',{exact:true})).toBeVisible()
+  await expect(page.getByRole('button',{name:/Approve scenario/})).toHaveCount(0)
+  await proof('refusals')
+  const leave=await ok(alternate.post(api+'/time-off',{start:'2026-11-02',end:'2026-11-02'}))
+  await compare()
+  await expect(page.getByText('Staffing shortage: neither entered alternative is verified feasible. No automatic reassignment or deadline movement.',{exact:true})).toBeVisible()
+  await expect(page.getByRole('button',{name:/Approve scenario/})).toHaveCount(0)
+  await proof('shortage')
+  await ok(alternate.delete(api+'/time-off/'+leave.id))
+  await ok(owner.delete('/api/v1/grants/'+f.reviewerGrants[2].id))
+  await compare()
+  await expect(page.getByText('Limited context. Hidden work is not disclosed and feasibility is unverified.',{exact:true})).toBeVisible()
+  assert.ok(!(await page.content()).includes('Locked artwork'))
+  assert.ok(!(await page.content()).includes('Locked client commitment'))
+  await expect(page.getByRole('button',{name:/Approve scenario/})).toHaveCount(0)
+  await proof('limited')
+  await ok(owner.post('/api/v1/grants',{objectType:'project',objectId:f.projects[2].id,granteeId:reviewer.id,level:'editor'}))
+  await page.goto(here+period)
+  await page.getByRole('link',{name:'Commitment settings',exact:true}).click()
+  const settings=page.getByRole('form',{name:'Commitment for Campaign design',exact:true})
+  await settings.getByLabel('Required skills',{exact:true}).fill('design, illustration')
+  await settings.getByLabel('Lock this commitment for capacity plans',{exact:true}).check()
+  await tabTo(settings.getByRole('button',{name:'Save commitment',exact:true}));await Promise.all([page.waitForResponse(r=>r.url().endsWith('/capacity-commitment')&&r.request().method()==='POST'),page.keyboard.press('Enter')])
+  const stored=await ok(owner.get(path+period))
+  assert.equal(stored.tasks.find(t=>t.id===tasks[0].id).skills,'design, illustration')
+  assert.equal(stored.tasks.find(t=>t.id===tasks[0].id).locked,true)
+  await proof('settings')
+  console.log('Human portfolio-capacity sanity journey passed at 1440; release proof at 1440 and 390.')
+ }finally{await context.close()}
+}

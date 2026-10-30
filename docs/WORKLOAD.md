@@ -33,3 +33,52 @@ Use a task's **Review effort allocation** link from Workload. Select every mappe
 For a single 10-hour task, Split allocates 5 hours to each of two people. Sum allocates 10 hours to each, producing 20 participant-hours while the task estimate remains 10 hours. An explicit per-person source allocation preserves 3 and 7 hours and reconciles to the same 10-hour task estimate. Multi-homing does not duplicate either allocation.
 
 Missing source semantics stay unresolved until a human reviews a concrete choice. Such a repair is labelled changed semantics and cannot be described as source equivalence. Whole-account source acquisition and cutover remain with PEG-047 and PEG-048; this door preserves the source interpretation the human reviews.
+
+## Human portfolio-capacity scenarios
+
+Open a portfolio, then **Portfolio capacity**. Enter two alternative task and
+person pairs, a first date and a bounded period. These are human scenarios:
+Pegboard does not generate or rank them as agent output. The review names each
+source task, current and proposed owner, transferred participant-hours, unchanged
+dates, required skills, preserved locks and current person-day workload across
+all committed workspace work. Shared tasks contribute once. Only the accountable
+owner's explicit effort allocation moves; other participants keep their hours
+and source identities.
+
+Commitment requirements and capacity-plan locks live under **Settings**, reached
+from the capacity screen. Locks apply to this scenario door. They do not silently
+freeze ordinary authorized task edits or create a new scheduling policy.
+
+The native comparison API is `POST /api/v1/portfolios/:id/capacity/compare`.
+Supply `from`, `days` and exactly two `alternatives`, each with `taskId` and
+`personId`. The returned review token binds the human, current revision,
+portfolio membership, dates, commitments, availability, existing project access
+and the exact comparison. Apply one choice through
+`POST /api/v1/portfolios/:id/capacity/apply` with the original input, token and
+zero-based `choice`. It requires current edit authority in every project home
+of the task and existing alternate access to those same homes. It grants no
+membership. Guests and agents cannot approve. Changed context requires a new
+review; an expired grant is rechecked even without a database write.
+
+A scenario is feasible only for the displayed period and affected people, with
+known availability, dated work within that period and no remaining daily
+overload. Unqualified or unavailable people and locked commitments are refused.
+Hidden project context, hidden affected commitments, unknown availability and
+undated work prevent a feasibility claim. Other commitments disclose hours only;
+hidden task identities, titles and project names are never returned. If neither
+entered option is feasible, the screen reports an explicit staffing shortage
+without changing assignments or deadlines. This is a comparison of the entered
+alternatives, not an exhaustive search of all possible staffing.
+
+Application persists one attributed operation and survives restart and replay.
+The screen verifies current workload after application. **Review undo** makes
+another current-authority review: it reverts only the owner and effort transfer,
+preserving later text, estimates and dates. A later owner or allocation edit,
+including a changed value subsequently restored, prevents undo. Erasure includes
+the affected undo snapshots, so they cannot restore an erased participant.
+
+Scoped-agent generation, ranking, schedule alternatives, routed approvals and
+autonomous execution remain unimplemented. No model, processor or spending
+consent is inferred from a human scenario.
+
+Human portfolio capacity application and undo storage is introduced by `migrations/core/0082_portfolio_capacity.sql`, after `0076_work_views.sql`. Existing installations retain every previously applied migration and apply the new migration in filename order. The runtime and portfolio tests apply the migration directory to a fresh store.
