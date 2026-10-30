@@ -124,7 +124,6 @@ Downloaded files, outside messages and declared processor copies need those
 systems’ deletion process. No provider-confirmed deletion or recall is claimed
 without a real receipt. Whole-workspace erasure, complete identity cleanup,
 product intake/import replay, live R2 qualification and autonomous agent execution
-remain explicit acceptance gaps. PEG-057, PEG-059 and PEG-065 stay partial for their technical gaps. The recorded
-CT rulings approve scoped redacted audit, owner-reviewed erasure, hold precedence
-and separately consented processor custody; retained identity stores and external
-limits remain disclosed.
+remain explicit acceptance gaps. PEG-057/059/065 stay partial while the adopted
+owner-only review, hold precedence, retained-history and processor defaults await
+CT disposition.
