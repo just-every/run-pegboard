@@ -22,7 +22,7 @@
   history.replaceState(null,'',location.pathname)
   try {const payload=JSON.parse(decodeURIComponent(fragment));post('/api/v1/captures',payload).then(v=>location.replace('/app/capture/'+v.id)).catch(e=>fail(e.message))}catch{fail('Invalid capture. Select the page again.')}
  }
- window.addEventListener('message',event=>{if(event.source===window&&event.origin===location.origin&&event.data?.type==='pegboard-capture-connected'&&status&&location.pathname==='/app/capture'&&!fragment)status.textContent='Extension connected. Select text on a source page, then click the Pegboard extension.'})
+ window.addEventListener('message',event=>{if(event.source===window&&event.origin===location.origin&&event.data?.type==='pegboard-capture-connected'&&status&&location.pathname==='/app/capture'&&!fragment&&!new URLSearchParams(location.search).has('cancelled'))status.textContent='Extension connected. Select text on a source page, then click the Pegboard extension.'})
  const form=document.querySelector('form[aria-label="Confirm captured task"]')
  form?.addEventListener('submit',async event=>{
   event.preventDefault();const button=form.querySelector('button');button.disabled=true;error.hidden=true

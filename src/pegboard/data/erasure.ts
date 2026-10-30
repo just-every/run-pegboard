@@ -174,6 +174,13 @@ export async function erase(db:D1Database,actor:Actor,workspace:string,input:Rec
     for(const task of plan.reopenTasks)statements.push(reopenGuard(db,task,actor.id,'custody_erasure'),bound(db,"UPDATE peg_tasks SET status='todo',completed_at=NULL,updated_at=? WHERE id=?",[at,task]))
     for(const proof of plan.proofs)statements.push(bound(db,'INSERT INTO peg_data_erasing_proofs VALUES(?)',[proof]))
     for(const selected of plan.selections.filter(s=>s.table==='peg_agent_outputs'))for(const key of selected.keys){const row=await first<{actor_id:string;operation_key:string}>(db,'SELECT actor_id,operation_key FROM peg_agent_outputs WHERE id=?',key.id);if(row)statements.push(bound(db,"INSERT OR IGNORE INTO peg_data_erased_objects VALUES('agent_output_key',?,?)",[await digest([row.actor_id,row.operation_key]),at]))}
+    // Keep only opaque replay tombstones when captured content or its creator is erased.
+    for(const selection of plan.selections.filter(s=>s.table==='peg_capture_intents'||s.table==='peg_capture_sources'))for(const key of selection.keys){
+      const capture=selection.table==='peg_capture_intents'
+        ?await first<{actor_id:string;source_id:string}>(db,'SELECT actor_id,source_id FROM peg_capture_intents WHERE id=?',key.id)
+        :await first<{actor_id:string;source_id:string}>(db,'SELECT captured_by AS actor_id,source_id FROM peg_capture_sources WHERE task_id=?',key.task_id)
+      if(capture)statements.push(bound(db,"INSERT OR IGNORE INTO peg_data_erased_objects VALUES('capture_source',?,?)",[await digest([capture.actor_id,capture.source_id]),at]))
+    }
     for(const task of plan.tasks)statements.push(bound(db,'INSERT INTO peg_data_erasing_tasks VALUES(?)',[task]))
     for(const selection of plan.selections){
       for(const key of selection.keys)statements.push(...await service.erasureStatements(selection.table,key))
