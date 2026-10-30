@@ -188,7 +188,7 @@ export function registerArchiveCustodyTests({test,context}){
    const newBlock=await pass(root.post(`/api/v1/calendar-previews/${fresh.id}/apply`,{slot:0,credential:'synthetic-pegboard-251'}))
    assert.notEqual(newBlock.transaction_id,block.transaction_id);assert.notEqual(newBlock.event_id,block.event_id)
    assert.ok(services.state.google.events.has(block.event_id),'the original provider event is untouched')
-   console.log(JSON.stringify({archiveCustody:true,scale,members,tasks,parts:archive.parts.length,sourceIdentity:archive.manifest.sourceIdentity,bytes:files.map(f=>({size:f.bytes.length,digest:f.digest})),tables:archive.manifest.tables.length,providerDispatchDuringRestore:0,mailDispatchDuringRestore:mailCalls()-sends,nativeImportRestarted:scale}))
+   console.log(JSON.stringify({archiveCustody:true,scale,members,tasks,parts:archive.parts.length,sourceIdentity:archive.manifest.sourceIdentity,bytes:files.map(f=>({size:f.bytes.length,digest:f.digest})),tables:archive.manifest.tables.length,records:archive.rows.length,sourceIdentityMatch:restored.manifest.sourceIdentity===archive.manifest.sourceIdentity,providerDispatchDuringRestore:0,mailDispatchDuringRestore:mailCalls()-sends,nativeImportRestarted:scale}))
   }finally{await copy?.stop()}
  },{timeout:scaleTimeout()})
 }

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { execFileSync, spawn, spawnSync } from 'node:child_process'
-import { mkdtemp, mkdir, readFile, rm, symlink, writeFile } from 'node:fs/promises'
+import { cp, mkdtemp, mkdir, readFile, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { startWorker } from './worker.mjs'
@@ -22,7 +22,8 @@ export async function restoreCanvasInstallation(owner, options={}) {
   execFileSync('git',['archive','--output',join(scratch,'product.tar'),'HEAD']);execFileSync('tar',['-xf',join(scratch,'product.tar'),'-C',scratch],{stdio:'pipe'})
   await symlink(join(process.cwd(),'node_modules'),join(scratch,'node_modules'),'dir')
   await mkdir(join(scratch,'exports'));await writeFile(join(scratch,'exports/canvas.rer'),archive,{mode:0o600})
-  const cli=(...args)=>spawnSync(process.execPath,[join(process.cwd(),'node_modules/@runeditrun/rer/global/rer.mjs'),...args],{cwd:scratch,encoding:'utf8',timeout:options.cliTimeout??180000,maxBuffer:4*1024*1024,env:{...process.env,CI:'1',WRANGLER_SEND_METRICS:'false'}})
+  const cliAt=(cwd,...args)=>spawnSync(process.execPath,[join(process.cwd(),'node_modules/@runeditrun/rer/global/rer.mjs'),...args],{cwd,encoding:'utf8',timeout:options.cliTimeout??180000,maxBuffer:4*1024*1024,env:{...process.env,CI:'1',WRANGLER_SEND_METRICS:'false'}})
+  const cli=(...args)=>cliAt(scratch,...args)
   await options.beforeImport?.({scratch,cli})
   if(options.interruptImport){
    // Stop only this owned CLI, after it confirms durable staged parts. Its
@@ -37,8 +38,22 @@ export async function restoreCanvasInstallation(owner, options={}) {
     child.once('close',(code,signal)=>{clearTimeout(timer);try{assert.ok(interrupted,'native CLI reached staged work before interruption');assert.ok(code!==0||signal,'the owned transfer was interrupted');resolve()}catch(error){reject(error)}})
    })
   }
+  if(options.interruptImport){
+   // Export is audited product activity. Inspect an isolated copy of this
+   // synthetic interrupted store, keeping the reserved destination untouched.
+   const inspection=join(scratch,'interrupted-inspection')
+   await mkdir(inspection);execFileSync('tar',['-xf',join(scratch,'product.tar'),'-C',inspection],{stdio:'pipe'})
+   await symlink(join(process.cwd(),'node_modules'),join(inspection,'node_modules'),'dir')
+   await cp(join(scratch,'.wrangler'),join(inspection,'.wrangler'),{recursive:true})
+   await mkdir(join(inspection,'exports'))
+   try{
+    const partial=cliAt(inspection,'export','--output','exports/interrupted.rer')
+    assert.equal(partial.status,0,partial.stdout+partial.stderr)
+    const manifest=JSON.parse((await readFile(join(inspection,'exports/interrupted.rer'),'utf8')).split('\n')[0])
+    for(const table of ['oa_operators','peg_tasks','peg_attachments','peg_proofs'])assert.equal(manifest.tables.find(t=>t.name===table)?.count,0,table+' stays empty after an interrupted staged restore')
+   }finally{await rm(inspection,{recursive:true,force:true})}
+  }
   const result=cli('import','--input','exports/canvas.rer','--yes')
-  if(options.interruptImport)assert.match(result.stdout,/Cleaned up an unfinished earlier import/,'native CLI recovers abandoned staging before the successful restore')
   assert.equal(result.status,0,result.stdout+result.stderr)
   let roundTrip
   if(options.roundTrip){
