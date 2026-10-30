@@ -1,3 +1,4 @@
+import { intakeScenario } from './scenarios/intake.mjs'
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs'
 import { reportingScenario } from './scenarios/reporting.mjs'
 import { analystDatasetScenario } from './scenarios/analytics.mjs'
@@ -39,6 +40,13 @@ function csvRecords(text) {
   return rows.filter(row=>row.some(value=>value.length))
 }
 let campaign, launch, shared, mkt
+
+describe('Native text intake', {concurrency:false},()=>{
+ let worker
+ before(async()=>{worker=await startWorker()},{timeout:120000})
+ after(()=>worker?.stop())
+ it('publishes branching intake, creates one attributable task after replay and restart, and refuses unsafe submissions',async()=>intakeScenario(worker))
+})
 
 describe('Work views through the native graph', {concurrency:false}, () => {
  let worker

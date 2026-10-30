@@ -171,8 +171,8 @@
       "buyerSteps": "Apply migrations/core/0071_blind_project_requests.sql after the existing migrations, including 0070_analytics_portfolio_revision.sql. Preserve all previously applied migration names and bytes. This adds durable blind project-request intake without replaying it from archives."
     },
     {
-      "id": "0077_portfolio_capacity.sql",
-      "buyerSteps": "Apply migrations/core/0077_portfolio_capacity.sql after 0076_work_views.sql and all existing migrations. This adds human-reviewed portfolio capacity application and undo records. Preserve all previously applied migration names and bytes."
+      "id": "0079_portfolio_capacity.sql",
+      "buyerSteps": "Apply migrations/core/0079_portfolio_capacity.sql after 0078_intake_custody.sql and all existing migrations. This adds human-reviewed portfolio capacity application and undo records. Preserve all previously applied migration names and bytes."
     }
   ],
   "breaking": false,

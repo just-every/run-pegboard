@@ -34,7 +34,7 @@ async function sectionFor(db: D1Database, projectId: string, sectionId?: string 
 }
 const nextPosition = async (db: D1Database, projectId: string, sectionId: string | null) => (await first<{ n: number }>(db, 'SELECT COALESCE(MAX(position),0)+1 n FROM peg_task_projects WHERE project_id=? AND COALESCE(section_id,\'\')=COALESCE(?,\'\')', projectId, sectionId))!.n
 
-export async function prepareTask(db: D1Database, actor: Actor, input: TaskInput, options:{queueRules?:boolean}={}) {
+export async function prepareTask(db: D1Database, actor: Actor, input: TaskInput, options:{queueRules?:boolean;sourceActorId?:'public_intake'}={}) {
   const kind = input.kind ?? (input.parentId ? 'subtask' : 'task')
   if (!kinds.includes(kind)) throw invalid('kind')
   let projectId = input.projectId ?? null, workspaceId = input.workspaceId ?? 'ws_main', parent: TaskRow | null = null
@@ -46,6 +46,7 @@ export async function prepareTask(db: D1Database, actor: Actor, input: TaskInput
     if (opened.access.personal && projectId) throw conflict('personal_task')
     if (!opened.access.personal && !projectId) throw forbidden('edit')
   }
+  const creator = options.sourceActorId ?? actor.id
   const id = newId('tsk'), at = now(), statements: D1PreparedStatement[] = []
   let status = input.status ?? 'todo'
   if (!statuses.includes(status) || !priorities.includes(input.priority ?? 'normal')) throw invalid('status')
@@ -61,7 +62,7 @@ export async function prepareTask(db: D1Database, actor: Actor, input: TaskInput
     if (section?.maps_to && !input.status && !parent) status = section.maps_to
     const ref = await issueRef(db, project, id)
     // A subtask hangs wherever its parent does; only a root task is placed in a section of its own.
-    if (!parent) statements.push(bound(db, 'INSERT INTO peg_task_projects(task_id,project_id,section_id,position,added_by,added_at) VALUES (?,?,?,?,?,?)', [id, projectId, section?.id ?? null, await nextPosition(db, projectId, section?.id ?? null), actor.id, at]))
+    if (!parent) statements.push(bound(db, 'INSERT INTO peg_task_projects(task_id,project_id,section_id,position,added_by,added_at) VALUES (?,?,?,?,?,?)', [id, projectId, section?.id ?? null, await nextPosition(db, projectId, section?.id ?? null), creator, at]))
     if (ref) statements.push(...ref.statements)
   } else {
     const role = await workspaceRole(db, actor.id, workspaceId)
@@ -73,8 +74,8 @@ export async function prepareTask(db: D1Database, actor: Actor, input: TaskInput
     statements.push(bound(db,'INSERT INTO peg_approval_tasks VALUES(?,?,?)',[id,actor.id,at]))
   }
   statements.unshift(bound(db, `INSERT INTO peg_tasks(id,workspace_id,title,description,kind,parent_id,status,priority,start_date,due_date,owner_id,creator_id,estimate_hours,internal_only,internal_notes,created_at,updated_at,completed_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-    [id, workspaceId, title(input.title), (input.description ?? '').slice(0, 20000), kind === 'approval' ? 'task' : kind, parent?.id ?? null, status, input.priority ?? 'normal', date(input.startDate, 'start_date'), date(input.dueDate, 'due_date'), owner, actor.id, hours(input.estimateHours), input.internalOnly ? 1 : 0, (input.internalNotes ?? '').slice(0, 20000), at, at, status === 'done' ? at : null]))
-  statements.push(historyStatement(db, id, null, actor.id, 'created', { kind, parentId: parent?.id ?? null }),...(options.queueRules===false?[]:[...await bundleQueueStatements(db,projectId,id),...await templateRuleQueueStatements(db,projectId,id)]))
+    [id, workspaceId, title(input.title), (input.description ?? '').slice(0, 20000), kind === 'approval' ? 'task' : kind, parent?.id ?? null, status, input.priority ?? 'normal', date(input.startDate, 'start_date'), date(input.dueDate, 'due_date'), owner, creator, hours(input.estimateHours), input.internalOnly ? 1 : 0, (input.internalNotes ?? '').slice(0, 20000), at, at, status === 'done' ? at : null]))
+  statements.push(historyStatement(db, id, null, creator, 'created', { kind, parentId: parent?.id ?? null }),...(options.queueRules===false?[]:[...await bundleQueueStatements(db,projectId,id),...await templateRuleQueueStatements(db,projectId,id)]))
   return { id, statements, projectId }
 }
 

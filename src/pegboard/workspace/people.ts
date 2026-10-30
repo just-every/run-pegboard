@@ -56,5 +56,5 @@ export async function displayNames(db: D1Database, ids: string[]): Promise<Map<s
   const unique = [...new Set(ids.filter(Boolean))]
   if (!unique.length) return new Map([['','Unassigned']])
   const rows = await all<{ id: string; display_name: string }>(db, `SELECT id,display_name FROM oa_operators WHERE id IN (${placeholders(unique)})`, ...(unique as Param[]))
-  return new Map([['','Unassigned'], ...rows.map(row => [row.id, row.display_name] as [string,string])])
+  return new Map([['','Unassigned'], ['public_intake','Public intake'], ...rows.map(row => [row.id, row.display_name] as [string,string])])
 }

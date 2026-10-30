@@ -1,5 +1,9 @@
 import { portfolioCapacity,comparePortfolioCapacity,portfolioCapacityUndoPreview } from '../capacity/portfolio-plans'
 import { PortfolioCapacityPage,PortfolioCapacitySettingsPage } from './pages/portfolio-capacity'
+import { IntakeScreen,IntakeSettings,IntakeQueue } from './pages/intake'
+import { internalForm,safeForm,projectForms,reviewForm,administer } from '../intake/forms'
+import { triageQueue } from '../intake/triage'
+import { intakeDocument } from '../api/intake-routes'
 import { dashboards, ownDashboard, readSnapshot } from '../reporting/dashboard'
 import { ReportsSettings, ReportsList, ReportPage } from './pages/reports'
 import { workView } from '../views/service'
@@ -185,6 +189,9 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
   const editorFor=async(projectId:string,tasks:{value:string;label:string}[],here:string):Promise<ScheduleEditorProps>=>({here,projectId,tasks,people:await peopleOptions(db,actor,workspace),input:scheduleInput,preview:await schedulePreview(db,actor,scheduleInput)})
 
   try {
+    if(section==='intake'&&id&&!tail){const row=await internalForm(db,actor,id),receiptId=url.searchParams.get('receipt'),receipt=receiptId?await first<{id:string;deadline:number}>(db,'SELECT id,deadline FROM peg_intake_submissions WHERE id=? AND form_id=? AND source_actor=?',receiptId,id,actor.id):null;return intakeDocument('Request intake',h(IntakeScreen,{viewer,form:safeForm(row),receipt:receipt?{receipt:receipt.id,deadline:receipt.deadline,acknowledgment:'Request received'}:null}))}
+    if(section==='projects'&&id&&tail==='intake'&&segments.length===4)return page('Request triage',h(IntakeQueue,{viewer,view:await triageQueue(db,actor,id)}))
+    if(section==='projects'&&id&&tail==='settings'&&segments[4]==='intake'&&segments.length===5){const {project}=await administer(db,actor,id),reviewId=url.searchParams.get('review');const review=reviewId?await reviewForm(db,actor,reviewId):null;if(review&&review.project.id!==id)throw new PegError(404,'not_found');return page('Intake settings',h(IntakeSettings,{viewer,project,list:await projectForms(db,actor,id),review,people:await peopleOptions(db,actor,workspace)}))}
     if(section==='settings'&&id==='reports'&&!tail)return page('Report settings',h(ReportsSettings,{viewer,projects:await listProjects(db,actor,workspace),list:await dashboards(db,actor,workspace)}))
     if(section==='reports'&&!id)return page('Reports',h(ReportsList,{viewer,list:await dashboards(db,actor,workspace)}))
     if(section==='reports'&&id&&!tail){const {row}=await ownDashboard(db,actor,workspace,id);const snapshot=url.searchParams.get('snapshot');return page(row.name,h(ReportPage,{viewer,id,name:row.name,report:snapshot?await readSnapshot(db,actor,workspace,id,snapshot):null}))}
