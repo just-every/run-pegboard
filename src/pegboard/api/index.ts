@@ -1,4 +1,5 @@
 import { reportingRoutes } from './reporting-routes'
+import {searchRoutes} from './search-routes'
 import { calendarRoutes } from './calendar-routes'
 import { publicRoutes } from './public-routes'
 import { capacityRoutes } from './capacity-routes'
@@ -91,3 +92,4 @@ ruleRoutes(pegboardApi)
 calendarRoutes(pegboardApi)
 
 reportingRoutes(pegboardApi)
+searchRoutes(pegboardApi)
