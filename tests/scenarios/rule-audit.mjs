@@ -83,10 +83,12 @@ export function registerRuleAuditTests({test,context}){
   await pass(member.post(`/api/v1/tasks/${changed.id}/section`,{projectId:scoped.id,sectionId:section.id}))
   const current=(await read(root,scoped.id)).runs
   assert.equal(current.length,2)
-  for(const activeRule of [statusRule,sectionRule]){
+  for(const [activeRule,action,result] of [[statusRule,'rule.run_applied','applied'],[sectionRule,'rule.run_noop','noop']]){
    const actual=current.find(r=>r.rule_id===activeRule.id),receipts=await audit(root,activeRule.id)
    assert.equal(actual.status,'applied')
-   assert.deepEqual(receipts.map(e=>e.action),['rule.created','rule.activated','rule.run_queued','rule.run_applied'])
+   assert.deepEqual(receipts.map(e=>e.action),['rule.created','rule.activated','rule.run_queued',action])
+   assert.equal(receipts.at(-1).result,result)
+   if(activeRule===sectionRule){assert.equal(actual.operation_id,null);assert.equal(receipts.at(-1).metadata.outcome,'no_changes');assert.equal(receipts.at(-1).metadata.workCount,0);assert.ok(!receipts.at(-1).metadata.operationId)}
    assert.deepEqual(receipts.slice(2).map(e=>e.metadata.eventId),[actual.event_id,actual.event_id])
    assert.deepEqual(await audit(root,activeRule.id,'&event='+actual.event_id),receipts.slice(2))
    assert.deepEqual(receipts.slice(2).map(e=>e.actor_id),[member.id,root.id])
@@ -236,7 +238,7 @@ async function widerRuleAudit(w){
  assert.notEqual(renewed.activationId,activation.activationId)
  assert.deepEqual((await audit(root,rule.id,'&run='+run.id)).filter(e=>e.action!=='template_rule.run_reviewed').map(e=>e.action),['template_rule.run_blocked','template_rule.run_queued','template_rule.run_applied'])
  await pass(root.post(`/api/v1/template-rules/${rule.id}`,{...config,name:'synthetic-pegboard-5909',ruleVersion:1,offsetDays:1}))
- const edited=(await audit(root,rule.id)).at(-1);assert.equal(edited.action,'template_rule.edited');assert.equal(edited.metadata.version,2);assert.equal(edited.metadata.activationId,renewed.activationId)
+ const edited=(await audit(root,rule.id)).at(-1);assert.equal(edited.action,'template_rule.edited');assert.equal(edited.metadata.version,2);assert.equal(edited.metadata.activationId,null);assert.equal(edited.metadata.previousActivationId,renewed.activationId);assert.equal(edited.metadata.previousVersion,1)
  events=await audit(root,rule.id)
  await w.restart();await pass(root.post(route+'/process',{}));assert.deepEqual(await audit(root,rule.id),events)
  const exported=await pass(root.get(`/api/v1/admin/audit/export?rule=${rule.id}&limit=500`));assert.deepEqual(exported.events,events)
@@ -275,6 +277,31 @@ async function widerRuleAudit(w){
  const bundleExport=await pass(root.get(`/api/v1/admin/audit/export?rule=${id}&limit=500`));assert.deepEqual(bundleExport.events,events)
  for(const forbidden of [key,'synthetic-pegboard-5912','synthetic-pegboard-5914','synthetic-pegboard-5915',member.name,member.email,root.cookie])assert.ok(!JSON.stringify(bundleExport).includes(forbidden))
  assert.equal((await member.get(`/api/v1/admin/audit/export?rule=${id}`)).status,403)
+ // Editing one component renews the adoption epoch for both rules, without
+ // falsely attributing a definition edit to the untouched component.
+ const pair=await pass(root.post('/api/v1/workflow-bundles',{name:'synthetic-pegboard-5930'})),pairBase=`/api/v1/workflow-bundles/${pair.id}`,keys=['synthetic-pegboard-5931','synthetic-pegboard-5932']
+ for(const [index,key] of keys.entries())await pass(root.post(pairBase+'/versions',{version:index+1,key,kind:'rule',name:key,priority:'normal'}))
+ const pairPreview=await pass(root.post(pairBase+'/preview',{projectIds:[bundled.id]}))
+ await pass(root.post(pairBase+'/adopt',{projectIds:[bundled.id],keys,revision:pairPreview.token}))
+ const pairEvents=async()=> (await pass(root.get('/api/v1/admin/audit?limit=500'))).events.filter(e=>e.metadata.bundleId===pair.id)
+ const original=await pairEvents(),ruleIds=original.filter(e=>e.action==='bundle_rule.created').map(e=>e.metadata.ruleId)
+ assert.equal(ruleIds.length,2)
+ await pass(root.post(pairBase+`/projects/${bundled.id}/override`,{key:keys[0],priority:'urgent'}))
+ const revised=(await pairEvents()).filter(e=>e.id>original.at(-1).id)
+ assert.deepEqual(revised.filter(e=>e.action==='bundle_rule.edited').map(e=>e.metadata.ruleId),[ruleIds[0]])
+ const activations=revised.filter(e=>e.action==='bundle_rule.activated')
+ assert.deepEqual(activations.map(e=>e.metadata.ruleId).sort(),[...ruleIds].sort())
+ for(const e of activations){assert.equal(e.actor_id,root.id);assert.equal(e.metadata.activationEpoch,2);assert.equal(e.metadata.version,3);assert.notEqual(e.metadata.activationId,original.find(old=>old.action==='bundle_rule.activated'&&old.metadata.ruleId===e.metadata.ruleId).metadata.activationId)}
+ const pairedTask=await pass(member.post('/api/v1/tasks',{projectId:bundled.id,title:'synthetic-pegboard-5933'}))
+ await pass(root.post(pairBase+'/jobs/process',{}))
+ const pairedJobs=(await pass(root.get(pairBase))).jobs.filter(j=>j.task_id===pairedTask.id)
+ assert.equal(pairedJobs.length,2)
+ for(const job of pairedJobs){
+  const receipts=(await pairEvents()).filter(e=>e.metadata.runId===job.id),activation=activations.find(e=>e.metadata.ruleId===receipts[0].metadata.ruleId)
+  assert.equal(receipts.length,2);assert.equal(receipts[0].action,'bundle_rule.run_queued');assert.ok(['bundle_rule.run_applied','bundle_rule.run_noop'].includes(receipts[1].action))
+  assert.equal(receipts[0].metadata.activationId,activation.metadata.activationId);assert.equal(receipts[1].metadata.activationId,activation.metadata.activationId)
+ }
+ const retained=await pairEvents();await pass(root.post(pairBase+'/jobs/process',{}));assert.deepEqual(await pairEvents(),retained)
  // The former activating administrator remains accountable after losing authority.
  const delegatedProject=await pass(root.post('/api/v1/projects',{name:'synthetic-pegboard-5920'}))
  const delegatedGrant=await pass(root.post('/api/v1/grants',{objectType:'project',objectId:delegatedProject.id,granteeId:member.id,level:'admin'}))
