@@ -1,3 +1,5 @@
+import {bundleRuleIdentity} from '../audit/bundle-rules'
+import {permanentEvent} from '../audit/search'
 import {workActions,type WorkAction} from './action-config'
 import {all,bound,first,forbidden,invalid,newId,notFound,now} from '../db'
 import {guarded,revision} from '../decisions/revision'
@@ -53,5 +55,12 @@ export async function versionBundle(db:D1Database,actor:Actor,id:string,input:Re
   components[key]=component
  }
  if(Object.keys(components).length>50)throw invalid('bundle_size')
- await guarded(db,rev,[bound(db,'INSERT INTO peg_bundle_versions VALUES(?,?,?,?,?)',[id,view.current.version+1,JSON.stringify(components),actor.id,now()])]);return bundleView(db,actor,id)
+ const events=[]
+ for(const itemKey of new Set([...Object.keys(view.current.components),...Object.keys(components)])){
+  const previous=view.current.components[itemKey],next=components[itemKey]
+  if((previous?.kind!=='rule'&&next?.kind!=='rule')||JSON.stringify(previous)===JSON.stringify(next))continue
+  const ruleId=await bundleRuleIdentity(id,itemKey)
+  events.push(permanentEvent(db,{workspace:view.bundle.workspace_id,actor:actor.id,action:next?.kind==='rule'?(previous?.kind==='rule'?'bundle_rule.edited':'bundle_rule.created'):'bundle_rule.removed',type:'rule',id:ruleId,metadata:{kind:'bundle',ruleId,bundleId:id,version:view.current.version+1,previousVersion:view.current.version}}))
+ }
+ await guarded(db,rev,[bound(db,'INSERT INTO peg_bundle_versions VALUES(?,?,?,?,?)',[id,view.current.version+1,JSON.stringify(components),actor.id,now()]),...events]);return bundleView(db,actor,id)
 }

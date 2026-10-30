@@ -1,3 +1,4 @@
+import {bundleConfigurationEvents,cancelledBundleEvents,bundleActivationEvent} from '../audit/bundle-rules'
 import {all,bound,conflict,first,invalid,newId,now} from '../db'
 import {digest,guarded,revision} from '../decisions/revision'
 import {openProject,need} from '../workspace/projects'
@@ -30,7 +31,7 @@ export async function adoptBundle(db:D1Database,actor:Actor,id:string,input:Reco
  const preview=await previewBundle(db,actor,id,input);if(input.revision!==preview.token)throw conflict('bundle_preview_changed')
  const keys=ids(input.keys),statements=[]
  for(const project of preview.projects){
-  const adoption=await first(db,'SELECT 1 FROM peg_bundle_adoptions WHERE bundle_id=? AND project_id=?',id,project.id)
+  const adoption=await first<{epoch:number}>(db,'SELECT epoch FROM peg_bundle_adoptions WHERE bundle_id=? AND project_id=?',id,project.id)
   if(!adoption)statements.push(bound(db,'INSERT INTO peg_bundle_adoptions VALUES(?,?,1,1,?)',[id,project.id,actor.id]))
   else statements.push(bound(db,'UPDATE peg_bundle_adoptions SET epoch=epoch+1,activated_by=? WHERE bundle_id=? AND project_id=?',[actor.id,id,project.id]))
   for(const key of keys){
@@ -41,7 +42,8 @@ export async function adoptBundle(db:D1Database,actor:Actor,id:string,input:Reco
    if(row.next.kind==='field')statements.push(bound(db,'INSERT OR IGNORE INTO peg_project_fields(project_id,key,field_id) VALUES(?,?,?)',[project.id,row.next.fieldKey!,row.next.fieldId!]))
    statements.push(bound(db,'INSERT INTO peg_bundle_items VALUES(?,?,?,?,?,?,?) ON CONFLICT(bundle_id,project_id,item_key) DO UPDATE SET kind=excluded.kind,base=excluded.base,config=excluded.config,version=excluded.version',[id,project.id,key,row.next.kind,config,config,preview.version]))
   }
-  statements.push(bound(db,"UPDATE peg_bundle_jobs SET status='cancelled',finished_at=? WHERE bundle_id=? AND project_id=? AND status='queued'",[now(),id,project.id]),bundleHistory(db,id,project.id,actor.id,'adopted',{version:preview.version,keys}))
+  for(const row of project.rows.filter(row=>row.kind==='rule'))statements.push(await bundleActivationEvent(db,id,project.id,row.key,actor.id,(adoption?.epoch??0)+1))
+  statements.push(...await cancelledBundleEvents(db,id,project.id,actor.id,'activation_changed'),bound(db,"UPDATE peg_bundle_jobs SET status='cancelled',finished_at=? WHERE bundle_id=? AND project_id=? AND status='queued'",[now(),id,project.id]),bundleHistory(db,id,project.id,actor.id,'adopted',{version:preview.version,keys}))
  }
  await guarded(db,preview.rev,statements);return bundleView(db,actor,id)
 }
@@ -50,9 +52,9 @@ export async function overrideRule(db:D1Database,actor:Actor,id:string,projectId
  const item=await first<Item>(db,"SELECT * FROM peg_bundle_items WHERE bundle_id=? AND project_id=? AND item_key=? AND kind='rule'",id,projectId,String(input.key));if(!item)throw invalid('rule')
  if(!['low','normal','high','urgent'].includes(input.priority))throw invalid('priority')
  const config:Component={...JSON.parse(item.config),priority:input.priority}
- await guarded(db,rev,[bound(db,'UPDATE peg_bundle_items SET config=? WHERE bundle_id=? AND project_id=? AND item_key=?',[JSON.stringify(config),id,projectId,item.item_key]),bound(db,'UPDATE peg_bundle_adoptions SET epoch=epoch+1 WHERE bundle_id=? AND project_id=?',[id,projectId]),bound(db,"UPDATE peg_bundle_jobs SET status='cancelled',finished_at=? WHERE bundle_id=? AND project_id=? AND status='queued'",[now(),id,projectId]),bundleHistory(db,id,projectId,actor.id,'rule.overridden',{key:item.item_key,priority:input.priority})]);return bundleView(db,actor,id)
+ await guarded(db,rev,[...await cancelledBundleEvents(db,id,projectId,actor.id,'activation_changed'),...await bundleConfigurationEvents(db,id,projectId,actor.id,'bundle_rule.edited'),bound(db,'UPDATE peg_bundle_items SET config=? WHERE bundle_id=? AND project_id=? AND item_key=?',[JSON.stringify(config),id,projectId,item.item_key]),bound(db,'UPDATE peg_bundle_adoptions SET epoch=epoch+1 WHERE bundle_id=? AND project_id=?',[id,projectId]),bound(db,"UPDATE peg_bundle_jobs SET status='cancelled',finished_at=? WHERE bundle_id=? AND project_id=? AND status='queued'",[now(),id,projectId]),bundleHistory(db,id,projectId,actor.id,'rule.overridden',{key:item.item_key,priority:input.priority})]);return bundleView(db,actor,id)
 }
 export async function disableBundle(db:D1Database,actor:Actor,id:string,projectId:string){
  await loadBundle(db,actor,id);const rev=await revision(db),{effective}=await openProject(db,actor,projectId);need(effective,'manage_rules')
- await guarded(db,rev,[bound(db,'UPDATE peg_bundle_adoptions SET enabled=0,epoch=epoch+1 WHERE bundle_id=? AND project_id=?',[id,projectId]),bound(db,"UPDATE peg_bundle_jobs SET status='cancelled',finished_at=? WHERE bundle_id=? AND project_id=? AND status='queued'",[now(),id,projectId]),bundleHistory(db,id,projectId,actor.id,'disabled',{})]);return {disabled:true}
+ await guarded(db,rev,[...await cancelledBundleEvents(db,id,projectId,actor.id,'activation_changed'),...await bundleConfigurationEvents(db,id,projectId,actor.id,'bundle_rule.deactivated'),bound(db,'UPDATE peg_bundle_adoptions SET enabled=0,epoch=epoch+1 WHERE bundle_id=? AND project_id=?',[id,projectId]),bound(db,"UPDATE peg_bundle_jobs SET status='cancelled',finished_at=? WHERE bundle_id=? AND project_id=? AND status='queued'",[now(),id,projectId]),bundleHistory(db,id,projectId,actor.id,'disabled',{})]);return {disabled:true}
 }
