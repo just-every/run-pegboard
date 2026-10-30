@@ -501,6 +501,11 @@ describe('Scoped guest work', { concurrency: false }, () => {
     const file = await ok(root.post(`/api/v1/tasks/${task.id}/attachments?projectId=${internal.id}&name=synthetic-pegboard-916.txt`,'synthetic-pegboard-916',{'content-type':'text/plain'}))
     const internalField=await ok(root.post(`/api/v1/projects/${project.id}/fields`,{key:'members',label:'synthetic-pegboard-918',visibility:'internal'}))
     await ok(root.post(`/api/v1/tasks/${task.id}/fields`,{projectId:project.id,values:{members:'synthetic-pegboard-919'}}))
+    const roleFields={}
+    for(const visibility of ['everyone','editors','admins']){
+      roleFields[visibility]=await ok(root.post(`/api/v1/projects/${project.id}/fields`,{key:visibility,label:`synthetic-pegboard-field-${visibility}`,visibility}))
+      await ok(root.post(`/api/v1/tasks/${task.id}/fields`,{projectId:project.id,values:{[visibility]:`synthetic-pegboard-value-${visibility}`}}))
+    }
     const visibleFile = await ok(root.post(`/api/v1/tasks/${task.id}/attachments?projectId=${project.id}&name=synthetic-pegboard-917.txt`,'synthetic-pegboard-917',{'content-type':'text/plain'}))
     const listing = () => ok(root.get(`/api/v1/projects/${project.id}/guest-shares`))
     const grants = async () => (await ok(root.get(`/api/v1/grants?objectType=project&objectId=${project.id}`))).grants
@@ -534,9 +539,14 @@ describe('Scoped guest work', { concurrency: false }, () => {
       assert.equal((await guest.get(`/api/v1/tasks/${task.id}`)).status,404)
       assert.deepEqual(review.tasks.map(t=>t.id),[task.id])
       assert.deepEqual(review.tasks[0].capabilities.sort(),caps.sort())
+      const visibleFields=[roleFields.everyone.id,...(caps.includes('edit')?[roleFields.editors.id]:[])].sort()
+      assert.deepEqual(review.tasks[0].projects.find(p=>p.id===project.id).fields.map(f=>f.id).sort(),visibleFields)
+      assert.ok(review.manifest.withheld.fieldIds.includes(roleFields.admins.id))
       const result=await ok(decide(review))
       assert.equal((await grants()).length,before+1)
-      assert.deepEqual((await ok(guest.get(`/api/v1/tasks/${task.id}`))).capabilities.sort(),caps.sort())
+      const received=await ok(guest.get(`/api/v1/tasks/${task.id}`))
+      assert.deepEqual(received.capabilities.sort(),caps.sort())
+      assert.deepEqual(received.projects.find(p=>p.id===project.id).fields.map(f=>f.id).sort(),visibleFields)
       assert.equal((await guest.patch(`/api/v1/tasks/${task.id}`,{priority:'high'})).status,caps.includes('edit')?200:403)
       assert.equal((await guest.post(`/api/v1/tasks/${task.id}/comments`,{body:'Visible client reply'})).status,caps.includes('comment')?200:403)
       for(const path of [`/api/v1/tasks/${hiddenTask.id}`,`/api/v1/attachments/${file.id}`,`/api/v1/projects/${internal.id}/export`])assert.equal((await guest.get(path)).status,404)
@@ -578,6 +588,8 @@ describe('Scoped guest work', { concurrency: false }, () => {
     await ok(approver.post(`/api/v1/proof-reviews/${link.id}/decision`,{token:guestView.token,version:guestView.version,action:'approve',reason:'Reviewed asset sign-off'}))
     const signed=(await ok(root.get(`/api/v1/approvals/${route.id}`))).votes
     assert.equal(signed.length,1);assert.equal(signed[0].actor_id,approver.id);assert.equal(signed[0].version,proof.versionId)
+    await worker.sql(`UPDATE peg_grants SET expires_at=1 WHERE id='${assetGrant.grantId}'`)
+    assert.equal((await approver.get(`/api/v1/proof-reviews/${link.id}`)).status,404)
     await ok(root.delete(`/api/v1/grants/${assetGrant.grantId}`))
     for(const path of [`/api/v1/proof-reviews/${link.id}`,`/api/v1/proof-reviews/${link.id}/material`,`/api/v1/attachments/${assetFile.id}`,`/app/proof-reviews/${link.id}`])assert.equal((await approver.get(path)).status,404)
     assert.deepEqual((await ok(root.get(`/api/v1/approvals/${route.id}`))).votes,signed)
@@ -625,6 +637,15 @@ describe('Scoped guest work', { concurrency: false }, () => {
     assert.equal((await ok(root.get(base))).decisions.filter(d=>d.id===review.id).length,1)
     await ok(root.delete(`/api/v1/grants/${grants[0].id}`))
     assert.equal((await decide(review)).status,409)
+    const erasedReview=await preview()
+    await ok(root.post(`/api/v1/workspaces/ws_main/people/${guest.id}/account`,{status:'inactive'}))
+    const erasure=await ok(root.post('/api/v1/data/erasure-preview',{type:'person',id:guest.id}))
+    assert.deepEqual(erasure.blockers,[])
+    await ok(root.post('/api/v1/data/erase',{type:'person',id:guest.id,token:erasure.token,confirm:true}))
+    assert.equal((await guest.get(`/api/v1/tasks/${task.id}`)).status,401)
+    assert.equal((await decide(erasedReview)).status,409)
+    assert.equal((await ok(root.get(`/api/v1/grants?objectType=project&objectId=${project.id}`))).grants.some(g=>g.grantee_id===guest.id),false)
+    console.log('PROBE PEG-019 erasure: inactive guest -> native reviewed erasure; old session and pending review -> no reads or new grant')
     console.log('PROBE PEG-019 recheck: changed content, role, scope, recipient, expiry and authority -> no grant; restart and concurrent confirmation -> one grant; revoke then replay -> refused')
   })
 

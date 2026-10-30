@@ -103,7 +103,7 @@ export async function guestShareReview(db:D1Database,actor:Actor,projectId:strin
   if (!row || row.actor_id !== actor.id) throw notFound()
   const proposal = JSON.parse(row.proposal) as GrantInput
   let content = null
-  if (row.status === 'pending' && row.review_until > now()) {
+  if (row.status === 'pending' && row.review_until > now() && (!proposal.expiresAt || proposal.expiresAt > now())) {
     const rev = await revision(db)
     if (rev.value === row.revision && (!row.authority_until || row.authority_until > now())) {
       const current = await proposedPortal(db,actor,proposal)

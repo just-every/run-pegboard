@@ -215,7 +215,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "7e52a17db6fb2940eb961f10287285f744e128c10d027087ccd36793e88b30b5",
+      "sha256": "0c16a2c139136067e6f11498401bf5e850825eafe85e8826d69f8cb54504719f",
       "executable": false
     },
     "DEMO.md": {
@@ -3443,7 +3443,7 @@
       "executable": false
     },
     "src/pegboard/guests/preview.ts": {
-      "sha256": "954d615c939178bdf260b0089e09ff7a1ac44691e844c7d185ab2446b0509633",
+      "sha256": "f37f2f2b1314f619476b77ec8c7149ef32e75fe3c4102d8cf45a484d68d6902c",
       "executable": false
     },
     "src/pegboard/intake/forms.ts": {
@@ -4211,7 +4211,7 @@
       "executable": false
     },
     "tests/access-control.test.mjs": {
-      "sha256": "2f4e3172bb465d76731ee8dd48d89df173fdf1306612176000c0038e1906ce7a",
+      "sha256": "923ce6eeaf4e7d15d1a81e46320d92c33e670af7a8b192193da4e0d393633546",
       "executable": false
     },
     "tests/journeys/access-discovery.mjs": {
@@ -4259,7 +4259,7 @@
       "executable": false
     },
     "tests/journeys/guests.mjs": {
-      "sha256": "1270171c674c9371f5a6d9b1a04e7e38e8160498a25b4c8ddfec591a6574e1cd",
+      "sha256": "bbc54f100bad88a39b110a97e969cde10c88939e824d10dae381a76daf336a4f",
       "executable": false
     },
     "tests/journeys/intake.mjs": {
