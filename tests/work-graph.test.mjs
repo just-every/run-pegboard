@@ -1,5 +1,5 @@
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs'
-import { reportingScenario } from './scenarios/reporting.mjs'
+import { reportingScenario, reportingBusinessScenario } from './scenarios/reporting.mjs'
 import { analystDatasetScenario } from './scenarios/analytics.mjs'
 import { registerCalendarBlockTests } from './scenarios/calendar-blocks.mjs'
 import { startCalendarServices } from './support/calendar-services.mjs'
@@ -2407,7 +2407,7 @@ describe('Native reporting',{concurrency:false},()=>{
  before(async()=>{worker=await startWorker()},{timeout:120000})
  after(()=>worker?.stop())
  it('reconciles dashboard history, real downloads and revoked access across three projects',async()=>{
-  const {files,report}=await reportingScenario(worker)
+  for(const {files,report} of [await reportingScenario(worker),await reportingBusinessScenario(worker)]){
   const csv=new TextDecoder().decode(files.csv),records=csvRecords(csv),columns=records[0]
   const data=records.slice(1).map(values=>Object.fromEntries(columns.map((name,i)=>[name,values[i]])))
   assert.equal(data[0].snapshot,report.id)
@@ -2433,9 +2433,10 @@ with zipfile.ZipFile(sys.argv[1]) as z:
    assert.ok(lines.join(' ').includes(report.id))
    const pdfRecords=[]
    let lastKey
-   for(const line of lines){if(line.startsWith('section: '))pdfRecords.push({});if(!pdfRecords.length)continue;if(/^[A-Za-z]+:(?: |$)/.test(line)){const at=line.indexOf(':');lastKey=line.slice(0,at);pdfRecords.at(-1)[lastKey]=line.slice(at+1).replace(/^ /,'')}else if(lastKey)pdfRecords.at(-1)[lastKey]+=line}
+   for(const line of lines){if(line.startsWith('section: '))pdfRecords.push({});if(!pdfRecords.length)continue;if(line.startsWith('+')&&lastKey){pdfRecords.at(-1)[lastKey]+=line.slice(1);continue}if(/^[A-Za-z]+:(?: |$)/.test(line)){const at=line.indexOf(':');lastKey=line.slice(0,at);pdfRecords.at(-1)[lastKey]=line.slice(at+1).replace(/^ /,'')}else if(lastKey)pdfRecords.at(-1)[lastKey]+=line}
    assert.deepEqual(pdfRecords.map(row=>columns.map(name=>row[name]??'')),records.slice(1),'every parsed PDF record reconciles to the workbook and CSV')
    await parsed.destroy()
   } finally {await rm(scratch,{recursive:true,force:true})}
+  }
  },{timeout:180000})
 })
