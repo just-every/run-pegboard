@@ -1,3 +1,4 @@
+import { registerBrowserCaptureTests } from './scenarios/browser-capture.mjs'
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs'
 import { reportingScenario } from './scenarios/reporting.mjs'
 import { analystDatasetScenario } from './scenarios/analytics.mjs'
@@ -2430,4 +2431,12 @@ with zipfile.ZipFile(sys.argv[1]) as z:
    await parsed.destroy()
   } finally {await rm(scratch,{recursive:true,force:true})}
  },{timeout:180000})
+})
+
+
+describe('Browser capture through native public doors',{concurrency:false},()=>{
+ let worker
+ before(async()=>{worker=await startWorker()},{timeout:120000})
+ after(()=>worker?.stop())
+ registerBrowserCaptureTests({test:it,context:()=>({w:worker})})
 })
