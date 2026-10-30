@@ -26,3 +26,43 @@ clauses; their completion is not claimed here.
 The current ordinary attachment door retains its existing 524,288-byte database
 limit. PEG-082’s larger guarantees require its complete registered R2 upload
 implementation; these custody APIs do not lower that contractual requirement.
+
+## Local rule audit
+
+Authorized administrators use `GET /api/v1/admin/audit` and its `export` door.
+Exact query filters `rule`, `run`, `activation`, `operation` and `event` select opaque
+identities without expanding the existing workspace or personal scope. The browser
+audit search offers rule and run IDs alongside action, actor and subject filters.
+
+Local configuration emits `rule.created`, `rule.edited`, `rule.activated` and
+`rule.deactivated`. Matching native triggers emit `rule.run_queued` or an inactive
+`rule.run_blocked`; processing emits `rule.run_applied`, `rule.run_noop` or
+`rule.run_blocked`. Receipts bind version and activation, trigger and activating
+actors, run and task identities, closed outcome codes and the operation ID when
+work changes. Dates, descriptions, names, rule action text and credentials remain
+outside permanent metadata. The operation identifies the exact scoped work
+result; it grants no additional read authority.
+
+Deactivation or editing never rewrites earlier receipts. Restored rules remain
+inactive, erased actors retain anonymized attribution, and existing run receipts
+survive native archive restore. Queue and terminal receipts share the original
+trigger event ID. A queued run fenced by native restore appends `rule.run_blocked`
+with `restored_inactive`, preserving its original activation and actor without
+restoring execution authority. These records do not expand PEG-012 rule behavior
+or qualify product imports, autonomous agent execution or future integration doors.
+
+## Existing template and bundle rule audit
+
+The same exact rule, run, activation and operation audit filters apply to native
+template and workflow bundle receipts. Template actions begin with
+`template_rule.`; bundle actions begin with `bundle_rule.`. Configuration events
+name the version and activation being reviewed or retired. Queue and outcome
+events bind the native run and triggering task to their actor and activation.
+Bundle rule and activation identities are opaque digests, with numeric adoption
+epochs retained separately. Copy a receipt's `metadata.ruleId` into Rule ID on
+Permanent audit to inspect its complete history. Activation ID, Operation ID and
+Triggering event ID narrow the same exact correlation on screen and in its export. No raw component key is retained.
+A bundle no-op has result `noop` even though the existing native job is finalized
+as applied; the audit distinguishes an evaluated rule from a work mutation.
+Native archive recovery retains the original receipts and records blocked queued
+work without reactivating its source installation's authority.
