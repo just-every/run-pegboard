@@ -160,3 +160,17 @@ external credential is unable to approve; outbound webhook delivery requires a
 current creator's exact audited review and a one-use secret. PEG-062 inherits
 the nonhuman approval boundary and PEG-032 inherits credential cancellation.
 The clause's acceptance text is unchanged.
+
+## Shared agent-door source
+
+`base-copies.json` records the shared agent-door, Business settings and native
+operator-auth runtime source at Base commit
+`d555e789cffb744a9f83d76ebe42a2e3bdd7a055`. Additive migrations retain the
+existing installation's applied schema history. Runtime source custody and the
+published `@runeditrun/rer` CLI pin are separate.
+
+The recorded modules are not mounted in the production Worker yet. The existing
+REST and MCP surface described above remains the supported interface; company
+policy adoption, shared approval pages and Business-bound agent credentials are
+not currently available in Pegboard. No additional agent capability, provider,
+spend enforcement or native authority is implied by the source copies.
