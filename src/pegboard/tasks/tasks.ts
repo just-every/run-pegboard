@@ -185,8 +185,8 @@ export async function removeFromProject(db: D1Database, actor: Actor, idOrRef: s
 }
 
 /** Move within a project: the section decides the one shared status when it maps to one. */
-export async function setSection(db: D1Database, actor: Actor, idOrRef: string, projectId: string, sectionId: string) {
-  const localRevision=await revision(db)
+export async function setSection(db: D1Database, actor: Actor, idOrRef: string, projectId: string, sectionId: string, fence?: Awaited<ReturnType<typeof revision>>) {
+  const localRevision=fence??await revision(db)
   const { task, access } = await openTask(db, actor, idOrRef)
   const context = access.contexts.get(projectId)
   if (!context) throw notFound()
@@ -201,7 +201,7 @@ export async function setSection(db: D1Database, actor: Actor, idOrRef: string, 
   const previous=await first<{section_id:string|null}>(db,'SELECT section_id FROM peg_task_projects WHERE task_id=? AND project_id=?',task.id,projectId)
   const queued=[...(section!.maps_to&&section!.maps_to!==task.status?await localRuleQueue(db,task.id,'status',actor.id):[]),...(previous?.section_id!==section!.id?await localRuleQueue(db,task.id,'section',actor.id,projectId):[])]
   statements.push(...queued)
-  if(queued.length)await guarded(db,localRevision,statements);else await batch(db, statements)
+  if(fence||queued.length)await guarded(db,localRevision,statements);else await batch(db, statements)
   for(const id of access.contexts.keys())await processLocalRules(db,id)
 }
 

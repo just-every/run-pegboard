@@ -20,6 +20,7 @@ import { startEngineeringServices, vectorTodo, vectorDone } from './support/engi
 import { startTimeServices } from './support/time-services.mjs'
 import { restoreCanvasInstallation } from './support/canvas-restore.mjs'
 import {registerConversionTests} from './scenarios/conversions.mjs'
+import {registerWorkViewTests} from './scenarios/work-views.mjs'
 
 let w, owner, mia, gus, nina
 const ok = async (promise, status = 200) => { const r = await promise; assert.equal(r.status, status, JSON.stringify(r.body)); return r.body }
@@ -38,6 +39,13 @@ function csvRecords(text) {
   return rows.filter(row=>row.some(value=>value.length))
 }
 let campaign, launch, shared, mkt
+
+describe('Work views through the native graph', {concurrency:false}, () => {
+ let worker
+ before(async () => { worker = await startWorker() }, {timeout:120000})
+ after(() => worker?.stop())
+ registerWorkViewTests({test:it,context:()=>({w:worker})})
+})
 
 describe('Work conversions through reviewed public doors',{concurrency:false},()=>{
  let worker,root,peer,guest

@@ -1,0 +1,35 @@
+.work-view-nav{display:flex;gap:8px;flex-wrap:wrap;margin-block:10px 18px}
+.work-view-nav a{display:block;padding:8px 14px;border:1px solid var(--edge);border-radius:8px;background:var(--paper);font-size:15px}
+.work-view-nav a[aria-current=page]{background:var(--azure-l);font-weight:750}
+.work-content{display:grid;grid-template-columns:minmax(0,1fr);gap:22px;min-width:0}
+.work-content>.panel{min-width:0;max-width:100%;box-sizing:border-box}
+.work-content h3{margin-block:10px}
+.work-row{min-width:0;overflow-wrap:anywhere}
+.work-row .stack{display:grid;gap:10px}
+.work-row .work-actions{margin-block:12px}
+.work-row [data-draft-warning]{color:var(--tomato-ink);font-size:15px}
+.work-row [data-summary]{font-size:15px;margin-block:8px}
+.work-table-scroll{max-width:100%;overflow:auto}
+.work-table{border-collapse:collapse;font-size:15px;min-width:100%;text-align:left}
+.work-table caption{text-align:left;font-weight:750;padding-block:10px}
+.work-table th,.work-table td{padding:12px;vertical-align:top;border:1px solid var(--bar-line);min-width:140px}
+.work-table th{background:var(--pale)}
+.work-table .input,.work-table .select{min-width:150px;max-width:240px;width:100%}
+.work-table .field{font-size:14px}
+.work-table .button{font-size:15px;min-height:44px;padding:8px 12px}
+.work-columns{display:flex;flex-wrap:wrap;gap:12px 24px}
+.work-live-state{padding:12px 16px;border:1px solid var(--edge);border-radius:8px;background:var(--paper);font-size:15px}
+.work-date-preview:empty{display:none}
+.work-date-preview{padding:24px;border:1px solid var(--edge);border-radius:10px;background:var(--paper)}
+.work-timeline{display:grid;gap:12px}
+.work-timeline .track{height:16px;margin-block:8px}
+@media(max-width:600px){.work-view-nav a{flex:1 0 26%;text-align:center}.work-table-scroll{margin-inline:-6px}.work-columns{display:grid;gap:10px}.work-content .inline{display:grid}.work-content .button{width:100%}}
+.work-values{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px 18px;margin-block:12px}
+.work-values div{min-width:0}
+.work-values dt{font-size:13px;color:var(--grey)}
+.work-values dd{margin:4px 0 0;font-size:15px}
+.work-content[data-mode=board]{grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));align-items:start}
+.work-content[data-mode=board] .rows{gap:14px}
+.work-content[data-mode=board] .rows>li{border:1px solid var(--edge);border-radius:8px;padding:14px}
+
+.work-content>[data-task-count]{grid-column:1/-1;margin:12px 0;font-size:15px}
