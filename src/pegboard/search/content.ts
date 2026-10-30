@@ -1,8 +1,11 @@
 import {all,invalid,notFound,PegError} from '../db'
+import {openTask} from '../tasks/access'
 import {viewTask} from '../tasks/view'
+import {rank} from '../authorization/levels'
+import {openProject} from '../workspace/projects'
 import {listProjects} from '../workspace/projects'
 import {briefView} from '../revisions/briefs'
-import {workspaceRole,type Actor} from '../workspace/people'
+import {workspaceRole,workspaceSettings,type Actor} from '../workspace/people'
 
 export interface SearchInput {q?:unknown;kind?:unknown;status?:unknown;projectId?:unknown;priority?:unknown;ownerId?:unknown;after?:unknown}
 export function searchInput(input:SearchInput) {
@@ -13,8 +16,9 @@ export function searchInput(input:SearchInput) {
 }
 export interface SearchResult {id:string;type:'task'|'project'|'brief';title:string;href:string;matches:string[];status?:string;priority?:string;editable?:boolean}
 /** Candidate text is never a disclosure boundary: match again against the ordinary, currently authorized view. */
-export async function contentSearch(db:D1Database,actor:Actor,workspace:string,input:SearchInput) {
+export async function contentSearch(db:D1Database,actor:Actor,workspace:string,input:SearchInput,exporting=false) {
  if(!await workspaceRole(db,actor.id,workspace))throw notFound()
+ const exportMinimum=exporting?(await workspaceSettings(db,workspace)).exportMinLevel:null
  const filters=searchInput(input),q=filters.q.toLocaleLowerCase(),matches=(s:string)=>s.toLocaleLowerCase().includes(q),results:SearchResult[]=[]
  if(!filters.kind||filters.kind==='task'||filters.kind==='approval'){
   const candidates=await all<{id:string}>(db,`SELECT t.id FROM peg_tasks t WHERE t.workspace_id=? AND (
@@ -23,6 +27,7 @@ export async function contentSearch(db:D1Database,actor:Actor,workspace:string,i
    OR EXISTS(SELECT 1 FROM peg_task_refs r WHERE r.task_id=t.id AND instr(lower(r.ref),lower(?))>0)) ORDER BY t.id`,workspace,filters.q,filters.q,filters.q,filters.q)
   for(const candidate of candidates)try{
    const task=await viewTask(db,actor,candidate.id)
+   if(exporting){const {access}=await openTask(db,actor,task.id);if(!access.capabilities.has('export')||!access.personal&&![...access.contexts.values()].some(context=>context.capabilities.has('export')&&rank(context.level)>=rank(exportMinimum)))continue}
    if(filters.kind==='approval'&&task.kind!=='approval'||filters.status&&task.status!==filters.status||filters.priority&&task.priority!==filters.priority||filters.ownerId&&task.owner.id!==filters.ownerId||filters.projectId&&!task.projects.some(p=>p.id===filters.projectId))continue
    const sources=[...(!q||matches(task.title)||matches(task.description)||matches(task.ref??'')||task.aliases.some(a=>matches(a))?['Task']:[]),...(task.comments.some(c=>matches(c.body))?['Comment']:[]),...(task.attachments.some(a=>matches(a.name))?['Attachment']:[])]
    if(sources.length)results.push({id:task.id,type:'task',title:task.title,href:`/app/tasks/${task.id}`,matches:sources,status:task.status,priority:task.priority,editable:task.capabilities.includes('edit')})
@@ -30,6 +35,7 @@ export async function contentSearch(db:D1Database,actor:Actor,workspace:string,i
  }
  if((!filters.kind||filters.kind==='project'||filters.kind==='brief')&&!filters.status&&!filters.priority&&!filters.ownerId)for(const p of await listProjects(db,actor,workspace)){
   if(filters.projectId&&filters.projectId!==p.id)continue
+  if(exporting){const {effective}=await openProject(db,actor,p.id);if(!effective.capabilities.has('export')||rank(effective.level)<rank(exportMinimum))continue}
   if(filters.kind!=='brief'&&(matches(p.name)||matches(p.description)))results.push({id:p.id,type:'project',title:p.name,href:`/app/projects/${p.id}`,matches:['Project']})
   if(filters.kind!=='project'){
    const brief=await briefView(db,actor,p.id)

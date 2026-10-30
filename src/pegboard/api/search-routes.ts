@@ -6,7 +6,7 @@ import {saveSearch,savedSearches,removeSearch} from '../search/saved'
 export function searchRoutes(app:Hono<{Bindings:Bindings}>){
  app.get('/search',door(({db,actor,workspace,query})=>contentSearch(db,actor,workspace,Object.fromEntries(query))))
  app.get('/search/export',door(async({db,actor,workspace,query})=>{
-  const result=await contentSearch(db,actor,workspace,Object.fromEntries(query))
+  const result=await contentSearch(db,actor,workspace,Object.fromEntries(query),true)
   return json(result,200,{'content-disposition':'attachment; filename="search-results.json"'})
  }))
  app.get('/search/saved',door(async({db,actor,workspace})=>({searches:await savedSearches(db,actor,workspace)})))

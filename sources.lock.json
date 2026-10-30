@@ -3099,7 +3099,7 @@
       "executable": false
     },
     "src/pegboard/api/search-routes.ts": {
-      "sha256": "c343b4816b8dacfdd79fc94de939dc0175898cae9027d5fa05c06d12e30a842a",
+      "sha256": "8402290a049b4ffd2431ab5bcb946687c99f03558f7756d15e4a3ee97557375b",
       "executable": false
     },
     "src/pegboard/api/status-routes.ts": {
@@ -3315,7 +3315,7 @@
       "executable": false
     },
     "src/pegboard/data/erasure.ts": {
-      "sha256": "0759cec82b419a5d1478175c92c08c32b2ad4cafd4c5fc8b4d49b076bf427f06",
+      "sha256": "628a21722681c8948c21ca6c84cac21d057ca8040a3205f7c05a6e67a7fc24e8",
       "executable": false
     },
     "src/pegboard/data/expiry.ts": {
@@ -3415,7 +3415,7 @@
       "executable": false
     },
     "src/pegboard/portability/policy.mjs": {
-      "sha256": "fa0d7b7e36bccc32fb22a07aebfcb63bb4857754a07108763aa05f264cc317a6",
+      "sha256": "92e8b318656a5e232fa85f152070e07da52e7990c48a94ffd583b2060c1fcd7f",
       "executable": false
     },
     "src/pegboard/portfolios/portfolios.ts": {
@@ -3575,7 +3575,7 @@
       "executable": false
     },
     "src/pegboard/search/content.ts": {
-      "sha256": "0097ec291a0eadd23254886a6b717f230a7cb09d5356c3b0978dca3261bbae5d",
+      "sha256": "cf2b733434aac2e6367fe2bc5033a99a61f23533f1e55bbb3524f484ebaf6c2d",
       "executable": false
     },
     "src/pegboard/search/saved.ts": {
@@ -3867,7 +3867,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/search.tsx": {
-      "sha256": "2ab6b27a8ed72fd510c5b68982ecc95a126d1bc8e8d0606adc83e1f8fd345581",
+      "sha256": "44f51451f34edf7015d6114cf2a2d4d8f3ed85b425cc935e250ba0af04c70b22",
       "executable": false
     },
     "src/pegboard/ui/pages/source-credential.tsx": {
@@ -3915,7 +3915,7 @@
       "executable": false
     },
     "src/pegboard/ui/routes.ts": {
-      "sha256": "ac976fb75b91ac9b2ba26832dfc5f997cb1b9fa4d7cc657132512bf4242f8c17",
+      "sha256": "7d5b09e48dd7b6bf245d1d9a5a441e1cc39777c355a723f9f4c9f4afff3f7941",
       "executable": false
     },
     "src/pegboard/ui/schedule-editor.tsx": {
@@ -4191,7 +4191,7 @@
       "executable": false
     },
     "tests/journeys/search-bulk.mjs": {
-      "sha256": "c98ad1f139ed8b46445a0c8b06b612d3c3b79db342a1160238a101bc3f42cffd",
+      "sha256": "dce05c703c2873b3888cf0604dd4d725d46db17c0e2574982bab3d03c12dbde5",
       "executable": false
     },
     "tests/journeys/template-gallery.mjs": {
@@ -4267,7 +4267,7 @@
       "executable": false
     },
     "tests/scenarios/search-bulk.mjs": {
-      "sha256": "aeb137e8632efc325235b85c2e66410b57d13fb4c564b40d82b111c2a28bc878",
+      "sha256": "d99db52e54582f231722e42726715919061be17225162244d2a48f80946eae83",
       "executable": false
     },
     "tests/schedule.test.mjs": {
