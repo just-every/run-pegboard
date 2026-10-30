@@ -96,7 +96,7 @@ export function registerRuleAuditTests({test,context}){
   assert.equal((await read(root,scoped.id)).runs.length,2,'repeated non-transitions produce no extra rule run')
   await w.restart();await pass(root.post(path(scoped.id)+'/process',{}))
   assert.equal((await read(root,scoped.id)).runs.length,2)
-  await widerRuleAudit(w)
+  w.widerAudit=await widerRuleAudit(w)
  },{timeout:180000})
  test('attributes background refusal to the former activating administrator and retains anonymized rule audit through native archive restore',async()=>{
   const w=context(),root=w.owner
@@ -171,9 +171,21 @@ export function registerRuleAuditTests({test,context}){
   const restoreTask=await request(root,queuedProject.id,5861,{startDate:null})
   const restoring=await pendingRun(restoreTask),beforeRestore=await audit(root,restoring.rule_id,'&run='+restoring.id)
   assert.deepEqual(beforeRestore.map(e=>e.action),['rule.run_queued'])
+  const restoreBundle=await pass(root.post('/api/v1/workflow-bundles',{name:'synthetic-pegboard-5950'})),restoreBase=`/api/v1/workflow-bundles/${restoreBundle.id}`
+  await pass(root.post(restoreBase+'/versions',{version:1,key:'synthetic-pegboard-5951',kind:'rule',name:'synthetic-pegboard-5952',priority:'high'}))
+  const bundlePreview=await pass(root.post(restoreBase+'/preview',{projectIds:[queuedProject.id]}))
+  await pass(root.post(restoreBase+'/adopt',{projectIds:[queuedProject.id],keys:['synthetic-pegboard-5951'],revision:bundlePreview.token}))
+  const bundleTask=await pass(root.post('/api/v1/tasks',{projectId:queuedProject.id,title:'synthetic-pegboard-5953'}))
+  const bundleJob=(await pass(root.get(restoreBase))).jobs.find(j=>j.task_id===bundleTask.id)
+  const bundleQueued=(await pass(root.get('/api/v1/admin/audit?action=bundle_rule.run_queued&limit=500'))).events.find(e=>e.metadata.runId===bundleJob.id)
+  assert.ok(bundleQueued)
   const copy=await restoreCanvasInstallation(root)
   try{
    assert.deepEqual(await audit(copy.worker.owner,rule.id),anonymous)
+   for(const snapshot of w.widerAudit??[])assert.deepEqual(await audit(copy.worker.owner,snapshot.id),snapshot.events)
+   const restoredBundle=await audit(copy.worker.owner,bundleQueued.metadata.ruleId,'&run='+bundleJob.id)
+   assert.deepEqual(restoredBundle.map(e=>[e.action,e.result]),[['bundle_rule.run_queued','queued'],['bundle_rule.run_blocked','blocked']])
+   assert.deepEqual(restoredBundle[0],bundleQueued);assert.equal(restoredBundle[1].metadata.outcome,'restored_inactive');assert.equal(restoredBundle[1].actor_id,root.id)
    const restoredQueue=await audit(copy.worker.owner,restoring.rule_id,'&run='+restoring.id)
    assert.deepEqual(restoredQueue.map(e=>[e.action,e.result]),[['rule.run_queued','queued'],['rule.run_blocked','blocked']])
    assert.deepEqual(restoredQueue[0],beforeRestore[0])
@@ -184,7 +196,7 @@ export function registerRuleAuditTests({test,context}){
    await pass(copy.worker.owner.post(path(queuedProject.id)+'/process',{}))
    assert.deepEqual(await audit(copy.worker.owner,restoring.rule_id,'&run='+restoring.id),restoredQueue)
    const repeated=await restoreCanvasInstallation(copy.worker.owner)
-   try{assert.deepEqual(await audit(repeated.worker.owner,restoring.rule_id,'&run='+restoring.id),restoredQueue,'another native restore preserves one terminal refusal')}
+   try{assert.deepEqual(await audit(repeated.worker.owner,restoring.rule_id,'&run='+restoring.id),restoredQueue,'another native restore preserves one terminal refusal');assert.deepEqual(await audit(repeated.worker.owner,bundleQueued.metadata.ruleId,'&run='+bundleJob.id),restoredBundle)}
    finally{await repeated.stop()}
    await pass(copy.worker.owner.post(path(project.id)+'/process',{}));assert.deepEqual(await audit(copy.worker.owner,rule.id),anonymous)
    const restored=await read(copy.worker.owner,project.id);assert.ok(restored.rules.every(r=>!r.enabled&&!r.activation_id));assert.equal(restored.runs.find(r=>r.task_id===valid.id).status,'applied')
@@ -210,6 +222,8 @@ async function widerRuleAudit(w){
  assert.deepEqual(events.map(e=>e.action),['template_rule.created','template_rule.activated','template_rule.run_queued','template_rule.run_applied'])
  for(const e of events.slice(2)){assert.equal(e.actor_id,root.id);assert.equal(e.metadata.runId,run.id);assert.equal(e.metadata.activationId,activation.activationId);assert.equal(e.metadata.version,1);assert.equal(e.metadata.triggerActorId,root.id)}
  assert.equal(events.at(-1).metadata.count,1)
+ const applications=(await pass(root.get(`/api/v1/projects/${project.id}/template-applications`))).applications
+ assert.deepEqual(applications.find(a=>a.id===events.at(-1).metadata.operationId).result.taskIds,run.result.taskIds)
  const noop=await pass(root.post('/api/v1/tasks',{projectId:project.id,title:'synthetic-pegboard-5907'}))
  run=(await pass(root.get(route))).runs.find(r=>r.task_id===noop.id)
  assert.equal(run.status,'noop');assert.deepEqual((await audit(root,rule.id,'&run='+run.id)).map(e=>[e.action,e.result]),[['template_rule.run_queued','queued'],['template_rule.run_noop','noop']])
@@ -243,7 +257,7 @@ async function widerRuleAudit(w){
  await pass(root.post(base+'/jobs/process',{}))
  let job=(await pass(root.get(base))).jobs.find(j=>j.task_id===work.id)
  const terminal=(await audit(root,id)).at(-1)
- assert.equal(terminal.action,'bundle_rule.run_applied');assert.equal(terminal.actor_id,root.id);assert.equal(terminal.metadata.runId,job.id);assert.equal(terminal.metadata.operationId,job.operation_id);assert.equal(terminal.metadata.version,2);assert.equal(terminal.metadata.triggerActorId,member.id)
+ assert.equal(terminal.action,'bundle_rule.run_applied');assert.equal(terminal.actor_id,root.id);assert.equal(terminal.metadata.runId,job.id);assert.equal(terminal.metadata.operationId,job.operation_id);assert.equal(terminal.metadata.version,2);assert.equal(terminal.metadata.triggerActorId,member.id);assert.equal(terminal.metadata.workCount,1)
  assert.equal((await pass(member.get(`/api/v1/tasks/${work.id}`))).comments[0].body,'synthetic-pegboard-5915')
  await publish(2,'normal');await adopt()
  const unchanged=await pass(member.post('/api/v1/tasks',{projectId:bundled.id,title:'synthetic-pegboard-5917'}))
@@ -261,4 +275,31 @@ async function widerRuleAudit(w){
  const bundleExport=await pass(root.get(`/api/v1/admin/audit/export?rule=${id}&limit=500`));assert.deepEqual(bundleExport.events,events)
  for(const forbidden of [key,'synthetic-pegboard-5912','synthetic-pegboard-5914','synthetic-pegboard-5915',member.name,member.email,root.cookie])assert.ok(!JSON.stringify(bundleExport).includes(forbidden))
  assert.equal((await member.get(`/api/v1/admin/audit/export?rule=${id}`)).status,403)
+ // The former activating administrator remains accountable after losing authority.
+ const delegatedProject=await pass(root.post('/api/v1/projects',{name:'synthetic-pegboard-5920'}))
+ const delegatedGrant=await pass(root.post('/api/v1/grants',{objectType:'project',objectId:delegatedProject.id,granteeId:member.id,level:'admin'}))
+ const delegated=await pass(member.post(`/api/v1/projects/${delegatedProject.id}/template-rules`,{...config,name:'synthetic-pegboard-5921'}))
+ const delegatedActivation=await enable(member,delegated.id)
+ await pass(root.delete(`/api/v1/grants/${delegatedGrant.id}`))
+ const refused=await pass(root.post('/api/v1/tasks',{projectId:delegatedProject.id,title:'synthetic-pegboard-5922',startDate:'2026-07-02'}))
+ const refusedRun=(await pass(root.get(`/api/v1/projects/${delegatedProject.id}/template-rules`))).runs.find(r=>r.task_id===refused.id)
+ assert.equal(refusedRun.status,'pending');assert.equal(refusedRun.result,null)
+ const refusal=await audit(root,delegated.id,'&run='+refusedRun.id)
+ assert.deepEqual(refusal.map(e=>[e.action,e.result]),[['template_rule.run_queued','queued'],['template_rule.run_blocked','blocked']]);assert.equal(refusal[1].actor_id,member.id);assert.equal(refusal[1].metadata.activationId,delegatedActivation.activationId);assert.equal(refusal[1].metadata.outcome,'activation_scope_changed')
+ await pass(root.post(`/api/v1/workspaces/ws_main/people/${member.id}/account`,{role:'admin'}))
+ const administrator=await w.signIn(member.email,member.name,member.id)
+ const delegatedBundle=await pass(administrator.post('/api/v1/workflow-bundles',{name:'synthetic-pegboard-5923'})),delegatedBase=`/api/v1/workflow-bundles/${delegatedBundle.id}`
+ await pass(administrator.post(delegatedBase+'/versions',{version:1,key:'synthetic-pegboard-5924',kind:'rule',name:'synthetic-pegboard-5925',priority:'high'}))
+ const delegatedPreview=await pass(administrator.post(delegatedBase+'/preview',{projectIds:[delegatedProject.id]}))
+ await pass(administrator.post(delegatedBase+'/adopt',{projectIds:[delegatedProject.id],keys:['synthetic-pegboard-5924'],revision:delegatedPreview.token}))
+ const queued=await pass(root.post('/api/v1/tasks',{projectId:delegatedProject.id,title:'synthetic-pegboard-5926'}))
+ await pass(root.post(`/api/v1/workspaces/ws_main/people/${member.id}/account`,{role:'member'}))
+ await pass(root.post(delegatedBase+'/jobs/process',{}))
+ const unavailable=(await pass(root.get(delegatedBase))).jobs.find(j=>j.task_id===queued.id)
+ assert.equal(unavailable.status,'pending');assert.equal(unavailable.operation_id,null)
+ const deniedEvents=(await pass(root.get('/api/v1/admin/audit?action=bundle_rule.run_blocked&limit=500'))).events.filter(e=>e.metadata.runId===unavailable.id)
+ assert.equal(deniedEvents.length,1);assert.equal(deniedEvents[0].actor_id,member.id);assert.equal(deniedEvents[0].metadata.outcome,'activation_scope_changed')
+ assert.equal((await pass(root.get(`/api/v1/tasks/${queued.id}`))).priority,'normal')
+ return Promise.all([rule.id,id,delegated.id,deniedEvents[0].metadata.ruleId].map(async id=>({id,events:await audit(root,id)})))
+
 }

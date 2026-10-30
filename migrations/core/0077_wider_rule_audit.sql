@@ -42,7 +42,7 @@ BEGIN
   CASE NEW.status WHEN 'queued' THEN 'queued' WHEN 'applied' THEN 'applied' WHEN 'noop' THEN 'noop' ELSE 'blocked' END,
   json_object('kind','template','ruleId',r.id,'version',NEW.definition_version,'activationId',NEW.activation_id,
   'runId',NEW.id,'taskId',NEW.task_id,'triggerActorId',json_extract(NEW.source,'$.creatorId'),
-  'activatedById',a.activated_by,'count',CASE WHEN NEW.status='applied' THEN json_array_length(json_extract(NEW.result,'$.taskIds')) ELSE 0 END,
+  'activatedById',a.activated_by,'operationId',(SELECT id FROM peg_template_applications WHERE request_key='template-rule:'||NEW.id AND workspace_id=r.workspace_id),'count',CASE WHEN NEW.status='applied' THEN json_array_length(json_extract(NEW.result,'$.taskIds')) ELSE 0 END,
   'outcome',CASE WHEN NEW.outcome IN ('applied','source_date_missing','activation_required','definition_changed','template_version_changed',
    'activation_changed','activating_admin_unavailable','activation_scope_changed','activation_mapping_changed','ai_source_requires_exact_review',
    'mapping_review_required','rule_source_date_missing','restored_inactive') THEN NEW.outcome ELSE 'blocked' END)

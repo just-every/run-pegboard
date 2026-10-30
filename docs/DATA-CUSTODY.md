@@ -23,7 +23,7 @@ changes move the same authority epoch as Pegboard’s account doors. Proof
 versions/decisions and signed agent-output submissions use this audit too.
 Authorized search/export is paginated by event ID with exact action, actor and
 subject filters. Local rule events also support exact rule, run, activation and
-operation and triggering-event identity filters; the browser exposes rule and run filters.
+operation and triggering-event identity filters; the browser exposes each of these identity filters.
 
 Local rule creation, definition edits, activation and deactivation append explicit
 receipts in the same transaction as their configuration change. Matching triggers
@@ -36,6 +36,22 @@ Receipts contain no rule names, source values, action text or task bodies. Queue
 and terminal records retain the same triggering-event identity. Native restore
 appends a blocked outcome for queued local work fenced by the restore, preserving
 the original actor and activation without reviving execution authority.
+
+Template rules now append configuration, queue, no-op, applied and blocked
+receipts too. Each run records the exact pinned definition and activation, the
+triggering person and accountable activating administrator. A reviewed requeue
+records its new activation separately from its earlier refusal. Publishing a new
+template records the resulting invalidation without changing prior receipts.
+
+Bundle components use a stable digest of the bundle and component key as their
+opaque rule identity; each project adoption epoch has its own opaque activation
+identity. Publication, adoption, override, deactivation, queue, no-op, applied and
+blocked outcomes record exact versions, actors and resulting operation identities.
+Changing configuration or disabling a bundle records queued cancellation in the
+same transaction. Native restore fences queued bundle and template work with an
+attributed blocked receipt; repeating the restore creates no duplicate terminal
+outcome. These receipts contain no component keys or names, template definitions,
+source dates, action text or task bodies.
 
 Metadata accepts only a closed vocabulary of enums, numbers, booleans and opaque
 IDs. It does not copy request bodies, comments, file names or bodies, provider

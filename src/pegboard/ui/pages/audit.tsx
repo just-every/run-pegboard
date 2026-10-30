@@ -9,6 +9,7 @@ export function AuditPage({viewer,data,input}:{viewer:Viewer;data:Awaited<Return
       <form method="get" action="/app/audit" className="stack" aria-label="Search audit">
         <div className="grid"><Field label="Exact action" name="action" value={input.action}/><Field label="Actor ID" name="actor" value={input.actor}/><Field label="Subject ID" name="subject" value={input.subject}/></div>
         <div className="grid"><Field label="Rule ID" name="rule" value={input.rule}/><Field label="Run ID" name="run" value={input.run}/></div>
+        <div className="grid"><Field label="Activation ID" name="activation" value={input.activation}/><Field label="Operation ID" name="operation" value={input.operation}/><Field label="Triggering event ID" name="event" value={input.event}/></div>
         <button className="button primary">Search audit</button>
       </form>
       <p><a className="button quiet" href={'/api/v1/admin/audit/export?'+params}>Export this page as JSON</a> <a href="/app/data">Data settings</a></p>

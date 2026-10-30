@@ -50,3 +50,19 @@ trigger event ID. A queued run fenced by native restore appends `rule.run_blocke
 with `restored_inactive`, preserving its original activation and actor without
 restoring execution authority. These records do not expand PEG-012 rule behavior
 or qualify product imports, autonomous agent execution or future integration doors.
+
+## Existing template and bundle rule audit
+
+The same exact rule, run, activation and operation audit filters apply to native
+template and workflow bundle receipts. Template actions begin with
+`template_rule.`; bundle actions begin with `bundle_rule.`. Configuration events
+name the version and activation being reviewed or retired. Queue and outcome
+events bind the native run and triggering task to their actor and activation.
+Bundle rule and activation identities are opaque digests, with numeric adoption
+epochs retained separately. Copy a receipt's `metadata.ruleId` into Rule ID on
+Permanent audit to inspect its complete history. Activation ID, Operation ID and
+Triggering event ID narrow the same exact correlation on screen and in its export. No raw component key is retained.
+A bundle no-op has result `noop` even though the existing native job is finalized
+as applied; the audit distinguishes an evaluated rule from a work mutation.
+Native archive recovery retains the original receipts and records blocked queued
+work without reactivating its source installation's authority.
