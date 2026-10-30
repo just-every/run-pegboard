@@ -3443,7 +3443,7 @@
       "executable": false
     },
     "src/pegboard/guests/preview.ts": {
-      "sha256": "f37f2f2b1314f619476b77ec8c7149ef32e75fe3c4102d8cf45a484d68d6902c",
+      "sha256": "1bc039bd1ffb36cabc0bb47adb6bb3c25625f1689817745b516b08aed9a52bef",
       "executable": false
     },
     "src/pegboard/intake/forms.ts": {
@@ -3883,7 +3883,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/project-settings.tsx": {
-      "sha256": "7bd1f91872a67713751e6cc65465d565cacba755e8a32f0c25f951b16fa04f9c",
+      "sha256": "f47c73e2f6ebc322cfc011beb2a4cc9bcc388c2d99f7e83a65ed20a75880aec0",
       "executable": false
     },
     "src/pegboard/ui/pages/project.tsx": {
@@ -4211,7 +4211,7 @@
       "executable": false
     },
     "tests/access-control.test.mjs": {
-      "sha256": "923ce6eeaf4e7d15d1a81e46320d92c33e670af7a8b192193da4e0d393633546",
+      "sha256": "ce2ef7271559a29a397cc7a3226e7c5dadf5f377eb8f0bbbb0a2ac4bc0a72e69",
       "executable": false
     },
     "tests/journeys/access-discovery.mjs": {
@@ -4259,7 +4259,7 @@
       "executable": false
     },
     "tests/journeys/guests.mjs": {
-      "sha256": "bbc54f100bad88a39b110a97e969cde10c88939e824d10dae381a76daf336a4f",
+      "sha256": "d6449c6133940687344bf0f96569d9fa003d724858c4baf0f61bff7e1a7d4ac4",
       "executable": false
     },
     "tests/journeys/intake.mjs": {

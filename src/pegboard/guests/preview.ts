@@ -23,7 +23,7 @@ export async function guestPreview(db:D1Database,actor:Actor,projectId:string,re
     const task=await viewTask(db,recipient,row.id).catch(error=>{if(error.status===404)return null;throw error})
     if(task)tasks.push(task)
   }
-  return {recipient:{id:person.id,name:person.display_name},project:{id:project.id,name:project.name},paths:standing.paths.map(path=>({level:path.level,scope:path.scope??'full'})),tasks}
+  return {recipient:{id:person.id,name:person.display_name},project:{id:project.id,name:project.name,description:standing.capabilities.has('read')?project.description:null},paths:standing.paths.map(path=>({level:path.level,scope:path.scope??'full'})),tasks}
 }
 
 // Initial sharing is a separate, human-reviewed door. Drafts hold opaque manifests
@@ -67,6 +67,7 @@ async function proposedPortal(db:D1Database, actor:Actor, proposal:GrantInput) {
   const recipient:Actor = {id:person.id,email:person.email,displayName:person.display_name,baseRole:'member'}
   if ((await projectEffective(db,recipient,standing.project!)).paths.some(path => path.capabilities.includes('read'))) throw conflict('guest_already_shared')
   const projected = previewGuestActor(recipient,{object_id:proposal.objectId,level:proposal.level,scope:proposal.scope ?? 'full'})
+  const projectedStanding = await projectEffective(db,projected,standing.project!)
   const tasks = []
   const candidates = await all<{id:string}>(db,`WITH RECURSIVE work(id,depth) AS (
     SELECT task_id,0 FROM peg_task_projects WHERE project_id=?
@@ -76,7 +77,7 @@ async function proposedPortal(db:D1Database, actor:Actor, proposal:GrantInput) {
     const task = await viewTask(db,projected,row.id).catch(error => {if(error.status===404)return null;throw error})
     if (task) tasks.push(task)
   }
-  const content = {recipient:{id:person.id,name:person.display_name},project:{id:standing.project!.id,name:standing.project!.name},proposal,tasks,exclusions}
+  const content = {recipient:{id:person.id,name:person.display_name},project:{id:standing.project!.id,name:standing.project!.name,description:projectedStanding.capabilities.has('read')?standing.project!.description:null},proposal,tasks,exclusions}
   const manifest = {taskIds:tasks.map(t=>t.id),fields:tasks.flatMap(t=>t.projects.flatMap(p=>p.fields.map(f=>f.id))),commentIds:tasks.flatMap(t=>t.comments.map(c=>c.id)),attachmentIds:tasks.flatMap(t=>t.attachments.map(a=>a.id)),exclusions}
   const candidateIds=candidates.map(t=>t.id)
   const withheld = {
