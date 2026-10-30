@@ -8,6 +8,7 @@ import { openTask, require } from '../tasks/access'
 import { rootOf, taskAccess } from '../authorization/effective'
 import { updateTask } from '../tasks/tasks'
 import { historyStatement } from '../tasks/history'
+import { dayNumber, readStamp } from '../schedule/calendar'
 
 interface Commitment {task_id:string;skills:string;locked:number}
 interface Application {id:string;portfolio_id:string;task_id:string;actor_id:string;review_key:string;from_id:string;to_id:string;before_allocations:string;after_allocations:string;owner_epoch:number;allocation_epoch:number;applied_at:number;undone_at:number|null}
@@ -67,12 +68,13 @@ export async function comparePortfolioCapacity(db:D1Database,actor:Actor,id:stri
   const after=await workloadView(db,actor,view.workspace,input,move),affected=[source.ownerId,person.id]
   const beforePeople=view.people.filter(p=>affected.includes(p.id)),afterPeople=after.people.filter(p=>affected.includes(p.id))
   const incomplete=view.limited||afterPeople.length!==2||afterPeople.some(p=>p.unknown||p.unscheduledHours>0||p.days.some(d=>d.unknown||d.otherHours>0))
-   ||!source.start||!source.due||source.start.slice(0,10)<view.from||source.due.slice(0,10)>view.dates.at(-1)!
+   ||!source.start||!source.due||afterPeople.some(p=>readStamp(source.start!,p.zone).day<dayNumber(view.from)||readStamp(source.due!,p.zone).day>dayNumber(view.dates.at(-1)!))
   if(incomplete)reasons.push('Limited context: feasibility is unverified. Refresh access, dates and availability.')
   if(afterPeople.some(p=>p.days.some(d=>d.overloadHours>0)))reasons.push('Staffing shortage: an affected person remains over capacity.')
   // Scheduling cannot borrow an unavailable day merely because the whole week has spare hours.
   const receivingDays=afterPeople.find(p=>p.id===person.id)?.days??[]
-  if(receivingDays.some(d=>d.hours>d.availableHours))reasons.push('Alternate is unavailable for the committed work.')
+  if(receivingDays.some(d=>d.hours>d.availableHours||d.unavailableHours>0))reasons.push('Alternate is unavailable for the committed work.')
+  if(afterPeople.some(p=>p.id!==person.id&&p.days.some(d=>d.unavailableHours>0)))reasons.push('An affected person is unavailable during a retained commitment.')
   alternatives.push({sources:after.tasks.filter(t=>affected.includes(t.ownerId)||t.allocations.some(a=>affected.includes(a.personId))),...move,title:source.title,fromPersonId:source.ownerId,hours:source.allocations.length?source.allocations.filter(a=>a.personId===source.ownerId).reduce((n,a)=>n+a.hours,0):source.estimateHours,start:source.start,due:source.due,skills:source.skills,locked:source.locked,before:beforePeople,after:afterPeople,reasons,feasible:reasons.length===0})
  }
  const result={kind:'human-scenarios' as const,portfolioId:id,from:view.from,days:view.days,alternatives,limited:view.limited,locked:view.tasks.filter(t=>t.locked).map(t=>({id:t.id,title:t.title,ownerId:t.ownerId,start:t.start,due:t.due,estimateHours:t.estimateHours})),shortage:alternatives.every(a=>!a.feasible),revision:rev.value}

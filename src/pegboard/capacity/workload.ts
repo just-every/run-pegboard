@@ -26,6 +26,13 @@ export function spread(task:TaskRow,hours:number,calendar:WorkingCalendar,dates:
  if(!total){for(let day=start.day;day<=end.day;day++)weights.set(day,1);total=end.day-start.day+1}
  return dates.map(date=>hours*(weights.get(dayNumber(date))??0)/total)
 }
+/** Capacity elsewhere in the day cannot cover effort inside an unchanged timed commitment. */
+function committedCapacity(task:TaskRow,calendar:WorkingCalendar,date:string) {
+ const start=readStamp(task.start_date??task.due_date!,calendar.zone),end=readStamp(task.due_date??task.start_date!,calendar.zone),day=dayNumber(date)
+ if(day<start.day||day>end.day)return 0
+ const lo=day===start.day?(start.wallMs??0):0,hi=day===end.day?(end.wallMs??86400000):86400000
+ return availableIntervals(day,calendar).reduce((sum,[a,b])=>sum+Math.max(0,Math.min(b,hi)-Math.max(a,lo)),0)/3600000
+}
 export async function workloadView(db:D1Database,actor:Actor,workspace:string,input:Record<string,any>={},move?:{taskId:string;personId:string}) {
  await capacityMember(db,actor,workspace)
  const window=range(input),people=await capacityPeople(db,actor,workspace)
@@ -42,14 +49,15 @@ export async function workloadView(db:D1Database,actor:Actor,workspace:string,in
   const ownLeave=leave.filter(l=>l.operator_id===person.id&&(l.source==='self'||liveFeeds.some(f=>f.id===l.source_id&&f.live&&f.fresh)))
   const calendar:WorkingCalendar={zone:person.zone,week:person.week,timeOff:ownLeave.map(l=>({start:l.start_date,end:l.end_date}))}
   const unknown=liveFeeds.some(f=>Object.values(JSON.parse(f.mapping)).includes(person.id)&&(!f.live||!f.fresh))
-  const days=window.dates.map(date=>({date,availableHours:availableIntervals(dayNumber(date),calendar).reduce((n,[a,b])=>n+(b-a)/3600000,0),hours:0,visibleHours:0,unknown:unknown||liveFeeds.some(f=>Object.values(JSON.parse(f.mapping)).includes(person.id)&&(!f.from_date||!f.through_date||date<f.from_date||date>f.through_date)),selfDeclared:ownLeave.some(l=>l.source==='self'&&readStamp(l.start_date,person.zone).day<=dayNumber(date)&&readStamp(l.end_date,person.zone).day>=dayNumber(date))}))
+  const days=window.dates.map(date=>({date,availableHours:availableIntervals(dayNumber(date),calendar).reduce((n,[a,b])=>n+(b-a)/3600000,0),hours:0,visibleHours:0,unavailableHours:0,unknown:unknown||liveFeeds.some(f=>Object.values(JSON.parse(f.mapping)).includes(person.id)&&(!f.from_date||!f.through_date||date<f.from_date||date>f.through_date)),selfDeclared:ownLeave.some(l=>l.source==='self'&&readStamp(l.start_date,person.zone).day<=dayNumber(date)&&readStamp(l.end_date,person.zone).day>=dayNumber(date))}))
   let unscheduledHours=0
   for(const {task,read} of tasks){const explicit=allocations.filter(a=>a.task_id===task.id);let effort=explicit.length?explicit.filter(a=>a.person_id===person.id).reduce((n,a)=>n+a.hours,0):(task.owner_id===person.id?task.estimate_hours:0)
    if(move&&move.taskId===task.id){const old=explicit.length?explicit.filter(a=>a.person_id===task.owner_id).reduce((n,a)=>n+a.hours,0):task.estimate_hours;if(person.id===task.owner_id)effort-=old;if(person.id===move.personId)effort+=old}
+   if(!effort)continue
    if(!task.start_date&&!task.due_date){unscheduledHours+=effort;continue}
-   const loads=spread(task,effort,calendar,window.dates);for(const [i,load] of loads.entries()){days[i].hours+=load;if(read)days[i].visibleHours+=load}
+   const loads=spread(task,effort,calendar,window.dates);for(const [i,load] of loads.entries()){days[i].hours+=load;days[i].unavailableHours+=Math.max(0,load-committedCapacity(task,calendar,window.dates[i]));if(read)days[i].visibleHours+=load}
   }
-  return {id:person.id,name:person.name,zone:person.zone,skills:person.skills,days:days.map(d=>({...d,unknown:d.unknown&&!(d.selfDeclared&&d.availableHours===0),hours:rounded(d.hours),visibleHours:rounded(d.visibleHours),otherHours:rounded(d.hours-d.visibleHours),availableHours:rounded(d.availableHours),overloadHours:rounded(Math.max(0,d.hours-d.availableHours))})),hours:rounded(days.reduce((n,d)=>n+d.hours,0)),availableHours:rounded(days.reduce((n,d)=>n+d.availableHours,0)),unscheduledHours:rounded(unscheduledHours),unknown}
+  return {id:person.id,name:person.name,zone:person.zone,skills:person.skills,days:days.map(d=>({...d,unknown:d.unknown&&!(d.selfDeclared&&d.availableHours===0),hours:rounded(d.hours),visibleHours:rounded(d.visibleHours),otherHours:rounded(d.hours-d.visibleHours),availableHours:rounded(d.availableHours),unavailableHours:rounded(d.unavailableHours),overloadHours:rounded(Math.max(0,d.hours-d.availableHours))})),hours:rounded(days.reduce((n,d)=>n+d.hours,0)),availableHours:rounded(days.reduce((n,d)=>n+d.availableHours,0)),unscheduledHours:rounded(unscheduledHours),unknown}
  })
  const plans=await all<{id:string;role:string;person_id:string|null;hours:number;start_date:string;end_date:string}>(db,'SELECT * FROM peg_resource_plans WHERE workspace_id=? AND start_date<=? AND end_date>=?',workspace,window.dates.at(-1)!,window.from)
  return {...window,workspace,people:persons,tasks:shown,totals:{taskCount:visible.length,taskEstimateHours:rounded(visible.reduce((n,{task})=>n+task.estimate_hours,0)),participantHours:rounded(visible.reduce((n,{task})=>n+(allocations.some(a=>a.task_id===task.id)?allocations.filter(a=>a.task_id===task.id).reduce((s,a)=>s+a.hours,0):task.estimate_hours),0))},tentative:plans.map(p=>({id:p.id,role:p.role,personId:p.person_id,hours:p.hours,start:p.start_date,end:p.end_date})),feeds:liveFeeds.map(f=>({id:f.id,service:f.service,freshness:f.live&&f.fresh?'current':'unknown',fetchedAt:f.fetched_at})),notice:'Visible task totals exclude hidden work. Other commitments contribute hours only. Tentative resource plans are separate from committed work.'}

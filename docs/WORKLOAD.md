@@ -63,6 +63,11 @@ review; an expired grant is rechecked even without a database write.
 A scenario is feasible only for the displayed period and affected people, with
 known availability, dated work within that period and no remaining daily
 overload. Unqualified or unavailable people and locked commitments are refused.
+For timed commitments, spare hours elsewhere in a day cannot cover an absence
+inside the unchanged task interval. The review reports effort that cannot fit
+that interval separately from daily overload. Review dates must include the
+commitment in both affected people's local timezones; a UTC date alone does not
+establish complete context.
 Hidden project context, hidden affected commitments, unknown availability and
 undated work prevent a feasibility claim. Other commitments disclose hours only;
 hidden task identities, titles and project names are never returned. If neither
