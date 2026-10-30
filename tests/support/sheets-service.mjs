@@ -7,7 +7,7 @@ import { createServer } from 'node:http'
 export const sheetsCredential = 'synthetic-pegboard-771', spreadsheetId = 'synthetic-pegboard-770'
 export async function startSheetsService() {
  const address = n => ['synthetic-pegboard-' + n, 'example.test'].join(String.fromCharCode(64))
- const state = { calls: [], tabs: new Map(), denied: false, readOnly: false, trashed: false, unavailable: false, unknownAudience: false, loseNextWrite: false, failNextWrite: false, name: 'Agency delivery workbook', permissions: [{ id: 'synthetic-pegboard-772', type: 'user', role: 'owner', emailAddress: address(772) }, { id: 'synthetic-pegboard-773', type: 'user', role: 'reader', emailAddress: address(773) }] }
+ const state = { calls: [], tabs: new Map(), denied: false, readOnly: false, trashed: false, unavailable: false, unknownAudience: false, published: false, loseNextWrite: false, failNextWrite: false, name: 'Agency delivery workbook', permissions: [{ id: 'synthetic-pegboard-772', type: 'user', role: 'owner', emailAddress: address(772) }, { id: 'synthetic-pegboard-773', type: 'user', role: 'reader', emailAddress: address(773) }] }
  const server = createServer(async (req, res) => {
   const url = new URL(req.url, 'http://localhost'), chunks = []; for await (const c of req) chunks.push(c)
   const body = chunks.length ? JSON.parse(Buffer.concat(chunks).toString()) : null
@@ -20,7 +20,7 @@ export async function startSheetsService() {
    if (req.method === 'GET' && url.pathname === drive) return send(200, { id: spreadsheetId, name: state.name, mimeType: 'application/vnd.google-apps.spreadsheet', trashed: state.trashed, capabilities: { canEdit: !state.readOnly } })
    if (req.method === 'GET' && url.pathname === drive + '/permissions') {
     assert.ok(url.searchParams.get('fields').includes('nextPageToken'))
-    const records = state.unknownAudience ? [{ id: 'synthetic-pegboard-774', type: 'group', role: 'reader', emailAddress: address(774) }] : state.permissions
+    const records = state.unknownAudience ? [{ id: 'synthetic-pegboard-774', type: 'group', role: 'reader', emailAddress: address(774) }] : [...state.permissions, ...(state.published && url.searchParams.get('includePermissionsForView') === 'published' ? [{ id: 'synthetic-pegboard-775', type: 'anyone', role: 'publishedReader', view: 'published' }] : [])]
     return send(200, url.searchParams.get('pageToken') === 'second' ? { permissions: records.slice(1) } : { permissions: records.slice(0, 1), nextPageToken: 'second' })
    }
    if (req.method === 'GET' && url.pathname === sheets) return send(200, { spreadsheetId, sheets: [...state.tabs.values()].map(t => ({ properties: { sheetId: t.id, title: t.title, gridProperties: { rowCount: t.rows, columnCount: t.columns } } })) })

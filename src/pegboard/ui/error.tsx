@@ -2,6 +2,13 @@ import { appDocument } from '../../ui/document.server'
 import { AppBar } from '../../ui/bar'
 
 const sayings: Record<string, string> = {
+  sheets_audience_unknown:'Google did not provide a complete list of individual recipients. Remove public publishing, link, domain or group access before reviewing this export again.',
+  sheets_destination_or_audience_changed:'The spreadsheet or its recipients changed. Review the current destination and exact content again before sending.',
+  sheets_review_changed:'The work, access or review changed. Open Sheets settings and create a fresh review.',
+  sheets_outcome_uncertain:'Google did not confirm this request. Open Sheets settings and read back any pending export before sending again.',
+  sheets_provider_permission_refused:'Google refused this credential or spreadsheet access. Check the current grant before reviewing another export.',
+  sheets_destination_deleted:'This spreadsheet is no longer available. Choose an available destination in Sheets settings.',
+  sheets_grant_revoked:'This export grant has ended. It cannot send or refresh work. Previously exported external copies remain.',
   approval_revision_changed:'The material, reviewers or access changed. Open a fresh review before deciding.',
   approval_review_changed:'The routing plan or material changed. Preview the plan again.',
   use_routed_approval:'This work uses named review stages. Open its routed approval to decide.',
@@ -40,7 +47,7 @@ const sayings: Record<string, string> = {
 export function errorDocument(status: number, code: string) {
   const response = appDocument('Not done', <>
     <AppBar />
-    <main className="board" id="main"><section className="page"><article className="card note-card"><h1>Not done</h1><p>{sayings[code] ?? `That was refused (${code}).`}</p><p><a className="button quiet" href="/app">Back to Pegboard</a></p></article></section></main>
+    <main className="board" id="main"><section className="page"><article className="card note-card"><h1>Not done</h1><p>{sayings[code] ?? `That was refused (${code}).`}</p><p><a className="button quiet" href={code.startsWith('sheets_') ? '/app/settings/sheets' : '/app'}>{code.startsWith('sheets_') ? 'Sheets settings' : 'Back to Pegboard'}</a></p></article></section></main>
   </>)
   return response.then(page => new Response(page.body, { status, headers: page.headers }))
 }

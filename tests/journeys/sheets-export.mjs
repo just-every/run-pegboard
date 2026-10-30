@@ -37,7 +37,27 @@ export async function sheetsExportJourney({ w, browser, edge, ok }) {
   await expect(rows.getByText('Never export hidden field value', { exact: true })).toHaveCount(0)
   await expect(rows.getByText('Private no-project work', { exact: true })).toHaveCount(0)
   assert.equal(await page.locator('input[type=password]').evaluateAll(es => es.some(e => e.value)), false, 'credential is never redisplayed')
-  await proof('exact-review'); await send()
+  await proof('exact-review')
+  const writes = () => edge.state.calls.filter(c => c.method === 'POST').length
+  const returnToSettings = async () => { await page.getByRole('link', { name: 'Sheets settings', exact: true }).click(); await expect(page.getByRole('heading', { name: 'Your export grants' })).toBeVisible() }
+  const before = writes()
+  edge.state.published = true
+  const audienceRefusal = page.waitForResponse(r => r.url().includes('/send') && r.request().method() === 'POST')
+  await send(); assert.equal((await audienceRefusal).status(), 409); assert.equal(writes(), before)
+  await expect(page.getByRole('heading', { name: 'Not done', exact: true })).toBeVisible()
+  await proof('audience-refused')
+  edge.state.published = false; await returnToSettings(); await reviewRefresh(cfg.id)
+  edge.state.loseNextWrite = true
+  const uncertain = page.waitForResponse(r => r.url().includes('/send') && r.request().method() === 'POST')
+  await send(); assert.equal((await uncertain).status(), 503); assert.equal(writes(), before + 1)
+  await returnToSettings()
+  await page.getByRole('link', { name: 'Reconcile uncertain export', exact: true }).click()
+  const readback = page.getByRole('form', { name: 'Reconcile uncertain export', exact: true })
+  await expect(readback).toBeVisible(); await expect(page.getByRole('button', { name: 'Send reviewed export', exact: true })).toHaveCount(0)
+  await proof('uncertain-readback')
+  await readback.getByLabel('One-use Google credential').fill(credential)
+  await readback.getByRole('button', { name: 'Read back outcome', exact: true }).focus(); await page.keyboard.press('Enter')
+  assert.equal(writes(), before + 1, 'rendered readback never retries an uncertain send')
   await expect(page.getByRole('heading', { name: 'Export confirmed by readback' })).toBeVisible()
   const initial = structuredClone(edge.state.tabs.get(cfg.sheet_id).values)
   assert.deepEqual(initial.slice(2).map(r => r[0]).sort(), [seeded.shared.id, seeded.second.id, seeded.third.id].sort())

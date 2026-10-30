@@ -199,7 +199,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "c1270f6d8923bbd5aca44ea14f0e9cc749ef0ae0e3914f659d4e83f4e5fdc130",
+      "sha256": "a4e7daca12169472d9124bb84cfb466aec03502fa6b24325874516831673724a",
       "executable": false
     },
     "AGENTS.md": {
@@ -215,7 +215,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "0651b42f50be5d7a2e13d0bf6dd3a5824fd8be7c46017307a8b922af15f57ca3",
+      "sha256": "2a69a93d9f37846f1e324d0a3d6849ec19da31efacf776914ca6898e9664d439",
       "executable": false
     },
     "DEMO.md": {
@@ -243,7 +243,7 @@
       "executable": false
     },
     "docs/CLAIMS.md": {
-      "sha256": "c65b47b8096787e4eaa8ed0cc160e953bbcf3507e9f25e14223fa5993d55f05c",
+      "sha256": "68b947b62e0e47de01e06aec935b895d4d7078d25de0047ba773f8f4e3545145",
       "executable": false
     },
     "docs/DATA-CUSTODY.md": {
@@ -287,7 +287,7 @@
       "executable": false
     },
     "docs/SHEETS-EXPORTS.md": {
-      "sha256": "74c4b17a46f0a4095a3a3772a3007637c28811682e9e4e6bb7c9ed8087daa240",
+      "sha256": "79f7f4b75ef0411d35e7c9289d49d412b36393dac5dc8e76556bcea42fe3943f",
       "executable": false
     },
     "docs/STATUS-API.md": {
@@ -3263,7 +3263,7 @@
       "executable": false
     },
     "src/pegboard/connectors/sheets/edge.ts": {
-      "sha256": "2d8d525fd7926bde8b0131cf702f5216050f907e37b351827656e73f61b3d9a0",
+      "sha256": "bd6a935dfb9a00019876bcd39edd8bef78717b485fa7d5505b6cb337074cbd5c",
       "executable": false
     },
     "src/pegboard/connectors/time/delivery.ts": {
@@ -3695,7 +3695,7 @@
       "executable": false
     },
     "src/pegboard/ui/error.tsx": {
-      "sha256": "66e5759644b67534f0e2c146befd20793da0191d9b60b349e066084d46d4f1fe",
+      "sha256": "6368669fd617e693845757daa941b47b5d5ae8e0cca250296c3d55a46e1008fb",
       "executable": false
     },
     "src/pegboard/ui/field-errors.ts": {
@@ -4191,7 +4191,7 @@
       "executable": false
     },
     "tests/journeys/sheets-export.mjs": {
-      "sha256": "7bdd890a493c04d577463facf31fde70d8717aefc0fa66b960a8b49dce81def9",
+      "sha256": "1f670a28d825b6b41debe3cd2bfffcb82834664ea46852242e6949d3917fe0f1",
       "executable": false
     },
     "tests/journeys/template-gallery.mjs": {
@@ -4267,7 +4267,7 @@
       "executable": false
     },
     "tests/scenarios/sheets-export.mjs": {
-      "sha256": "62e190c84eb1eed67eb6b120cb59332682abdb9eb410671a8f5cccabb3e51803",
+      "sha256": "b5034a2cf146ef78734499e823538b2f08a192e17ff39986270e9b81edc181a2",
       "executable": false
     },
     "tests/schedule.test.mjs": {
@@ -4299,7 +4299,7 @@
       "executable": false
     },
     "tests/support/sheets-service.mjs": {
-      "sha256": "7cb18f0e1f334dd752e26ce97325342db536158a23873180fd4aff2cb2bf9235",
+      "sha256": "1d17a5949cc79b09e90a73d69f402a8f78ed114e845002422b3577e2b8a34003",
       "executable": false
     },
     "tests/support/time-services.mjs": {

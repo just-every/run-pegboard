@@ -34,6 +34,10 @@ export function registerSheetsExportTests({ test, context }) {
   edge.state.loseNextWrite = true
   const send = () => root.post(`/api/v1/sheet-reviews/${review.id}/send`, { credential, confirm: true })
   await ok(send(), 503); const before = writes(edge); await w.restart()
+  edge.state.published = true
+  await ok(root.post(`/api/v1/sheet-reviews/${review.id}/reconcile`, { credential }), 409)
+  assert.equal(writes(edge), before, 'uncertain readback refuses a newly published audience and sends nothing')
+  edge.state.published = false
   assert.equal((await ok(send())).state, 'confirmed'); assert.equal(writes(edge), before, 'uncertain response is read back without retrying the write')
   assert.equal((await ok(send())).state, 'confirmed'); assert.equal(writes(edge), before)
   let settings = await ok(root.get('/api/v1/sheets')), cfgRow = settings.exports.find(e => e.id === cfg.id), tab = edge.state.tabs.get(cfgRow.sheet_id)
@@ -81,6 +85,7 @@ export function registerSheetsExportTests({ test, context }) {
   await ok(root.post('/api/v1/sheets', { ...seeded.input, consent: false }), 400)
   await ok(root.post('/api/v1/sheets', { ...seeded.input, fields: ['internal_notes'] }), 403)
   edge.state.readOnly = true; await ok(root.post('/api/v1/sheets', seeded.input), 403); edge.state.readOnly = false
+  edge.state.published = true; await ok(root.post('/api/v1/sheets', seeded.input), 409); edge.state.published = false
   const cfg = await ok(root.post('/api/v1/sheets', seeded.input)), preview = () => ok(root.post(`/api/v1/sheets/${cfg.id}/reviews`, { credential })), send = review => root.post(`/api/v1/sheet-reviews/${review.id}/send`, { credential, confirm: true })
   let review = await preview(), sent = writes(edge)
   await ok(send({ id: review.id }), 200); sent++
@@ -88,6 +93,7 @@ export function registerSheetsExportTests({ test, context }) {
   review = await preview(); edge.state.permissions[1].role = 'writer'; await ok(send(review), 409); assert.equal(writes(edge), sent)
   review = await preview(); await ok(send(review)); sent++
   review = await preview(); edge.state.unknownAudience = true; await ok(send(review), 409); await ok(root.post(`/api/v1/sheets/${cfg.id}/reviews`, { credential }), 409); edge.state.unknownAudience = false; assert.equal(writes(edge), sent)
+  review = await preview(); edge.state.published = true; await ok(send(review), 409); await ok(root.post(`/api/v1/sheets/${cfg.id}/reviews`, { credential }), 409); edge.state.published = false; assert.equal(writes(edge), sent, 'publishing to the web changes the effective audience even when ordinary sharing is unchanged')
   review = await preview(); edge.state.unavailable = true; await ok(send(review), 503); edge.state.unavailable = false; assert.equal(writes(edge), sent)
   review = await preview(); edge.state.trashed = true; await ok(send(review), 403); edge.state.trashed = false; assert.equal(writes(edge), sent)
   review = await preview(); edge.state.denied = true; await ok(send(review), 403); edge.state.denied = false; assert.equal(writes(edge), sent)

@@ -23,13 +23,14 @@ export function sheetsEdge(env: Bindings, spreadsheet: string, credential: unkno
    const audience: Audience = [], seen = new Set<string>()
    let page = ''
    for (let n = 0; n < 20; n++) {
-    const query = new URLSearchParams({ fields: 'nextPageToken,permissions(id,type,role,emailAddress,deleted,pendingOwner)', pageSize: '100', ...(page ? { pageToken: page } : {}) })
+    const query = new URLSearchParams({ fields: 'nextPageToken,permissions(id,type,role,emailAddress,deleted,pendingOwner,view)', includePermissionsForView: 'published', pageSize: '100', ...(page ? { pageToken: page } : {}) })
     const result = await call(drive, 'GET', '/drive/v3/files/' + encodeURIComponent(spreadsheet) + '/permissions?' + query)
     if (!Array.isArray(result.permissions)) throw new SheetsFailure(409, 'sheets_audience_unknown')
     for (const p of result.permissions) {
      if (p.deleted === true) continue
-     // A group or link audience cannot establish its exact current recipients here.
-     if (p.type !== 'user' || typeof p.id !== 'string' || !p.id || typeof p.emailAddress !== 'string' || !p.emailAddress || !['owner', 'organizer', 'fileOrganizer', 'writer', 'commenter', 'reader'].includes(p.role) || p.pendingOwner) throw new SheetsFailure(409, 'sheets_audience_unknown')
+     // Include the published view: ordinary sharing alone can hide a public web audience.
+     // A group, link or published audience cannot establish exact recipients here.
+     if (p.view || p.type !== 'user' || typeof p.id !== 'string' || !p.id || typeof p.emailAddress !== 'string' || !p.emailAddress || !['owner', 'organizer', 'fileOrganizer', 'writer', 'commenter', 'reader'].includes(p.role) || p.pendingOwner) throw new SheetsFailure(409, 'sheets_audience_unknown')
      if (audience.some(a => a.id === p.id)) throw new SheetsFailure(409, 'sheets_audience_unknown')
      audience.push({ id: p.id, address: p.emailAddress, role: p.role })
     }
