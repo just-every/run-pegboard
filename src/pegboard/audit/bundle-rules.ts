@@ -12,11 +12,15 @@ export async function bundleRunEvent(db:D1Database,job:BundleAuditRun,action:str
  return bound(db,`INSERT INTO peg_permanent_audit(workspace_id,at,actor_id,action,target_type,target_id,result,detail)
  SELECT p.workspace_id,?,CASE WHEN ?='bundle_rule.run_queued' THEN t.creator_id ELSE ? END,?,?,?,?,json_patch(?,json_object('triggerActorId',t.creator_id,'workCount',COALESCE((SELECT work_count FROM peg_rule_effect_runs WHERE run_id=?),0))) FROM peg_projects p LEFT JOIN peg_tasks t ON t.id=? WHERE p.id=? AND EXISTS(SELECT 1 FROM peg_bundle_jobs WHERE id=?)`,[now(),action,actor,action,'rule',ruleId,result,JSON.stringify(metadata),job.id,job.task_id,job.project_id,job.id])
 }
-export async function bundleConfigurationEvents(db:D1Database,bundleId:string,projectId:string,actor:string,action:string){
- const rows=await all<{item_key:string;version:number;epoch:number;activated_by:string}>(db,`SELECT i.item_key,i.version,a.epoch,a.activated_by FROM peg_bundle_items i JOIN peg_bundle_adoptions a ON a.bundle_id=i.bundle_id AND a.project_id=i.project_id WHERE i.bundle_id=? AND i.project_id=? AND i.kind='rule'`,bundleId,projectId)
+export async function bundleConfigurationEvents(db:D1Database,bundleId:string,projectId:string,actor:string,action:string,itemKey?:string){
+ const rows=await all<{item_key:string;version:number;epoch:number;activated_by:string}>(db,`SELECT i.item_key,i.version,a.epoch,a.activated_by FROM peg_bundle_items i JOIN peg_bundle_adoptions a ON a.bundle_id=i.bundle_id AND a.project_id=i.project_id WHERE i.bundle_id=? AND i.project_id=? AND i.kind='rule'${itemKey?' AND i.item_key=?':''}`,bundleId,projectId,...(itemKey?[itemKey]:[]))
  const events=[]
  for(const row of rows){const ruleId=await bundleRuleIdentity(bundleId,row.item_key);events.push(permanentEvent(db,{workspace:(await db.prepare('SELECT workspace_id FROM peg_projects WHERE id=?').bind(projectId).first<{workspace_id:string}>())!.workspace_id,actor,action,type:'rule',id:ruleId,metadata:{kind:'bundle',ruleId,bundleId,projectId,version:row.version,activationEpoch:row.epoch,activationId:await digest(['bundle-activation',ruleId,projectId,row.epoch]),activatedById:row.activated_by}}))}
  return events
+}
+export async function renewedBundleEvents(db:D1Database,bundleId:string,projectId:string,actor:string){
+ const rows=await all<{item_key:string;epoch:number}>(db,"SELECT i.item_key,a.epoch FROM peg_bundle_items i JOIN peg_bundle_adoptions a ON a.bundle_id=i.bundle_id AND a.project_id=i.project_id WHERE i.bundle_id=? AND i.project_id=? AND i.kind='rule'",bundleId,projectId)
+ return Promise.all(rows.map(row=>bundleActivationEvent(db,bundleId,projectId,row.item_key,actor,row.epoch+1)))
 }
 export async function cancelledBundleEvents(db:D1Database,bundleId:string,projectId:string,actor:string,outcome:string){
  const jobs=await all<BundleAuditRun>(db,"SELECT * FROM peg_bundle_jobs WHERE bundle_id=? AND project_id=? AND status='queued'",bundleId,projectId)
