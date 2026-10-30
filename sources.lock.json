@@ -187,7 +187,7 @@
       "executable": false
     },
     ".github/workflows/verify.yml": {
-      "sha256": "09fe6d2a0b274d4925950ef0ddde9c8c7099e15edb5333a601ead2bbcec73a86",
+      "sha256": "391acf56d903fcaf88c3a89ff71e05db45d7c8692bc7ae6211aaa5f0b0b5605d",
       "executable": false
     },
     ".gitignore": {
@@ -199,7 +199,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "06c60b3a7814b10872d96366b6f60ea8f33cc0ce4f8c1aa4b5a2ce539da966f7",
+      "sha256": "79f04c2aab03de75a9a615ec2d5f2e4f7bb2244f8945e01cc88e31388d0763e2",
       "executable": false
     },
     "AGENTS.md": {
@@ -215,7 +215,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "fbe36626a7b267a79423b27ac587220c4abee8ac5de79300e97e20b71fecc984",
+      "sha256": "a146ee8a4821e93115640019b8f2728e6c04d716fff4fd2900740d6e4dc5f5e0",
       "executable": false
     },
     "DEMO.md": {
@@ -243,7 +243,7 @@
       "executable": false
     },
     "docs/CLAIMS.md": {
-      "sha256": "44d7c89193aac38d85520ef1dd02a23d1bbf9b87c1a9834e660a6cb723b7020b",
+      "sha256": "53b8019820ed75150f11b182cd8f068be4a45dcde2b9bfb3ecd8afd5eefd35fc",
       "executable": false
     },
     "docs/DATA-CUSTODY.md": {

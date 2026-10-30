@@ -138,7 +138,16 @@ jobs:
       - name: Run this shard
         env:
           SHARD: ${{ matrix.name }}
+          PEGBOARD_CAPTURE_EVIDENCE: ${{ runner.temp }}/pegboard-capture-screens
         run: node scripts/verify-ci.mjs "$SHARD"
+      - name: Retain installed capture browser proof
+        if: ${{ always() && matrix.name == 'journeys-services' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: browser-capture-${{ github.sha }}
+          path: ${{ runner.temp }}/pegboard-capture-screens
+          if-no-files-found: warn
+          retention-days: 7
 
   light:
     needs: plan
