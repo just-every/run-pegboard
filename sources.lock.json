@@ -199,7 +199,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "9d191dad1e998a883c7c6037b9db24d12c04103f8e93f02794eb3c8cf72dcde5",
+      "sha256": "2ea09a80b85f830afec362b8be5072f196005761067d31e426047d8350607c6d",
       "executable": false
     },
     "AGENTS.md": {
@@ -215,7 +215,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "1007dca647b52a1e7908f99bf99fec5ab12801eb14e831d25fc6470f63a85065",
+      "sha256": "fa5e0dc2cb225cbc02607884a80cf30b9677ba599b7a5784214a0396b950530e",
       "executable": false
     },
     "DEMO.md": {
@@ -247,7 +247,7 @@
       "executable": false
     },
     "docs/CLAIMS.md": {
-      "sha256": "b526c42f84f418662d55534351bfb86bd146d46c31b0d26b0523a1a8dcb8cc11",
+      "sha256": "d2a862ebed48d75f43d192b48d39e323f4c587d1bdc823592ed23dcf66169ac3",
       "executable": false
     },
     "docs/DATA-CUSTODY.md": {
@@ -4227,7 +4227,7 @@
       "executable": false
     },
     "tests/scenarios/archive-custody.mjs": {
-      "sha256": "1e96d0d844d39cbfef1f7267426c4d76a91f1ed83a09f07240db5f393b1695c5",
+      "sha256": "49c852de57a890107d71993789d11e3b16aeb55b3ffbc8b2fd48babe11182cfc",
       "executable": false
     },
     "tests/scenarios/calendar-blocks.mjs": {

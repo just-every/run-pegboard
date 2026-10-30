@@ -81,6 +81,8 @@ export function registerArchiveCustodyTests({test,context}){
   INSERT INTO peg_bundle_jobs(id,bundle_id,project_id,item_key,task_id,epoch,config,actor_id,status,created_at) VALUES('synthetic-pegboard-5805',${quote(bundle.id)},${quote(project.id)},'archive-rule',${quote(task.id)},1,'{}',${quote(owner.id)},'pending',1);`)
   assert.equal((await pass(owner.get('/api/v1/workspaces/ws_main/people'))).people.length,members+1)
   const discovered=JSON.parse(await w.sql("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"))[0].results.map(row=>row.name).filter(name=>!excludedTable(name,policy)).sort()
+  const sourceCounts=JSON.parse(await w.sql(discovered.map(table=>`SELECT '${table}' name,COUNT(*) n FROM "${table}"`).join(';'))).flatMap(result=>result.results)
+  assert.equal(sourceCounts.length,discovered.length,'every source store has an independent count')
   console.log('Archive fixture ready: '+members+' members and '+tasks+' project tasks')
   const exported=await exportInstallation(w,{interrupt:true}),archive=parse(exported.text)
   assert.deepEqual(archive.manifest.tables.map(t=>t.name),discovered,'every current portable store appears in the manifest')
@@ -90,6 +92,10 @@ export function registerArchiveCustodyTests({test,context}){
   assert.equal(rows(archive,'peg_workspace_members').length,members)
   assert.ok(rows(archive,'peg_tasks').some(r=>r.id===privateTask.id))
   const actualCounts=new Map(archive.manifest.tables.map(t=>[t.name,t.count]))
+  for(const {name,n} of sourceCounts){
+   if(name==='peg_permanent_audit')assert.ok(actualCounts.get(name)>=n,'archive creation retains the earlier audit and adds its own activity')
+   else assert.equal(actualCounts.get(name),n,name+' count reconciles to the independent source store')
+  }
   for(const [table,count] of actualCounts)assert.equal(rows(archive,table).length,count,table+' declared count')
   const archivedTasks=new Map(rows(archive,'peg_tasks').map(t=>[t.id,t])),projectIds=new Set(rows(archive,'peg_projects').map(p=>p.id))
   for(let n=1;n<tasks;n++){
@@ -209,13 +215,16 @@ export function registerArchiveCustodyTests({test,context}){
    assert.ok(services.state.google.events.has(block.event_id),'the original provider event is untouched')
    // Ownership changes are explicit native account actions after an empty
    // restore; an archive never silently adopts a preclaimed destination.
+   const originalOwner=await pass(root.get('/api/v1/me'))
    const ownerArchive=await pass(root.post('/api/v1/data/archives',{}))
    await pass(root.post(`/api/v1/workspaces/ws_main/people/${member.id}/account`,{role:'owner'}))
    const successor=await copy.worker.signIn(member.email,member.name,member.id)
    await pass(successor.get(`/api/portability/exports/${ownerArchive.id}`),404)
    await pass(root.post(`/api/v1/workspaces/ws_main/people/${root.id}/account`,{role:'admin'}))
    await pass(root.get('/api/v1/data'),401)
-   const former=await copy.worker.signIn(owner.email,owner.name,owner.id)
+   const former=await copy.worker.signIn(originalOwner.email,originalOwner.name,originalOwner.id)
+   assert.equal((await pass(former.get('/api/v1/me'))).id,originalOwner.id)
+   assert.equal((await pass(former.get('/api/v1/me'))).baseRole,'admin')
    await pass(former.get('/api/v1/data'),403)
    await pass(former.post('/api/portability/exports',{}),403)
    const successorArchive=await pass(successor.post('/api/v1/data/archives',{}))
