@@ -1,3 +1,4 @@
+import { taskCaptureSources } from '../capture/browser'
 import {guarded, type revision} from '../decisions/revision'
 import { isRecoveryHidden } from '../recovery/visibility'
 import {registerView} from '../register/records'
@@ -50,6 +51,7 @@ export async function viewTask(db: D1Database, actor: Actor, idOrRef: string) {
     // An assigned-work grant opens this task, without opening the project's delivery register.
     deliveryRecords:(await Promise.all(projects.filter(p=>access.contexts.get(p.id)!.paths.some(path=>path.scope!=='assignee'&&path.capabilities.includes('read'))).map(async p=>(await registerView(db,actor,p.id)).records.filter(r=>r.task_id===task.id).map(r=>({id:r.id,title:r.title,link:`/app/projects/${p.id}/register#${r.id}`}))))).flat(),
     mentionChoices,tags:await taskTags(db,actor,task.id), capabilities: [...access.capabilities], level: access.level, projects, subtasks,
+    captureSources:await taskCaptureSources(db,task.id),
     meetingCitations: await all<{meetingId:string;segmentIndex:number}>(db,`SELECT m.id AS meetingId,p.segment_index AS segmentIndex FROM peg_meeting_proposals p JOIN peg_meetings m ON m.id=p.meeting_id JOIN oa_operators o ON o.id=m.created_by WHERE p.task_id=? AND m.created_by=? AND m.revoked_at IS NULL AND o.status='active' AND o.role IN ('owner','admin')`,task.id,actor.id),
     history: visibleHistory.filter(entry => internal || (!entry.kind.startsWith('internal.') && !(entry.kind === 'comment.added' && entry.project_id === null))).map(entry => ({ id: entry.id, at: entry.at, actor: name(entry.actor_id), kind: entry.kind, projectId: entry.project_id, detail: entry.kind==='fields.changed'?{}:shareHistory(entry.detail, readable) })),
     comments: comments.map(comment => ({ id: comment.id, author: name(comment.author_id), body: comment.body, at: comment.created_at })),
