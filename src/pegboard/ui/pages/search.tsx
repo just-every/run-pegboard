@@ -3,7 +3,7 @@ import type {contentSearch} from '../../search/content'
 import type {savedSearches} from '../../search/saved'
 import {Card,Check,Field,Form,Pick,Shell,Submit} from '../shell'
 type Search=Awaited<ReturnType<typeof contentSearch>>
-export function SearchPage({viewer,data,saved,projects}:{viewer:Viewer;data:Search;saved:Awaited<ReturnType<typeof savedSearches>>;projects:{value:string;label:string}[]}){
+export function SearchPage({viewer,data,saved,projects,people}:{viewer:Viewer;data:Search;saved:Awaited<ReturnType<typeof savedSearches>>;projects:{value:string;label:string}[];people:{value:string;label:string}[]}){
  const query=new URLSearchParams(data.filters).toString()
  return <Shell viewer={viewer} current="/app/search" title="Find work" facts={['Search the work you can currently open']}>
   <Card title="Search content"><form method="get" action="/app/search" className="stack" aria-label="Search work">
@@ -18,7 +18,7 @@ export function SearchPage({viewer,data,saved,projects}:{viewer:Viewer;data:Sear
    <form method="get" action="/app/recovery/bulk" className="stack" aria-label="Change selected search results"><input type="hidden" name="selection" value="1"/>
     <ul className="rows" aria-label="Search results">{data.results.map(row=><li key={row.type+row.id} data-result-id={row.id}><span className="grow">{row.type==='task'&&<Check name="taskIds[]" value={row.id} label={'Select '+row.title}/>}<a href={row.href}>{row.title}</a><p>{row.matches.join(' · ')}{row.status?' · '+row.status:''}{row.priority?' · '+row.priority:''}{row.type==='task'&&!row.editable?' · Read only':''}</p></span></li>)}</ul>
     {!data.results.length&&<p>No matching work is available.</p>}
-    {data.results.some(row=>row.type==='task')&&<><Pick label="New priority" name="priority" blank="Keep current priority" options={['low','normal','high','urgent'].map(value=>({value,label:value}))}/><Field label="New due date" name="dueDate" type="date"/><Submit>Review selected changes</Submit></>}
+    {data.results.some(row=>row.type==='task')&&<><Pick label="New owner" name="ownerId" blank="Keep current owner" options={people}/><Pick label="New priority" name="priority" blank="Keep current priority" options={['low','normal','high','urgent'].map(value=>({value,label:value}))}/><Field label="New due date" name="dueDate" type="date"/><Submit>Review selected changes</Submit></>}
    </form>
    <p><a href={'/api/v1/search/export?'+query}>Download current results</a></p>
    {data.next&&<a href={'/app/search?'+query+'&after='+encodeURIComponent(data.next)}>Next results</a>}
