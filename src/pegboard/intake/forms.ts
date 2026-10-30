@@ -36,6 +36,8 @@ export async function checkedDefinition(db: D1Database, actor: Actor, projectId:
  })
  const m=input.mapping
  if (!m || !known.get(m.title)?.required || known.get(m.title)?.when || !Array.isArray(m.description) || m.description.some((v:unknown)=>typeof v!=='string'||!known.has(v)) || new Set(m.description).size!==m.description.length) throw invalid('intake_mapping')
+ const mapped=new Set<string>([m.title,...m.description])
+ if(clean.some(field=>!mapped.has(field.id)))throw invalid('intake_unmapped_answer')
  if (!['low','normal','high','urgent'].includes(m.priority)) throw invalid('intake_priority')
  const role=await workspaceRole(db,text(m.ownerId,100),project.workspace_id)
  if (!role || ['guest','agent'].includes(role)) throw invalid('intake_owner')

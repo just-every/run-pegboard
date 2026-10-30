@@ -28,6 +28,8 @@ export async function intakeScenario(w) {
  const config={name:'Creative request',fields:[{id:'title',label:'Request title',required:true},{id:'kind',label:'Request type',required:true,choices:['Design','Other']},{id:'details',label:'Design details',required:true,when:{field:'kind',equals:'Design'}}],mapping:{title:'title',description:['kind','details'],ownerId:peer.id,priority:'high'},hours:8}
  const forms=`/api/v1/projects/${project.id}/intake/forms`
  await ok(peer.post(forms,config),403)
+ await ok(owner.post(forms,{...config,mapping:{...config.mapping,description:[]}}),400)
+ assert.equal((await ok(owner.get(forms))).length,0,'a form cannot acknowledge answers it would discard')
  const form=await ok(owner.post(forms,config)),base=`/api/v1/intake/forms/${form.id}`
  const review=await ok(owner.get(base+'/review'))
  await ok(owner.post(base+'/publish',{version:form.version,review:review.review,audience:'public'}),409)

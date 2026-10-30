@@ -8,7 +8,8 @@ permits only submission to one published version; it grants no membership, work
 read access or permission to act as a person. Public work is attributed to
 “Public intake”, separately from the publisher who authorized the mapping.
 
-Only text and bounded choices are supported. A branch can depend on an earlier
+Every question must map to the retained task title or description; a draft
+with an unmapped answer refuses. Only text and bounded choices are supported. A branch can depend on an earlier
 choice; required validation runs independently on the server. Unknown fields,
 hidden-branch answers, attachments and identity or mapping overrides refuse
 without creating work. Files are explicitly unsupported, including multipart

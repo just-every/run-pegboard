@@ -259,7 +259,7 @@
       "executable": false
     },
     "docs/INTAKE.md": {
-      "sha256": "acd885997a9ba6e4ffa6d6eb54d729e9fee601bdd7710431b4f4312061b68034",
+      "sha256": "09ebc18d5cce8a90dcd83da444e78e6b8b4f59c235fb5735d9fcf6467f2f9f8e",
       "executable": false
     },
     "docs/LOOK.md": {
@@ -3427,7 +3427,7 @@
       "executable": false
     },
     "src/pegboard/intake/forms.ts": {
-      "sha256": "0ac773055a75092246c65017d6fe336f1743716448841011d4d049e9e16451dd",
+      "sha256": "87c288a9e65dba0ffcc677976ea87cb7f26ab2e8f010693708ec2d15fd5c0b00",
       "executable": false
     },
     "src/pegboard/intake/submissions.ts": {
@@ -4331,7 +4331,7 @@
       "executable": false
     },
     "tests/scenarios/intake.mjs": {
-      "sha256": "ff9f24d9e41ebf9aed826d89ba68ad76af84ab4d00b4120c2d80fd738d8aec1f",
+      "sha256": "305a5bdfc1fa80032a9d38d9313e264286c95e53452aeeeb0e40f4f08aa825b2",
       "executable": false
     },
     "tests/scenarios/public-api.mjs": {
