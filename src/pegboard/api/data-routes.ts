@@ -15,6 +15,23 @@ export function dataRoutes(app:Hono<{Bindings:Bindings}>) {
   app.get('/admin/audit',door(({db,actor,workspace,query})=>searchAudit(db,actor,workspace,Object.fromEntries(query))))
   app.get('/admin/audit/export',door(({db,actor,workspace,query})=>exportAudit(db,actor,workspace,Object.fromEntries(query))))
   app.get('/data',door(({db,actor,workspace})=>dataSettings(db,actor,workspace)))
+  app.post('/data/archives',door(async({db,actor,workspace})=>{
+    await requireOwner(db,actor,workspace)
+    const service=await createPortability({db,policy})
+    return {id:await service.exports.create(actor.id)}
+  },{next:()=>'/app/data'}))
+  app.post('/data/archives/:id/advance',door(async({db,actor,workspace,params})=>{
+    await requireOwner(db,actor,workspace)
+    const service=await createPortability({db,policy})
+    if(await service.actor(params.id)!==actor.id)throw notFound()
+    return service.exports.advance(params.id,{maxParts:16})
+  },{next:()=>'/app/data'}))
+  app.post('/data/archives/:id/abort',door(async({db,actor,workspace,params})=>{
+    await requireOwner(db,actor,workspace)
+    const service=await createPortability({db,policy})
+    if(await service.actor(params.id)!==actor.id)throw notFound()
+    return service.exports.abort(params.id)
+  },{next:()=>'/app/data'}))
   app.get('/data/receipts/:id',door(async({db,actor,workspace,params})=>{
     await requireOwner(db,actor,workspace)
     const row=await first<{id:string;counts:string;retained:string}>(db,'SELECT * FROM peg_data_receipts WHERE id=? AND workspace_id=?',params.id,workspace)

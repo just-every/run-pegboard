@@ -9,9 +9,9 @@ import { taskCalendars } from '../schedule/availability'
 import { dayNumber, dayString, freeTimeSlots, instantOf, type WorkingCalendar } from '../schedule/calendar'
 import { calendarEdge, CalendarFailure, type Event, type Slot } from '../connectors/calendars/edge'
 import { calendarAdmin, calendarSettings, connectionFor, taskFingerprint, type Connection } from './connections'
-export interface Block { id: string; connection_id: string; task_id: string; transaction_id: string; event_id: string | null; etag: string | null; start_at: string; end_at: string; zone: string; task_revision: string; state: 'pending' | 'scheduled' | 'conflict' | 'cancelled'; cause: string | null; revision: number }
+export interface Block { id: string; connection_id: string; task_id: string; transaction_id: string; event_id: string | null; etag: string | null; start_at: string; end_at: string; zone: string; task_revision: string; state: 'pending' | 'scheduled' | 'conflict' | 'cancelled'; cause: string | null; revision: number; restored_inactive: number }
 interface Preview { id: string; connection_id: string; task_id: string; owner_id: string; task_revision: string; connection_revision: number; block_id: string | null; block_revision: number | null; observed_etag: string | null; slots: string; zone: string; expires_at: number; applied_block: string | null }
-const activeBlock = (db: D1Database, connection: string, task: string) => first<Block>(db, "SELECT * FROM peg_calendar_blocks WHERE connection_id=? AND task_id=? AND state<>'cancelled'", connection, task)
+const activeBlock = (db: D1Database, connection: string, task: string) => first<Block>(db, "SELECT * FROM peg_calendar_blocks WHERE connection_id=? AND task_id=? AND state<>'cancelled' AND restored_inactive=0", connection, task)
 async function work(db: D1Database, actor: Actor, id: string, connection: Connection) {
  const { task, access } = await openTask(db, actor, id)
  require(access, 'edit')
@@ -28,7 +28,7 @@ async function edgeFor(env: Bindings, db: D1Database, actor: Actor, connection: 
  return edge
 }
 async function changed(db: D1Database, id: string, cause: string) {
- await run(db, "UPDATE peg_calendar_blocks SET state='conflict',cause=?,revision=revision+1 WHERE id=? AND state<>'cancelled'", cause, id)
+ await run(db, "UPDATE peg_calendar_blocks SET state='conflict',cause=?,revision=revision+1 WHERE id=? AND state<>'cancelled' AND restored_inactive=0", cause, id)
  throw conflict(cause)
 }
 const endBeforeDeadline = (due: string | null, zone: string, end: string) => !due || Date.parse(end) <= (due.length === 10 ? instantOf(dayString(dayNumber(due) + 1), 0, zone) : Date.parse(due))
@@ -99,6 +99,7 @@ export async function applyBlock(env: Bindings, db: D1Database, actor: Actor, id
 async function blockFor(db: D1Database, actor: Actor, id: string) {
  const block = await first<Block>(db, 'SELECT * FROM peg_calendar_blocks WHERE id=?', id)
  if (!block) throw invalid('calendar_block')
+ if (block.restored_inactive) throw conflict('calendar_archive_history')
  const connection = await connectionFor(db, actor, block.connection_id), task = await work(db, actor, block.task_id, connection)
  return { block, connection, task }
 }
