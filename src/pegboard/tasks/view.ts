@@ -1,3 +1,6 @@
+import {taskNoticePreferences} from '../notices/preferences'
+import {noticeEventStatements} from '../notices/events'
+import {digest,revision as noticeRevision} from '../decisions/revision'
 import {guarded, type revision} from '../decisions/revision'
 import { isRecoveryHidden } from '../recovery/visibility'
 import {registerView} from '../register/records'
@@ -49,6 +52,7 @@ export async function viewTask(db: D1Database, actor: Actor, idOrRef: string) {
     ...(internal ? { internalOnly: !!task.internal_only, internalNotes: task.internal_notes } : {}),
     // An assigned-work grant opens this task, without opening the project's delivery register.
     deliveryRecords:(await Promise.all(projects.filter(p=>access.contexts.get(p.id)!.paths.some(path=>path.scope!=='assignee'&&path.capabilities.includes('read'))).map(async p=>(await registerView(db,actor,p.id)).records.filter(r=>r.task_id===task.id).map(r=>({id:r.id,title:r.title,link:`/app/projects/${p.id}/register#${r.id}`}))))).flat(),
+    notices:await taskNoticePreferences(db,actor,task.id),
     mentionChoices,tags:await taskTags(db,actor,task.id), capabilities: [...access.capabilities], level: access.level, projects, subtasks,
     meetingCitations: await all<{meetingId:string;segmentIndex:number}>(db,`SELECT m.id AS meetingId,p.segment_index AS segmentIndex FROM peg_meeting_proposals p JOIN peg_meetings m ON m.id=p.meeting_id JOIN oa_operators o ON o.id=m.created_by WHERE p.task_id=? AND m.created_by=? AND m.revoked_at IS NULL AND o.status='active' AND o.role IN ('owner','admin')`,task.id,actor.id),
     history: visibleHistory.filter(entry => internal || (!entry.kind.startsWith('internal.') && !(entry.kind === 'comment.added' && entry.project_id === null))).map(entry => ({ id: entry.id, at: entry.at, actor: name(entry.actor_id), kind: entry.kind, projectId: entry.project_id, detail: entry.kind==='fields.changed'?{}:shareHistory(entry.detail, readable) })),
@@ -65,15 +69,27 @@ function shareHistory(detail: Record<string, unknown>, readable: Set<string>) {
   return out
 }
 
-export async function addComment(db: D1Database, actor: Actor, idOrRef: string, body: unknown, internalOnly = false, fence?: Awaited<ReturnType<typeof revision>>) {
+export async function addComment(db: D1Database, actor: Actor, idOrRef: string, body: unknown, internalOnly = false, fence?: Awaited<ReturnType<typeof revision>>, notice: {mentionId?:string;operationId?:string} = {}) {
+  const transactionRevision=fence??await noticeRevision(db)
   const { task, access } = await openTask(db, actor, idOrRef)
   require(access, 'comment')
   if (internalOnly && access.role === 'guest') throw forbidden('internal')
   if (typeof body !== 'string' || !body.trim() || body.length > 10000) throw invalid('body')
   const via = [...access.contexts].filter(([, effective]) => effective.capabilities.has('comment')).sort((a, b) => b[1].paths.length - a[1].paths.length)[0]?.[0] ?? null
+  if(notice.mentionId){
+    const view=await viewTask(db,actor,task.id)
+    if(!view.mentionChoices.some(choice=>choice.value===notice.mentionId))throw invalid('mention_participant')
+  }
+  if(notice.operationId!==undefined&&(typeof notice.operationId!=='string'||!/^[-a-zA-Z0-9_]{1,100}$/.test(notice.operationId)))throw invalid('comment_operation')
+  const fingerprint=await digest([body.trim(),internalOnly,notice.mentionId??null])
+  const prior=async()=>notice.operationId?first<{fingerprint:string;result_id:string}>(db,'SELECT fingerprint,result_id FROM peg_notice_commands WHERE actor_id=? AND task_id=? AND operation_id=?',actor.id,task.id,notice.operationId):null
+  const replay=await prior()
+  if(replay){if(replay.fingerprint!==fingerprint)throw invalid('comment_operation_changed');return {id:replay.result_id}}
   const id = newId('cmt')
   const statements = [reopenGuard(db,task.id,actor.id,'comment'),bound(db, 'INSERT INTO peg_comments(id,task_id,project_id,author_id,body,created_at,internal_only) VALUES (?,?,?,?,?,?,?)', [id, task.id, via, actor.id, body.trim(), now(), internalOnly ? 1 : 0]), historyStatement(db, task.id, via, actor.id, internalOnly ? 'internal.comment.added' : 'comment.added', {})]
-  if (fence) await guarded(db, fence, statements); else await batch(db, statements)
+  statements.push(...noticeEventStatements(db,actor,{id:newId('notice'),taskId:task.id,kind:'comment',commentId:id,mentionId:notice.mentionId}))
+  if(notice.operationId)statements.unshift(bound(db,'INSERT INTO peg_notice_commands VALUES(?,?,?,?,?)',[actor.id,task.id,notice.operationId,fingerprint,id]))
+  try{await guarded(db,transactionRevision,statements)}catch(error){const saved=await prior();if(saved&&saved.fingerprint===fingerprint)return {id:saved.result_id};throw error}
   return { id }
 }
 

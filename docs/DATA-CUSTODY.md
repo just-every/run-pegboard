@@ -219,3 +219,19 @@ these records as history, validate their version relationships and restore no
 source grants or sessions. Later erasure journals prevent older archive content
 from returning. This is database custody of the existing attachment door;
 large-file, native-device, resumable-upload and R2 qualification remain unproved.
+## Native work notifications
+
+Storage: `migrations/core/0090_internal_notices.sql`, after the existing migrations.
+
+The owner explicitly approves internal member Inbox notices in Work settings.
+Events and recipient identities commit with direct human task and comment changes.
+The Inbox rechecks current task and comment access, identity version and preferences;
+following supplies no access. Snooze changes only the recipient notice, never an
+approval decision. No external delivery is authorized by this policy.
+
+The notice policy, personal preferences, follows, events, recipient state and
+comment replay commands are excluded from installation archives. Restore supplies
+no active notification authority or old delivery queue; the destination needs a
+fresh owner approval and personal configuration. Task and comment erasure removes
+linked events, and reactivated identities cannot read older-version deliveries.
+These native controls do not qualify email, push, guest notices or provider custody.

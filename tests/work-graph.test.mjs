@@ -3,6 +3,7 @@ import {providerLogRetentionScenario} from './scenarios/provider-log-retention.m
 import {pdfFeedbackScenario,pdfFeedbackCustodyScenario} from './scenarios/pdf-feedback.mjs'
 import { approvalFollowupRoutingScenario, approvalFollowupAuthorityScenario } from './scenarios/approval-followup.mjs'
 import { intakeErasureScenario } from './scenarios/intake-erasure.mjs'
+import {notificationScenario} from './scenarios/notifications.mjs'
 import { intakeScenario } from './scenarios/intake.mjs'
 import { registerRuleAuditTests } from './scenarios/rule-audit.mjs'
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs'
@@ -100,6 +101,13 @@ describe('Data custody intake erasure', {concurrency:false},()=>{
  before(async()=>{worker=await startWorker()},{timeout:120000})
  after(()=>worker?.stop())
  it('reviews exact intake redactions, retains replay witnesses and fences holds, concurrent changes and native archive restoration',async()=>intakeErasureScenario(worker))
+})
+
+describe('Internal member notifications', {concurrency:false},()=>{
+ let worker
+ before(async()=>{worker=await startWorker()},{timeout:120000})
+ after(()=>worker?.stop())
+ it('delivers current identity-bound work once, respects preferences and preserves actionable approvals',{timeout:180000},async()=>notificationScenario(worker))
 })
 
 describe('Native text intake', {concurrency:false},()=>{
