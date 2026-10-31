@@ -1,4 +1,5 @@
 import { approvalFollowupJourney } from './approval-followup.mjs'
+import { intakeErasureJourney } from './intake-erasure.mjs'
 import { intakeJourney } from './intake.mjs'
 import {ruleAuditJourney} from './rule-audit.mjs'
 import { portfolioCapacityJourney } from './portfolio-capacity.mjs'
@@ -32,7 +33,7 @@ import { planningCanvasJourney } from './planning-canvas.mjs'
 import { portfolioJourney } from './portfolios.mjs'
 import { timelineJourney } from './timeline.mjs'
 
-const journeyNames = ["approval-followup", "intake", "rule-audit", "reporting", "work-views", "access-privacy", "access-discovery", "analytics", "calendar-blocks", "capacity", "portfolio-capacity", "public-api", "approval-routing", "guests", "core", "recurrence", "approvals", "time-packets", "goals", "engineering", "meetings", "custody", "recovery", "departure", "canvas", "portfolio", "timeline", "register", "bundles"]
+const journeyNames = ["approval-followup", "intake-erasure", "intake", "rule-audit", "reporting", "work-views", "access-privacy", "access-discovery", "analytics", "calendar-blocks", "capacity", "portfolio-capacity", "public-api", "approval-routing", "guests", "core", "recurrence", "approvals", "time-packets", "goals", "engineering", "meetings", "custody", "recovery", "departure", "canvas", "portfolio", "timeline", "register", "bundles"]
 const selected = new Set(process.env.PEGBOARD_JOURNEY === undefined ? journeyNames : process.env.PEGBOARD_JOURNEY.split(',').map(name => name.trim()))
 for (const name of selected) if (!journeyNames.includes(name)) throw new Error(`Unknown PEGBOARD_JOURNEY: ${name}`)
 
@@ -59,6 +60,7 @@ try {
     return true
   }
   if(await select('approval-followup'))await approvalFollowupJourney({w,browser})
+  if(await select('intake-erasure'))await intakeErasureJourney({w,browser})
   if(await select('intake'))await intakeJourney({w,browser})
   if(await select('rule-audit'))await ruleAuditJourney({w,browser})
   if(await select('access-privacy'))await accessPrivacyJourney({w,browser,owner,cookies})

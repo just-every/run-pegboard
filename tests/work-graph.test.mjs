@@ -1,4 +1,5 @@
 import { approvalFollowupRoutingScenario, approvalFollowupAuthorityScenario } from './scenarios/approval-followup.mjs'
+import { intakeErasureScenario } from './scenarios/intake-erasure.mjs'
 import { intakeScenario } from './scenarios/intake.mjs'
 import { registerRuleAuditTests } from './scenarios/rule-audit.mjs'
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs'
@@ -42,6 +43,13 @@ function csvRecords(text) {
   return rows.filter(row=>row.some(value=>value.length))
 }
 let campaign, launch, shared, mkt
+
+describe('Data custody intake erasure', {concurrency:false},()=>{
+ let worker
+ before(async()=>{worker=await startWorker()},{timeout:120000})
+ after(()=>worker?.stop())
+ it('reviews exact intake redactions, retains replay witnesses and fences holds, concurrent changes and native archive restoration',async()=>intakeErasureScenario(worker))
+})
 
 describe('Native text intake', {concurrency:false},()=>{
  let worker
