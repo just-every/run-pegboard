@@ -96,7 +96,8 @@ export async function internalNotices(db: D1Database, actor: Actor, workspace: s
       if (event.state === 'queued') await run(db, "UPDATE peg_notice_targets SET state='suppressed' WHERE event_id=? AND recipient_id=? AND state='queued'", event.id, actor.id)
       continue
     }
-    if (deferred) continue
+    // Quiet hours cannot hide an already delivered approval or block its snooze controls.
+    if (deferred && !(event.kind === 'approval' && event.state === 'delivered')) continue
     if (event.state === 'queued') {
       try { await guarded(db, rev, [bound(db, `UPDATE peg_notice_targets SET state='delivered',visible_at=? WHERE event_id=? AND recipient_id=? AND state='queued'`, [now(), event.id, actor.id])]) }
       catch (error) { if (error instanceof PegError && error.status === 409) continue; throw error }
