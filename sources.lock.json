@@ -4279,7 +4279,7 @@
       "executable": false
     },
     "tests/journeys/intake-erasure.mjs": {
-      "sha256": "c89d411bf4ce4dbd6dd7010b92ea822424b29916c17ff2a11de035c30ea8de2f",
+      "sha256": "a94cfc550ca87a6bf7e4bb3a9c7965abdca06bd0354e059d574892d787b0daec",
       "executable": false
     },
     "tests/journeys/intake.mjs": {
@@ -4383,7 +4383,7 @@
       "executable": false
     },
     "tests/scenarios/intake-erasure.mjs": {
-      "sha256": "babc66aaf2ee9a881bc9a9614e831b3a4b6b824be4a463bf00de1a22bbe84f79",
+      "sha256": "27a6b08c90083dcbb830acc427da22f912ee3d532767174d7052b6b15feeae20",
       "executable": false
     },
     "tests/scenarios/intake.mjs": {

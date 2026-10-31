@@ -112,7 +112,7 @@ export async function intakeErasureScenario(w){
   const live=await pass(owner.get(`/api/v1/projects/${project.id}/intake`));assert.equal(live.items.length,5,'erased task replay creates no replacement')
  }finally{await restored.stop()}
  console.log('PROBE PEG-059 intake scope: owner Data preview -> exact three form IDs, five submission IDs and independent redaction counts')
- console.log('PROBE PEG-059 authority and holds: non-owner, active person, owned work and person/project/task holds -> refused or retained without intake mutation')
+ console.log('PROBE PEG-059 authority and holds: non-owner, active person, owned work and person, project and task holds -> refused or retained without intake mutation')
  console.log('PROBE PEG-059 concurrency: submission and triage after review -> stale erasure refused; committed receipt and audit bind the same revision and digest')
  console.log('PROBE PEG-059 restart and replay: retained witness -> original receipt; erased task replay -> 410 without new work; old actor and form capability -> refused')
  console.log('PROBE PEG-059 archive: native old archive with later journal -> refused; later archive restore -> exact redacted references, receipt and inactive publications')

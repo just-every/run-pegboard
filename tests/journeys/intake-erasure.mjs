@@ -76,6 +76,6 @@ export async function intakeErasureJourney({w,browser}) {
   await page.goto(w.origin+`/app/projects/${project.id}/intake`)
   for(const submission of [f.source,f.triager,f.both,f.witness,f.owned])await expect(page.locator(`[data-submission="${submission.receipt}"]`)).toBeVisible()
   await proof('surviving-work')
-  console.log('PROBE PEG-059 rendered custody: keyboard owner review and confirmation -> exact intake IDs and redacted/retained receipt counts; surviving work and inactive forms at 1440 and 390')
+  console.log('PROBE PEG-059 rendered custody: keyboard owner review and confirmation -> exact intake IDs and redacted and retained receipt counts; surviving work and inactive forms at 1440 and 390')
  }finally{await context.close()}
 }
