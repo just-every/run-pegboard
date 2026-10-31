@@ -83,7 +83,7 @@ export async function proofFollowupScenario(w){
  console.log('PROBE PEG-067 accountable episode: missing guest v2 review -> queued then one internal Inbox notice; guest requests changes -> same open episode; human v3 plus reviewed route continuation -> new binding and old v2 refused; one vote -> active; actual second independent human vote -> approved with reconciled decision IDs and byte digests; restart and concurrent replay deduplicated')
 }
 export async function proofFollowupCustodyScenario(w){
- const owner=w.owner,f=await fixture(w,6720),e=await begin(owner,f)
+ const owner=w.owner,f=await fixture(w,6720),captured=await preview(owner,f),e=await begin(owner,f)
  const stranger=await person(w,6725,'Unrelated member')
  await pass(stranger.get('/api/v1/proof-followup/'+e.id),404);await pass(f.guest.get('/api/v1/proof-followup/'+e.id),404)
  await pass(stranger.post('/api/v1/proof-followup/policy/preview',{}),403)
@@ -114,6 +114,7 @@ export async function proofFollowupCustodyScenario(w){
  await pass(owner.post('/api/v1/data/holds/'+hold.id+'/release',{confirm:true}))
  const exact=await pass(owner.post('/api/v1/data/erasure-preview',{type:'proof',id:f.proof.id})),erased=await pass(owner.post('/api/v1/data/erase',{type:'proof',id:f.proof.id,token:exact.token,confirm:true}))
  assert.equal(erased.counts.peg_proof_followup_episodes,2);await pass(owner.get('/api/v1/proof-followup/'+e.id),404)
+ await pass(owner.post('/api/v1/proofs/'+f.proof.id+'/followup',{accountableId:owner.id,token:captured.token,consent:true}),404)
  const after=await restoreCanvasInstallation(owner,{earlierArchive:oldArchive});try{await pass(after.worker.owner.get('/api/v1/proof-followup/'+e.id),404);assert.deepEqual((await inbox(after.worker.owner)).notices,[])}finally{await after.stop()}
  // A renewed grant or identity must not resurrect a queued episode, even before dispatch.
  const manager=await person(w,6730,'Accountable custodian','manager')
@@ -148,14 +149,20 @@ export async function proofFollowupCustodyScenario(w){
   assert.deepEqual((await inbox(loss==='custodian'?manager:owner)).notices,[])
  }
  const contextOnly=await fixture(w,6810),visibleProject=contextOnly.project
- await pass(owner.post('/api/v1/grants',{objectType:'project',objectId:visibleProject.id,granteeId:manager.id,level:'admin'}))
+ const historical=await begin(owner,contextOnly)
+ const visibleGrant=await pass(owner.post('/api/v1/grants',{objectType:'project',objectId:visibleProject.id,granteeId:manager.id,level:'admin'}))
  const hidden=await pass(owner.post('/api/v1/projects',{name:'Separate proof custody'}))
  await pass(owner.post('/api/v1/tasks/'+contextOnly.task.id+'/projects',{projectId:hidden.id}))
  contextOnly.project=hidden;await replace(owner,contextOnly,'synthetic-pegboard-hidden-proof-context');await route(owner,contextOnly)
  await policy(owner,hidden,[manager])
  await pass(manager.get('/api/v1/tasks/'+contextOnly.task.id))
  await pass(owner.post('/api/v1/proofs/'+contextOnly.proof.id+'/followup/preview',{accountableId:manager.id}),404)
- assert.deepEqual(await pass(owner.get('/api/v1/proofs/'+contextOnly.proof.id+'/followup')),[],'task access alone cannot authorize a hidden byte context')
+ assert.equal((await pass(owner.get('/api/v1/proofs/'+contextOnly.proof.id+'/followup'))).length,1,'the owner retains the historical episode')
+ await pass(owner.post('/api/v1/grants',{objectType:'project',objectId:hidden.id,granteeId:manager.id,level:'admin'}))
+ await pass(owner.delete('/api/v1/grants/'+visibleGrant.id))
+ await pass(manager.get('/api/v1/proofs/'+contextOnly.proof.id))
+ await pass(manager.get('/api/v1/proof-followup/'+historical.id),404)
+ assert.deepEqual(await pass(manager.get('/api/v1/proofs/'+contextOnly.proof.id+'/followup')),[],'current byte custody cannot enumerate hidden historical episodes')
  const audit=await pass(owner.get('/api/v1/admin/audit?action=proof_followup.stopped'));assert.ok(audit.events.some(x=>x.target_id===f.proof.id));assert.ok(!JSON.stringify(audit).includes('Human creative review'))
  console.log('PROBE PEG-067 custody: native archive -> disabled policy, cancelled events and no active source authority; reviewed share revocation -> durable cancellation; owner stop -> stopped; hidden reader refused; exact proof erasure -> counted episode children, legal hold retained, stale review refused and old archive barred by later journal; permanent audit retained without content')
 }

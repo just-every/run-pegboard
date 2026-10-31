@@ -91,6 +91,7 @@ export async function commitProofEpisode(db:D1Database,person:Actor,proofId:stri
   return {id,proofId,routeId:p.routeId,versionId:p.versionId,state:'active'}
 }
 async function current(db:D1Database,e:Episode) {
+  if(!['active','awaiting_revision'].includes(e.state))throw conflict('proof_episode_inactive')
   const policy=await livePolicy(db,e.workspace_id,e.policy_id), person=await operatorRow(db,e.accountable_id)
   if(!person||person.version!==e.accountable_version||!JSON.parse(policy.recipients).includes(person.id))throw conflict('accountable_authority_lost')
   const c=await routeContext(db,e.proof_id,e.route_id,asActor(person.id))
@@ -100,8 +101,10 @@ async function current(db:D1Database,e:Episode) {
   return {...c,policy}
 }
 async function cancel(db:D1Database,e:Episode,cause:string) {
-  if(!openStates.includes(e.state))return
-  await guarded(db,await revision(db),[bound(db,"UPDATE peg_proof_followup_episodes SET state='cancelled',cause=?,next_at=NULL WHERE id=? AND state IN ('active','awaiting_revision','awaiting_route')",[cause,e.id])])
+  const rev=await revision(db), latest=await first<Episode>(db,'SELECT * FROM peg_proof_followup_episodes WHERE id=?',e.id)
+  if(!latest||!openStates.includes(latest.state))return
+  if(latest.state==='awaiting_route'&&['current_proof_route_required','proof_binding_changed','proof_episode_inactive'].includes(cause))return
+  await guarded(db,rev,[bound(db,"UPDATE peg_proof_followup_episodes SET state='cancelled',cause=?,next_at=NULL WHERE id=? AND state IN ('active','awaiting_revision','awaiting_route')",[cause,e.id])])
 }
 export async function processProofFollowups(db:D1Database,workspace?:string,at=now(),dispatch=true) {
   const episodes=await all<Episode>(db,`SELECT * FROM peg_proof_followup_episodes WHERE state IN ('active','awaiting_revision') ${workspace?'AND workspace_id=?':''} ORDER BY created_at,id LIMIT 200`,...(workspace?[workspace]:[]))
@@ -125,7 +128,7 @@ export async function processProofFollowups(db:D1Database,workspace?:string,at=n
     const state=!prefs.enabled||prefs.muted?'cancelled':next>at?'deferred':'visible'
     const cause=state==='cancelled'?'recipient_muted':state==='deferred'?(prefs.dndUntil??0)>at?'do_not_disturb':'working_hours':'inbox_visible'
     const latest=await getEpisode(db,e.id)
-    await guarded(db,fresh.rev,[bound(db,"UPDATE peg_proof_followup_events SET state=?,cause=?,next_at=?,visible_at=? WHERE id=? AND state IN ('queued','deferred')",[state,cause,state==='deferred'?next:null,state==='visible'?at:null,event.id]),bound(db,'UPDATE peg_proof_followup_episodes SET next_at=? WHERE id=?',[state==='deferred'||latest.round>=fresh.policy.max_rounds?null:eligibleAt(at+fresh.policy.repeat_minutes*60000,fresh.policy),e.id])])
+    await guarded(db,fresh.rev,[bound(db,"UPDATE peg_proof_followup_events SET state=?,cause=?,next_at=?,visible_at=? WHERE id=? AND state IN ('queued','deferred')",[state,cause,state==='deferred'?next:null,state==='visible'?at:null,event.id]),bound(db,"UPDATE peg_proof_followup_episodes SET next_at=? WHERE id=? AND state IN ('active','awaiting_revision')",[state==='deferred'||latest.round>=fresh.policy.max_rounds?null:eligibleAt(at+fresh.policy.repeat_minutes*60000,fresh.policy),e.id])])
   } catch(error) {
     if(error instanceof PegError&&error.status===409&&error.code==='review_changed')continue
     if(error instanceof PegError&&[403,404,409].includes(error.status)){await cancel(db,e,error.code);continue}
@@ -134,7 +137,7 @@ export async function processProofFollowups(db:D1Database,workspace?:string,at=n
 }
 export async function proofEpisodeView(db:D1Database,person:Actor,id:string) {
   let e=await getEpisode(db,id)
-  const m=await material(db,person,e.proof_id)
+  await material(db,person,e.proof_id)
   if(!openStates.includes(e.state))return detail()
   if(e.state!=='awaiting_route') {
     try{await current(db,e)}catch(error){if(error instanceof PegError&&[403,404,409].includes(error.status)){await cancel(db,e,error.code)}else throw error}
@@ -142,13 +145,21 @@ export async function proofEpisodeView(db:D1Database,person:Actor,id:string) {
   }
   return detail()
   async function detail() {
-    const route=await routeFor(db,'proof',e.proof_id), routing=route?await routeView(db,person,route.id):null
-    const bindings=await all(db,'SELECT * FROM peg_proof_followup_bindings WHERE episode_id=? ORDER BY at,id',id)
-    const events=await all<Event>(db,'SELECT * FROM peg_proof_followup_events WHERE episode_id=? ORDER BY created_at,id',id)
-    const outcomes=await all(db,'SELECT * FROM peg_proof_followup_outcomes WHERE episode_id=? ORDER BY id',id)
-    const names=routing?.names??{}
     const rev=await revision(db)
-    return {rev,accountableName:(await operatorRow(db,e.accountable_id))?.display_name??'Unavailable custodian',episode:e,title:m.opened.task.title,version:m.version,routing,bindings,events,outcomes,canStop:await workspaceRole(db,person.id,e.workspace_id)==='owner'&&openStates.includes(e.state),token:await digest([person.id,e,rev]),missing:routing?.stages.map(s=>({name:s.name,quorum:s.quorum,approved:s.approved,people:(s.people??[]).filter(id=>!routing.votes.some(v=>v.actor_id===id)).map(id=>({id,name:names[id]??'Reviewer'}))}))??[]}
+    e=await getEpisode(db,id)
+    const m=await material(db,person,e.proof_id)
+    await proofContext(db,person,m.opened,e.version_id)
+    const visible=new Set(m.view.versions.map(v=>v.id))
+    const route=await routeFor(db,'proof',e.proof_id), routing=route?await routeView(db,person,route.id):null
+    const bindings=(await all<{id:string;version_id:string}>(db,'SELECT * FROM peg_proof_followup_bindings WHERE episode_id=? ORDER BY at,id',id)).filter(b=>visible.has(b.version_id))
+    const bindingIds=new Set(bindings.map(b=>b.id))
+    const events=(await all<Event>(db,'SELECT * FROM peg_proof_followup_events WHERE episode_id=? ORDER BY created_at,id',id)).filter(event=>bindingIds.has(event.binding_id))
+    const eventIds=new Set(events.map(event=>event.id))
+    const outcomes=(await all<{event_id:string|null}>(db,'SELECT * FROM peg_proof_followup_outcomes WHERE episode_id=? ORDER BY id',id)).filter(outcome=>outcome.event_id===null||eventIds.has(outcome.event_id))
+    const names=routing?.names??{}
+    const result={rev,accountableName:(await operatorRow(db,e.accountable_id))?.display_name??'Unavailable custodian',episode:e,title:m.opened.task.title,version:m.version,routing,bindings,events,outcomes,canStop:await workspaceRole(db,person.id,e.workspace_id)==='owner'&&openStates.includes(e.state),token:await digest([person.id,e,rev]),missing:routing?.stages.map(s=>({name:s.name,quorum:s.quorum,approved:s.approved,people:(s.people??[]).filter(id=>!routing.votes.some(v=>v.actor_id===id)).map(id=>({id,name:names[id]??'Reviewer'}))}))??[]}
+    if((await revision(db)).value!==rev.value||rev.until!==null&&rev.until<=now())throw conflict('proof_review_changed')
+    return result
   }
 }
 export async function stopProofEpisode(db:D1Database,person:Actor,id:string,input:Record<string,any>) {
@@ -170,6 +181,8 @@ export async function proofFollowupInbox(db:D1Database,person:Actor,workspace:st
   return {notices}
 }
 export async function proofEpisodes(db:D1Database,person:Actor,proofId:string) {
-  await material(db,person,proofId)
-  return all<Episode>(db,'SELECT * FROM peg_proof_followup_episodes WHERE proof_id=? ORDER BY created_at,id',proofId)
+  const rev=await revision(db), m=await material(db,person,proofId), visible=new Set(m.view.versions.map(v=>v.id))
+  const rows=(await all<Episode>(db,'SELECT * FROM peg_proof_followup_episodes WHERE proof_id=? ORDER BY created_at,id',proofId)).filter(e=>visible.has(e.version_id))
+  if((await revision(db)).value!==rev.value||rev.until!==null&&rev.until<=now())throw conflict('proof_review_changed')
+  return rows
 }

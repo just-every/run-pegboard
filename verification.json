@@ -40,7 +40,7 @@
       "browser": false,
       "hosted": false,
       "commands": [
-        "pnpm exec rer queue test:work-graph-time -- sh -c \"node --test --test-name-pattern='^(?:Work planning time, recurrence and decisions|Approval routing custody|Calendar work blocks through provider schema edges|Native approval follow-up|Proof follow-through)(?: |$)' tests/work-graph.test.mjs\""
+        "pnpm exec rer queue test:work-graph-time -- sh -c \"node --test --test-name-pattern='^(?:Work planning time, recurrence and decisions|Approval routing custody|Calendar work blocks through provider schema edges|Native approval follow-up)(?: |$)|^Proof follow-through follows human' tests/work-graph.test.mjs\""
       ]
     },
     {
@@ -56,7 +56,7 @@
       "browser": false,
       "hosted": false,
       "commands": [
-        "pnpm exec rer queue test:work-graph-custody-erasure -- sh -c \"node --test --test-name-pattern='^(?:Data custody intake erasure|Local rule audit attributes background)(?: |$)' tests/work-graph.test.mjs\""
+        "pnpm exec rer queue test:work-graph-custody-erasure -- sh -c \"node --test --test-name-pattern='^(?:Data custody intake erasure|Local rule audit attributes background)(?: |$)|^Proof follow-through fences authority' tests/work-graph.test.mjs\""
       ]
     },
     {
