@@ -124,6 +124,32 @@ access activity stay retained, so the identity receipt is partial. Other scopes
 with retained historical activity or unconfirmed processor copies also get
 partial receipts. The last owner requires installation reset or replacement.
 
+### Native intake references in person review
+
+The same owner review enumerates submission source and triager references, plus
+form author, publisher and fixed-owner references. Each form and submission is
+identified by its exact opaque ID. The receipt separately counts each redacted
+reference, disabled publication, retained submission replay witness and retained
+form provenance. The immutable scope, revision and digest travel with the receipt;
+the permanent erasure audit names that receipt and digest. Refused or held scopes
+record no applied redactions. New submissions and triage invalidate old reviews.
+
+Source attribution becomes an erased marker and triager attribution is cleared.
+Form author attribution becomes an erased marker, the erased publisher is cleared
+and an erased fixed owner becomes unassigned. Every affected form is inactive,
+with its capability removed and version advanced. No replacement person is
+assigned. A newly saved valid draft and explicit publication review are required
+before reuse. Other people's attribution and surviving task ownership stay intact.
+
+Submission IDs, form and task links, request keys, irreversible fingerprints,
+versions, deadlines and triage timestamps remain as disclosed opaque replay
+witnesses. A replay returns the original receipt only under current authority;
+an erased task returns a refusal and creates no replacement. Person, project and
+linked-task holds participate in the same revision-bound transaction. Native
+archives preserve these redactions and receipts, restore forms inactive and refuse
+an older archive supplied with the later erasure journal. Product import and the
+remaining intake lifecycle are still unproved; no external deletion is inferred.
+
 ## Archives and external limits
 
 Native `rer export` / `rer import` and `/api/portability` share one seed-owned Base

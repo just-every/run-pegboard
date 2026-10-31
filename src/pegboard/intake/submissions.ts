@@ -1,4 +1,4 @@
-import { bound, conflict, first, invalid, newId, now, PegError } from '../db'
+import { all, bound, conflict, first, invalid, newId, now, PegError } from '../db'
 import { digest, guarded, revision } from '../decisions/revision'
 import { prepareTask } from '../tasks/tasks'
 import { historyStatement } from '../tasks/history'
@@ -44,7 +44,7 @@ export async function submitIntake(db:D1Database,source:{actor:Actor;formId:stri
    return {...acknowledgment(previous),replayed:true}
   }
   const calendar=JSON.parse(row.published_calendar!),at=now(),deadline=Date.parse(writeStamp(addWorkingTime(readStamp(new Date(at).toISOString(),calendar.zone),definition.hours*3600000,calendar),calendar.zone))
-  const prepared=await prepareTask(db,publicSource?publisher:source.actor,{projectId:row.project_id,title:answers[definition.mapping.title],description,ownerId:definition.mapping.ownerId,priority:definition.mapping.priority},{queueRules:false,sourceActorId:publicSource?'public_intake':undefined})
+  const prepared=await prepareTask(db,publicSource?publisher:source.actor,{projectId:row.project_id,title:answers[definition.mapping.title],description,ownerId:definition.mapping.ownerId!,priority:definition.mapping.priority},{queueRules:false,sourceActorId:publicSource?'public_intake':undefined})
   const submission:Submission={id:newId('submission'),form_id:row.id,form_version:row.version,request_key:key,fingerprint,task_id:prepared.id,source_actor:sourceActor,submitted_at:at,deadline,triaged_at:null,escalated_at:null}
   try {
    await guarded(db,rev,[bound(db,'INSERT INTO peg_intake_guards VALUES(?,?,?)',[newId('guard'),row.id,row.version]),...prepared.statements,bound(db,'INSERT INTO peg_intake_submissions(id,form_id,form_version,request_key,fingerprint,task_id,source_actor,submitted_at,deadline,calendar) VALUES(?,?,?,?,?,?,?,?,?,?)',[submission.id,row.id,row.version,key,fingerprint,prepared.id,sourceActor,at,deadline,JSON.stringify(calendar)]),historyStatement(db,prepared.id,row.project_id,sourceActor,'intake.submitted',{formId:row.id,version:row.version,deadline})])
@@ -58,4 +58,13 @@ export async function limitPublic(db:D1Database,capability:string,address:string
  await db.prepare('DELETE FROM peg_intake_limits WHERE expires_at<=?').bind(now()).run()
  try{await db.prepare('INSERT INTO peg_intake_limits(bucket,attempts,expires_at) VALUES(?,1,?) ON CONFLICT(bucket) DO UPDATE SET attempts=attempts+1').bind(bucket,now()+600000).run()}
  catch(error){if(/CHECK constraint/.test(String(error)))throw new PegError(429,'intake_rate_limited');throw error}
+}
+
+/** Retain deduplication witnesses; redact only the reviewed person references. */
+export async function submissionErasureScope(db:D1Database,person:string) {
+ const rows=await all<{id:string;task_id:string;form_id:string;project_id:string;source:number;triager:number}>(db,`SELECT s.id,s.task_id,s.form_id,f.project_id,s.source_actor=? source,s.triaged_by IS ? triager FROM peg_intake_submissions s JOIN peg_intake_forms f ON f.id=s.form_id WHERE s.source_actor=? OR s.triaged_by=? OR f.created_by=? OR f.publisher_id=? OR json_extract(f.definition,'$.mapping.ownerId')=? ORDER BY s.id`,person,person,person,person,person,person,person)
+ return rows.map(row=>({id:row.id,taskId:row.task_id,formId:row.form_id,projectId:row.project_id,source:!!row.source,triager:!!row.triager}))
+}
+export function submissionErasureStatements(db:D1Database,person:string,submissions:Awaited<ReturnType<typeof submissionErasureScope>>) {
+ return submissions.filter(row=>row.source||row.triager).map(row=>bound(db,"UPDATE peg_intake_submissions SET source_actor=CASE WHEN source_actor=? THEN 'erased' ELSE source_actor END,triaged_by=CASE WHEN triaged_by=? THEN NULL ELSE triaged_by END WHERE id=?",[person,person,row.id]))
 }

@@ -19,7 +19,8 @@ export function dataRoutes(app:Hono<{Bindings:Bindings}>) {
     await requireOwner(db,actor,workspace)
     const row=await first<{id:string;counts:string;retained:string}>(db,'SELECT * FROM peg_data_receipts WHERE id=? AND workspace_id=?',params.id,workspace)
     if(!row)throw notFound()
-    return {...row,counts:JSON.parse(row.counts),retained:JSON.parse(row.retained)}
+    const scope=await first<{revision:number;scope_digest:string;scope:string;applied:number}>(db,'SELECT revision,scope_digest,scope,applied FROM peg_intake_erasure_receipts WHERE receipt_id=?',params.id)
+    return {...row,counts:JSON.parse(row.counts),retained:JSON.parse(row.retained),...(scope?{intake:JSON.parse(scope.scope),revision:scope.revision,scopeDigest:scope.scope_digest,applied:!!scope.applied}:{})}
   }))
   app.post('/data/retention-preview',door(({db,actor,workspace,input})=>retentionPreview(db,actor,workspace,input)))
   app.post('/data/retention',door(({db,actor,workspace,input})=>setRetention(db,actor,workspace,input),{next:()=>'/app/data'}))
