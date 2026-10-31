@@ -57,7 +57,7 @@ export async function saveForm(db:D1Database,actor:Actor,projectId:string,input:
 export async function reviewForm(db:D1Database,actor:Actor,id:string) {
  const row=await formRow(db,id),{project}=await administer(db,actor,row.project_id),rev=await revision(db)
  const definition=JSON.parse(row.definition) as Definition,calendar=await workspaceCalendar(db,project.workspace_id)
- return {id:row.id,name:row.name,version:row.version,project:{id:project.id,name:project.name},definition,calendar,published:row.published_version===row.version&&!row.revoked_at,public:!!row.public_hash,review:await digest([row.id,row.version,row.definition,calendar,rev.value,actor.id])}
+ return {id:row.id,name:row.name,version:row.version,custodyBlocked:!!row.erased_custody,project:{id:project.id,name:project.name},definition,calendar,published:row.published_version===row.version&&!row.revoked_at,public:!!row.public_hash,review:await digest([row.id,row.version,row.definition,calendar,rev.value,actor.id])}
 }
 export async function publishForm(db:D1Database,actor:Actor,id:string,input:Record<string,any>) {
  const rev=await revision(db),row=await formRow(db,id),review=await reviewForm(db,actor,id)

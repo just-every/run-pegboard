@@ -73,6 +73,8 @@ export async function intakeErasureScenario(w){
  assert.equal(audit.events.filter(r=>r.metadata.id===receipt.id).length,1)
  assert.equal(audit.events.find(r=>r.metadata.id===receipt.id).metadata.scopeDigest,receipt.scopeDigest)
  await pass(erasePerson(owner,review),409)
+ const after=await reviewPerson(owner,target.id)
+ assert.deepEqual(after.intake,{forms:[],submissions:[]},'the live Data door finds no unredacted target reference')
  await w.restart()
  const restored=await restoreCanvasInstallation(owner,{earlierArchive:old})
  try{
