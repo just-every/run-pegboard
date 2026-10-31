@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { mkdir } from 'node:fs/promises'
 import { join } from 'node:path'
 import { expect } from '@playwright/test'
-import { pass, person, routeTask, queue, cron, inbox, log } from '../scenarios/approval-followup.mjs'
+import { pass, person, routeTask, queue, cron, inbox, log, policy } from '../scenarios/approval-followup.mjs'
 
 export async function approvalFollowupJourney({ w, browser }) {
   const owner = w.owner, author = await person(w, 3720, 'Launch author'), reviewer = await person(w, 3721, 'Launch reviewer'), delegate = await person(w, 3722, 'Current reviewer')
@@ -94,6 +94,23 @@ export async function approvalFollowupJourney({ w, browser }) {
     await expect(recipient.page.locator('[data-notice-id]')).toHaveCount(0)
     const stopped = (await log(owner)).find(row => row.route_id === route.id)
     assert.equal(stopped.state, 'responded'); assert.equal(stopped.events.length, 1)
-    console.log('PROBE PEG-037 browser: Settings -> exact owner policy; native delegation -> same queued event for current reviewer; DND -> deferred; Inbox -> rendered recipient and event IDs; keyboard decision -> stopped escalation. Screens captured at 1440 and 390.')
+    await policy(owner, project, [delegate], [], { maxRounds: 1 })
+    const final = await routeTask(owner, project, author, [delegate], 'Final reminder material')
+    await queue(owner); await cron(w, '2030-01-08T10:00:00Z')
+    const finalEpisode = (await log(owner)).find(row => row.route_id === final.route.id)
+    assert.equal(finalEpisode.state, 'exhausted')
+    await recipient.page.goto(w.origin + '/app/inbox')
+    await expect(recipient.page.locator(`[data-route-id="${final.route.id}"]`)).toHaveCount(1)
+    await pass(owner.patch('/api/v1/tasks/' + final.task.id, { description: 'Material changed after the final reminder' }))
+    await page.goto(w.origin + '/app/settings/approval-followup')
+    const outcome = page.locator(`[data-episode-id="${finalEpisode.id}"]`)
+    await expect(outcome).toContainText('cancelled')
+    await expect(outcome).toContainText('material changed')
+    const cancelled = (await log(owner)).find(row => row.id === finalEpisode.id)
+    assert.ok(cancelled.deliveries.every(row => row.state === 'cancelled' && row.next_at === null))
+    await capture('cancelled-final-outcome', page); await flat(page)
+    await recipient.page.goto(w.origin + '/app/inbox')
+    await expect(recipient.page.locator('[data-notice-id]')).toHaveCount(0)
+    console.log('PROBE PEG-037 browser: Settings -> exact owner policy; native delegation -> same queued event for current reviewer; DND -> deferred; Inbox -> rendered recipient and event IDs; keyboard decision -> stopped escalation; changed final material -> visible cancellation outcome. Screens captured at 1440 and 390.')
   } finally { await manager.context.close(); await recipient.context.close() }
 }

@@ -199,7 +199,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "473dbbb5e74e6b6af00c1e12bc0202cf245bf48ea4bf99fc5f747167c4688415",
+      "sha256": "df372aff072a7ffc02906837a53eee29a2b146d01258329fcdc3736f97f2f195",
       "executable": false
     },
     "AGENTS.md": {
@@ -215,7 +215,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "4079ef52edf1479fc58620cd1ed3618f31e56e8079c69d84ffa5a8933b9d7bdf",
+      "sha256": "0881ca26a4db9325215ce6800f879b1ccb52c4b338b55b1f60cf4e9eae11a706",
       "executable": false
     },
     "DEMO.md": {
@@ -243,7 +243,7 @@
       "executable": false
     },
     "docs/CLAIMS.md": {
-      "sha256": "f5a2787b155ae57567385988d378b57ffb740308c8bd03aac3e9f482fa2e7de5",
+      "sha256": "d0daa6cec04093387a41d06786217221f251d3861a8784c5a6e86b8774e27440",
       "executable": false
     },
     "docs/DATA-CUSTODY.md": {
@@ -323,7 +323,7 @@
       "executable": false
     },
     "management/integration/deployment-spec.json": {
-      "sha256": "b86cbf52bef3bcd004a100adc3e6b19f3dd44160e9ae0b305a7f82a53b90037b",
+      "sha256": "9da8daf2db8b5c4580fc5d135ded951bdd1967971b9bbc92bc013b0774e2e577",
       "executable": false
     },
     "migrations/core/0001_owner.sql": {
@@ -680,6 +680,10 @@
     },
     "migrations/core/0085_approval_followup.sql": {
       "sha256": "b99a34a1d278067bd0c18023286674cc1aaad1e412b7cd96c6db59627543e884",
+      "executable": false
+    },
+    "migrations/core/0086_approval_followup_cancellation.sql": {
+      "sha256": "9e4611041117fbe9cec53c9719e323bacd4fda782ab0f5a77886b7fb024005bd",
       "executable": false
     },
     "migrations/core/0086_intake_decisions.sql": {
@@ -3395,7 +3399,7 @@
       "executable": false
     },
     "src/pegboard/data/erasure.ts": {
-      "sha256": "fb0501692c2211a17d2853a5125e1111c28c3d2b3b9fe0850e0f2a7ec337791c",
+      "sha256": "4e3cdaca5d0b24e1754de154cea4f81e5e82f8b6c961c7ab40bbcc0ed17bb598",
       "executable": false
     },
     "src/pegboard/data/expiry.ts": {
@@ -3495,7 +3499,7 @@
       "executable": false
     },
     "src/pegboard/notices/approval-followup.ts": {
-      "sha256": "12ce0d23b723f1987f6f2a2e42a10ca636c219a46c53685e076557bae929c919",
+      "sha256": "b66d7911c084019b61bd33cea28a579e70b7519b96119af9fa9c70d5e2817416",
       "executable": false
     },
     "src/pegboard/notices/approval-policy.ts": {
@@ -3871,7 +3875,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/data.tsx": {
-      "sha256": "c6d4f8cc9eab5eee36e9517104925dfd89fd7dd46a3a51ab1c1c1ce2ace82c35",
+      "sha256": "f239ccfaf61f3767d5cd83fef128d353a0eb40ef1da03e11db3b4a609a8f103a",
       "executable": false
     },
     "src/pegboard/ui/pages/decision.tsx": {
@@ -4275,7 +4279,7 @@
       "executable": false
     },
     "tests/journeys/approval-followup.mjs": {
-      "sha256": "b330492f48a20f93c9a707eef3c4fded09efe7a716c4b74c4f393d31535f99cc",
+      "sha256": "bb82e535fda52977eb026cc9376e59c2596ebf06de791b03965005def94bc6c6",
       "executable": false
     },
     "tests/journeys/approval-routing.mjs": {
@@ -4311,7 +4315,7 @@
       "executable": false
     },
     "tests/journeys/intake-decisions.mjs": {
-      "sha256": "c7e44ff38ff4562fb7447430c81fbb02f1183da2d4b439da1c51d88de273e7b0",
+      "sha256": "37a97b4c21563ccb705c740a11a741a9fb4b3a098c3c602a462759a56f48a72e",
       "executable": false
     },
     "tests/journeys/intake-erasure.mjs": {
@@ -4411,7 +4415,7 @@
       "executable": false
     },
     "tests/scenarios/approval-followup.mjs": {
-      "sha256": "b8850afc4a0953e8b5c2b15d88135ee4a8b3758889c703abd36f42d55d698fab",
+      "sha256": "e4a66d0b68ad6bb9a84a8f243586ada0d3c5d5d3818c727093967bc2ae01bd07",
       "executable": false
     },
     "tests/scenarios/calendar-blocks.mjs": {
@@ -4423,7 +4427,7 @@
       "executable": false
     },
     "tests/scenarios/intake-decisions.mjs": {
-      "sha256": "280480e70dfae1475103d8ddad3b15ccc09b633d81b695c00f434d2aa56cf2b2",
+      "sha256": "9a34b37be8cd3e8c0e2104d5047554e54d2deb6c0f86c44c61091fe2e90aae7d",
       "executable": false
     },
     "tests/scenarios/intake-erasure.mjs": {
