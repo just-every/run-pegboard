@@ -43,7 +43,7 @@ async function attempt(work: () => Promise<void>) {
 /** Enqueue only. The unique route episode and ordinal fence survive replay and process restarts. */
 export async function scheduleApprovalFollowups(db: D1Database, workspace?: string, at = now()) {
   const routes = await all<Route & { workspace_id: string }>(db, `SELECT r.*,t.workspace_id FROM peg_approval_routes r JOIN peg_tasks t ON t.id=r.task_id
-    WHERE r.kind='task' AND r.due_at IS NOT NULL AND r.due_at<=? AND r.withdrawn_at IS NULL AND r.followup_invalidated_at IS NULL
+    WHERE r.kind='task' AND r.due_at IS NOT NULL AND r.due_at<=? AND r.withdrawn_at IS NULL AND r.followup_invalidated_at IS NULL AND NOT EXISTS(SELECT 1 FROM peg_approval_followup_episodes p WHERE p.route_id=r.id)
     ${workspace ? 'AND t.workspace_id=?' : ''} ORDER BY r.due_at,r.id LIMIT 200`, at, ...(workspace ? [workspace] : []))
   for (const route of routes) await attempt(async () => {
     const rev = await revision(db), policy = await currentFollowupPolicy(db, route.workspace_id)
@@ -55,7 +55,7 @@ export async function scheduleApprovalFollowups(db: D1Database, workspace?: stri
     await guarded(db, rev, [bound(db, `INSERT OR IGNORE INTO peg_approval_followup_episodes(id,route_id,version,policy_id,workspace_id,state,created_at,next_at,round)
       VALUES(?,?,?,?,?,'active',?,?,0)`, [newId('followup'), route.id, route.version, policy.id, route.workspace_id, at, route.due_at])])
   })
-  for (const episode of await all<Episode>(db, `SELECT * FROM peg_approval_followup_episodes WHERE state='active' ${workspace ? 'AND workspace_id=?' : ''} ORDER BY created_at,id LIMIT 200`, ...(workspace ? [workspace] : []))) await attempt(async () => {
+  for (const episode of await all<Episode>(db, `SELECT * FROM peg_approval_followup_episodes WHERE state='active' ${workspace ? 'AND workspace_id=?' : ''} ORDER BY next_at IS NULL,next_at,created_at,id LIMIT 200`, ...(workspace ? [workspace] : []))) await attempt(async () => {
     const rev = await revision(db), context = await current(db, episode)
     if (context.cause) return end(db, episode, context.cause, rev)
     const policy = context.policy!
@@ -77,7 +77,7 @@ export async function scheduleApprovalFollowups(db: D1Database, workspace?: stri
 /** Dispatch reselects the current routed reviewers, then commits preferences and authority under one fence. */
 export async function dispatchApprovalFollowups(db: D1Database, workspace?: string, at = now()) {
   const pending = await all<Event & { workspace_id: string }>(db, `SELECT e.*,p.workspace_id FROM peg_approval_followup_events e JOIN peg_approval_followup_episodes p ON p.id=e.episode_id
-    WHERE p.state='active' AND e.state IN ('queued','deferred') ${workspace ? 'AND p.workspace_id=?' : ''} ORDER BY e.queued_at,e.id LIMIT 200`, ...(workspace ? [workspace] : []))
+    WHERE p.state='active' AND e.state IN ('queued','deferred') ${workspace ? 'AND p.workspace_id=?' : ''} ORDER BY COALESCE(e.next_at,e.queued_at),e.queued_at,e.id LIMIT 200`, ...(workspace ? [workspace] : []))
   for (const event of pending) await attempt(async () => {
     const rev = await revision(db), episode = (await first<Episode>(db, 'SELECT * FROM peg_approval_followup_episodes WHERE id=?', event.episode_id))!, context = await current(db, episode)
     if (context.cause) return end(db, episode, context.cause, rev)
@@ -113,9 +113,9 @@ export async function processApprovalFollowups(db: D1Database, workspace?: strin
 }
 export interface ApprovalNotice { id: string; eventId: string; episodeId: string; routeId: string; version: string; recipientId: string; title: string; href: string; kind: string; state: string; cause: string | null; nextEligibleAt: number | null; visibleAt: number | null }
 export async function approvalFollowupInbox(db: D1Database, person: Actor, workspace: string) {
+  const rev = await revision(db)
   const preferences = await approvalPreferences(db, person, workspace), notices: ApprovalNotice[] = [], deferred: ApprovalNotice[] = []
   if (!preferences.enabled || preferences.muted) return { notices, deferred, preferences }
-  const rev = await revision(db)
   const rows = await all<Delivery & { episode_id: string; kind: string }>(db, `SELECT d.*,e.episode_id,e.kind FROM peg_approval_followup_deliveries d JOIN peg_approval_followup_events e ON e.id=d.event_id JOIN peg_approval_followup_episodes p ON p.id=e.episode_id
     WHERE p.workspace_id=? AND p.state IN ('active','exhausted') AND d.recipient_id=? AND d.state IN ('visible','deferred') ORDER BY e.queued_at DESC,e.id`, workspace, person.id)
   for (const row of rows) {

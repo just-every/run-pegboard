@@ -215,7 +215,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "da3336d4db14064348588c4bd896ef22135106cd094205a752ffe845ada7dd7f",
+      "sha256": "0a379712c770bccceab71d7250147fa9dfea0c225ddd3b6ecb028635075c234b",
       "executable": false
     },
     "DEMO.md": {
@@ -323,7 +323,7 @@
       "executable": false
     },
     "management/integration/deployment-spec.json": {
-      "sha256": "d55e3edd727da66cbd8eda1bb6ee70e38558c76344ca7b9bfeab67a83b37b85f",
+      "sha256": "b86cbf52bef3bcd004a100adc3e6b19f3dd44160e9ae0b305a7f82a53b90037b",
       "executable": false
     },
     "migrations/core/0001_owner.sql": {
@@ -674,12 +674,12 @@
       "sha256": "3cc582725f58b44f55b2bfccf5fb76f822e4f29fc37f5b37df592d8000b3b0fc",
       "executable": false
     },
-    "migrations/core/0084_approval_followup.sql": {
-      "sha256": "01d4cf4ccd1328fe3cfeb1f723e8fe938dcda66e266af2f632714c72e9a08389",
-      "executable": false
-    },
     "migrations/core/0084_intake_person_erasure.sql": {
       "sha256": "b880e0b3b00f158471ce63be4f7df391e85d227440e7c9736d2230103981afc4",
+      "executable": false
+    },
+    "migrations/core/0085_approval_followup.sql": {
+      "sha256": "b99a34a1d278067bd0c18023286674cc1aaad1e412b7cd96c6db59627543e884",
       "executable": false
     },
     "ONBOARDING.md": {
@@ -3483,7 +3483,7 @@
       "executable": false
     },
     "src/pegboard/notices/approval-followup.ts": {
-      "sha256": "6a7fda8a0a24854e30bf40f903bc29204fc806be9dec501c38c0d0ec0419969e",
+      "sha256": "12ce0d23b723f1987f6f2a2e42a10ca636c219a46c53685e076557bae929c919",
       "executable": false
     },
     "src/pegboard/notices/approval-policy.ts": {
@@ -3883,7 +3883,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/inbox.tsx": {
-      "sha256": "8e39760c01ffffeacb6854ae96b0dadb0d6bded93c689efad4d2c0a0c5d2ab69",
+      "sha256": "70d3976836456535a148f0169878b762b2d851494ed9b05ecc8b31fb148faa49",
       "executable": false
     },
     "src/pegboard/ui/pages/intake.tsx": {
@@ -4099,7 +4099,7 @@
       "executable": false
     },
     "src/server.ts": {
-      "sha256": "9b341dbb622586b6a06c4ec96ab3946814b2d4f7b812aa4a705e9e38e54da9e1",
+      "sha256": "2b990084b7fa9053d25322187fb4440f523b898266484ca76e908034625cc2b1",
       "executable": false
     },
     "src/site/copy.ts": {
@@ -4263,7 +4263,7 @@
       "executable": false
     },
     "tests/journeys/approval-followup.mjs": {
-      "sha256": "cb1dfd2f9e420ab340b35c47bf0cc3b0cf3d6fb8b20b2a5660cce95ec3c371a9",
+      "sha256": "b330492f48a20f93c9a707eef3c4fded09efe7a716c4b74c4f393d31535f99cc",
       "executable": false
     },
     "tests/journeys/approval-routing.mjs": {
@@ -4395,7 +4395,7 @@
       "executable": false
     },
     "tests/scenarios/approval-followup.mjs": {
-      "sha256": "bc09d8fa7321f373221d8990466ff7c3cfd9a9d4bfc6474bc33f02ea872ad912",
+      "sha256": "b8850afc4a0953e8b5c2b15d88135ee4a8b3758889c703abd36f42d55d698fab",
       "executable": false
     },
     "tests/scenarios/calendar-blocks.mjs": {

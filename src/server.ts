@@ -38,7 +38,7 @@ function noTransform(response: Response): Response {
 }
 
 export default withDemo<Bindings, ExportedHandler<Bindings>>({
-  async scheduled(_event, env, execution) { execution.waitUntil(processApprovalFollowups(runtimeBindings(env).DB, undefined, _event.scheduledTime).then(()=>processProjectRequests(runtimeBindings(env).DB, {origin:env.AUTH_ORIGIN,from:env.MAIL_FROM,mail:operatorMail(runtimeBindings(env))})).then(()=>escalateIntake(runtimeBindings(env).DB)).then(()=>expireDue(runtimeBindings(env).DB)).then(()=>processRecurrences(runtimeBindings(env).DB)).then(()=>processBundleJobs(runtimeBindings(env).DB)).then(()=>processReports(runtimeBindings(env).DB)).then(()=>{const e=runtimeBindings(env);return processApprovalReminders(e.DB,{origin:e.AUTH_ORIGIN,from:e.MAIL_FROM,mail:approvalMail(e)})})) },
+  async scheduled(_event, env, execution) { execution.waitUntil(processApprovalFollowups(runtimeBindings(env).DB, undefined, Math.max(_event.scheduledTime, Date.now())).then(()=>processProjectRequests(runtimeBindings(env).DB, {origin:env.AUTH_ORIGIN,from:env.MAIL_FROM,mail:operatorMail(runtimeBindings(env))})).then(()=>escalateIntake(runtimeBindings(env).DB)).then(()=>expireDue(runtimeBindings(env).DB)).then(()=>processRecurrences(runtimeBindings(env).DB)).then(()=>processBundleJobs(runtimeBindings(env).DB)).then(()=>processReports(runtimeBindings(env).DB)).then(()=>{const e=runtimeBindings(env);return processApprovalReminders(e.DB,{origin:e.AUTH_ORIGIN,from:e.MAIL_FROM,mail:approvalMail(e)})})) },
   async fetch(request, env, execution) {
     const intake = await publicIntakePage(request, env)
     if (intake) return intake
