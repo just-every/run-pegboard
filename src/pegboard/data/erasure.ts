@@ -1,3 +1,4 @@
+import { decisionErasureScope, decisionErasureStatements } from '../intake/decisions'
 import { formErasureScope, formErasureStatements } from '../intake/forms'
 import { submissionErasureScope, submissionErasureStatements } from '../intake/submissions'
 import {capacityErasureSources,capacityErasureStatements} from '../capacity/custody'
@@ -120,6 +121,8 @@ export async function erasurePlan(db:D1Database,actor:Actor,workspace:string,typ
     await take('peg_recurring_grants',`grant_id IN(SELECT id FROM peg_grants WHERE (object_type='task' AND ${scoped('object_id')}) OR (object_type='project' AND ${projectScoped('object_id')}))`,[...tasks,...projects])
     for(const table of ['peg_grants','peg_approvers','peg_template_origins'])await take(table,`(object_type='task' AND ${scoped('object_id')}) OR (object_type='project' AND ${projectScoped('object_id')})`,[...tasks,...projects])
     await take('peg_task_projects',`${scoped('task_id')} OR ${projectScoped('project_id')}`,[...tasks,...projects])
+    await take('peg_intake_decisions',`${scoped('task_id')} OR ${projectScoped('project_id')}`,[...tasks,...projects])
+    await take('peg_intake_decision_policies',projectScoped('project_id'),projects)
     await take('peg_tasks',scoped('id'),tasks)
     await take('peg_webhooks',projectScoped('project_id'),projects)
     await take('peg_intake_submissions',`form_id IN(SELECT id FROM peg_intake_forms WHERE ${projectScoped('project_id')})`,projects)
@@ -132,12 +135,13 @@ export async function erasurePlan(db:D1Database,actor:Actor,workspace:string,typ
     await take('peg_projects',projectScoped('id'),projects)
   }
   if(proofFiles.length)await take('peg_attachments',`id IN (${placeholders(proofFiles)})`,proofFiles)
-  const intake=type==='person'?{forms:await formErasureScope(db,id),submissions:await submissionErasureScope(db,id)}:null
+  const decisionActors=type==='person'?await decisionErasureScope(db,id):[]
+  const intake=type==='person'?{...(decisionActors.length?{decisions:decisionActors}:{}),forms:await formErasureScope(db,id),submissions:await submissionErasureScope(db,id)}:null
   const affectedTasks=new Set(tasks)
   const feedbackKeys=selections.find(s=>s.table==='peg_proof_feedback')?.keys.map(k=>k.id)??[]
   const feedbackScope=await all<{task_id:string;proof_id:string;attachment_id:string;author_id:string}>(db,`SELECT p.task_id,f.proof_id,f.attachment_id,f.author_id FROM peg_proof_feedback f JOIN peg_proofs p ON p.id=f.proof_id WHERE f.id IN (${placeholders(feedbackKeys)})`,...feedbackKeys)
   for(const pin of feedbackScope)affectedTasks.add(pin.task_id)
-  if(intake)for(const row of intake.submissions)affectedTasks.add(row.taskId)
+  if(intake)for(const row of [...intake.submissions,...decisionActors])affectedTasks.add(row.taskId)
   if(proofs.length)for(const proof of await all<{task_id:string}>(db,`SELECT task_id FROM peg_proofs WHERE id IN (${placeholders(proofs)})`,...proofs))affectedTasks.add(proof.task_id)
   if(projects.length){const roots=(await all<{task_id:string}>(db,`SELECT task_id FROM peg_task_projects WHERE project_id IN (${placeholders(projects)})`,...projects)).map(t=>t.task_id);for(const t of await descendants(db,roots))affectedTasks.add(t.id)}
   if(type==='attachment'){
@@ -146,7 +150,7 @@ export async function erasurePlan(db:D1Database,actor:Actor,workspace:string,typ
   if(type==='person'){
     for(const t of await all<{task_id:string}>(db,'SELECT task_id FROM peg_comments WHERE author_id=? UNION SELECT task_id FROM peg_attachments WHERE created_by=? UNION SELECT task_id FROM peg_agent_outputs WHERE actor_id=?',id,id,id))affectedTasks.add(t.task_id)
   }
-  const affected=[...affectedTasks], relatedProjects=new Set([...projects,...(intake?.forms.map(f=>f.projectId)??[]),...(intake?.submissions.map(s=>s.projectId)??[])]), relatedPeople=new Set<string>()
+  const affected=[...affectedTasks], relatedProjects=new Set([...projects,...(intake?.forms.map(f=>f.projectId)??[]),...(intake?.submissions.map(s=>s.projectId)??[]),...decisionActors.map(s=>s.projectId)]), relatedPeople=new Set<string>()
   for(const pin of feedbackScope)relatedPeople.add(pin.author_id)
   for(const r of await all<{project_id:string}>(db,`SELECT project_id FROM peg_task_projects WHERE task_id IN (${placeholders(affected)})`,...affected))relatedProjects.add(r.project_id)
   for(const r of await all<{person:string}>(db,`SELECT owner_id person FROM peg_tasks WHERE id IN (${placeholders(affected)}) UNION SELECT creator_id person FROM peg_tasks WHERE id IN (${placeholders(affected)}) UNION SELECT author_id person FROM peg_comments WHERE task_id IN (${placeholders(affected)}) UNION SELECT created_by person FROM peg_attachments WHERE task_id IN (${placeholders(affected)})`,...affected,...affected,...affected,...affected))relatedPeople.add(r.person)
@@ -168,6 +172,7 @@ export async function erasurePlan(db:D1Database,actor:Actor,workspace:string,typ
   }
   const counts=Object.fromEntries(selections.map(s=>[s.table,s.keys.length]))
   if(intake){
+    if(decisionActors.length){counts.intake_decision_actors=decisionActors.length;retained.intake_decision_provenance=decisionActors.length}
     counts.intake_submission_sources=intake.submissions.filter(s=>s.source).length
     counts.intake_submission_triagers=intake.submissions.filter(s=>s.triager).length
     counts.intake_form_authors=intake.forms.filter(f=>f.author).length
@@ -208,6 +213,7 @@ export async function erase(db:D1Database,actor:Actor,workspace:string,input:Rec
     for(const task of plan.tasks)statements.push(bound(db,"INSERT INTO peg_data_erased_objects VALUES('task',?,?)",[task,at]))
     for(const project of plan.projects)statements.push(bound(db,"INSERT INTO peg_data_erased_objects VALUES('project',?,?)",[project,at]))
     if(plan.type==='person'){
+      statements.push(...decisionErasureStatements(db,plan.id))
       statements.push(...submissionErasureStatements(db,plan.id,plan.intake!.submissions),...formErasureStatements(db,plan.id,plan.intake!.forms,at))
       statements.push(...capacityErasureStatements(db,plan.id,plan.capacitySources))
       statements.push(bound(db,'INSERT OR IGNORE INTO peg_erased_people VALUES(?,?)',[plan.id,at]),bound(db,"UPDATE oa_operators SET email=?,display_name='Erased actor',version=version+1 WHERE id=? AND status<>'active' AND role<>'owner'",[`erased-${plan.id}@invalid.example`,plan.id]))

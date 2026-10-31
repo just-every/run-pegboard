@@ -1,3 +1,4 @@
+import { approveDecisionPolicy, decisionPolicy, previewDecision, decideIntake, decisionHistory } from '../intake/decisions'
 import { createElement as h } from 'react'
 import type { Hono } from 'hono'
 import { runtimeBindings, type Bindings } from '../../auth.server'
@@ -37,6 +38,11 @@ export async function publicIntakePage(request:Request,original:Bindings):Promis
  }catch(error){const failure=describe(error);return json({error:failure.status>=500?'intake_unavailable':failure.code},failure.status)}
 }
 export function intakeRoutes(app:Hono<{Bindings:Bindings}>) {
+ app.get('/projects/:id/intake/policy',door(({db,actor,params})=>decisionPolicy(db,actor,params.id)))
+ app.post('/projects/:id/intake/policy',door(({db,actor,params,input})=>approveDecisionPolicy(db,actor,params.id,input)))
+ app.post('/intake/submissions/:id/decision-preview',door(({db,actor,params,input})=>previewDecision(db,actor,params.id,input)))
+ app.post('/intake/submissions/:id/decision',door(({db,actor,params,input})=>decideIntake(db,actor,params.id,input)))
+ app.get('/intake/submissions/:id/decisions',door(({db,actor,params})=>decisionHistory(db,actor,params.id)))
  app.post('/projects/:id/intake/forms',door(async({db,actor,params,input,form})=>{
   const value=form?{name:input.name,fields:[{id:'title',label:input.titleLabel,required:true},{id:'kind',label:input.branchLabel,required:true,choices:String(input.choices??'').split(',').map(v=>v.trim())},{id:'details',label:input.detailLabel,required:true,when:{field:'kind',equals:input.branchValue}}],mapping:{title:'title',description:['kind','details'],ownerId:input.ownerId,priority:input.priority},hours:input.hours}:input
   const result=await saveForm(db,actor,params.id,value)
