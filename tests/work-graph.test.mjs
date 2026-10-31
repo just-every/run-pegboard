@@ -1,3 +1,4 @@
+import {proofFollowupScenario,proofFollowupCustodyScenario} from './scenarios/proof-followup.mjs'
 import { approvalFollowupRoutingScenario, approvalFollowupAuthorityScenario } from './scenarios/approval-followup.mjs'
 import { intakeErasureScenario } from './scenarios/intake-erasure.mjs'
 import { intakeScenario } from './scenarios/intake.mjs'
@@ -2473,4 +2474,12 @@ describe('Native approval follow-up', {concurrency:false},()=>{
  after(()=>worker?.stop())
  it('routes finite internal follow-up through working hours, DND, queued delegation, restart and a real decision',async()=>approvalFollowupRoutingScenario(worker))
  it('cancels obsolete follow-up and refuses hidden, revoked, deactivated and muted recipients without reviving old episodes',async()=>approvalFollowupAuthorityScenario(worker))
+})
+
+describe('Proof follow-through', {concurrency:false},()=>{
+ let worker
+ before(async()=>{worker=await startWorker()},{timeout:120000})
+ after(()=>worker?.stop())
+ it('follows human revisions until the independent current-version quorum with byte-bound identities and replay safety',async()=>proofFollowupScenario(worker))
+ it('fences authority, explicit owner stop, exact erasure holds and inactive native restoration',async()=>proofFollowupCustodyScenario(worker))
 })

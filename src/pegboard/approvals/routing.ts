@@ -49,7 +49,7 @@ function parse(input:Record<string,any>){
  if(!['ordered','parallel'].includes(input.mode))throw invalid('approval_mode')
  return {stages,mode:input.mode as 'ordered'|'parallel',dueAt:timestamp(input.dueAt),reminderAt:timestamp(input.reminderAt)}
 }
-async function independent(db:D1Database,taskId:string,owner:string,person:string){
+export async function independent(db:D1Database,taskId:string,owner:string,person:string){
  const epoch=(await first<{n:number}>(db,'SELECT COUNT(*) n FROM peg_task_decisions WHERE task_id=?',taskId))!.n
  return person!==owner&&!await first(db,'SELECT 1 FROM peg_approval_owners WHERE task_id=? AND epoch=? AND owner_id=?',taskId,epoch,person)
 }
@@ -94,6 +94,7 @@ export async function decideRoute(db:D1Database,actor:Actor,id:string,input:Reco
  const finishes=input.action==='approve'&&view.stages.every((s,i)=>s.complete||(i===view.stage&&s.approved+1>=s.quorum))
  if(view.kind==='task'&&(finishes||input.action!=='approve'))statements.push(bound(db,'INSERT INTO peg_task_decisions VALUES(?,?,?,?,?,?,?)',[decision,view.taskId,actor.id,at,view.version,input.action,input.reason.trim()]),bound(db,'INSERT INTO peg_decision_guards VALUES(?)',[view.taskId]),bound(db,'UPDATE peg_tasks SET status=?,completed_at=?,updated_at=? WHERE id=?',[finishes?'done':'todo',finishes?at:null,at,view.taskId]),bound(db,'DELETE FROM peg_decision_guards WHERE task_id=?',[view.taskId]))
  if(view.kind==='proof'&&(finishes||input.action!=='approve'))statements.push(bound(db,'INSERT INTO peg_proof_decisions VALUES(?,?,?,?,?,?,?)',[decision,view.subjectId,view.version,actor.id,input.action,at,input.reason.trim()]))
+ if(view.kind==='proof')statements.push(bound(db,"UPDATE peg_proof_followup_episodes SET state=?,cause=?,next_at=CASE WHEN ?='approved' THEN NULL ELSE next_at END WHERE route_id=? AND version_id=? AND state IN ('active','awaiting_revision')",[finishes?'approved':input.action==='approve'?'active':'awaiting_revision',finishes?'current_human_quorum':input.action==='approve'?'partial_human_quorum':'human_requested_revision',finishes?'approved':'open',id,view.version]))
  statements.push(permanentEvent(db,{workspace:(await subject(db,actor,view.kind,view.subjectId)).task.workspace_id,actor:actor.id,action:'approval.'+input.action,type:'approval',id,metadata:{decisionId:decision}}))
  await guarded(db,view.rev,statements)
  return {id:decision,version:view.version,action:input.action,state:finishes?'approved':input.action==='approve'?'pending':input.action==='changes'?'changes_requested':'rejected'}

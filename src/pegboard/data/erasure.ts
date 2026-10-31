@@ -81,6 +81,11 @@ export async function erasurePlan(db:D1Database,actor:Actor,workspace:string,typ
     if(type==='project'&&affected.some(p=>!tasks.includes(p.task_id)))blockers.push('shared_proof_requires_explicit_proof_erasure')
   }
   const routes=await all<{id:string}>(db,`SELECT id FROM peg_approval_routes WHERE task_id IN (${placeholders(tasks)}) OR (kind='proof' AND subject_id IN (${placeholders(proofs)}))`,...tasks,...proofs)
+  if(proofs.length){
+    const proofScope=`proof_id IN (${placeholders(proofs)})`, episodeScope=`episode_id IN (SELECT id FROM peg_proof_followup_episodes WHERE ${proofScope})`
+    for(const table of ['peg_proof_followup_outcomes','peg_proof_followup_events','peg_proof_followup_bindings'])await take(table,episodeScope,proofs)
+    await take('peg_proof_followup_episodes',proofScope,proofs)
+  }
   if(routes.length){const ids=routes.map(r=>r.id),scope=`route_id IN (${placeholders(ids)})`;await take('peg_approval_reminders',`link_id IN (SELECT id FROM peg_approval_links WHERE ${scope})`,ids);await take('peg_approval_links',scope,ids);await take('peg_approval_votes',scope,ids);await take('peg_approval_routes',`id IN (${placeholders(ids)})`,ids)}
   if(proofs.length){
     proofFiles=(await all<{attachment_id:string}>(db,`SELECT attachment_id FROM peg_proof_versions WHERE proof_id IN (${placeholders(proofs)})`,...proofs)).map(r=>r.attachment_id)
@@ -88,6 +93,7 @@ export async function erasurePlan(db:D1Database,actor:Actor,workspace:string,typ
     await take('peg_proofs',`id IN (${placeholders(proofs)})`,proofs)
   }
   if(type==='person'){
+    if(await first(db,'SELECT 1 FROM peg_proof_followup_episodes WHERE accountable_id=? OR created_by=?',id,id))blockers.push('review_proof_followup_custody_before_erasure')
     await take('peg_agent_retrieval','output_id IN(SELECT id FROM peg_agent_outputs WHERE actor_id=?)',[id]);await take('peg_agent_outputs','actor_id=?',[id])
   }
   if(tasks.length||projects.length){
