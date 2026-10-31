@@ -101,7 +101,10 @@ export async function erasurePlan(db:D1Database,actor:Actor,workspace:string,typ
     if(await first(db,`SELECT 1 FROM peg_work_templates WHERE source_id IN (${placeholders(sourceIds)}) OR ${sourceIds.map(()=>"instr(snapshot,?)>0").join(' OR ')}`,...sourceIds,...sourceIds))blockers.push('review_recurring_snapshot_custody_before_erasure')
     if(projects.length&&await first(db,`SELECT 1 FROM peg_field_definitions f WHERE authority_project IN (${placeholders(projects)}) AND EXISTS(SELECT 1 FROM peg_project_fields p WHERE p.field_id=f.id AND p.project_id NOT IN (${placeholders(projects)}))`,...projects,...projects))blockers.push('transfer_shared_field_authority_before_erasure')
     const scoped=(column:string)=>`${column} IN (${placeholders(tasks)})`, projectScoped=(column:string)=>`${column} IN (${placeholders(projects)})`
-    const focusIds=(await all<{review_id:string}>(db,`SELECT DISTINCT review_id FROM peg_focus_subjects WHERE ${scoped('task_id')}`,...tasks)).map(r=>r.review_id)
+    const focusIds=(await all<{review_id:string}>(db,`SELECT DISTINCT review_id FROM peg_focus_subjects WHERE ${scoped('task_id')}
+      UNION SELECT r.id review_id FROM peg_focus_reviews r WHERE EXISTS(
+        SELECT 1 FROM json_each(r.body,'$.locks') l JOIN peg_calendar_blocks b ON b.id=json_extract(l.value,'$.block_id') WHERE ${scoped('b.task_id')})
+      OR EXISTS(SELECT 1 FROM peg_calendar_blocks b WHERE b.id=json_extract(r.body,'$.blockId') AND ${scoped('b.task_id')})`,...tasks,...tasks,...tasks)).map(r=>r.review_id)
     for(const table of ['peg_focus_operations','peg_focus_subjects'])await take(table,`review_id IN (${placeholders(focusIds)})`,focusIds)
     await take('peg_focus_reviews',`id IN (${placeholders(focusIds)})`,focusIds)
     await take('peg_focus_locks',`block_id IN(SELECT id FROM peg_calendar_blocks WHERE ${scoped('task_id')})`,tasks)
@@ -141,9 +144,11 @@ export async function erasurePlan(db:D1Database,actor:Actor,workspace:string,typ
   if(proofFiles.length)await take('peg_attachments',`id IN (${placeholders(proofFiles)})`,proofFiles)
   const intake=type==='person'?{forms:await formErasureScope(db,id),submissions:await submissionErasureScope(db,id)}:null
   const affectedTasks=new Set(tasks)
-  if(type==='person'){
+  {
     const focusIds=selections.find(s=>s.table==='peg_focus_reviews')?.keys.map(k=>String(k.id))??[]
-    for(const s of await all<{task_id:string}>(db,`SELECT task_id FROM peg_focus_subjects WHERE review_id IN (${placeholders(focusIds)})`,...focusIds))affectedTasks.add(s.task_id)
+    for(const s of await all<{task_id:string}>(db,`SELECT task_id FROM peg_focus_subjects WHERE review_id IN (${placeholders(focusIds)})
+      UNION SELECT b.task_id FROM peg_focus_reviews r JOIN json_each(r.body,'$.locks') l JOIN peg_calendar_blocks b ON b.id=json_extract(l.value,'$.block_id') WHERE r.id IN (${placeholders(focusIds)})
+      UNION SELECT b.task_id FROM peg_focus_reviews r JOIN peg_calendar_blocks b ON b.id=json_extract(r.body,'$.blockId') WHERE r.id IN (${placeholders(focusIds)})`,...focusIds,...focusIds,...focusIds))affectedTasks.add(s.task_id)
   }
   if(intake)for(const row of intake.submissions)affectedTasks.add(row.taskId)
   if(proofs.length)for(const proof of await all<{task_id:string}>(db,`SELECT task_id FROM peg_proofs WHERE id IN (${placeholders(proofs)})`,...proofs))affectedTasks.add(proof.task_id)
