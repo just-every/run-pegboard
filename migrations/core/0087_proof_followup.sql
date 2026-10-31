@@ -78,3 +78,14 @@ CREATE TRIGGER peg_proof_revision_peg_proof_followup_events_delete AFTER DELETE 
 CREATE TRIGGER peg_proof_revision_peg_proof_followup_outcomes_insert AFTER INSERT ON peg_proof_followup_outcomes BEGIN UPDATE peg_personal_revision SET value=value+1 WHERE id=1; UPDATE peg_data_revision SET value=value+1 WHERE id=1; END;
 CREATE TRIGGER peg_proof_revision_peg_proof_followup_outcomes_update AFTER UPDATE ON peg_proof_followup_outcomes BEGIN UPDATE peg_personal_revision SET value=value+1 WHERE id=1; UPDATE peg_data_revision SET value=value+1 WHERE id=1; END;
 CREATE TRIGGER peg_proof_revision_peg_proof_followup_outcomes_delete AFTER DELETE ON peg_proof_followup_outcomes BEGIN UPDATE peg_personal_revision SET value=value+1 WHERE id=1; UPDATE peg_data_revision SET value=value+1 WHERE id=1; END;
+
+-- Restored task ownership or visibility cannot revive an earlier reviewer assignment.
+CREATE TRIGGER peg_proof_task_authority AFTER UPDATE OF owner_id,internal_only ON peg_tasks WHEN OLD.owner_id<>NEW.owner_id OR OLD.internal_only<>NEW.internal_only BEGIN
+ UPDATE peg_proof_followup_episodes SET state='cancelled',cause='task_authority_changed',next_at=NULL WHERE task_id=NEW.id AND state IN ('active','awaiting_revision','awaiting_route');
+END;
+CREATE TRIGGER peg_proof_home_removed AFTER DELETE ON peg_task_projects BEGIN
+ UPDATE peg_proof_followup_episodes SET state='cancelled',cause='proof_context_changed',next_at=NULL WHERE task_id=OLD.task_id AND state IN ('active','awaiting_revision','awaiting_route');
+END;
+CREATE TRIGGER peg_proof_team_changed AFTER UPDATE ON peg_teams BEGIN
+ UPDATE peg_proof_followup_episodes SET state='cancelled',cause='team_authority_changed',next_at=NULL WHERE state IN ('active','awaiting_revision','awaiting_route') AND task_id IN (SELECT tp.task_id FROM peg_task_projects tp JOIN peg_projects p ON p.id=tp.project_id WHERE p.team_id=OLD.id);
+END;

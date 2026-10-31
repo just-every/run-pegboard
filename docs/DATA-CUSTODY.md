@@ -173,3 +173,25 @@ remain explicit acceptance gaps. PEG-057, PEG-059 and PEG-065 stay partial for t
 CT rulings approve scoped redacted audit, owner-reviewed erasure, hold precedence
 and separately consented processor custody; retained identity stores and external
 limits remain disclosed.
+
+## Human proof follow-through
+
+Proof follow-through records contain opaque proof, task, version, route, decision,
+policy, accountable-person and event references. Versions retain their actual
+byte digests. A separate explicitly owner-reviewed policy permits finite internal
+Inbox notices to a current internal proof custodian. This policy sends no new
+external message and creates no agent authority. A human must explicitly review
+continuation on replacement material. Request changes and a partial quorum keep
+work open; only the actual independent quorum on the current reviewed version
+can approve it. Owner stop is recorded separately.
+
+Permanent audit retains content-free transitions and actor references under
+PEG-057. Exact proof erasure previews include episode, binding, notice and outcome
+rows before deleting proof material; current holds and the same stale-review
+fence apply. Person erasure reports a custody blocker when that person is an
+accountable custodian or episode creator, so these references cannot silently
+survive a claimed complete cleanup. Existing approval and proof custody blockers
+remain in force. Native archives retain historical bindings and outcomes but
+export and restore policies disabled, episodes cancelled and all notices inactive.
+Restoring an archive never resumes source authority or queued follow-through.
+The existing erasure journal rejects an older archive after exact erasure.

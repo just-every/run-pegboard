@@ -85,7 +85,7 @@ export async function commitProofEpisode(db:D1Database,person:Actor,proofId:stri
   if(input.token!==p.token||![true,'true','on'].includes(input.consent))throw conflict('proof_followup_review_required')
   const m=await material(db,person,proofId), id=p.episodeId??newId('proofepisode'), at=now(), statements:D1PreparedStatement[]=[]
   if(p.episodeId)statements.push(bound(db,"UPDATE peg_proof_followup_episodes SET route_id=?,version_id=?,digest=?,state='active',cause='human_reviewed_revision',next_at=?,round=0 WHERE id=?",[p.routeId,p.versionId,p.digest,at,id]))
-  else statements.push(bound(db,"INSERT INTO peg_proof_followup_episodes VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,'active',NULL,?,0)",[id,proofId,m.view.taskId,m.opened.task.workspace_id,p.policyId,p.accountableId,p.accountableVersion,person.id,at,p.routeId,p.versionId,p.digest,at]))
+  else statements.push(bound(db,"INSERT INTO peg_proof_followup_episodes VALUES(?,?,?,?,?,?,?,?,?,?,?,?,'active',NULL,?,0)",[id,proofId,m.view.taskId,m.opened.task.workspace_id,p.policyId,p.accountableId,p.accountableVersion,person.id,at,p.routeId,p.versionId,p.digest,at]))
   statements.push(bound(db,'INSERT INTO peg_proof_followup_bindings VALUES(?,?,?,?,?,?,?)',[newId('proofbinding'),id,p.routeId,p.versionId,p.digest,person.id,at]),permanentEvent(db,{workspace:m.opened.task.workspace_id,actor:person.id,action:p.episodeId?'proof_followup.revision_reviewed':'proof_followup.started',type:'proof',id:proofId,metadata:{id,sourceId:p.routeId,scopeDigest:p.digest}}))
   await guarded(db,p.rev,statements)
   return {id,proofId,routeId:p.routeId,versionId:p.versionId,state:'active'}
@@ -147,13 +147,14 @@ export async function proofEpisodeView(db:D1Database,person:Actor,id:string) {
     const events=await all<Event>(db,'SELECT * FROM peg_proof_followup_events WHERE episode_id=? ORDER BY created_at,id',id)
     const outcomes=await all(db,'SELECT * FROM peg_proof_followup_outcomes WHERE episode_id=? ORDER BY id',id)
     const names=routing?.names??{}
-    return {episode:e,title:m.opened.task.title,version:m.version,routing,bindings,events,outcomes,canStop:await workspaceRole(db,person.id,e.workspace_id)==='owner'&&openStates.includes(e.state),token:await digest([person.id,e,await revision(db)]),missing:routing?.stages.map(s=>({name:s.name,quorum:s.quorum,approved:s.approved,people:(s.people??[]).filter(id=>!routing.votes.some(v=>v.actor_id===id)).map(id=>({id,name:names[id]??'Reviewer'}))}))??[]}
+    const rev=await revision(db)
+    return {rev,accountableName:(await operatorRow(db,e.accountable_id))?.display_name??'Unavailable custodian',episode:e,title:m.opened.task.title,version:m.version,routing,bindings,events,outcomes,canStop:await workspaceRole(db,person.id,e.workspace_id)==='owner'&&openStates.includes(e.state),token:await digest([person.id,e,rev]),missing:routing?.stages.map(s=>({name:s.name,quorum:s.quorum,approved:s.approved,people:(s.people??[]).filter(id=>!routing.votes.some(v=>v.actor_id===id)).map(id=>({id,name:names[id]??'Reviewer'}))}))??[]}
   }
 }
 export async function stopProofEpisode(db:D1Database,person:Actor,id:string,input:Record<string,any>) {
   const v=await proofEpisodeView(db,person,id)
   if(!v.canStop)throw forbidden('owner_stop')
-  const rev=await revision(db)
+  const rev=v.rev
   if(v.token!==input.token||![true,'true','on'].includes(input.consent))throw conflict('proof_stop_review_required')
   await guarded(db,rev,[bound(db,"UPDATE peg_proof_followup_episodes SET state='stopped',cause='explicit_owner_stop',next_at=NULL WHERE id=?",[id]),permanentEvent(db,{workspace:v.episode.workspace_id,actor:person.id,action:'proof_followup.stopped',type:'proof',id:v.episode.proof_id,metadata:{id}})])
   return {id,state:'stopped'}

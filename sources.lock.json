@@ -215,7 +215,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "ff6219bc9d904858b2dbdb2035cb33084abf49b614eeadc3677fccf9b580b36a",
+      "sha256": "bdb1e3c8c0cc7483c05e321e7435588943ff888f056744e6462cb4d9afc97b54",
       "executable": false
     },
     "DEMO.md": {
@@ -247,7 +247,7 @@
       "executable": false
     },
     "docs/DATA-CUSTODY.md": {
-      "sha256": "41bdf093f7e913ecefc6bf4201ccdb11987046cdb1dea8baddd86f9a004de98c",
+      "sha256": "fd52dcef889a2575fd97b5d1d1f032a127d3adc1aecbde8341ff9a1f367b009b",
       "executable": false
     },
     "docs/DATA-RECORD-API.md": {
@@ -687,7 +687,7 @@
       "executable": false
     },
     "migrations/core/0087_proof_followup.sql": {
-      "sha256": "5a470ab1d6aa952f1f8e7c83f6cf29d80245771d39d0781365bbcf3c7f7b6714",
+      "sha256": "93f2398ee19a726699face333f1a64d8098cb64c776d8c0759fbb363259a5120",
       "executable": false
     },
     "ONBOARDING.md": {
@@ -3211,7 +3211,7 @@
       "executable": false
     },
     "src/pegboard/approvals/proof-followup.ts": {
-      "sha256": "01bf13a54f0e260ec31468a09bf61756826fa3a63d88eddb255ae2256b766d33",
+      "sha256": "1cc64d4158d58b958d05dae59f1cd9ce036eb96e7d37fa556df14645e907203b",
       "executable": false
     },
     "src/pegboard/approvals/proof-policy.ts": {
@@ -3827,7 +3827,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/approvals.tsx": {
-      "sha256": "fcf9e3c24ce4adc09cdf567b13bef4bd15c58c80caf01e78d77c8ef5297cd659",
+      "sha256": "8eb6472bd9b5e7235a202c2a8999d601cb666c78a5af6e523e3ad94a8ba9725c",
       "executable": false
     },
     "src/pegboard/ui/pages/audit.tsx": {
@@ -3899,7 +3899,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/inbox.tsx": {
-      "sha256": "70d3976836456535a148f0169878b762b2d851494ed9b05ecc8b31fb148faa49",
+      "sha256": "180e12654b6d88e797579eff3716ee1af75178a47b999cf1d2a5a200e4f4bbd9",
       "executable": false
     },
     "src/pegboard/ui/pages/intake.tsx": {
@@ -3940,6 +3940,10 @@
     },
     "src/pegboard/ui/pages/projects.tsx": {
       "sha256": "8186091de5a193cc4e36da6c26995cb3e7a345334cbd4673efa135bfbfe527fa",
+      "executable": false
+    },
+    "src/pegboard/ui/pages/proof-followup.tsx": {
+      "sha256": "d685558b3e8f3dc93ebed649a571d52bf4dc9bfd35aef7dc90ac38dea2a96e40",
       "executable": false
     },
     "src/pegboard/ui/pages/readiness-notices.tsx": {
@@ -4027,7 +4031,7 @@
       "executable": false
     },
     "src/pegboard/ui/routes.ts": {
-      "sha256": "c6523eb1892d690ca5cce4327406c931f64f1b89631748e98d223997b0b85b0a",
+      "sha256": "0168c5147a08978bd3f0b21873bf3c9cbbe8e9af59198f577dccd60b264ffc59",
       "executable": false
     },
     "src/pegboard/ui/schedule-editor.tsx": {
@@ -4342,6 +4346,10 @@
       "sha256": "6ae90056e60cfb189a9eb7aec02d3f86520924c83c671f6b9e16b710a6dc7610",
       "executable": false
     },
+    "tests/journeys/proof-followup.mjs": {
+      "sha256": "9d8c43d5f0349a91d5f6e23b8f35dda7ac73283be8edcf563d3c7f10f59b8a04",
+      "executable": false
+    },
     "tests/journeys/public-api.mjs": {
       "sha256": "e1111a90fabc488e98906dde7a524367b689cb7f8c9993f6e96760830166ef59",
       "executable": false
@@ -4379,7 +4387,7 @@
       "executable": false
     },
     "tests/journeys/work-graph.journey.mjs": {
-      "sha256": "45d4ad565ac697bc0c828623fe20d8d6c95fb64ff1c7ca6dd66376822f357a23",
+      "sha256": "0ebbbcd75bc113d0e1494fe12eeacbc8f3173dc615d9807b4ffcecb56df4e803",
       "executable": false
     },
     "tests/journeys/work-rules.mjs": {
@@ -4435,7 +4443,7 @@
       "executable": false
     },
     "tests/scenarios/proof-followup.mjs": {
-      "sha256": "ec92abe4d0f3788a6f104a4222bdb0d522a637e75b5b62b57901e3d008e44700",
+      "sha256": "2d3d49b7f17397aea02eaa8d8822a7127fc50bd54550dfbb4b69f1aeef311d08",
       "executable": false
     },
     "tests/scenarios/public-api.mjs": {
@@ -4511,7 +4519,7 @@
       "executable": false
     },
     "verification.json": {
-      "sha256": "c614f74fe1d16ea39a4d1e36f50c1162ba5be8822e41a4cb670ca7838eb9e693",
+      "sha256": "cff8138b891fd4ac8b60c6ede4a284b45a33fbacf293471ae4ed9862f336ad0b",
       "executable": false
     },
     "VERIFY-WORKFLOW.md": {

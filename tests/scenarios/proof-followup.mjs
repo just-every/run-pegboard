@@ -32,10 +32,11 @@ export async function fixture(w,n=6700){
  const owner=w.owner, author=await person(w,n,'Creative author'), reviewer=await person(w,n+1,'Internal reviewer'),guest=await person(w,n+2,'Client reviewer','guest');guest.guest=true
  const project=await pass(owner.post('/api/v1/projects',{name:'Human creative review '+n}))
  const task=await pass(owner.post('/api/v1/tasks',{projectId:project.id,title:'Campaign artwork '+n,ownerId:author.id,description:'Human-controlled proof review'}))
- for(const p of [reviewer,guest])await pass(owner.post('/api/v1/grants',{objectType:'task',objectId:task.id,granteeId:p.id,level:'viewer',scope:'approve'}))
+ const shares=[]
+ for(const p of [reviewer,guest])shares.push(await pass(owner.post('/api/v1/grants',{objectType:'task',objectId:task.id,granteeId:p.id,level:'viewer',scope:'approve'})))
  const bytes=proofDocument('synthetic-pegboard-v1'),file=await pass(owner.post(`/api/v1/tasks/${task.id}/attachments?projectId=${project.id}&name=synthetic-pegboard-v1.pdf`,bytes,{'content-type':'application/pdf'}))
  const proof=await pass(owner.post('/api/v1/tasks/'+task.id+'/proofs',{attachmentId:file.id}))
- const f={project,task,proof,author,reviewer,guest,reviewers:[reviewer,guest],versionId:proof.versionId}
+ const f={project,task,proof,author,reviewer,guest,reviewers:[reviewer,guest],shares,versionId:proof.versionId}
  await replace(owner,f,'synthetic-pegboard-v2');await route(owner,f);await policy(owner,project,[owner])
  return f
 }
@@ -47,7 +48,7 @@ export const decide=async(client,route,action)=>{const p=await pass(client.get('
 export async function proofFollowupScenario(w){
  const owner=w.owner,f=await fixture(w),before=await pass(owner.get('/api/v1/tasks/'+f.task.id))
  const p=await preview(owner,f),starts=await Promise.all([1,2].map(()=>owner.post('/api/v1/proofs/'+f.proof.id+'/followup',{accountableId:owner.id,token:p.token,consent:true})))
- assert.equal(starts.filter(r=>r.status===200).length,1);assert.equal(starts.filter(r=>r.status===409).length,1)
+ assert.equal(starts.filter(r=>r.status===200).length,1,JSON.stringify(starts));assert.equal(starts.filter(r=>r.status===409).length,1)
  const episode=starts.find(r=>r.status===200).body
  await pass(owner.post('/api/v1/proof-followup/schedule',{}));assert.deepEqual((await inbox(owner)).notices,[])
  await Promise.all([cron(w),cron(w)])
@@ -103,17 +104,58 @@ export async function proofFollowupCustodyScenario(w){
  const stopping=await view(owner,fresh)
  await pass(owner.post('/api/v1/proof-followup/'+fresh.id+'/stop',{token:stopping.token,consent:true}))
  assert.equal((await view(owner,fresh)).episode.state,'stopped');await cron(w);assert.deepEqual((await inbox(owner)).notices,[])
- const plan=await pass(owner.post('/api/v1/data/erasure/preview',{type:'proof',id:f.proof.id}))
+ const plan=await pass(owner.post('/api/v1/data/erasure-preview',{type:'proof',id:f.proof.id}))
  assert.equal(plan.counts.peg_proof_followup_episodes,2);assert.ok(plan.counts.peg_proof_followup_bindings>=2);assert.ok(plan.counts.peg_proof_followup_events>=1)
  const hold=await pass(owner.post('/api/v1/data/holds',{type:'proof',id:f.proof.id,authority:'synthetic-pegboard-owner-reviewed-hold',expiresAt:Date.parse('2035-01-01T00:00:00Z')}))
- const held=await pass(owner.post('/api/v1/data/erasure/preview',{type:'proof',id:f.proof.id}))
+ const held=await pass(owner.post('/api/v1/data/erasure-preview',{type:'proof',id:f.proof.id}))
  assert.ok(held.blockers.includes('active_legal_hold'))
- await pass(owner.post('/api/v1/data/erasure',{type:'proof',id:f.proof.id,token:plan.token,confirm:true}),409)
- const retained=await pass(owner.post('/api/v1/data/erasure',{type:'proof',id:f.proof.id,token:held.token,confirm:true}));assert.equal(retained.outcome,'retained')
+ await pass(owner.post('/api/v1/data/erase',{type:'proof',id:f.proof.id,token:plan.token,confirm:true}),409)
+ const retained=await pass(owner.post('/api/v1/data/erase',{type:'proof',id:f.proof.id,token:held.token,confirm:true}));assert.equal(retained.outcome,'retained')
  await pass(owner.post('/api/v1/data/holds/'+hold.id+'/release',{confirm:true}))
- const exact=await pass(owner.post('/api/v1/data/erasure/preview',{type:'proof',id:f.proof.id})),erased=await pass(owner.post('/api/v1/data/erasure',{type:'proof',id:f.proof.id,token:exact.token,confirm:true}))
+ const exact=await pass(owner.post('/api/v1/data/erasure-preview',{type:'proof',id:f.proof.id})),erased=await pass(owner.post('/api/v1/data/erase',{type:'proof',id:f.proof.id,token:exact.token,confirm:true}))
  assert.equal(erased.counts.peg_proof_followup_episodes,2);await pass(owner.get('/api/v1/proof-followup/'+e.id),404)
  const after=await restoreCanvasInstallation(owner,{earlierArchive:oldArchive});try{await pass(after.worker.owner.get('/api/v1/proof-followup/'+e.id),404);assert.deepEqual((await inbox(after.worker.owner)).notices,[])}finally{await after.stop()}
- const audit=await pass(owner.get('/api/v1/audit?action=proof_followup.stopped'));assert.ok(audit.events.some(x=>x.target_id===f.proof.id));assert.ok(!JSON.stringify(audit).includes('Human creative review'))
+ // A renewed grant or identity must not resurrect a queued episode, even before dispatch.
+ const manager=await person(w,6730,'Accountable custodian','manager')
+ for(const [index,loss] of ['custodian','reviewer','identity','expiry','reroute'].entries()){
+  const subject=await fixture(w,6740+index*10)
+  let authority
+  if(loss==='custodian')authority=await pass(owner.post('/api/v1/grants',{objectType:'project',objectId:subject.project.id,granteeId:manager.id,level:'admin'}))
+  await policy(owner,subject.project,loss==='custodian'?[manager]:[owner])
+  const accountable=loss==='custodian'?manager.id:owner.id
+  const p=await pass(owner.post('/api/v1/proofs/'+subject.proof.id+'/followup/preview',{accountableId:accountable}))
+  const queued=await pass(owner.post('/api/v1/proofs/'+subject.proof.id+'/followup',{accountableId:accountable,token:p.token,consent:true}))
+  await pass(owner.post('/api/v1/proof-followup/schedule',{}))
+  if(loss==='custodian'){
+   const permitted=await view(manager,queued)
+   await pass(manager.post('/api/v1/proof-followup/'+queued.id+'/stop',{token:permitted.token,consent:true}),403)
+   assert.equal((await view(owner,queued)).episode.state,'active','a permitted custodian is not an owner stop authority')
+   await pass(owner.delete('/api/v1/grants/'+authority.id));await pass(manager.get('/api/v1/proof-followup/'+queued.id),404)
+   await pass(owner.post('/api/v1/grants',{objectType:'project',objectId:subject.project.id,granteeId:manager.id,level:'admin'}))
+  }else if(loss==='reviewer'){
+   await pass(owner.delete('/api/v1/grants/'+subject.shares[0].id))
+   await pass(owner.post('/api/v1/grants',{objectType:'task',objectId:subject.task.id,granteeId:subject.reviewer.id,level:'viewer',scope:'approve'}))
+  }else if(loss==='identity'){
+   await pass(owner.post('/api/v1/workspaces/ws_main/people/'+subject.reviewer.id+'/account',{status:'inactive'}))
+   await pass(subject.reviewer.get('/api/v1/approvals/'+subject.route.id),401)
+   await pass(owner.post('/api/v1/workspaces/ws_main/people/'+subject.reviewer.id+'/account',{status:'active'}))
+  }else if(loss==='expiry')await w.sql("UPDATE peg_approval_links SET expires_at=1 WHERE id='"+subject.links[0].id+"'")
+  else { const old=subject.route;await route(owner,subject);assert.notEqual(subject.route.id,old.id) }
+  await w.restart();await cron(w)
+  const ended=await view(owner,queued)
+  assert.equal(ended.episode.state,loss==='reroute'?'awaiting_route':'cancelled',loss)
+  assert.ok(ended.events.every(event=>event.state==='cancelled'&&event.visible_at===null),loss+' cannot revive queued work')
+  assert.deepEqual((await inbox(loss==='custodian'?manager:owner)).notices,[])
+ }
+ const contextOnly=await fixture(w,6810),visibleProject=contextOnly.project
+ await pass(owner.post('/api/v1/grants',{objectType:'project',objectId:visibleProject.id,granteeId:manager.id,level:'admin'}))
+ const hidden=await pass(owner.post('/api/v1/projects',{name:'Separate proof custody'}))
+ await pass(owner.post('/api/v1/tasks/'+contextOnly.task.id+'/projects',{projectId:hidden.id}))
+ contextOnly.project=hidden;await replace(owner,contextOnly,'synthetic-pegboard-hidden-proof-context');await route(owner,contextOnly)
+ await policy(owner,hidden,[manager])
+ await pass(manager.get('/api/v1/tasks/'+contextOnly.task.id))
+ await pass(owner.post('/api/v1/proofs/'+contextOnly.proof.id+'/followup/preview',{accountableId:manager.id}),404)
+ assert.deepEqual(await pass(owner.get('/api/v1/proofs/'+contextOnly.proof.id+'/followup')),[],'task access alone cannot authorize a hidden byte context')
+ const audit=await pass(owner.get('/api/v1/admin/audit?action=proof_followup.stopped'));assert.ok(audit.events.some(x=>x.target_id===f.proof.id));assert.ok(!JSON.stringify(audit).includes('Human creative review'))
  console.log('PROBE PEG-067 custody: native archive -> disabled policy, cancelled events and no active source authority; reviewed share revocation -> durable cancellation; owner stop -> stopped; hidden reader refused; exact proof erasure -> counted episode children, legal hold retained, stale review refused and old archive barred by later journal; permanent audit retained without content')
 }
