@@ -147,3 +147,18 @@ remain explicit acceptance gaps. PEG-057, PEG-059 and PEG-065 stay partial for t
 CT rulings approve scoped redacted audit, owner-reviewed erasure, hold precedence
 and separately consented processor custody; retained identity stores and external
 limits remain disclosed.
+
+## Native work notifications
+
+The owner explicitly approves internal member Inbox notices in Work settings.
+Events and recipient identities commit with direct human task and comment changes.
+The Inbox rechecks current task and comment access, identity version and preferences;
+following supplies no access. Snooze changes only the recipient notice, never an
+approval decision. No external delivery is authorized by this policy.
+
+The notice policy, personal preferences, follows, events, recipient state and
+comment replay commands are excluded from installation archives. Restore supplies
+no active notification authority or old delivery queue; the destination needs a
+fresh owner approval and personal configuration. Task and comment erasure removes
+linked events, and reactivated identities cannot read older-version deliveries.
+These native controls do not qualify email, push, guest notices or provider custody.

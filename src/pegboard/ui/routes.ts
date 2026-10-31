@@ -1,3 +1,4 @@
+import {internalNotices} from '../notices/dispatch'
 import { IntakeScreen,IntakeSettings,IntakeQueue } from './pages/intake'
 import { internalForm,safeForm,projectForms,reviewForm,administer } from '../intake/forms'
 import { triageQueue } from '../intake/triage'
@@ -139,7 +140,7 @@ import { listTeams, teamMembers } from '../workspace/teams'
 import { AccessReviewPage } from './pages/access-review'
 import { AdminPage } from './pages/admin'
 import { DecisionPage } from './pages/decision'
-import { InboxPage } from './pages/inbox'
+import { InboxPage,InternalNoticeSettings } from './pages/inbox'
 import { MyTasksPage } from './pages/my-tasks'
 import { ProjectPage } from './pages/project'
 import { ProjectSettingsPage } from './pages/project-settings'
@@ -206,12 +207,13 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
       headers.set('content-security-policy', headers.get('content-security-policy') + "; connect-src 'self'")
       return new Response((await response.text()).replace('</body>', '<script src="/look/analytics.js" defer></script></body>'), { status: response.status, headers })
     }
-    if(section==='settings'&&!id)return page('Work settings',h(Shell,{viewer,current:'/auth/settings/identity',title:'Work settings',children:h(Card,{title:'Scheduling and notices',children:h('p',null,h('a',{href:'/app/settings/reports'},'Report settings'), ' · ',h('a',{href:'/app/settings/availability'},'Working calendar'), ' · ',h('a',{href:'/app/settings/calendars'},'Calendar connections'), ' · ',h('a',{href:'/app/settings/readiness'},'Readiness notices'), ' · ',h('a',{href:'/app/settings/capacity'},'Capacity sources and tentative staffing'), ' · ',h('a',{href:'/app/account/availability'},'My availability'), ...(['owner','admin'].includes(viewer.role)?[' · ',h('a',{href:'/app/settings/analytics'},'Analyst access')]:[]))})}))
+    if(section==='settings'&&!id)return page('Work settings',h(Shell,{viewer,current:'/auth/settings/identity',title:'Work settings',children:h(Card,{title:'Scheduling and notices',children:h('p',null,h('a',{href:'/app/settings/reports'},'Report settings'), ' · ',h('a',{href:'/app/settings/availability'},'Working calendar'), ' · ',h('a',{href:'/app/settings/calendars'},'Calendar connections'), ' · ',h('a',{href:'/app/settings/notices'},'Work notifications'), ' · ',h('a',{href:'/app/settings/readiness'},'Readiness notices'), ' · ',h('a',{href:'/app/settings/capacity'},'Capacity sources and tentative staffing'), ' · ',h('a',{href:'/app/account/availability'},'My availability'), ...(['owner','admin'].includes(viewer.role)?[' · ',h('a',{href:'/app/settings/analytics'},'Analyst access')]:[]))})}))
     if(section==='workload'&&!id){const input={...Object.fromEntries(url.searchParams),selected:url.searchParams.getAll('selected[]')},view=await workloadView(db,actor,workspace,input);return page('Workload',h(WorkloadPage,{viewer,view,scenario:url.searchParams.has('taskId')?await staffingScenario(db,actor,workspace,input):null,effort:url.searchParams.has('reviewEffort')?await effortPreview(db,actor,url.searchParams.get('effortTask')!,input):null,effortTask:url.searchParams.get('effortTask'),canConfigure:isAdministrator(await workspaceRole(db,actor.id,workspace))}))}
     if(section==='account'&&id==='availability')return page('My availability',h(AccountAvailabilityPage,{viewer,view:await accountAvailability(db,actor,workspace)}))
     if(section==='settings'&&id==='capacity')return page('Capacity settings',h(CapacitySettingsPage,{viewer,workspace,feeds:await feedSettings(db,actor,workspace),people:await capacityPeople(db,actor,workspace)}))
     if(section==='settings'&&id==='calendars')return page('Calendar connections',h(CalendarSettingsPage,{viewer,view:await calendarSettings(db,actor,workspace)}))
     if(section==='settings'&&id==='availability')return page('Working calendar',h(AvailabilityPage,{viewer,view:await availabilityView(db,actor,url.searchParams.get('workspace')??workspace)}))
+    if(section==='settings'&&id==='notices')return page('Notification settings',h(Shell,{viewer,current:'/auth/settings/identity',title:'Notification settings',children:h(InternalNoticeSettings,{view:await internalNotices(db,actor,workspace)})}))
     if(section==='settings'&&id==='readiness')return page('Readiness notice settings',h(Shell,{viewer,current:'/auth/settings/identity',title:'Readiness notice settings',children:h(ReadinessPreferences,{readiness:await readinessNotices(db,actor,workspace)})}))
 
     if(section==='conversions'&&!tail){
@@ -355,7 +357,7 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
       const approvers = (await all<{ operator_id: string }>(db, "SELECT operator_id FROM peg_approvers WHERE object_type='team' AND object_id=?", id)).map(row => row.operator_id)
       return page(team.name, h(TeamPage, { viewer, people: await peopleOptions(db, actor, workspace), team: { id, name: team.name, description: team.description, privacy: team.privacy, defaultLevel: team.default_level, fallbackId: team.fallback_id, level: effective.level, capabilities: [...effective.capabilities], paths: effective.paths.map(path => ({ via: path.via, level: path.level })), members: await teamMembers(db, actor, id), approvers } }))
     }
-    if (section === 'inbox') return page('Inbox', h(InboxPage, { viewer, toDecide: await pendingFor(db, actor, { origin: env.AUTH_ORIGIN, from: env.MAIL_FROM, mail: operatorMail(env) }), mine: await myRequests(db, actor),readiness:await readinessNotices(db,actor,workspace) }))
+    if (section === 'inbox') return page('Inbox', h(InboxPage, { viewer, toDecide: await pendingFor(db, actor, { origin: env.AUTH_ORIGIN, from: env.MAIL_FROM, mail: operatorMail(env) }), mine: await myRequests(db, actor),notifications:['guest','agent'].includes(viewer.role)?null:await internalNotices(db,actor,workspace),readiness:await readinessNotices(db,actor,workspace) }))
     if (section === 'access-requests' && id) {
       let preview
       try { preview = await previewRequest(db, actor, id) } catch (error) { if (error instanceof PegError && error.status === 404) return refuse(db, actor, viewer, id); throw error }

@@ -1,0 +1,88 @@
+import assert from 'node:assert/strict'
+import {mkdir} from 'node:fs/promises'
+import {join} from 'node:path'
+import {expect} from '@playwright/test'
+export async function notificationsJourney({w,browser}) {
+ const owner=w.owner,ok=async(p,status=200)=>{const r=await p;assert.equal(r.status,status,JSON.stringify(r.body));return r.body}
+ const member=await w.person(['synthetic-pegboard-9101','example.com'].join('@'),'Inbox member')
+ const colleague=await w.person(['synthetic-pegboard-9102','example.com'].join('@'),'Inbox colleague')
+ const project=await ok(owner.post('/api/v1/projects',{name:'Notice journey',privacy:'private'}))
+ for(const person of [member,colleague])await ok(owner.post('/api/v1/grants',{objectType:'project',objectId:project.id,granteeId:person.id,level:'editor'}))
+ const context=await browser.newContext({viewport:{width:1440,height:900}})
+ const cookies=client=>client.cookie.split('; ').map(pair=>({name:pair.slice(0,pair.indexOf('=')),value:pair.slice(pair.indexOf('=')+1),url:w.origin}))
+ const page=await context.newPage()
+ const enter=async(client,path)=>{await context.clearCookies();await context.addCookies(cookies(client));await page.goto(w.origin+path)}
+ const proof=async name=>{
+  if(!process.env.PEGBOARD_PROOF_DIR)return
+  await mkdir(process.env.PEGBOARD_PROOF_DIR,{recursive:true})
+  for(const [width,height]of [[1440,900],[390,844]]){
+   await page.setViewportSize({width,height})
+   await page.screenshot({path:join(process.env.PEGBOARD_PROOF_DIR,`notifications-${name}-${width}.png`),fullPage:true})
+   if(width===1440)assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'notification screen fits viewport')
+  }
+  await page.setViewportSize({width:1440,height:900})
+ }
+ try{
+  await enter(owner,'/app/settings/notices')
+  const policy=page.getByRole('form',{name:'Approve internal notice policy'})
+  await policy.getByLabel('I approve this internal member Inbox policy').check()
+  await policy.getByRole('button',{name:'Save notice policy'}).focus();await page.keyboard.press('Enter')
+  await expect(page.getByRole('status')).toHaveText('Policy approved.')
+  await proof('settings')
+  const task=await ok(owner.post('/api/v1/tasks',{title:'Review launch artwork',projectId:project.id,ownerId:member.id,priority:'urgent'}))
+  const lower=await ok(owner.post('/api/v1/tasks',{title:'Prepare supporting copy',projectId:project.id,ownerId:member.id,priority:'low'}))
+  const myBefore=await ok(member.get('/api/v1/my-tasks?on=2030-01-07'))
+  assert.ok(myBefore.tasks.findIndex(t=>t.id===task.id)<myBefore.tasks.findIndex(t=>t.id===lower.id),'urgent work keeps PEG-073 order')
+  await enter(member,'/app/inbox')
+  const delivered=await ok(member.get('/api/v1/notices')),assignment=delivered.items.find(n=>n.taskId===task.id)
+  const row=page.locator(`[data-notice="${assignment.id}"]`)
+  await expect(row).toHaveAttribute('data-recipient',member.id)
+  await expect(row).toHaveAttribute('data-task',task.id)
+  await expect(row).toContainText('Assigned to you')
+  await expect(page.getByRole('status',{name:'Unread work notifications'})).toHaveText('2 unread work notifications.')
+  await row.getByRole('button',{name:'Mark read'}).click()
+  await expect(row).toContainText('Read')
+  await expect(page.getByRole('status',{name:'Unread work notifications'})).toHaveText('1 unread work notifications.')
+  await proof('inbox')
+  await row.getByRole('link',{name:'Review launch artwork'}).click()
+  await expect(page.getByRole('heading',{name:'Review launch artwork',exact:true})).toBeVisible()
+  await page.getByRole('button',{name:'Follow task',exact:true}).focus();await page.keyboard.press('Enter')
+  await expect(page.getByRole('button',{name:'Unfollow task',exact:true})).toBeVisible()
+  await page.getByRole('button',{name:'Mute task',exact:true}).click()
+  await expect(page.getByRole('button',{name:'Unmute task',exact:true})).toBeVisible()
+  await proof('task-preferences')
+  await page.getByRole('button',{name:'Unmute task',exact:true}).click()
+  await ok(owner.patch(`/api/v1/tasks/${task.id}`,{collaborators:[member.id,colleague.id]}))
+  await enter(colleague,`/app/tasks/${task.id}`)
+  const comment=page.getByRole('form',{name:'Comment',exact:true})
+  await comment.getByLabel('Mention a participant').selectOption(member.id)
+  await comment.getByLabel('Comment',{exact:true}).fill('Please check the exact recipient')
+  await comment.getByRole('button',{name:'Comment',exact:true}).click()
+  const persisted=await ok(owner.get(`/api/v1/tasks/${task.id}`)),commentId=persisted.comments.at(-1).id
+  await enter(member,'/app/inbox')
+  const mentioned=await ok(member.get('/api/v1/notices')),mention=mentioned.items.find(n=>n.commentId===commentId)
+  const mentionRow=page.locator(`[data-notice="${mention.id}"]`)
+  await expect(mentionRow).toHaveAttribute('data-recipient',member.id)
+  await expect(mentionRow).toHaveAttribute('data-comment',commentId)
+  await expect(mentionRow).toContainText('You were mentioned')
+  const approval=await ok(owner.post('/api/v1/tasks',{title:'Approve the final artwork',projectId:project.id,ownerId:member.id,kind:'approval'}))
+  const prior=await ok(owner.get(`/api/v1/tasks/${approval.id}/decision-preview`))
+  await enter(owner,'/app/inbox')
+  const approvals=await ok(owner.get('/api/v1/notices')),notice=approvals.items.find(n=>n.taskId===approval.id&&n.kind==='approval')
+  await page.locator(`[data-notice="${notice.id}"]`).getByRole('button',{name:'Snooze one hour'}).click()
+  const snoozed=page.getByRole('list',{name:'Snoozed work'}).locator(`[data-notice="${notice.id}"]`)
+  await expect(snoozed.getByRole('link',{name:'Review approval: Approve the final artwork'})).toHaveAttribute('href',`/app/tasks/${approval.id}`)
+  assert.equal((await ok(owner.get(`/api/v1/tasks/${approval.id}/decision-preview`))).token,prior.token)
+  await proof('snoozed-approval')
+  await snoozed.getByRole('link').click()
+  await expect(page.getByRole('button',{name:'Record reviewed decision',exact:true})).toBeVisible()
+  await page.goto(w.origin+'/app/inbox')
+  await page.getByRole('button',{name:'Return to Inbox'}).click()
+  await expect(page.locator(`[data-notice="${notice.id}"]`)).toContainText('Approval requested')
+  await enter(member,'/app/my-tasks?on=2030-01-07')
+  const myAfter=await ok(member.get('/api/v1/my-tasks?on=2030-01-07'))
+  assert.deepEqual(myAfter.tasks.filter(t=>[task.id,lower.id].includes(t.id)).map(t=>t.id),myBefore.tasks.map(t=>t.id),'notice actions preserve relative My Tasks ordering')
+  await proof('my-tasks')
+  console.log('PROBE PEG-009 browser: Settings, task and Inbox forms -> owner-approved policy, exact rendered event and recipient IDs, keyboard follow and mute, identity-safe mention, actionable snoozed approval and unchanged PEG-073 order at 1440 with proof at 390')
+ }finally{await context.close()}
+}

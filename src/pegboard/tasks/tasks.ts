@@ -1,3 +1,4 @@
+import {noticeEventStatements} from '../notices/events'
 import {guarded,revision} from '../decisions/revision'
 import {requireGuestParticipant} from './participants'
 import {localRuleQueue,processLocalRules} from '../rules/execution'
@@ -81,7 +82,7 @@ export async function prepareTask(db: D1Database, actor: Actor, input: TaskInput
 
 export async function createTask(db: D1Database, actor: Actor, input: TaskInput): Promise<TaskRow> {
   const {id,statements,projectId}=await prepareTask(db,actor,input)
-  await batch(db,statements)
+  await batch(db,[...statements,...noticeEventStatements(db,actor,{id:newId('notice'),taskId:id,kind:'assignment'}),...(input.kind==='approval'?noticeEventStatements(db,actor,{id:newId('notice'),taskId:id,kind:'approval'}):[])])
   if(projectId)await processTemplateRuleRuns(db,projectId)
   return (await first<TaskRow>(db,'SELECT * FROM peg_tasks WHERE id=?',id))!
 }
@@ -128,8 +129,9 @@ export async function updateTask(db: D1Database, actor: Actor, idOrRef: string, 
   }
   if (patch.collaborators) statements.push(reopenGuard(db,task.id,actor.id,'collaborators',patch.collaborators.length?'1':'EXISTS(SELECT 1 FROM peg_task_collaborators WHERE task_id=t.id)'),bound(db, 'DELETE FROM peg_task_collaborators WHERE task_id=?', [task.id]), ...[...new Set(patch.collaborators)].map(id => bound(db, 'INSERT INTO peg_task_collaborators(task_id,operator_id) VALUES (?,?)', [task.id, id])), historyStatement(db, task.id, null, actor.id, 'collaborators.changed', { count: new Set(patch.collaborators).size }))
   const queued=changes.status?await localRuleQueue(db,task.id,'status',actor.id):[]
+  if(changes.owner_id)statements.push(...noticeEventStatements(db,actor,{id:newId('notice'),taskId:task.id,kind:'assignment'}))
   statements.push(...queued,...extraStatements)
-  if (statements.length){if(fence||queued.length)await guarded(db,localRevision,statements);else await batch(db, statements)}
+  if (statements.length){if(fence||queued.length||changes.owner_id)await guarded(db,localRevision,statements);else await batch(db, statements)}
   if(changes.status)for(const projectId of access.contexts.keys())await processLocalRules(db,projectId)
   return (await first<TaskRow>(db, 'SELECT * FROM peg_tasks WHERE id=?', task.id))!
 }

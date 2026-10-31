@@ -48,3 +48,30 @@ export async function muteReadinessTask(db: D1Database, actor: Actor, taskId: st
     ON CONFLICT(task_id,operator_id) DO UPDATE SET muted=excluded.muted`, task.id, actor.id, Number(muted))
   return { taskId: task.id, muted }
 }
+
+export async function internalPreferences(db: D1Database, actor: Actor, workspace: string) {
+  const role = await workspaceRole(db, actor.id, workspace)
+  if (!role || role === 'guest' || role === 'agent') throw forbidden('member')
+  const row = await first<{ muted: number; dnd_until: number | null }>(db, 'SELECT * FROM peg_notice_preferences WHERE workspace_id=? AND operator_id=?', workspace, actor.id)
+  return { muted: !!row?.muted, dndUntil: row?.dnd_until ?? null }
+}
+export async function saveInternalPreferences(db: D1Database, actor: Actor, workspace: string, input: Record<string, unknown>) {
+  const current = await internalPreferences(db, actor, workspace)
+  await run(db, `INSERT INTO peg_notice_preferences VALUES(?,?,?,?) ON CONFLICT(workspace_id,operator_id)
+    DO UPDATE SET muted=excluded.muted,dnd_until=excluded.dnd_until`, workspace, actor.id,
+  Number(input.muted === undefined ? current.muted : boolean(input.muted)), input.dndUntil === undefined ? current.dndUntil : timestamp(input.dndUntil))
+  return internalPreferences(db, actor, workspace)
+}
+export async function taskNoticePreferences(db: D1Database, actor: Actor, taskId: string) {
+  const {task} = await openTask(db, actor, taskId)
+  if (['guest','agent'].includes(await workspaceRole(db, actor.id, task.workspace_id) ?? 'guest')) return null
+  return { following: !!await first(db, 'SELECT 1 FROM peg_notice_follows WHERE task_id=? AND operator_id=? AND following=1', task.id, actor.id),
+    muted: !!await first(db, 'SELECT 1 FROM peg_readiness_task_preferences WHERE task_id=? AND operator_id=? AND muted=1', task.id, actor.id) }
+}
+export async function saveTaskNoticePreferences(db: D1Database, actor: Actor, taskId: string, input: Record<string, unknown>) {
+  const {task} = await openTask(db, actor, taskId)
+  await internalPreferences(db, actor, task.workspace_id)
+  if (input.following !== undefined) await run(db, `INSERT INTO peg_notice_follows VALUES(?,?,?) ON CONFLICT(task_id,operator_id) DO UPDATE SET following=excluded.following`, task.id, actor.id, Number(boolean(input.following)))
+  if (input.muted !== undefined) await muteReadinessTask(db, actor, task.id, input)
+  return taskNoticePreferences(db, actor, task.id)
+}

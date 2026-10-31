@@ -19,7 +19,7 @@
     "deploy": "rer deploy",
     "test:runtime": "rer queue test:runtime -- sh -c \"node tests/runtime.mjs\"",
     "test:graph": "rer queue test:graph -- sh -c \"node --test tests/work-graph.test.mjs tests/access-control.test.mjs tests/portfolios.test.mjs tests/schedule.test.mjs\"",
-    "test:graph:work-graph": "rer queue test:graph:work-graph -- sh -c \"node --test --test-skip-pattern='^(?:Local rule audit|Data custody|PEG-064 retained graph recovery|Native reporting|Goal visibility and accountability|Engineering handoff|Meeting review|Analyst exports|Project planning canvas)(?: |$)' tests/work-graph.test.mjs\"",
+    "test:graph:work-graph": "rer queue test:graph:work-graph -- sh -c \"node --test --test-skip-pattern='^(?:Internal member notifications|Local rule audit|Data custody|PEG-064 retained graph recovery|Native reporting|Goal visibility and accountability|Engineering handoff|Meeting review|Analyst exports|Project planning canvas)(?: |$)' tests/work-graph.test.mjs\"",
     "test:graph:access-control": "rer queue test:graph:access-control -- sh -c \"node --test tests/access-control.test.mjs\"",
     "test:graph:portfolios": "rer queue test:graph:portfolios -- sh -c \"node --test tests/portfolios.test.mjs\"",
     "test:graph:portfolios:core": "rer queue test:graph:portfolios:core -- sh -c \"node --test --test-skip-pattern='^(?:Human portfolio capacity|Capacity across committed work|Pinned template rules through current Admin review|Reviewed stakeholder status revisions|Status rights request custody|Conditional local work rules)(?: |$)' tests/portfolios.test.mjs\"",
@@ -49,7 +49,8 @@
     "test:journeys:core": "rer queue test:journeys:core -- sh -c \"PEGBOARD_JOURNEY=intake,access-privacy,access-discovery,public-api,guests,core,recurrence,approvals,approval-routing,time-packets,goals node tests/journeys/work-graph.journey.mjs\"",
     "test:journeys:services": "rer queue test:journeys:services -- sh -c \"PEGBOARD_JOURNEY=rule-audit,reporting,analytics,calendar-blocks,engineering,meetings,custody,recovery,departure node tests/journeys/work-graph.journey.mjs\"",
     "test:journeys:planning": "rer queue test:journeys:planning -- sh -c \"PEGBOARD_JOURNEY=portfolio-capacity,capacity,canvas,portfolio,timeline,register,bundles,work-views node tests/journeys/work-graph.journey.mjs\"",
-    "test:conversions": "rer queue test:conversions -- sh -c \"node tests/journeys/conversions.mjs\""
+    "test:conversions": "rer queue test:conversions -- sh -c \"node tests/journeys/conversions.mjs\"",
+    "test:notifications": "rer queue test:notifications -- sh -c \"node --test --test-name-pattern='^Internal member notifications(?: |$)' tests/work-graph.test.mjs && PEGBOARD_JOURNEY=notifications node tests/journeys/work-graph.journey.mjs\""
   },
   "dependencies": {
     "@tanstack/react-router": "1.170.41",

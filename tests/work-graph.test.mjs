@@ -1,3 +1,4 @@
+import {notificationScenario} from './scenarios/notifications.mjs'
 import { intakeScenario } from './scenarios/intake.mjs'
 import { registerRuleAuditTests } from './scenarios/rule-audit.mjs'
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs'
@@ -41,6 +42,13 @@ function csvRecords(text) {
   return rows.filter(row=>row.some(value=>value.length))
 }
 let campaign, launch, shared, mkt
+
+describe('Internal member notifications', {concurrency:false},()=>{
+ let worker
+ before(async()=>{worker=await startWorker()},{timeout:120000})
+ after(()=>worker?.stop())
+ it('delivers current identity-bound work once, respects preferences and preserves actionable approvals',{timeout:180000},async()=>notificationScenario(worker))
+})
 
 describe('Native text intake', {concurrency:false},()=>{
  let worker
