@@ -170,6 +170,11 @@ export async function approvalFollowupAuthorityScenario(w) {
     assert.deepEqual((await inbox(restoredDelegate)).notices, [], loss + ' cannot revive a queued delegated identity before its first dispatch')
     const excluded = episodeFor(await log(owner), delegated.route.id)
     assert.equal(excluded.state, 'blocked')
+    const cause = loss === 'deactivation' ? 'identity_authority_changed' : 'access_changed'
+    const stoppedDelegate = excluded.deliveries.find(d => d.recipient_id === later.id)
+    assert.equal(stoppedDelegate.state, 'cancelled'); assert.equal(stoppedDelegate.cause, cause)
+    assert.equal(stoppedDelegate.visible_at, null); assert.equal(stoppedDelegate.next_at, null)
+    assert.ok(excluded.outcomes.some(o => o.recipient_id === later.id && o.state === 'cancelled' && o.cause === cause))
     assert.ok(excluded.outcomes.some(o => o.state === 'blocked' && o.cause === 'no_authorized_deliverable_reviewer'))
     // An explicit fresh review may use the renewed authority, with a new episode and event.
     const freshRoute = await reroute(owner, delegated.task, { ...delegated.input, stages: [{ name: 'Independent review', people: [later.id], quorum: 1 }] })
