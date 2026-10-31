@@ -11,7 +11,7 @@ import { historyStatement } from '../tasks/history'
 import { moveInput, planChange } from '../schedule/plan'
 import { taskCalendars } from '../schedule/availability'
 import { availableIntervals, dayNumber, dayString, instantOf } from '../schedule/calendar'
-import { workloadView, rounded } from '../capacity/workload'
+import { workloadView, rounded, spread } from '../capacity/workload'
 import type { Event, Slot } from '../connectors/calendars/edge'
 import { calendarAdmin, connectionFor, taskFingerprint, type Connection } from './connections'
 import { edgeFor, type Block } from './blocks'
@@ -22,7 +22,7 @@ interface ScenarioInput { label:string;changes:Change[] }
 interface Item extends Change { actualHours:number;remainingHours:number; taskId:string;title:string;beforeTask:TaskRow;block:Block;event:Event;zone:string }
 interface Scenario { label:string;items:Item[];days:{date:string;zone:string;freeHours:number;otherHours:number;availableHours:number;requiredHours:number;shortageHours:number}[];requiredHours:number;reservedHours:number;shortageHours:number;feasible:boolean;reasons:string[];busyStamp:string;planStamp:string }
 interface Body { scenarios:Scenario[];inputs:ScenarioInput[];context:number;locks:FocusLock[];blockId?:string;locked?:boolean;lockSnapshot?:string }
-interface Review { id:string;owner_id:string;connection_id:string;kind:string;state:string;body:string;stamp:string;expires_at:number;selected:number|null;source_id:string|null;cause:string|null;created_at:number;applied_at:number|null }
+interface Review { lease_until:number;id:string;owner_id:string;connection_id:string;kind:string;state:string;body:string;stamp:string;expires_at:number;selected:number|null;source_id:string|null;cause:string|null;created_at:number;applied_at:number|null }
 interface Operation { review_id:string;block_id:string;task_id:string;state:string;event_etag:string|null;task_after:string|null }
 const confirmed=(input:Record<string,any>)=>input.confirm===true||input.confirm==='on'
 const instant=(value:unknown)=>{if(typeof value!=='string'||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{3})?)?Z$/.test(value)||!Number.isFinite(Date.parse(value)))throw invalid('focus_instant_utc');return new Date(value).toISOString()}
@@ -171,7 +171,6 @@ async function analyse(env:Bindings,db:D1Database,actor:Actor,c:Connection,input
  return {scenarios,inputs,context,locks}
 }
 async function selectedLoad(db:D1Database,items:Item[],date:string,calendar:Parameters<typeof availableIntervals>[1]) {
- const {spread}=await import('../capacity/workload')
  const allocations=await all<{task_id:string;hours:number}>(db,'SELECT task_id,hours FROM peg_effort_allocations WHERE person_id=?',items[0].beforeTask.owner_id)
  return items.reduce((n,i)=>n+spread(i.beforeTask,allocations.some(a=>a.task_id===i.taskId)?allocations.filter(a=>a.task_id===i.taskId).reduce((n,a)=>n+a.hours,0):i.beforeTask.estimate_hours,calendar,[date])[0],0)
 }
@@ -183,7 +182,7 @@ export async function previewRecovery(env:Bindings,db:D1Database,actor:Actor,inp
 export async function reviewView(db:D1Database,actor:Actor,id:string) {
  const {r,body}=await load(db,actor,id)
  // Provider credentials are never part of the persisted body or response.
- return {id:r.id,kind:r.kind,state:r.state,stamp:r.stamp,selected:r.selected,cause:r.cause,expiresAt:r.expires_at,blockId:body.blockId,locked:body.locked,
+ return {id:r.id,kind:r.kind,state:r.state,stamp:r.stamp,selected:r.selected,cause:r.cause,readbackAfter:r.lease_until,expiresAt:r.expires_at,blockId:body.blockId,locked:body.locked,
   locks:body.locks.filter(l=>l.locked).map(l=>({blockId:l.block_id,start:l.start_at,end:l.end_at})),
   scenarios:body.scenarios.map(s=>({...s,items:s.items.map(i=>({blockId:i.blockId,taskId:i.taskId,title:i.title,estimateHours:i.beforeTask.estimate_hours,actualHours:i.actualHours,remainingHours:i.remainingHours,start:i.start,end:i.end,taskStart:i.taskStart,taskDue:i.taskDue,fromStart:i.beforeTask.start_date,fromDue:i.beforeTask.due_date,eventId:i.event.id,eventStart:i.event.start,eventEnd:i.event.end}))})),
   operations:await all<Operation>(db,'SELECT * FROM peg_focus_operations WHERE review_id=? ORDER BY block_id',id)}
@@ -196,24 +195,27 @@ export async function recoveryProject(db:D1Database,actor:Actor,project:string) 
  return {project:p.project,locks:await locksFor(db,actor),reviews}
 }
 async function outcome(db:D1Database,id:string,state:string,cause:string|null) {
- await run(db,"UPDATE peg_focus_reviews SET state=?,cause=? WHERE id=? AND state NOT IN ('reconciled','inactive')",state,cause,id)
+ await run(db,"UPDATE peg_focus_reviews SET state=?,cause=?,lease_until=0 WHERE id=? AND state NOT IN ('reconciled','inactive')",state,cause,id)
 }
 export async function applyRecovery(env:Bindings,db:D1Database,actor:Actor,id:string,input:Record<string,any>) {
  const {r,c,body}=await load(db,actor,id)
  if(!['recovery','undo'].includes(r.kind)||!confirmed(input)||input.stamp!==r.stamp)throw conflict('focus_exact_review_required')
- if(['applying','uncertain','reconciled'].includes(r.state))return reconcileRecovery(env,db,actor,id,input)
+ if(r.state==='applying')return reviewView(db,actor,id)
+ if(['uncertain','reconciled'].includes(r.state))return reconcileRecovery(env,db,actor,id,input)
  if(r.state!=='reviewed'||r.expires_at<=now())throw conflict('focus_review_expired')
  const choice=Number(input.scenario),scenario=body.scenarios[choice]
  if(!Number.isInteger(choice)||!scenario)throw invalid('focus_scenario')
  const rev=await revision(db)
- if(rev.value!==body.context)throw conflict('focus_review_changed')
- const fresh=await analyse(env,db,actor,c,body.inputs,input.credential)
- if(await digest(fresh)!==r.stamp)throw conflict('focus_review_changed')
+ try{
+  if(rev.value!==body.context)throw conflict('focus_review_changed')
+  const fresh=await analyse(env,db,actor,c,body.inputs,input.credential)
+  if(await digest(fresh)!==r.stamp)throw conflict('focus_review_changed')
+ }catch(error){await outcome(db,id,'conflict','fresh_review_required');throw error}
  if(!scenario.feasible)throw conflict('focus_scenario_infeasible')
  await guarded(db,rev,[
   // Operations claim their blocks before a provider call; concurrent approvals cannot both dispatch.
   ...scenario.items.map(i=>bound(db,"INSERT INTO peg_focus_operations(review_id,block_id,task_id,state) VALUES(?,?,?,'planned')",[id,i.blockId,i.taskId])),
-  bound(db,"UPDATE peg_focus_reviews SET state='applying',selected=? WHERE id=? AND state='reviewed'",[choice,id]),
+  bound(db,"UPDATE peg_focus_reviews SET state='applying',selected=?,lease_until=? WHERE id=? AND state='reviewed'",[choice,now()+90000,id]),
   permanentEvent(db,{workspace:c.workspace_id,actor:actor.id,action:'focus.review_approved',type:'calendar',id,metadata:{id,count:scenario.items.length}}),
  ])
  for(const i of scenario.items) {
@@ -221,21 +223,26 @@ export async function applyRecovery(env:Bindings,db:D1Database,actor:Actor,id:st
    await owned(db,actor,i.taskId,await connectionFor(db,actor,c.id))
    await blockFence(db,i.blockId,c.id,i,id)
    if((await revision(db)).value!==body.context)throw conflict('focus_review_changed')
+   await run(db,"UPDATE peg_focus_reviews SET lease_until=? WHERE id=? AND state='applying'",now()+90000,id)
    const edge=await edgeFor(env,db,actor,c,input.credential),event=await edge.read(i.event.id)
    if(!event||event.etag!==i.event.etag)throw conflict('focus_provider_changed')
+   const freshTask=await owned(db,actor,i.taskId,await connectionFor(db,actor,c.id))
+   if((await revision(db)).value!==body.context||await taskFingerprint(freshTask)!==await taskFingerprint(i.beforeTask))throw conflict('focus_review_changed')
+   await blockFence(db,i.blockId,c.id,i,id)
    await run(db,"UPDATE peg_focus_operations SET state='sending' WHERE review_id=? AND block_id=?",id,i.blockId)
    // Never send this intent again, including after a crash immediately before this call.
    await edge.move(event.id,event.etag,i,i.zone)
-   await run(db,"UPDATE peg_focus_operations SET state='sent' WHERE review_id=? AND block_id=?",id,i.blockId)
+   await run(db,"UPDATE peg_focus_operations SET state='sent' WHERE review_id=? AND block_id=? AND state='sending'",id,i.blockId)
   } catch {
    await outcome(db,id,'uncertain','calendar_and_task_state_not_reconciled')
    return reviewView(db,actor,id)
   }
  }
- return reconcileRecovery(env,db,actor,id,input)
+ return reconcileRecovery(env,db,actor,id,input,true)
 }
-export async function reconcileRecovery(env:Bindings,db:D1Database,actor:Actor,id:string,input:Record<string,any>) {
+export async function reconcileRecovery(env:Bindings,db:D1Database,actor:Actor,id:string,input:Record<string,any>,writer=false) {
  const {r,c,body}=await load(db,actor,id)
+ if(!writer&&r.state==='applying'&&r.lease_until>now())return reviewView(db,actor,id)
  if(r.state==='reconciled'||r.state==='inactive')return reviewView(db,actor,id)
  if(!['applying','uncertain'].includes(r.state)||r.selected===null)throw conflict('focus_not_reconciling')
  const scenario=body.scenarios[r.selected],rev=await revision(db),events=new Map<string,Event>()
@@ -276,7 +283,7 @@ export async function reconcileRecovery(env:Bindings,db:D1Database,actor:Actor,i
    bound(db,"UPDATE peg_focus_operations SET state='verified',event_etag=?,task_after=? WHERE review_id=? AND block_id=?",[event.etag,fingerprint,id,i.blockId]),
   )
  }
- statements.push(bound(db,"UPDATE peg_focus_reviews SET state='reconciled',cause=NULL,applied_at=? WHERE id=?",[at,id]),
+ statements.push(bound(db,"UPDATE peg_focus_reviews SET state='reconciled',cause=NULL,lease_until=0,applied_at=? WHERE id=?",[at,id]),
   permanentEvent(db,{workspace:c.workspace_id,actor:actor.id,action:r.kind==='undo'?'focus.undo_reconciled':'focus.reconciled',type:'calendar',id,metadata:{id,count:scenario.items.length}}))
  try{await guarded(db,rev,statements)}catch{await outcome(db,id,'conflict','fresh_review_required')}
  return reviewView(db,actor,id)
