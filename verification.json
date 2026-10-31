@@ -92,11 +92,19 @@
       ]
     },
     {
-      "name": "journeys-core",
+      "name": "journeys-core-access",
       "browser": true,
       "hosted": false,
       "commands": [
-        "pnpm run test:journeys:core"
+        "pnpm exec rer queue test:journeys-core-access -- sh -c \"PEGBOARD_JOURNEY=approval-followup,intake,access-privacy,access-discovery,public-api,approval-routing,guests,goals node tests/journeys/work-graph.journey.mjs\""
+      ]
+    },
+    {
+      "name": "journeys-core-work",
+      "browser": true,
+      "hosted": false,
+      "commands": [
+        "pnpm exec rer queue test:journeys-core-work -- sh -c \"PEGBOARD_JOURNEY=core,recurrence,approvals,time-packets node tests/journeys/work-graph.journey.mjs\""
       ]
     },
     {
