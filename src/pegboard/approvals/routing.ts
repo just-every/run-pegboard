@@ -65,7 +65,7 @@ export async function previewRoute(db:D1Database,actor:Actor,kind:string,id:stri
 export async function configureRoute(db:D1Database,actor:Actor,kind:string,id:string,input:Record<string,any>){
  const p=await previewRoute(db,actor,kind,id,input);if(input.token!==p.token)throw conflict('approval_review_changed')
  const s=await subject(db,actor,kind,id),routeId=newId('route'),at=now()
- await guarded(db,p.rev,[reopenGuard(db,s.task.id,actor.id,'approval_rerouted'),bound(db,"UPDATE peg_tasks SET status='todo',completed_at=NULL,updated_at=? WHERE id=? AND status='done' AND EXISTS(SELECT 1 FROM peg_approval_tasks WHERE task_id=?)",[at,s.task.id,s.task.id]),bound(db,'UPDATE peg_approval_routes SET withdrawn_at=? WHERE kind=? AND subject_id=? AND withdrawn_at IS NULL',[at,kind,id]),bound(db,'INSERT INTO peg_approval_routes VALUES(?,?,?,?,?,?,?,?,?,?,?,NULL)',[routeId,kind,id,s.task.id,p.version,p.mode,JSON.stringify(p.stages),p.dueAt,p.reminderAt,actor.id,at]),historyStatement(db,s.task.id,null,actor.id,'approval.routed',{routeId,version:p.version,mode:p.mode})])
+ await guarded(db,p.rev,[reopenGuard(db,s.task.id,actor.id,'approval_rerouted'),bound(db,"UPDATE peg_tasks SET status='todo',completed_at=NULL,updated_at=? WHERE id=? AND status='done' AND EXISTS(SELECT 1 FROM peg_approval_tasks WHERE task_id=?)",[at,s.task.id,s.task.id]),bound(db,'UPDATE peg_approval_routes SET withdrawn_at=? WHERE kind=? AND subject_id=? AND withdrawn_at IS NULL',[at,kind,id]),bound(db,'INSERT INTO peg_approval_routes(id,kind,subject_id,task_id,version,mode,stages,due_at,reminder_at,created_by,created_at,withdrawn_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,NULL)',[routeId,kind,id,s.task.id,p.version,p.mode,JSON.stringify(p.stages),p.dueAt,p.reminderAt,actor.id,at]),historyStatement(db,s.task.id,null,actor.id,'approval.routed',{routeId,version:p.version,mode:p.mode})])
  return {id:routeId,version:p.version}
 }
 export async function routeView(db:D1Database,actor:Actor,id:string){
@@ -159,4 +159,21 @@ export async function processApprovalReminders(db:D1Database,delivery:Delivery){
  const operator=await operatorRow(db,route.created_by);if(!operator)continue
  try{await dispatchReminders(db,{id:operator.id} as Actor,route.id,delivery)}catch{/* Revoked routing authority never sends. */}
  }
+}
+
+/** Native follow-up uses exactly the routing door's independent, current human authority. */
+export async function approvalFollowupContext(db:D1Database,route:Route) {
+ const creator=await operatorRow(db,route.created_by)
+ if(!creator||creator.status!=='active')return {cause:'routing_authority_lost',reviewers:[] as string[]}
+ const manager=await routeView(db,{id:creator.id} as Actor,route.id)
+ if(!manager.canManage)return {cause:'routing_authority_lost',reviewers:[] as string[]}
+ if(manager.votes.length)return {cause:'person_responded',reviewers:[] as string[]}
+ if(manager.state!=='pending')return {cause:manager.state,reviewers:[] as string[]}
+ const workspace=(await subject(db,{id:creator.id} as Actor,route.kind,route.subject_id)).task.workspace_id
+ const reviewers:string[]=[]
+ for(const stage of JSON.parse(route.stages) as Stage[])for(const id of stage.people){
+  if(!['owner','admin','manager','member'].includes(await workspaceRole(db,id,workspace)??''))continue
+  try{if((await routeView(db,{id} as Actor,route.id)).canDecide)reviewers.push(id)}catch(error){if(!(error instanceof Error)||!('status' in error))throw error}
+ }
+ return {cause:null,reviewers}
 }

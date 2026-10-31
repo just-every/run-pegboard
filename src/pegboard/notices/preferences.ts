@@ -48,3 +48,20 @@ export async function muteReadinessTask(db: D1Database, actor: Actor, taskId: st
     ON CONFLICT(task_id,operator_id) DO UPDATE SET muted=excluded.muted`, task.id, actor.id, Number(muted))
   return { taskId: task.id, muted }
 }
+
+export interface ApprovalPreferences { enabled: boolean; muted: boolean; dndUntil: number | null }
+export async function requireInternalNoticeMember(db: D1Database, actor: Actor, workspace: string) {
+  if (!['owner', 'admin', 'manager', 'member'].includes(await workspaceRole(db, actor.id, workspace) ?? '')) throw forbidden('internal_member')
+}
+export async function approvalPreferences(db: D1Database, actor: Actor, workspace: string): Promise<ApprovalPreferences> {
+  await requireInternalNoticeMember(db, actor, workspace)
+  const row = await first<{ enabled: number; muted: number; dnd_until: number | null }>(db, 'SELECT * FROM peg_approval_followup_preferences WHERE workspace_id=? AND operator_id=?', workspace, actor.id)
+  return { enabled: row ? !!row.enabled : true, muted: !!row?.muted, dndUntil: row?.dnd_until ?? null }
+}
+export async function saveApprovalPreferences(db: D1Database, actor: Actor, workspace: string, input: Record<string, unknown>) {
+  const current = await approvalPreferences(db, actor, workspace)
+  const next = { enabled: input.enabled === undefined ? current.enabled : boolean(input.enabled), muted: input.muted === undefined ? current.muted : boolean(input.muted), dndUntil: input.dndUntil === undefined ? current.dndUntil : timestamp(input.dndUntil) }
+  await run(db, `INSERT INTO peg_approval_followup_preferences VALUES(?,?,?,?,?) ON CONFLICT(workspace_id,operator_id)
+    DO UPDATE SET enabled=excluded.enabled,muted=excluded.muted,dnd_until=excluded.dnd_until`, workspace, actor.id, Number(next.enabled), Number(next.muted), next.dndUntil)
+  return next
+}

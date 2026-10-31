@@ -1,3 +1,4 @@
+import { approvalFollowupRoutingScenario, approvalFollowupAuthorityScenario } from './scenarios/approval-followup.mjs'
 import { intakeScenario } from './scenarios/intake.mjs'
 import { registerRuleAuditTests } from './scenarios/rule-audit.mjs'
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs'
@@ -2455,4 +2456,13 @@ with zipfile.ZipFile(sys.argv[1]) as z:
   } finally {await rm(scratch,{recursive:true,force:true})}
   }
  },{timeout:180000})
+})
+
+
+describe('Native approval follow-up', {concurrency:false},()=>{
+ let worker
+ before(async()=>{worker=await startWorker()},{timeout:120000})
+ after(()=>worker?.stop())
+ it('routes finite internal follow-up through working hours, DND, queued delegation, restart and a real decision',async()=>approvalFollowupRoutingScenario(worker))
+ it('cancels obsolete follow-up and refuses hidden, revoked, deactivated and muted recipients without reviving old episodes',async()=>approvalFollowupAuthorityScenario(worker))
 })

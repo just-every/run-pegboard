@@ -1,3 +1,5 @@
+import { ApprovalFollowupNotices } from './approval-followup'
+import type { approvalFollowupInbox } from '../../notices/approval-followup'
 import type {readinessNotices} from '../../notices'
 import {ReadinessNotices} from './readiness-notices'
 import type { previewRequest } from '../../access-requests/decisions'
@@ -36,9 +38,9 @@ export function DecisionCard({ request, next }: { request: Preview; next: string
   </Card>
 }
 
-export function InboxPage({ viewer, toDecide, mine,readiness }: { viewer: Viewer; toDecide: Preview[]; mine: Mine[];readiness:Awaited<ReturnType<typeof readinessNotices>> }) {
+export function InboxPage({ viewer, toDecide, mine,readiness,followup }: { followup: Awaited<ReturnType<typeof approvalFollowupInbox>> | null; viewer: Viewer; toDecide: Preview[]; mine: Mine[];readiness:Awaited<ReturnType<typeof readinessNotices>> }) {
   return <Shell viewer={viewer} current="/app/inbox" title="Inbox" chip={toDecide.length ? `${toDecide.length} TO DECIDE` : readiness.notices.length ? `${readiness.notices.length} READY` : 'CLEAR'} facts={[`${toDecide.length} request${toDecide.length === 1 ? '' : 's'} waiting for you`, `${mine.length} you asked`]}>
-    <ReadinessNotices readiness={readiness}/>
+    <ReadinessNotices readiness={readiness}/><ApprovalFollowupNotices inbox={followup}/>
     {toDecide.map(request => <DecisionCard key={request.id} request={request} next="/app/inbox" />)}
     {toDecide.length === 0 && <Card title="Nothing waiting"><p className="muted">Access requests that need your decision arrive here, and by email.</p></Card>}
     <Card title="Requests you made">

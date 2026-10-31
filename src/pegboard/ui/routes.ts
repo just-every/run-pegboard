@@ -1,3 +1,7 @@
+import { ApprovalFollowupSettings } from './pages/approval-followup'
+import { followupSettings, previewFollowupPolicy } from '../notices/approval-policy'
+import { approvalFollowupInbox, approvalFollowupLog } from '../notices/approval-followup'
+import { approvalPreferences } from '../notices/preferences'
 import { IntakeScreen,IntakeSettings,IntakeQueue } from './pages/intake'
 import { internalForm,safeForm,projectForms,reviewForm,administer } from '../intake/forms'
 import { triageQueue } from '../intake/triage'
@@ -189,6 +193,11 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
   const editorFor=async(projectId:string,tasks:{value:string;label:string}[],here:string):Promise<ScheduleEditorProps>=>({here,projectId,tasks,people:await peopleOptions(db,actor,workspace),input:scheduleInput,preview:await schedulePreview(db,actor,scheduleInput)})
 
   try {
+    if(section==='settings'&&id==='approval-followup'&&!tail){
+      const input:Record<string,any>=Object.fromEntries(url.searchParams)
+      for(const key of ['projects','recipients','escalation','days'])input[key]=url.searchParams.getAll(key+'[]')
+      return page('Approval notice settings',h(ApprovalFollowupSettings,{viewer,preferences:await approvalPreferences(db,actor,workspace),settings:viewer.role==='owner'?await followupSettings(db,actor,workspace):null,preview:url.searchParams.has('preview')?await previewFollowupPolicy(db,actor,workspace,input):null,input,log:viewer.role==='owner'?await approvalFollowupLog(db,actor,workspace):[]}))
+    }
     if(section==='intake'&&id&&!tail){const row=await internalForm(db,actor,id),receiptId=url.searchParams.get('receipt'),receipt=receiptId?await first<{id:string;deadline:number}>(db,'SELECT id,deadline FROM peg_intake_submissions WHERE id=? AND form_id=? AND source_actor=?',receiptId,id,actor.id):null;return intakeDocument('Request intake',h(IntakeScreen,{viewer,form:safeForm(row),receipt:receipt?{receipt:receipt.id,deadline:receipt.deadline,acknowledgment:'Request received'}:null}))}
     if(section==='projects'&&id&&tail==='intake'&&segments.length===4)return page('Request triage',h(IntakeQueue,{viewer,view:await triageQueue(db,actor,id)}))
     if(section==='projects'&&id&&tail==='settings'&&segments[4]==='intake'&&segments.length===5){const {project}=await administer(db,actor,id),reviewId=url.searchParams.get('review');const review=reviewId?await reviewForm(db,actor,reviewId):null;if(review&&review.project.id!==id)throw new PegError(404,'not_found');return page('Intake settings',h(IntakeSettings,{viewer,project,list:await projectForms(db,actor,id),review,people:await peopleOptions(db,actor,workspace)}))}
@@ -206,7 +215,7 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
       headers.set('content-security-policy', headers.get('content-security-policy') + "; connect-src 'self'")
       return new Response((await response.text()).replace('</body>', '<script src="/look/analytics.js" defer></script></body>'), { status: response.status, headers })
     }
-    if(section==='settings'&&!id)return page('Work settings',h(Shell,{viewer,current:'/auth/settings/identity',title:'Work settings',children:h(Card,{title:'Scheduling and notices',children:h('p',null,h('a',{href:'/app/settings/reports'},'Report settings'), ' · ',h('a',{href:'/app/settings/availability'},'Working calendar'), ' · ',h('a',{href:'/app/settings/calendars'},'Calendar connections'), ' · ',h('a',{href:'/app/settings/readiness'},'Readiness notices'), ' · ',h('a',{href:'/app/settings/capacity'},'Capacity sources and tentative staffing'), ' · ',h('a',{href:'/app/account/availability'},'My availability'), ...(['owner','admin'].includes(viewer.role)?[' · ',h('a',{href:'/app/settings/analytics'},'Analyst access')]:[]))})}))
+    if(section==='settings'&&!id)return page('Work settings',h(Shell,{viewer,current:'/auth/settings/identity',title:'Work settings',children:h(Card,{title:'Scheduling and notices',children:h('p',null,h('a',{href:'/app/settings/reports'},'Report settings'), ' · ',h('a',{href:'/app/settings/availability'},'Working calendar'), ' · ',h('a',{href:'/app/settings/calendars'},'Calendar connections'), ' · ',h('a',{href:'/app/settings/readiness'},'Readiness notices'), ' · ',h('a',{href:'/app/settings/approval-followup'},'Approval notices'), ' · ',h('a',{href:'/app/settings/capacity'},'Capacity sources and tentative staffing'), ' · ',h('a',{href:'/app/account/availability'},'My availability'), ...(['owner','admin'].includes(viewer.role)?[' · ',h('a',{href:'/app/settings/analytics'},'Analyst access')]:[]))})}))
     if(section==='workload'&&!id){const input={...Object.fromEntries(url.searchParams),selected:url.searchParams.getAll('selected[]')},view=await workloadView(db,actor,workspace,input);return page('Workload',h(WorkloadPage,{viewer,view,scenario:url.searchParams.has('taskId')?await staffingScenario(db,actor,workspace,input):null,effort:url.searchParams.has('reviewEffort')?await effortPreview(db,actor,url.searchParams.get('effortTask')!,input):null,effortTask:url.searchParams.get('effortTask'),canConfigure:isAdministrator(await workspaceRole(db,actor.id,workspace))}))}
     if(section==='account'&&id==='availability')return page('My availability',h(AccountAvailabilityPage,{viewer,view:await accountAvailability(db,actor,workspace)}))
     if(section==='settings'&&id==='capacity')return page('Capacity settings',h(CapacitySettingsPage,{viewer,workspace,feeds:await feedSettings(db,actor,workspace),people:await capacityPeople(db,actor,workspace)}))
@@ -355,7 +364,7 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
       const approvers = (await all<{ operator_id: string }>(db, "SELECT operator_id FROM peg_approvers WHERE object_type='team' AND object_id=?", id)).map(row => row.operator_id)
       return page(team.name, h(TeamPage, { viewer, people: await peopleOptions(db, actor, workspace), team: { id, name: team.name, description: team.description, privacy: team.privacy, defaultLevel: team.default_level, fallbackId: team.fallback_id, level: effective.level, capabilities: [...effective.capabilities], paths: effective.paths.map(path => ({ via: path.via, level: path.level })), members: await teamMembers(db, actor, id), approvers } }))
     }
-    if (section === 'inbox') return page('Inbox', h(InboxPage, { viewer, toDecide: await pendingFor(db, actor, { origin: env.AUTH_ORIGIN, from: env.MAIL_FROM, mail: operatorMail(env) }), mine: await myRequests(db, actor),readiness:await readinessNotices(db,actor,workspace) }))
+    if (section === 'inbox') return page('Inbox', h(InboxPage, { viewer, toDecide: await pendingFor(db, actor, { origin: env.AUTH_ORIGIN, from: env.MAIL_FROM, mail: operatorMail(env) }), mine: await myRequests(db, actor),followup:['owner','admin','manager','member'].includes(viewer.role)?await approvalFollowupInbox(db,actor,workspace):null,readiness:await readinessNotices(db,actor,workspace) }))
     if (section === 'access-requests' && id) {
       let preview
       try { preview = await previewRequest(db, actor, id) } catch (error) { if (error instanceof PegError && error.status === 404) return refuse(db, actor, viewer, id); throw error }

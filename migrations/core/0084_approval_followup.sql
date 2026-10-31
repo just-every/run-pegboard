@@ -1,0 +1,93 @@
+-- Internal follow-up is separate from proof mail and never grants approval authority.
+ALTER TABLE peg_approval_routes ADD COLUMN followup_invalidated_at INTEGER;
+CREATE TABLE peg_approval_followup_policies (
+ id TEXT PRIMARY KEY,workspace_id TEXT NOT NULL,projects TEXT NOT NULL,recipients TEXT NOT NULL,escalation TEXT NOT NULL,calendar TEXT NOT NULL,
+ repeat_minutes INTEGER NOT NULL,max_rounds INTEGER NOT NULL,approved_by TEXT NOT NULL,approver_version INTEGER NOT NULL,approved_at INTEGER NOT NULL,enabled INTEGER NOT NULL,stop_condition TEXT NOT NULL
+);
+CREATE TABLE peg_approval_followup_settings (workspace_id TEXT PRIMARY KEY,policy_id TEXT NOT NULL REFERENCES peg_approval_followup_policies(id));
+CREATE TABLE peg_approval_followup_preferences (workspace_id TEXT NOT NULL,operator_id TEXT NOT NULL,enabled INTEGER NOT NULL,muted INTEGER NOT NULL,dnd_until INTEGER,PRIMARY KEY(workspace_id,operator_id));
+CREATE TABLE peg_approval_followup_episodes (
+ id TEXT PRIMARY KEY,route_id TEXT NOT NULL UNIQUE,version TEXT NOT NULL,policy_id TEXT NOT NULL,workspace_id TEXT NOT NULL,
+ state TEXT NOT NULL,cause TEXT,created_at INTEGER NOT NULL,next_at INTEGER,round INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE peg_approval_followup_events (
+ id TEXT PRIMARY KEY,episode_id TEXT NOT NULL REFERENCES peg_approval_followup_episodes(id),ordinal INTEGER NOT NULL,kind TEXT NOT NULL,
+ state TEXT NOT NULL,cause TEXT,next_at INTEGER,queued_at INTEGER NOT NULL,UNIQUE(episode_id,ordinal)
+);
+CREATE TABLE peg_approval_followup_deliveries (
+ id TEXT PRIMARY KEY,event_id TEXT NOT NULL REFERENCES peg_approval_followup_events(id),recipient_id TEXT NOT NULL,recipient_version INTEGER NOT NULL,
+ state TEXT NOT NULL,cause TEXT,next_at INTEGER,visible_at INTEGER,UNIQUE(event_id,recipient_id)
+);
+CREATE TABLE peg_approval_followup_exclusions (episode_id TEXT NOT NULL,recipient_id TEXT NOT NULL,cause TEXT NOT NULL,PRIMARY KEY(episode_id,recipient_id));
+CREATE TABLE peg_approval_followup_outcomes (id INTEGER PRIMARY KEY AUTOINCREMENT,event_id TEXT NOT NULL,recipient_id TEXT,state TEXT NOT NULL,cause TEXT,at INTEGER NOT NULL,next_at INTEGER);
+CREATE INDEX peg_followup_pending ON peg_approval_followup_events(state,next_at);
+CREATE INDEX peg_followup_inbox ON peg_approval_followup_deliveries(recipient_id,state);
+CREATE TRIGGER peg_followup_policy_immutable BEFORE UPDATE ON peg_approval_followup_policies BEGIN SELECT RAISE(ABORT,'immutable_followup_policy'); END;
+CREATE TRIGGER peg_followup_policy_changed AFTER UPDATE ON peg_approval_followup_settings BEGIN
+ UPDATE peg_approval_followup_episodes SET state='cancelled',cause='policy_replaced',next_at=NULL WHERE workspace_id=NEW.workspace_id AND policy_id<>NEW.policy_id AND state='active';
+END;
+CREATE TRIGGER peg_followup_episode_ended AFTER UPDATE OF state ON peg_approval_followup_episodes WHEN NEW.state IN ('responded','cancelled','blocked') BEGIN
+ UPDATE peg_approval_followup_events SET state='cancelled',cause=NEW.cause,next_at=NULL WHERE episode_id=NEW.id AND state IN ('queued','deferred');
+ UPDATE peg_approval_followup_deliveries SET state='cancelled',cause=NEW.cause,next_at=NULL WHERE event_id IN (SELECT id FROM peg_approval_followup_events WHERE episode_id=NEW.id) AND state IN ('queued','deferred','visible');
+END;
+CREATE TRIGGER peg_followup_decision AFTER INSERT ON peg_approval_votes BEGIN
+ UPDATE peg_approval_followup_episodes SET state='responded',cause='person_responded',next_at=NULL WHERE route_id=NEW.route_id AND version=NEW.version;
+END;
+CREATE TRIGGER peg_followup_route_ended AFTER UPDATE ON peg_approval_routes WHEN NEW.withdrawn_at IS NOT NULL OR NEW.followup_invalidated_at IS NOT NULL BEGIN
+ UPDATE peg_approval_followup_episodes SET state='cancelled',cause=CASE WHEN NEW.withdrawn_at IS NOT NULL THEN 'route_withdrawn' ELSE 'material_changed' END,next_at=NULL WHERE route_id=NEW.id AND state='active';
+END;
+CREATE TRIGGER peg_followup_delegated AFTER UPDATE OF stages ON peg_approval_routes WHEN NEW.stages<>OLD.stages BEGIN
+ UPDATE peg_approval_followup_deliveries SET state='cancelled',cause='reviewer_delegated',next_at=NULL WHERE event_id IN (SELECT e.id FROM peg_approval_followup_events e JOIN peg_approval_followup_episodes p ON p.id=e.episode_id WHERE p.route_id=NEW.id)
+ AND NOT EXISTS(SELECT 1 FROM json_each(NEW.stages) s,json_each(json_extract(s.value,'$.people')) p WHERE p.value=recipient_id) AND state IN ('queued','deferred','visible');
+END;
+CREATE TRIGGER peg_followup_person_changed AFTER UPDATE OF status,role,version ON oa_operators WHEN NEW.status<>OLD.status OR NEW.role<>OLD.role OR NEW.version<>OLD.version BEGIN
+ INSERT OR IGNORE INTO peg_approval_followup_exclusions SELECT p.id,NEW.id,'identity_authority_changed' FROM peg_approval_followup_episodes p JOIN peg_approval_followup_events e ON e.episode_id=p.id JOIN peg_approval_followup_deliveries d ON d.event_id=e.id WHERE d.recipient_id=NEW.id;
+ UPDATE peg_approval_followup_deliveries SET state='cancelled',cause='identity_authority_changed',next_at=NULL WHERE recipient_id=NEW.id AND state IN ('queued','deferred','visible');
+ UPDATE peg_approval_followup_episodes SET state='cancelled',cause='policy_or_route_authority_lost',next_at=NULL WHERE state='active' AND (route_id IN (SELECT id FROM peg_approval_routes WHERE created_by=NEW.id) OR policy_id IN (SELECT id FROM peg_approval_followup_policies WHERE approved_by=NEW.id));
+END;
+CREATE TRIGGER peg_followup_revision_peg_approval_followup_settings_insert AFTER INSERT ON peg_approval_followup_settings BEGIN UPDATE peg_personal_revision SET value=value+1 WHERE id=1; END;
+CREATE TRIGGER peg_followup_revision_peg_approval_followup_settings_update AFTER UPDATE ON peg_approval_followup_settings BEGIN UPDATE peg_personal_revision SET value=value+1 WHERE id=1; END;
+CREATE TRIGGER peg_followup_revision_peg_approval_followup_settings_delete AFTER DELETE ON peg_approval_followup_settings BEGIN UPDATE peg_personal_revision SET value=value+1 WHERE id=1; END;
+CREATE TRIGGER peg_followup_revision_peg_approval_followup_preferences_insert AFTER INSERT ON peg_approval_followup_preferences BEGIN UPDATE peg_personal_revision SET value=value+1 WHERE id=1; END;
+CREATE TRIGGER peg_followup_revision_peg_approval_followup_preferences_update AFTER UPDATE ON peg_approval_followup_preferences BEGIN UPDATE peg_personal_revision SET value=value+1 WHERE id=1; END;
+CREATE TRIGGER peg_followup_revision_peg_approval_followup_preferences_delete AFTER DELETE ON peg_approval_followup_preferences BEGIN UPDATE peg_personal_revision SET value=value+1 WHERE id=1; END;
+CREATE TRIGGER peg_followup_outcome_peg_approval_followup_events_insert AFTER INSERT ON peg_approval_followup_events BEGIN INSERT INTO peg_approval_followup_outcomes(event_id,recipient_id,state,cause,at,next_at) VALUES(NEW.id,NULL,NEW.state,NEW.cause,CAST((julianday('now')-2440587.5)*86400000 AS INTEGER),NEW.next_at); END;
+CREATE TRIGGER peg_followup_outcome_peg_approval_followup_events_update AFTER UPDATE ON peg_approval_followup_events WHEN OLD.state<>NEW.state OR COALESCE(OLD.cause,'')<>COALESCE(NEW.cause,'') OR COALESCE(OLD.next_at,0)<>COALESCE(NEW.next_at,0) BEGIN INSERT INTO peg_approval_followup_outcomes(event_id,recipient_id,state,cause,at,next_at) VALUES(NEW.id,NULL,NEW.state,NEW.cause,CAST((julianday('now')-2440587.5)*86400000 AS INTEGER),NEW.next_at); END;
+CREATE TRIGGER peg_followup_outcome_peg_approval_followup_deliveries_insert AFTER INSERT ON peg_approval_followup_deliveries BEGIN INSERT INTO peg_approval_followup_outcomes(event_id,recipient_id,state,cause,at,next_at) VALUES(NEW.event_id,NEW.recipient_id,NEW.state,NEW.cause,CAST((julianday('now')-2440587.5)*86400000 AS INTEGER),NEW.next_at); END;
+CREATE TRIGGER peg_followup_outcome_peg_approval_followup_deliveries_update AFTER UPDATE ON peg_approval_followup_deliveries WHEN OLD.state<>NEW.state OR COALESCE(OLD.cause,'')<>COALESCE(NEW.cause,'') OR COALESCE(OLD.next_at,0)<>COALESCE(NEW.next_at,0) BEGIN INSERT INTO peg_approval_followup_outcomes(event_id,recipient_id,state,cause,at,next_at) VALUES(NEW.event_id,NEW.recipient_id,NEW.state,NEW.cause,CAST((julianday('now')-2440587.5)*86400000 AS INTEGER),NEW.next_at); END;
+CREATE TRIGGER peg_followup_task_material AFTER UPDATE OF title,description,owner_id,parent_id,priority,start_date,due_date,estimate_hours,internal_only,internal_notes,kind ON peg_tasks WHEN OLD.title IS NOT NEW.title OR OLD.description IS NOT NEW.description OR OLD.owner_id IS NOT NEW.owner_id OR OLD.parent_id IS NOT NEW.parent_id OR OLD.priority IS NOT NEW.priority OR OLD.start_date IS NOT NEW.start_date OR OLD.due_date IS NOT NEW.due_date OR OLD.estimate_hours IS NOT NEW.estimate_hours OR OLD.internal_only IS NOT NEW.internal_only OR OLD.internal_notes IS NOT NEW.internal_notes OR OLD.kind IS NOT NEW.kind BEGIN UPDATE peg_approval_routes SET followup_invalidated_at=CAST((julianday('now')-2440587.5)*86400000 AS INTEGER) WHERE task_id=NEW.id AND withdrawn_at IS NULL AND followup_invalidated_at IS NULL; END;
+CREATE TRIGGER peg_followup_material_peg_field_values_insert AFTER INSERT ON peg_field_values BEGIN UPDATE peg_approval_routes SET followup_invalidated_at=CAST((julianday('now')-2440587.5)*86400000 AS INTEGER) WHERE task_id=NEW.task_id AND withdrawn_at IS NULL AND followup_invalidated_at IS NULL; END;
+CREATE TRIGGER peg_followup_material_peg_field_values_update AFTER UPDATE ON peg_field_values BEGIN UPDATE peg_approval_routes SET followup_invalidated_at=CAST((julianday('now')-2440587.5)*86400000 AS INTEGER) WHERE task_id=NEW.task_id AND withdrawn_at IS NULL AND followup_invalidated_at IS NULL; END;
+CREATE TRIGGER peg_followup_material_peg_field_values_delete AFTER DELETE ON peg_field_values BEGIN UPDATE peg_approval_routes SET followup_invalidated_at=CAST((julianday('now')-2440587.5)*86400000 AS INTEGER) WHERE task_id=OLD.task_id AND withdrawn_at IS NULL AND followup_invalidated_at IS NULL; END;
+CREATE TRIGGER peg_followup_material_peg_comments_insert AFTER INSERT ON peg_comments BEGIN UPDATE peg_approval_routes SET followup_invalidated_at=CAST((julianday('now')-2440587.5)*86400000 AS INTEGER) WHERE task_id=NEW.task_id AND withdrawn_at IS NULL AND followup_invalidated_at IS NULL; END;
+CREATE TRIGGER peg_followup_material_peg_comments_update AFTER UPDATE ON peg_comments BEGIN UPDATE peg_approval_routes SET followup_invalidated_at=CAST((julianday('now')-2440587.5)*86400000 AS INTEGER) WHERE task_id=NEW.task_id AND withdrawn_at IS NULL AND followup_invalidated_at IS NULL; END;
+CREATE TRIGGER peg_followup_material_peg_comments_delete AFTER DELETE ON peg_comments BEGIN UPDATE peg_approval_routes SET followup_invalidated_at=CAST((julianday('now')-2440587.5)*86400000 AS INTEGER) WHERE task_id=OLD.task_id AND withdrawn_at IS NULL AND followup_invalidated_at IS NULL; END;
+CREATE TRIGGER peg_followup_material_peg_attachments_insert AFTER INSERT ON peg_attachments BEGIN UPDATE peg_approval_routes SET followup_invalidated_at=CAST((julianday('now')-2440587.5)*86400000 AS INTEGER) WHERE task_id=NEW.task_id AND withdrawn_at IS NULL AND followup_invalidated_at IS NULL; END;
+CREATE TRIGGER peg_followup_material_peg_attachments_update AFTER UPDATE ON peg_attachments BEGIN UPDATE peg_approval_routes SET followup_invalidated_at=CAST((julianday('now')-2440587.5)*86400000 AS INTEGER) WHERE task_id=NEW.task_id AND withdrawn_at IS NULL AND followup_invalidated_at IS NULL; END;
+CREATE TRIGGER peg_followup_material_peg_attachments_delete AFTER DELETE ON peg_attachments BEGIN UPDATE peg_approval_routes SET followup_invalidated_at=CAST((julianday('now')-2440587.5)*86400000 AS INTEGER) WHERE task_id=OLD.task_id AND withdrawn_at IS NULL AND followup_invalidated_at IS NULL; END;
+CREATE TRIGGER peg_followup_material_peg_task_projects_insert AFTER INSERT ON peg_task_projects BEGIN UPDATE peg_approval_routes SET followup_invalidated_at=CAST((julianday('now')-2440587.5)*86400000 AS INTEGER) WHERE task_id=NEW.task_id AND withdrawn_at IS NULL AND followup_invalidated_at IS NULL; END;
+CREATE TRIGGER peg_followup_material_peg_task_projects_update AFTER UPDATE ON peg_task_projects BEGIN UPDATE peg_approval_routes SET followup_invalidated_at=CAST((julianday('now')-2440587.5)*86400000 AS INTEGER) WHERE task_id=NEW.task_id AND withdrawn_at IS NULL AND followup_invalidated_at IS NULL; END;
+CREATE TRIGGER peg_followup_material_peg_task_projects_delete AFTER DELETE ON peg_task_projects BEGIN UPDATE peg_approval_routes SET followup_invalidated_at=CAST((julianday('now')-2440587.5)*86400000 AS INTEGER) WHERE task_id=OLD.task_id AND withdrawn_at IS NULL AND followup_invalidated_at IS NULL; END;
+CREATE TRIGGER peg_followup_material_peg_task_tags_insert AFTER INSERT ON peg_task_tags BEGIN UPDATE peg_approval_routes SET followup_invalidated_at=CAST((julianday('now')-2440587.5)*86400000 AS INTEGER) WHERE task_id=NEW.task_id AND withdrawn_at IS NULL AND followup_invalidated_at IS NULL; END;
+CREATE TRIGGER peg_followup_material_peg_task_tags_update AFTER UPDATE ON peg_task_tags BEGIN UPDATE peg_approval_routes SET followup_invalidated_at=CAST((julianday('now')-2440587.5)*86400000 AS INTEGER) WHERE task_id=NEW.task_id AND withdrawn_at IS NULL AND followup_invalidated_at IS NULL; END;
+CREATE TRIGGER peg_followup_material_peg_task_tags_delete AFTER DELETE ON peg_task_tags BEGIN UPDATE peg_approval_routes SET followup_invalidated_at=CAST((julianday('now')-2440587.5)*86400000 AS INTEGER) WHERE task_id=OLD.task_id AND withdrawn_at IS NULL AND followup_invalidated_at IS NULL; END;
+CREATE TRIGGER peg_followup_material_peg_task_collaborators_insert AFTER INSERT ON peg_task_collaborators BEGIN UPDATE peg_approval_routes SET followup_invalidated_at=CAST((julianday('now')-2440587.5)*86400000 AS INTEGER) WHERE task_id=NEW.task_id AND withdrawn_at IS NULL AND followup_invalidated_at IS NULL; END;
+CREATE TRIGGER peg_followup_material_peg_task_collaborators_update AFTER UPDATE ON peg_task_collaborators BEGIN UPDATE peg_approval_routes SET followup_invalidated_at=CAST((julianday('now')-2440587.5)*86400000 AS INTEGER) WHERE task_id=NEW.task_id AND withdrawn_at IS NULL AND followup_invalidated_at IS NULL; END;
+CREATE TRIGGER peg_followup_material_peg_task_collaborators_delete AFTER DELETE ON peg_task_collaborators BEGIN UPDATE peg_approval_routes SET followup_invalidated_at=CAST((julianday('now')-2440587.5)*86400000 AS INTEGER) WHERE task_id=OLD.task_id AND withdrawn_at IS NULL AND followup_invalidated_at IS NULL; END;
+CREATE TRIGGER peg_followup_material_peg_proofs_insert AFTER INSERT ON peg_proofs BEGIN UPDATE peg_approval_routes SET followup_invalidated_at=CAST((julianday('now')-2440587.5)*86400000 AS INTEGER) WHERE task_id=NEW.task_id AND withdrawn_at IS NULL AND followup_invalidated_at IS NULL; END;
+CREATE TRIGGER peg_followup_material_peg_proofs_update AFTER UPDATE ON peg_proofs BEGIN UPDATE peg_approval_routes SET followup_invalidated_at=CAST((julianday('now')-2440587.5)*86400000 AS INTEGER) WHERE task_id=NEW.task_id AND withdrawn_at IS NULL AND followup_invalidated_at IS NULL; END;
+CREATE TRIGGER peg_followup_material_peg_proofs_delete AFTER DELETE ON peg_proofs BEGIN UPDATE peg_approval_routes SET followup_invalidated_at=CAST((julianday('now')-2440587.5)*86400000 AS INTEGER) WHERE task_id=OLD.task_id AND withdrawn_at IS NULL AND followup_invalidated_at IS NULL; END;
+CREATE TRIGGER peg_followup_grant_update AFTER UPDATE ON peg_grants BEGIN
+ INSERT OR IGNORE INTO peg_approval_followup_exclusions SELECT p.id,d.recipient_id,'access_changed' FROM peg_approval_followup_episodes p JOIN peg_approval_followup_events e ON e.episode_id=p.id JOIN peg_approval_followup_deliveries d ON d.event_id=e.id WHERE d.recipient_id=OLD.grantee_id;
+ UPDATE peg_approval_followup_deliveries SET state='cancelled',cause='access_changed',next_at=NULL WHERE recipient_id=OLD.grantee_id AND state IN ('queued','deferred','visible');
+ END;
+CREATE TRIGGER peg_followup_grant_delete AFTER DELETE ON peg_grants BEGIN
+ INSERT OR IGNORE INTO peg_approval_followup_exclusions SELECT p.id,d.recipient_id,'access_changed' FROM peg_approval_followup_episodes p JOIN peg_approval_followup_events e ON e.episode_id=p.id JOIN peg_approval_followup_deliveries d ON d.event_id=e.id WHERE d.recipient_id=OLD.grantee_id;
+ UPDATE peg_approval_followup_deliveries SET state='cancelled',cause='access_changed',next_at=NULL WHERE recipient_id=OLD.grantee_id AND state IN ('queued','deferred','visible');
+ END;
+CREATE TRIGGER peg_followup_field_definition AFTER UPDATE ON peg_field_definitions BEGIN
+ UPDATE peg_approval_routes SET followup_invalidated_at=CAST((julianday('now')-2440587.5)*86400000 AS INTEGER) WHERE withdrawn_at IS NULL AND followup_invalidated_at IS NULL AND (task_id IN (SELECT task_id FROM peg_field_values WHERE field_id=NEW.id) OR task_id IN (SELECT tp.task_id FROM peg_task_projects tp JOIN peg_project_fields f ON f.project_id=tp.project_id WHERE f.field_id=NEW.id));
+END;
+CREATE TRIGGER peg_followup_tag_definition AFTER UPDATE ON peg_tags BEGIN
+ UPDATE peg_approval_routes SET followup_invalidated_at=CAST((julianday('now')-2440587.5)*86400000 AS INTEGER) WHERE withdrawn_at IS NULL AND followup_invalidated_at IS NULL AND task_id IN (SELECT task_id FROM peg_task_tags WHERE tag_id=NEW.id);
+END;
