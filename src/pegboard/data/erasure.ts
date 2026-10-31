@@ -64,9 +64,9 @@ export async function erasurePlan(db:D1Database,actor:Actor,workspace:string,typ
     if(await first(db,"SELECT 1 FROM peg_approval_routes WHERE created_by=? OR instr(stages,?)>0 UNION SELECT 1 FROM peg_approval_votes WHERE actor_id=?",id,id,id))blockers.push('review_approval_custody_before_erasure')
     if(await first(db,'SELECT 1 FROM peg_proofs WHERE created_by=? UNION SELECT 1 FROM peg_proof_versions WHERE created_by=?',id,id))blockers.push('review_proof_custody_before_erasure')
     if(await first(db,'SELECT 1 FROM peg_time_entries WHERE person_id=?',id))blockers.push('retained_time_records_require_separate_review')
-    const focusIds=(await all<{id:string}>(db,'SELECT id FROM peg_focus_reviews WHERE owner_id=?',id)).map(r=>r.id)
+    const focusIds=(await all<{id:string}>(db,"SELECT id FROM peg_focus_reviews WHERE owner_id=? OR EXISTS(SELECT 1 FROM json_each(body,'$.scenarios') s JOIN json_each(s.value,'$.items') i WHERE json_extract(i.value,'$.beforeTask.creator_id')=?)",id,id)).map(r=>r.id)
     for(const table of ['peg_focus_operations','peg_focus_subjects'])await take(table,`review_id IN (${placeholders(focusIds)})`,focusIds)
-    await take('peg_focus_reviews','owner_id=?',[id]);await take('peg_focus_locks','owner_id=?',[id])
+    await take('peg_focus_reviews',`id IN (${placeholders(focusIds)})`,focusIds);await take('peg_focus_locks','owner_id=?',[id])
     await take('peg_work_views','owner_id=?',[id]);await take('peg_work_view_defaults','subject_id=? OR updated_by=?',[id,id]);
     await take('peg_capacity_applications',"actor_id=? OR from_id=? OR to_id=? OR EXISTS(SELECT 1 FROM json_each(before_allocations) a WHERE json_extract(a.value,'$.person_id')=?) OR EXISTS(SELECT 1 FROM json_each(after_allocations) a WHERE json_extract(a.value,'$.person_id')=?)",[id,id,id,id,id])
     await take('peg_capacity_profiles','person_id=?',[id]);await take('peg_time_off','operator_id=?',[id]);await take('peg_availability_history','person_id=?',[id]);await take('peg_effort_allocations','person_id=?',[id]);await take('peg_resource_plans','person_id=?',[id]);
@@ -140,7 +140,10 @@ export async function erasurePlan(db:D1Database,actor:Actor,workspace:string,typ
   if(proofFiles.length)await take('peg_attachments',`id IN (${placeholders(proofFiles)})`,proofFiles)
   const intake=type==='person'?{forms:await formErasureScope(db,id),submissions:await submissionErasureScope(db,id)}:null
   const affectedTasks=new Set(tasks)
-  if(type==='person')for(const s of await all<{task_id:string}>(db,'SELECT s.task_id FROM peg_focus_subjects s JOIN peg_focus_reviews r ON r.id=s.review_id WHERE r.owner_id=?',id))affectedTasks.add(s.task_id)
+  if(type==='person'){
+    const focusIds=selections.find(s=>s.table==='peg_focus_reviews')?.keys.map(k=>String(k.id))??[]
+    for(const s of await all<{task_id:string}>(db,`SELECT task_id FROM peg_focus_subjects WHERE review_id IN (${placeholders(focusIds)})`,...focusIds))affectedTasks.add(s.task_id)
+  }
   if(intake)for(const row of intake.submissions)affectedTasks.add(row.taskId)
   if(proofs.length)for(const proof of await all<{task_id:string}>(db,`SELECT task_id FROM peg_proofs WHERE id IN (${placeholders(proofs)})`,...proofs))affectedTasks.add(proof.task_id)
   if(projects.length){const roots=(await all<{task_id:string}>(db,`SELECT task_id FROM peg_task_projects WHERE project_id IN (${placeholders(projects)})`,...projects)).map(t=>t.task_id);for(const t of await descendants(db,roots))affectedTasks.add(t.id)}

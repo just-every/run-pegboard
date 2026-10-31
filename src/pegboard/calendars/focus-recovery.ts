@@ -19,7 +19,7 @@ import { blockFence, overlaps, type FocusLock } from './focus-guards'
 
 interface Change extends Slot { blockId:string;taskStart:string|null;taskDue:string|null }
 interface ScenarioInput { label:string;changes:Change[] }
-interface Item extends Change { taskId:string;title:string;beforeTask:TaskRow;block:Block;event:Event;zone:string }
+interface Item extends Change { actualHours:number;remainingHours:number; taskId:string;title:string;beforeTask:TaskRow;block:Block;event:Event;zone:string }
 interface Scenario { label:string;items:Item[];days:{date:string;zone:string;freeHours:number;otherHours:number;availableHours:number;requiredHours:number;shortageHours:number}[];requiredHours:number;reservedHours:number;shortageHours:number;feasible:boolean;reasons:string[];busyStamp:string;planStamp:string }
 interface Body { scenarios:Scenario[];inputs:ScenarioInput[];context:number;locks:FocusLock[];blockId?:string;locked?:boolean;lockSnapshot?:string }
 interface Review { id:string;owner_id:string;connection_id:string;kind:string;state:string;body:string;stamp:string;expires_at:number;selected:number|null;source_id:string|null;cause:string|null;created_at:number;applied_at:number|null }
@@ -103,6 +103,7 @@ async function analyse(env:Bindings,db:D1Database,actor:Actor,c:Connection,input
  const context=(await revision(db)).value,edge=await edgeFor(env,db,actor,c,credential),locks=await locksFor(db,actor),scenarios:Scenario[]=[]
  for(const input of inputs) {
   const items:Item[]=[],reasons:string[]=[]
+  if(await first(db,'SELECT 1 FROM peg_calendar_connections WHERE owner_id=? AND active=1 AND id<>?',actor.id,c.id))reasons.push('other_calendar_context_unavailable')
   for(const change of input.changes) {
    const block=await first<Block>(db,'SELECT * FROM peg_calendar_blocks WHERE id=? AND connection_id=?',change.blockId,c.id)
    if(!block||block.state==='cancelled'||!block.event_id)throw invalid('focus_mapped_block')
@@ -110,7 +111,7 @@ async function analyse(env:Bindings,db:D1Database,actor:Actor,c:Connection,input
    await blockFence(db,block.id,c.id,change)
    const event=await edge.read(block.event_id)
    if(!event||event.cancelled||event.recurring)throw conflict('focus_provider_changed')
-   items.push({...change,taskId:task.id,title:task.title,beforeTask:task,block,event,zone:block.zone})
+   items.push({...change,actualHours:0,remainingHours:0,taskId:task.id,title:task.title,beforeTask:task,block,event,zone:block.zone})
   }
   if(new Set(items.map(i=>i.taskId)).size!==items.length)throw invalid('focus_duplicate_task')
   const plan=await planChange(db,actor,items.map(i=>({taskId:i.taskId,start:i.taskStart,due:i.taskDue})))
@@ -123,7 +124,9 @@ async function analyse(env:Bindings,db:D1Database,actor:Actor,c:Connection,input
   const remaining=new Map<string,number>()
   for(const i of items) {
    const actual=await first<{seconds:number;running:number}>(db,'SELECT COALESCE(SUM(COALESCE(seconds,(end_ms-start_ms)/1000)),0) seconds,COALESCE(SUM(CASE WHEN seconds IS NULL AND end_ms IS NULL THEN 1 ELSE 0 END),0) running FROM peg_time_entries WHERE task_id=? AND person_id=?',i.taskId,actor.id)
-   remaining.set(i.taskId,Math.max(0,i.beforeTask.estimate_hours-(actual?.seconds??0)/3600))
+   i.actualHours=rounded((actual?.seconds??0)/3600)
+   i.remainingHours=rounded(Math.max(0,i.beforeTask.estimate_hours-i.actualHours))
+   remaining.set(i.taskId,i.remainingHours)
    if(actual?.running)reasons.push('running_actual_time_unknown')
   }
   for(const date of dates) {
@@ -182,7 +185,7 @@ export async function reviewView(db:D1Database,actor:Actor,id:string) {
  // Provider credentials are never part of the persisted body or response.
  return {id:r.id,kind:r.kind,state:r.state,stamp:r.stamp,selected:r.selected,cause:r.cause,expiresAt:r.expires_at,blockId:body.blockId,locked:body.locked,
   locks:body.locks.filter(l=>l.locked).map(l=>({blockId:l.block_id,start:l.start_at,end:l.end_at})),
-  scenarios:body.scenarios.map(s=>({...s,items:s.items.map(i=>({blockId:i.blockId,taskId:i.taskId,title:i.title,start:i.start,end:i.end,taskStart:i.taskStart,taskDue:i.taskDue,fromStart:i.beforeTask.start_date,fromDue:i.beforeTask.due_date,eventId:i.event.id,eventStart:i.event.start,eventEnd:i.event.end}))})),
+  scenarios:body.scenarios.map(s=>({...s,items:s.items.map(i=>({blockId:i.blockId,taskId:i.taskId,title:i.title,estimateHours:i.beforeTask.estimate_hours,actualHours:i.actualHours,remainingHours:i.remainingHours,start:i.start,end:i.end,taskStart:i.taskStart,taskDue:i.taskDue,fromStart:i.beforeTask.start_date,fromDue:i.beforeTask.due_date,eventId:i.event.id,eventStart:i.event.start,eventEnd:i.event.end}))})),
   operations:await all<Operation>(db,'SELECT * FROM peg_focus_operations WHERE review_id=? ORDER BY block_id',id)}
 }
 export async function recoveryProject(db:D1Database,actor:Actor,project:string) {
