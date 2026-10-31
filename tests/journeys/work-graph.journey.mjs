@@ -1,5 +1,6 @@
 import {providerLogRetentionJourney} from './provider-log-retention.mjs'
 import {pdfFeedbackJourney,retainedMemberReviewJourney} from './pdf-feedback.mjs'
+import { intakeDecisionsJourney } from './intake-decisions.mjs'
 import { approvalFollowupJourney } from './approval-followup.mjs'
 import { intakeErasureJourney } from './intake-erasure.mjs'
 import { intakeJourney } from './intake.mjs'
@@ -36,7 +37,7 @@ import { portfolioJourney } from './portfolios.mjs'
 import { timelineJourney } from './timeline.mjs'
 import {searchBulkJourney} from './search-bulk.mjs'
 
-const journeyNames = ["provider-log-retention", "retained-pdf-review", "pdf-feedback", "approval-followup", "intake-erasure", "intake", "rule-audit", "reporting", "work-views", "search-bulk", "access-privacy", "access-discovery", "analytics", "calendar-blocks", "capacity", "portfolio-capacity", "public-api", "approval-routing", "guests", "core", "recurrence", "approvals", "time-packets", "goals", "engineering", "meetings", "custody", "recovery", "departure", "canvas", "portfolio", "timeline", "register", "bundles"]
+const journeyNames = ["intake-decisions", "provider-log-retention", "retained-pdf-review", "pdf-feedback", "approval-followup", "intake-erasure", "intake", "rule-audit", "reporting", "work-views", "search-bulk", "access-privacy", "access-discovery", "analytics", "calendar-blocks", "capacity", "portfolio-capacity", "public-api", "approval-routing", "guests", "core", "recurrence", "approvals", "time-packets", "goals", "engineering", "meetings", "custody", "recovery", "departure", "canvas", "portfolio", "timeline", "register", "bundles"]
 const selected = new Set(process.env.PEGBOARD_JOURNEY === undefined ? journeyNames : process.env.PEGBOARD_JOURNEY.split(',').map(name => name.trim()))
 for (const name of selected) if (!journeyNames.includes(name)) throw new Error(`Unknown PEGBOARD_JOURNEY: ${name}`)
 
@@ -67,6 +68,7 @@ try {
   if(await select('pdf-feedback'))await pdfFeedbackJourney({w,browser})
   if(await select('approval-followup'))await approvalFollowupJourney({w,browser})
   if(await select('intake-erasure'))await intakeErasureJourney({w,browser})
+  if(await select('intake-decisions'))await intakeDecisionsJourney({w,browser})
   if(await select('intake'))await intakeJourney({w,browser})
   if(await select('rule-audit'))await ruleAuditJourney({w,browser})
   if(await select('search-bulk'))await searchBulkJourney({w,browser,ok})

@@ -121,6 +121,7 @@ export async function erasurePlan(db:D1Database,actor:Actor,workspace:string,typ
     await take('peg_recurring_grants',`grant_id IN(SELECT id FROM peg_grants WHERE (object_type='task' AND ${scoped('object_id')}) OR (object_type='project' AND ${projectScoped('object_id')}))`,[...tasks,...projects])
     for(const table of ['peg_grants','peg_approvers','peg_template_origins'])await take(table,`(object_type='task' AND ${scoped('object_id')}) OR (object_type='project' AND ${projectScoped('object_id')})`,[...tasks,...projects])
     await take('peg_task_projects',`${scoped('task_id')} OR ${projectScoped('project_id')}`,[...tasks,...projects])
+    await take('peg_intake_sources',`submission_id IN(SELECT id FROM peg_intake_submissions WHERE ${scoped('task_id')} OR form_id IN(SELECT id FROM peg_intake_forms WHERE ${projectScoped('project_id')}))`,[...tasks,...projects])
     await take('peg_intake_decisions',`${scoped('task_id')} OR ${projectScoped('project_id')}`,[...tasks,...projects])
     await take('peg_intake_decision_policies',projectScoped('project_id'),projects)
     await take('peg_tasks',scoped('id'),tasks)

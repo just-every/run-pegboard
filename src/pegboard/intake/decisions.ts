@@ -45,7 +45,9 @@ async function context(db:D1Database,actor:Actor,id:string) {
  const opened=await openTask(db,actor,submission.task_id)
  // Priority is shared: require edit authority in every actual home, never just one visible home.
  await prepareIntakePriority(db,actor,opened.task.id,opened.task.priority)
- return {submission,form,project,person,policy,task:opened.task}
+ const source=await first<{title:string;description:string;provenance:string}>(db,'SELECT title,description,provenance FROM peg_intake_sources WHERE submission_id=?',id)
+ if(!source)throw conflict('intake_source_unavailable')
+ return {submission,form,source,project,person,policy,task:opened.task}
 }
 function proposal(input:Record<string,any>,current:string) {
  if(!['accepted','declined'].includes(input.disposition)||!['low','normal','high','urgent'].includes(input.priority))throw invalid('intake_decision')
@@ -56,9 +58,9 @@ export async function previewDecision(db:D1Database,actor:Actor,id:string,input:
  const rev=await revision(db),c=await context(db,actor,id),proposed=proposal(input,c.task.priority)
  if(await first(db,'SELECT id FROM peg_intake_decisions WHERE submission_id=?',id))throw conflict('intake_already_decided')
  const names=await displayNames(db,[c.task.owner_id,c.submission.source_actor,actor.id])
- const sourceDigest=await digest([c.submission,c.form]),taskDigest=await digest(c.task)
+ const sourceDigest=await digest([c.submission,c.form,c.source]),taskDigest=await digest(c.task)
  const review=await digest([actor.id,c.person.version,rev.value,c.policy.version,sourceDigest,taskDigest,proposed])
- return {submissionId:id,formId:c.form.id,formVersion:c.submission.form_version,taskId:c.task.id,projectId:c.project.id,projectName:c.project.name,sourceActor:c.submission.source_actor,sourceName:names.get(c.submission.source_actor)??'Erased actor',submittedAt:c.submission.submitted_at,triaged:!!c.submission.triaged_at,title:c.task.title,description:c.task.description,ownerId:c.task.owner_id,owner:names.get(c.task.owner_id)??'Unassigned',startDate:c.task.start_date,dueDate:c.task.due_date,currentPriority:c.task.priority,...proposed,actorId:actor.id,actor:names.get(actor.id),policyVersion:c.policy.version,review}
+ return {submissionId:id,formId:c.form.id,formVersion:c.submission.form_version,taskId:c.task.id,projectId:c.project.id,projectName:c.project.name,sourceActor:c.submission.source_actor,sourceName:names.get(c.submission.source_actor)??'Erased actor',submittedAt:c.submission.submitted_at,triaged:!!c.submission.triaged_at,source:c.source,title:c.task.title,description:c.task.description,ownerId:c.task.owner_id,owner:names.get(c.task.owner_id)??'Unassigned',startDate:c.task.start_date,dueDate:c.task.due_date,currentPriority:c.task.priority,...proposed,actorId:actor.id,actor:names.get(actor.id),policyVersion:c.policy.version,review}
 }
 const receipt=(r:Decision,replayed=false)=>({id:r.id,submissionId:r.submission_id,taskId:r.task_id,actorId:r.actor_id,disposition:r.disposition,priorityBefore:r.priority_before,priority:r.priority_after,decidedAt:r.decided_at,replayed})
 export async function decideIntake(db:D1Database,actor:Actor,id:string,input:Record<string,any>) {
@@ -67,15 +69,15 @@ export async function decideIntake(db:D1Database,actor:Actor,id:string,input:Rec
  for(let attempt=0;attempt<3;attempt++){
   const rev=await revision(db),c=await context(db,actor,id),previous=await first<Decision>(db,'SELECT * FROM peg_intake_decisions WHERE submission_id=?',id)
   if(previous){
-   if(previous.custody_inactive||previous.actor_id!==actor.id||previous.actor_version!==c.person.version||previous.policy_version!==c.policy.version||previous.request_key!==key||previous.review_token!==input.review||previous.disposition!==input.disposition||previous.priority_after!==input.priority||previous.source_digest!==await digest([c.submission,c.form])||previous.task_digest!==await digest(c.task))throw conflict('intake_already_decided')
+   if(previous.custody_inactive||previous.actor_id!==actor.id||previous.actor_version!==c.person.version||previous.policy_version!==c.policy.version||previous.request_key!==key||previous.review_token!==input.review||previous.disposition!==input.disposition||previous.priority_after!==input.priority||previous.source_digest!==await digest([c.submission,c.form,c.source])||previous.task_digest!==await digest(c.task))throw conflict('intake_already_decided')
    return receipt(previous,true)
   }
   const preview=await previewDecision(db,actor,id,input)
   if(input.review!==preview.review)throw conflict('intake_decision_review_required')
   const at=now(),prepared=await prepareIntakePriority(db,actor,c.task.id,preview.priority,at,preview.disposition==='accepted')
-  const row:Decision={id:newId('decision'),submission_id:id,project_id:c.project.id,task_id:c.task.id,request_key:key,actor_id:actor.id,actor_version:c.person.version,policy_version:c.policy.version,disposition:preview.disposition,priority_before:c.task.priority,priority_after:preview.priority,decided_at:at,source_digest:await digest([c.submission,c.form]),task_digest:await digest(prepared.task),review_token:preview.review,custody_inactive:0}
+  const row:Decision={id:newId('decision'),submission_id:id,project_id:c.project.id,task_id:c.task.id,request_key:key,actor_id:actor.id,actor_version:c.person.version,policy_version:c.policy.version,disposition:preview.disposition,priority_before:c.task.priority,priority_after:preview.priority,decided_at:at,source_digest:await digest([c.submission,c.form,c.source]),task_digest:await digest(prepared.task),review_token:preview.review,custody_inactive:0}
   try{
-   await guarded(db,rev,[...prepared.statements,bound(db,'INSERT INTO peg_intake_decisions VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',Object.values(row)),historyStatement(db,c.task.id,c.project.id,actor.id,'intake.decided',{decisionId:row.id,submissionId:id,disposition:row.disposition,priorityBefore:row.priority_before,priority:row.priority_after}),permanentEvent(db,{workspace:c.project.workspace_id,actor:actor.id,action:'intake.decided',type:'submission',id,metadata:{decisionId:row.id,taskId:c.task.id,outcome:row.disposition==='accepted'?'approved':'rejected',version:c.policy.version}})])
+   await guarded(db,rev,[...prepared.statements,bound(db,'INSERT INTO peg_intake_decisions VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',Object.values(row)),historyStatement(db,c.task.id,c.project.id,actor.id,'intake.decided',{decisionId:row.id,submissionId:id,disposition:row.disposition,priorityBefore:row.priority_before,priority:row.priority_after}),permanentEvent(db,{workspace:c.project.workspace_id,actor:actor.id,action:'intake.decided',type:'submission',id,metadata:{decisionId:row.id,taskId:c.task.id,outcome:row.disposition==='accepted'?'approved':'rejected',version:c.policy.version}})])
    return receipt(row)
   }catch(error){if(!(error instanceof PegError&&error.code==='review_changed')||attempt===2)throw error}
  }
