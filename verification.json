@@ -32,7 +32,7 @@
       "browser": false,
       "hosted": false,
       "commands": [
-        "pnpm exec rer queue test:work-graph-core -- sh -c \"node --test --test-skip-pattern='^(?:Local rule audit|Data custody|PEG-064 retained graph recovery|Native reporting|Goal visibility and accountability|Engineering handoff|Meeting review|Analyst exports|Project planning canvas|Work planning time, recurrence and decisions|Approval routing custody|Calendar work blocks through provider schema edges|Native approval follow-up)(?: |$)' tests/work-graph.test.mjs\""
+        "pnpm exec rer queue test:work-graph-core -- sh -c \"node --test --test-skip-pattern='^(?:Local rule audit|Data custody|PEG-064 retained graph recovery|Native reporting|Goal visibility and accountability|Engineering handoff|Meeting review|Analyst exports|Project planning canvas|Work planning time, recurrence and decisions|Approval routing custody|Calendar work blocks through provider schema edges|Human focus recovery through provider schema edges|Native approval follow-up)(?: |$)' tests/work-graph.test.mjs\""
       ]
     },
     {
@@ -40,7 +40,7 @@
       "browser": false,
       "hosted": false,
       "commands": [
-        "pnpm exec rer queue test:work-graph-time -- sh -c \"node --test --test-name-pattern='^(?:Work planning time, recurrence and decisions|Approval routing custody|Calendar work blocks through provider schema edges|Native approval follow-up)(?: |$)' tests/work-graph.test.mjs\""
+        "pnpm exec rer queue test:work-graph-time -- sh -c \"node --test --test-name-pattern='^(?:Work planning time, recurrence and decisions|Approval routing custody|Calendar work blocks through provider schema edges|Human focus recovery through provider schema edges|Native approval follow-up)(?: |$)' tests/work-graph.test.mjs\""
       ]
     },
     {

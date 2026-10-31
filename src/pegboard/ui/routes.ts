@@ -1,3 +1,5 @@
+import { FocusRecoveryPage } from './pages/focus-recovery'
+import { recoveryProject, reviewView as focusReviewView } from '../calendars/focus-recovery'
 import { ApprovalFollowupSettings } from './pages/approval-followup'
 import { followupSettings, previewFollowupPolicy } from '../notices/approval-policy'
 import { approvalFollowupInbox, approvalFollowupLog } from '../notices/approval-followup'
@@ -274,6 +276,10 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
       const response=await page('Work views',body),headers=new Headers(response.headers)
       headers.set('content-security-policy',headers.get('content-security-policy')+"; connect-src 'self'")
       return new Response((await response.text()).replace('</head>','<link rel="stylesheet" href="/look/work-views.css"></head>'),{status:response.status,headers})
+    }
+    if(section==='projects'&&id&&tail==='focus-recovery'&&segments.length===4){
+      const view=await recoveryProject(db,actor,id)
+      return page('Focus recovery',h(FocusRecoveryPage,{viewer,projectId:id,view,blocks:await projectBlocks(db,actor,id),connections:await calendarChoices(db,actor,workspace),review:url.searchParams.get('focusReview')?await focusReviewView(db,actor,url.searchParams.get('focusReview')!):null}))
     }
     if(section==='projects'&&id&&tail==='calendar'&&segments.length===4){
       const view=await scheduleView(db,actor,id),here=`/app/projects/${id}/calendar`

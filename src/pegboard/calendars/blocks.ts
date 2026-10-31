@@ -1,3 +1,4 @@
+import { blockFence } from './focus-guards'
 import type { Bindings } from '../../auth.server'
 import { all, bound, conflict, first, invalid, newId, now, run } from '../db'
 import { guarded, revision } from '../decisions/revision'
@@ -18,7 +19,7 @@ async function work(db: D1Database, actor: Actor, id: string, connection: Connec
  if (task.workspace_id !== connection.workspace_id) throw invalid('calendar_workspace')
  return task
 }
-async function edgeFor(env: Bindings, db: D1Database, actor: Actor, connection: Connection, credential: unknown) {
+export async function edgeFor(env: Bindings, db: D1Database, actor: Actor, connection: Connection, credential: unknown) {
  const edge = calendarEdge(env, connection.service, connection.calendar_id, credential)
  try { if (await edge.permission() !== connection.calendar_id) throw new CalendarFailure(403, 'calendar_identity_changed') } catch (e) {
   if (e instanceof CalendarFailure && e.status === 403) await run(db, 'UPDATE peg_calendar_connections SET active=0,revision=revision+1 WHERE id=?', connection.id)
@@ -44,6 +45,7 @@ export async function previewBlock(env: Bindings, db: D1Database, actor: Actor, 
  const date = String(input.date), minutes = Number(input.minutes)
  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isFinite(Date.parse(date)) || new Date(date).toISOString().slice(0, 10) !== date || !Number.isInteger(minutes) || minutes < 15 || minutes > 480) throw invalid('calendar_window')
  const block = await activeBlock(db, connection.id, task.id), rev = await revision(db)
+ await blockFence(db, block?.id ?? null, connection.id)
  const edge = await edgeFor(env, db, actor, connection, input.credential), observed = block ? block.event_id ? await edge.read(block.event_id) : await edge.find(block.transaction_id) : null
  if (observed?.recurring) throw conflict('calendar_recurring_exception_review_required')
  const result = await free(db, task, date, minutes, edge, observed?.id), id = newId('calendarpreview')
@@ -75,6 +77,7 @@ export async function applyBlock(env: Bindings, db: D1Database, actor: Actor, id
  if (!slot || !Number.isInteger(Number(input.slot))) throw invalid('calendar_slot')
  let block = await activeBlock(db, connection.id, task.id)
  if ((block?.id ?? null) !== preview.block_id || (block?.revision ?? null) !== preview.block_revision) throw conflict('calendar_review_changed')
+ await blockFence(db, block?.id ?? null, connection.id, slot)
  const edge = await edgeFor(env, db, actor, connection, input.credential), observed = block ? block.event_id ? await edge.read(block.event_id) : await edge.find(block.transaction_id) : null
  if ((observed?.etag ?? null) !== preview.observed_etag) { if (block) return changed(db, block.id, 'calendar_provider_conflict'); throw conflict('calendar_provider_conflict') }
  const date = new Intl.DateTimeFormat('en-CA', { timeZone: preview.zone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(slot.start))
@@ -82,6 +85,7 @@ export async function applyBlock(env: Bindings, db: D1Database, actor: Actor, id
  if (!available.slots.some(s => s.start === slot.start && s.end === slot.end)) throw conflict('calendar_time_no_longer_free')
  const freshTask = await work(db, actor, task.id, await connectionFor(db, actor, connection.id))
  if (await taskFingerprint(freshTask) !== fingerprint) throw conflict('calendar_review_changed')
+ await blockFence(db, block?.id ?? null, connection.id, slot)
  const rev = await revision(db), blockId = block?.id ?? newId('block'), transaction = block?.transaction_id ?? crypto.randomUUID()
  await guarded(db, rev, [block ? bound(db, "UPDATE peg_calendar_blocks SET start_at=?,end_at=?,zone=?,task_revision=?,state='pending',cause=NULL,revision=revision+1 WHERE id=?", [slot.start, slot.end, preview.zone, fingerprint, blockId])
   : bound(db, "INSERT INTO peg_calendar_blocks(id,connection_id,task_id,transaction_id,start_at,end_at,zone,task_revision,state) VALUES(?,?,?,?,?,?,?,?,'pending')", [blockId, connection.id, task.id, transaction, slot.start, slot.end, preview.zone, fingerprint]),
@@ -108,6 +112,11 @@ export async function syncBlock(env: Bindings, db: D1Database, actor: Actor, id:
  const fingerprint = await taskFingerprint(task)
  if (fingerprint !== block.task_revision) return changed(db, id, 'calendar_task_changed')
  const edge = await edgeFor(env, db, actor, connection, input.credential), event = block.event_id ? await edge.read(block.event_id) : await edge.find(block.transaction_id)
+ if (block.cause === 'calendar_delete_pending') {
+  if(event&&!event.cancelled)throw conflict('calendar_delete_uncertain_review_required')
+  await blockFence(db,id,connection.id)
+  return acknowledge(db,block,null,fingerprint)
+ }
  if (!event && block.state === 'pending') throw conflict('calendar_readback_absent_review_again')
  if (event?.recurring || event && !event.cancelled && (!endBeforeDeadline(task.due_date, block.zone, event.end) || Date.parse(event.end) <= Date.parse(event.start))) return changed(db, id, 'calendar_provider_conflict')
  if (event && !event.cancelled) {
@@ -117,16 +126,23 @@ export async function syncBlock(env: Bindings, db: D1Database, actor: Actor, id:
   if (!available.slots.some(s => s.start === event.start && s.end === event.end)) return changed(db, id, 'calendar_time_no_longer_free')
  }
  if (await taskFingerprint(await work(db, actor, task.id, await connectionFor(db, actor, connection.id))) !== fingerprint) return changed(db, id, 'calendar_task_changed')
+ if (event && (event.start !== block.start_at || event.end !== block.end_at) || !event || event.cancelled) await blockFence(db, id, connection.id)
  return acknowledge(db, block, event, fingerprint)
 }
 export async function deleteBlock(env: Bindings, db: D1Database, actor: Actor, id: string, input: Record<string, any>) {
  const { block, connection, task } = await blockFor(db, actor, id)
  if (block.state === 'cancelled') return block
+ await blockFence(db, id, connection.id)
+ if(block.cause==='calendar_delete_pending')return syncBlock(env,db,actor,id,input)
  if (Number(input.revision) !== block.revision || await taskFingerprint(task) !== block.task_revision) return changed(db, id, 'calendar_task_changed')
  const edge = await edgeFor(env, db, actor, connection, input.credential), event = block.event_id ? await edge.read(block.event_id) : await edge.find(block.transaction_id)
  if (event && (event.recurring || block.etag && event.etag !== block.etag)) return changed(db, id, 'calendar_provider_conflict')
  if (await taskFingerprint(await work(db, actor, task.id, await connectionFor(db, actor, connection.id))) !== block.task_revision) return changed(db, id, 'calendar_task_changed')
+ await blockFence(db, id, connection.id)
+ await guarded(db,await revision(db),[bound(db,"UPDATE peg_calendar_blocks SET state='pending',cause='calendar_delete_pending',revision=revision+1 WHERE id=?",[id])])
  if (event && !event.cancelled) await edge.remove(event.id, event.etag)
+ const readback=event?await edge.read(event.id):null
+ if(readback&&!readback.cancelled)throw conflict('calendar_delete_uncertain_review_required')
  if (await taskFingerprint(await work(db, actor, task.id, await connectionFor(db, actor, connection.id))) !== block.task_revision) return changed(db, id, 'calendar_task_changed')
  return acknowledge(db, block, null, block.task_revision)
 }
