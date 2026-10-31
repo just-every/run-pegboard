@@ -90,7 +90,13 @@ export async function dispatchApprovalFollowups(db: D1Database, workspace?: stri
     let deferred: number | null = null, visible = 0
     for (const recipient of recipients) {
       const person = (await operatorRow(db, recipient))!, previous = old.find(row => row.recipient_id === recipient)
-      if (await first(db, 'SELECT 1 FROM peg_approval_followup_exclusions WHERE episode_id=? AND recipient_id=?', episode.id, recipient)) continue
+      const exclusion = await first<{ cause: string }>(db, 'SELECT cause FROM peg_approval_followup_exclusions WHERE episode_id=? AND recipient_id=?', episode.id, recipient)
+      if (exclusion) {
+        // A newly delegated recipient may lose authority before any delivery row exists.
+        statements.push(bound(db, `INSERT OR IGNORE INTO peg_approval_followup_deliveries VALUES(?,?,?,?,'cancelled',?,NULL,NULL)`, [newId('followupnotice'), event.id, recipient, person.version, exclusion.cause]),
+          bound(db, "UPDATE peg_approval_followup_deliveries SET state='cancelled',cause=?,next_at=NULL WHERE event_id=? AND recipient_id=? AND state IN ('queued','deferred','visible')", [exclusion.cause, event.id, recipient]))
+        continue
+      }
       if (previous && (!['queued', 'deferred'].includes(previous.state) || previous.recipient_version !== person.version)) { if (previous.state === 'visible') visible++; continue }
       const preferences = await approvalPreferences(db, actor(recipient), episode.workspace_id)
       const next = eligibleAt(Math.max(at, context.route!.due_at ?? 0, preferences.dndUntil ?? 0), policy)
