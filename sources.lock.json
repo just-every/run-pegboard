@@ -199,7 +199,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "c0a0b314e717f1b59ee203a1dfab6204175a33516b5f6657d788ce571ee43678",
+      "sha256": "df2078bb61ff7349e83b1180274626f2b7a05f3b65a90e97b0fbab9dd5d67603",
       "executable": false
     },
     "AGENTS.md": {
@@ -215,7 +215,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "10b9d07f7db2d558b8987f6a9a135dc49235a756714101cbfa3537a1e74874a7",
+      "sha256": "127ee32964c88b06dd6bbad0be3a2f02466adee18bee5e8e0eb49c82253eef9d",
       "executable": false
     },
     "DEMO.md": {
@@ -243,7 +243,7 @@
       "executable": false
     },
     "docs/CLAIMS.md": {
-      "sha256": "310f230507902c633636c22210c0705d62725f85e79f472a67aeb03dd0ceb1fb",
+      "sha256": "bdb780026bccfefd019a7a31d5c7b8d4990148a71090caf140c89fb46d40553e",
       "executable": false
     },
     "docs/contract/PEG-128-rubric.md": {
@@ -251,7 +251,7 @@
       "executable": false
     },
     "docs/DATA-CUSTODY.md": {
-      "sha256": "6e1e7ae40d37563ef2cb04b7ae049d1da039c74f3ef2dfc78de0fdca8b025534",
+      "sha256": "78ad9d8c820e18aa86eba765bc2c4d3249e8725e91d45e76a3ce4f08d945a743",
       "executable": false
     },
     "docs/DATA-RECORD-API.md": {
@@ -3507,7 +3507,7 @@
       "executable": false
     },
     "src/pegboard/intake/decisions.ts": {
-      "sha256": "83cfe43015f984c3af746c23d1e3b20a741b1261db3b89cbd93381883c54aa7f",
+      "sha256": "de01b68ada6284b7c6ab8cbc3cb63a23af610ad87565a749c59be6d59f2a24b3",
       "executable": false
     },
     "src/pegboard/intake/forms.ts": {
@@ -3955,7 +3955,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/intake.tsx": {
-      "sha256": "f5bebe73b731407251efbaea581a569550809f11f134fb632673350005881e25",
+      "sha256": "5a18fa97142ad53f64f471b4a4a2c065244cc1936ab6fc6d828d4d80f553a54d",
       "executable": false
     },
     "src/pegboard/ui/pages/member-removal.tsx": {
@@ -4375,7 +4375,7 @@
       "executable": false
     },
     "tests/journeys/intake-decisions.mjs": {
-      "sha256": "ec77e3239307f82c32e78a405e799cb1ca9a562d03ba1499d28c9e769f95d402",
+      "sha256": "c7e44ff38ff4562fb7447430c81fbb02f1183da2d4b439da1c51d88de273e7b0",
       "executable": false
     },
     "tests/journeys/intake-erasure.mjs": {
@@ -4499,7 +4499,7 @@
       "executable": false
     },
     "tests/scenarios/intake-decisions.mjs": {
-      "sha256": "8d331796a457605aefaae2f8ffb5e0a5ada1250e6c515fcfdf47c348ead2cdc1",
+      "sha256": "00aab25e1eb183905aec94c3ca18dce19d95543e4f2fcdb62e664e6001aa91f6",
       "executable": false
     },
     "tests/scenarios/intake-erasure.mjs": {

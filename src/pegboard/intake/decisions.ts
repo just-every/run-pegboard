@@ -90,8 +90,9 @@ export async function decisionHistory(db:D1Database,actor:Actor,id:string) {
  if(!form)throw new PegError(404,'not_found')
  need((await openProject(db,actor,form.project_id)).effective,'edit')
  if(['guest','agent'].includes(access.role??'')||actor.apiScope)throw forbidden('intake_human_reviewer')
+ const source=await first<{title:string;description:string;provenance:string}>(db,'SELECT title,description,provenance FROM peg_intake_sources WHERE submission_id=?',id)
  const rows=await all<Decision>(db,'SELECT * FROM peg_intake_decisions WHERE submission_id=? ORDER BY decided_at,id',id),names=await displayNames(db,rows.map(r=>r.actor_id))
- return rows.map(row=>({...receipt(row),actor:names.get(row.actor_id)??'Erased actor',historicalOnly:!!row.custody_inactive}))
+ return rows.map(row=>({...receipt(row),actor:names.get(row.actor_id)??'Erased actor',source,historicalOnly:!!row.custody_inactive}))
 }
 /** Exact redaction scope participates in the owner's ordinary erasure preview and holds. */
 export async function decisionErasureScope(db:D1Database,person:string) {

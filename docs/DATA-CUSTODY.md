@@ -166,6 +166,33 @@ archives preserve these redactions and receipts, restore forms inactive and refu
 an older archive supplied with the later erasure journal. Product import and the
 remaining intake lifecycle are still unproved; no external deletion is inferred.
 
+### Reviewed human intake decisions
+
+Intake settings begin with decisions disabled. The current installation owner
+reviews the policy before native owners and administrators can explicitly accept
+or decline a text request and set priority. Each preview names its exact source,
+current task, actor, disposition and before and after priority. Commit rechecks
+current content and authority atomically. Triage remains separate from acceptance.
+No decision grants access, changes an assignment or date, schedules work, invokes
+a model or sends an external reply. Request instructions remain inert text.
+
+New submissions retain their exact mapped source text separately from editable
+tasks. Previously submitted work is labelled as a migration-time mapped snapshot;
+its unavailable original text is never invented. The decision history retains
+this distinction, the source and task identities, priority, actor and time. A
+decline retains that evidence and changes no task value. Replays never duplicate
+a decision or overwrite later human edits.
+
+Permanent audit contains opaque decision and task identities and the disposition,
+without request text. Owner-reviewed person erasure enumerates decision actor
+references and their linked task and project holds, replaces reviewed attribution
+with an erased marker and preserves historical outcomes. Task and project erasure
+explicitly include retained source text and decision rows. Opaque submission replay
+witnesses refuse recreation of erased work. Native archives preserve history,
+restore every decision as inactive provenance and disable the decision policy;
+old decision identities cannot authorize new changes. Existing retention, hold,
+erasure-journal and external-copy limits continue to apply.
+
 ## Archives and external limits
 
 Native `rer export` / `rer import` and `/api/portability` share one seed-owned Base
