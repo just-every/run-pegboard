@@ -2,6 +2,7 @@ import { intakeScenario } from './scenarios/intake.mjs'
 import { registerRuleAuditTests } from './scenarios/rule-audit.mjs'
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs'
 import { reportingScenario, reportingBusinessScenario } from './scenarios/reporting.mjs'
+import {searchBulkScenario} from './scenarios/search-bulk.mjs'
 import { analystDatasetScenario } from './scenarios/analytics.mjs'
 import { registerCalendarBlockTests } from './scenarios/calendar-blocks.mjs'
 import { startCalendarServices } from './support/calendar-services.mjs'
@@ -54,6 +55,13 @@ describe('Work views through the native graph', {concurrency:false}, () => {
  before(async () => { worker = await startWorker() }, {timeout:120000})
  after(() => worker?.stop())
  registerWorkViewTests({test:it,context:()=>({w:worker})})
+})
+
+describe('Search and reviewed bulk selection',{concurrency:false},()=>{
+ let worker
+ before(async()=>{worker=await startWorker()},{timeout:120000})
+ after(()=>worker?.stop())
+ it('finds authorized content, saves filters, reviews every mixed-permission row and preserves later work on undo',async()=>{await searchBulkScenario(worker)})
 })
 
 describe('Work conversions through reviewed public doors',{concurrency:false},()=>{

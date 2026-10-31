@@ -177,6 +177,10 @@
     {
       "id": "0083_guest_share_reviews.sql",
       "buyerSteps": "Apply migrations/core/0083_guest_share_reviews.sql after 0082_portfolio_capacity.sql and all existing migrations. This adds exact initial guest-share reviews and retained decisions. Preserve all previously applied migration names and bytes."
+    },
+    {
+      "id": "0084_search_and_bulk_selection.sql",
+      "buyerSteps": "Apply migrations/core/0084_search_and_bulk_selection.sql after 0083_guest_share_reviews.sql and all existing migrations. Preserve previously applied migration names and bytes. This adds private saved search filters and reviewed bulk-selection receipts."
     }
   ],
   "breaking": false,
