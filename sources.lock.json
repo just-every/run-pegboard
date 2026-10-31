@@ -327,7 +327,7 @@
       "executable": false
     },
     "management/integration/deployment-spec.json": {
-      "sha256": "0511e39256ee37bec862fb701d05b31fc94e40dc621c1d32ef281ea3c2c9a422",
+      "sha256": "19ce949c895446b166503b41132fb5c3c672edd36584d9a432a554d4d1e05365",
       "executable": false
     },
     "migrations/core/0001_owner.sql": {
@@ -3431,7 +3431,7 @@
       "executable": false
     },
     "src/pegboard/data/erasure.ts": {
-      "sha256": "b4b81df842319df9ce541ade1c535f8e521772035ee181fca151127772a04b48",
+      "sha256": "b3639ae6c85a580b812b0b55530cd1b75a85a38fed53fc36ab96554193551ff7",
       "executable": false
     },
     "src/pegboard/data/expiry.ts": {
@@ -3927,7 +3927,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/data.tsx": {
-      "sha256": "526dcac6bfe59f838758e2d2d4dbdb67181744e185b4566a523d708e604ec2bb",
+      "sha256": "21cb12a59e3e84252198a2f7bf00ec1c804bed0378eaa448b494ffe24cdc8a45",
       "executable": false
     },
     "src/pegboard/ui/pages/decision.tsx": {
@@ -4375,7 +4375,7 @@
       "executable": false
     },
     "tests/journeys/intake-decisions.mjs": {
-      "sha256": "c7e44ff38ff4562fb7447430c81fbb02f1183da2d4b439da1c51d88de273e7b0",
+      "sha256": "37a97b4c21563ccb705c740a11a741a9fb4b3a098c3c602a462759a56f48a72e",
       "executable": false
     },
     "tests/journeys/intake-erasure.mjs": {
@@ -4499,7 +4499,7 @@
       "executable": false
     },
     "tests/scenarios/intake-decisions.mjs": {
-      "sha256": "280480e70dfae1475103d8ddad3b15ccc09b633d81b695c00f434d2aa56cf2b2",
+      "sha256": "9a34b37be8cd3e8c0e2104d5047554e54d2deb6c0f86c44c61091fe2e90aae7d",
       "executable": false
     },
     "tests/scenarios/intake-erasure.mjs": {

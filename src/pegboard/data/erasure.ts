@@ -155,6 +155,8 @@ export async function erasurePlan(db:D1Database,actor:Actor,workspace:string,typ
   for(const pin of feedbackScope)relatedPeople.add(pin.author_id)
   for(const r of await all<{project_id:string}>(db,`SELECT project_id FROM peg_task_projects WHERE task_id IN (${placeholders(affected)})`,...affected))relatedProjects.add(r.project_id)
   for(const r of await all<{person:string}>(db,`SELECT owner_id person FROM peg_tasks WHERE id IN (${placeholders(affected)}) UNION SELECT creator_id person FROM peg_tasks WHERE id IN (${placeholders(affected)}) UNION SELECT author_id person FROM peg_comments WHERE task_id IN (${placeholders(affected)}) UNION SELECT created_by person FROM peg_attachments WHERE task_id IN (${placeholders(affected)})`,...affected,...affected,...affected,...affected))relatedPeople.add(r.person)
+  const erasedDecisions=selections.find(s=>s.table==='peg_intake_decisions')?.keys.map(k=>k.id)??[]
+  for(const r of await all<{actor_id:string}>(db,`SELECT actor_id FROM peg_intake_decisions WHERE id IN (${placeholders(erasedDecisions)})`,...erasedDecisions))relatedPeople.add(r.actor_id)
   // Person anonymization affects installation identity, so every workspace hold participates.
   const active=type==='person'?(await all<Awaited<ReturnType<typeof activeHolds>>[number]>(db,'SELECT * FROM peg_data_holds WHERE released_at IS NULL AND expires_at>?',now())):await activeHolds(db,workspace)
   const affectedAttachments=[...(selections.find(s=>s.table==='peg_attachments')?.keys.map(k=>k.id)??[]),...feedbackScope.map(f=>f.attachment_id)]
