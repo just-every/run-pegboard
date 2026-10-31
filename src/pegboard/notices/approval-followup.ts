@@ -34,7 +34,7 @@ async function current(db: D1Database, episode: Episode): Promise<{ cause: strin
   }
 }
 async function end(db: D1Database, episode: Episode, cause: string, rev: Awaited<ReturnType<typeof revision>>) {
-  await guarded(db, rev, [bound(db, "UPDATE peg_approval_followup_episodes SET state=?,cause=?,next_at=NULL WHERE id=? AND state='active'", [cause === 'person_responded' ? 'responded' : 'cancelled', cause, episode.id])])
+  await guarded(db, rev, [bound(db, "UPDATE peg_approval_followup_episodes SET state=?,cause=?,next_at=NULL WHERE id=? AND state IN ('active','exhausted')", [cause === 'person_responded' ? 'responded' : 'cancelled', cause, episode.id])])
 }
 async function attempt(work: () => Promise<void>) {
   try { await work() } catch (error) { if (!(error instanceof PegError && error.status === 409)) throw error }
@@ -55,9 +55,10 @@ export async function scheduleApprovalFollowups(db: D1Database, workspace?: stri
     await guarded(db, rev, [bound(db, `INSERT OR IGNORE INTO peg_approval_followup_episodes(id,route_id,version,policy_id,workspace_id,state,created_at,next_at,round)
       VALUES(?,?,?,?,?,'active',?,?,0)`, [newId('followup'), route.id, route.version, policy.id, route.workspace_id, at, route.due_at])])
   })
-  for (const episode of await all<Episode>(db, `SELECT * FROM peg_approval_followup_episodes WHERE state='active' ${workspace ? 'AND workspace_id=?' : ''} ORDER BY next_at IS NULL,next_at,created_at,id LIMIT 200`, ...(workspace ? [workspace] : []))) await attempt(async () => {
+  for (const episode of await all<Episode>(db, `SELECT * FROM peg_approval_followup_episodes WHERE state IN ('active','exhausted') ${workspace ? 'AND workspace_id=?' : ''} ORDER BY next_at IS NULL,next_at,created_at,id LIMIT 200`, ...(workspace ? [workspace] : []))) await attempt(async () => {
     const rev = await revision(db), context = await current(db, episode)
     if (context.cause) return end(db, episode, context.cause, rev)
+    if (episode.state === 'exhausted') return
     const policy = context.policy!
     if (await first(db, "SELECT 1 FROM peg_approval_followup_events WHERE episode_id=? AND state IN ('queued','deferred')", episode.id)) return
     if (episode.round >= policy.max_rounds || episode.next_at === null || episode.next_at > at) return

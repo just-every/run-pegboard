@@ -215,7 +215,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "0a379712c770bccceab71d7250147fa9dfea0c225ddd3b6ecb028635075c234b",
+      "sha256": "ff6219bc9d904858b2dbdb2035cb33084abf49b614eeadc3677fccf9b580b36a",
       "executable": false
     },
     "DEMO.md": {
@@ -323,7 +323,7 @@
       "executable": false
     },
     "management/integration/deployment-spec.json": {
-      "sha256": "b86cbf52bef3bcd004a100adc3e6b19f3dd44160e9ae0b305a7f82a53b90037b",
+      "sha256": "9da8daf2db8b5c4580fc5d135ded951bdd1967971b9bbc92bc013b0774e2e577",
       "executable": false
     },
     "migrations/core/0001_owner.sql": {
@@ -680,6 +680,10 @@
     },
     "migrations/core/0085_approval_followup.sql": {
       "sha256": "b99a34a1d278067bd0c18023286674cc1aaad1e412b7cd96c6db59627543e884",
+      "executable": false
+    },
+    "migrations/core/0086_approval_followup_cancellation.sql": {
+      "sha256": "9e4611041117fbe9cec53c9719e323bacd4fda782ab0f5a77886b7fb024005bd",
       "executable": false
     },
     "ONBOARDING.md": {
@@ -3483,7 +3487,7 @@
       "executable": false
     },
     "src/pegboard/notices/approval-followup.ts": {
-      "sha256": "12ce0d23b723f1987f6f2a2e42a10ca636c219a46c53685e076557bae929c919",
+      "sha256": "3925daf25f44a41e9e1bbb90a2b2272e84f1901cc3e2c26ab6ef0faa4e3d6648",
       "executable": false
     },
     "src/pegboard/notices/approval-policy.ts": {
@@ -4263,7 +4267,7 @@
       "executable": false
     },
     "tests/journeys/approval-followup.mjs": {
-      "sha256": "b330492f48a20f93c9a707eef3c4fded09efe7a716c4b74c4f393d31535f99cc",
+      "sha256": "bb82e535fda52977eb026cc9376e59c2596ebf06de791b03965005def94bc6c6",
       "executable": false
     },
     "tests/journeys/approval-routing.mjs": {
@@ -4395,7 +4399,7 @@
       "executable": false
     },
     "tests/scenarios/approval-followup.mjs": {
-      "sha256": "b8850afc4a0953e8b5c2b15d88135ee4a8b3758889c703abd36f42d55d698fab",
+      "sha256": "b0fa36c028cf39bce6b2af375afd334d51326e573c14574def86a825ac9c86b4",
       "executable": false
     },
     "tests/scenarios/calendar-blocks.mjs": {
