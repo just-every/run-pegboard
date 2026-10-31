@@ -195,6 +195,15 @@ export async function focusRecoveryRefusalsScenario() {
   assert.equal((await pass(root.get(api+'/focus-reviews/'+r.id))).state,'reconciled')
   assert.equal(writes()-partialWrites,2,'one human-approved write per intended event despite concurrent approval')
   assert.deepEqual(await taskDates(root,task.id),['2026-03-10','2026-03-10']);assert.deepEqual(await taskDates(root,second.id),['2026-03-10','2026-03-10'])
+  for(const heldTask of [second.id,f.focused.id]){
+   const hold=await pass(root.post(api+'/data/holds',{type:'task',id:heldTask,authority:'Preserve related recovery history',expiresAt:Date.now()+86400000}))
+   const shared=await pass(root.post(api+'/data/erasure-preview',{type:'task',id:task.id}))
+   assert.ok(shared.blockers.includes('active_legal_hold'),'Every affected task and recorded focus lock protects its recovery records')
+   const retained=await pass(root.post(api+'/data/erase',{type:'task',id:task.id,token:shared.token,confirm:true}))
+   assert.equal(retained.outcome,'retained');assert.deepEqual(retained.counts,{})
+   assert.equal((await pass(root.get(api+'/focus-reviews/'+r.id))).state,'reconciled')
+   await pass(root.post(api+'/data/holds/'+hold.id+'/release',{confirm:true}))
+  }
   // Unknown owner availability prevents a feasibility claim; private work stays undisclosed.
   const hidden=await pass(member.post(api+'/tasks',{title:'Hidden obligation',ownerId:member.id,estimateHours:2,startDate:'2026-03-10',dueDate:'2026-03-10'}))
   const feed=await pass(root.post(api+'/workspaces/ws_main/capacity-feeds',{service:'willow',origin:'https://willow.example.test',mapping:{'synthetic-pegboard-695':root.id}}))
@@ -218,6 +227,7 @@ export async function focusRecoveryRefusalsScenario() {
   await pass(root.post(api+'/data/erase',{type:'task',id:task.id,token:erase.token,confirm:true}))
   await pass(root.post(api+'/focus-reviews/'+r.id+'/apply',{stamp:r.stamp,scenario:0,confirm:true,credential}),400)
   assert.equal(data.calls.length,calls)
+  assert.deepEqual(await taskDates(root,second.id),['2026-03-10','2026-03-10'])
   assert.ok(!data.error,String(data.error))
  })
 }

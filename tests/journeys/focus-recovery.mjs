@@ -89,6 +89,14 @@ export async function focusRecoveryJourney({w,browser,services}) {
    await expect(page.getByRole('link',{name:'Overrun work',exact:true})).toBeVisible()
    await proof(view)
   }
+  // This account is shared by the journey runner; release only this journey's mapped events.
+  await f.lock(false)
+  for(const id of [f.block.id,f.lockBlock.id]){
+   const rows=await pass(w.owner.get('/api/v1/projects/'+f.p.id+'/calendar-blocks'))
+   const block=rows.find(b=>b.id===id)
+   await pass(w.owner.post('/api/v1/calendar-blocks/'+id+'/delete',{revision:block.revision,credential}))
+   assert.ok(!services.state.google.events.has(block.event_id))
+  }
   console.log('PROBE PEG-069 browser: keyboard lock, compare, approve, reconcile, reviewed undo, Calendar and Timeline -> exact native state; provider schema-fake')
  }finally{await context.close()}
 }

@@ -247,7 +247,7 @@
       "executable": false
     },
     "docs/DATA-CUSTODY.md": {
-      "sha256": "418edf89c428f565e0541639f01e07477dd275515df517b9281f8b18bff8becd",
+      "sha256": "8e147c23846811fdadf671a44da8ee872c9c8b11217a666fc6c68bae21da4601",
       "executable": false
     },
     "docs/DATA-RECORD-API.md": {
@@ -707,7 +707,7 @@
       "executable": false
     },
     "package.json": {
-      "sha256": "fcc20dc1808fe22d07d8f9157270bf455cbcf764da25e54403b44f648218f1ae",
+      "sha256": "81ccdbf7f3ea4d1c930a75fbed147804d621ff6aa079ffceff2a6550d9872ef0",
       "executable": false
     },
     "packaging.json": {
@@ -3407,7 +3407,7 @@
       "executable": false
     },
     "src/pegboard/data/erasure.ts": {
-      "sha256": "0331f6a1038107eb2cda33c7034fee10120f93d56ab8f92d75e633f29effb285",
+      "sha256": "f6fc9f6fb36d789226dcfbf424702df2f447c1410178d6cf75e8e27757a8391c",
       "executable": false
     },
     "src/pegboard/data/expiry.ts": {
@@ -4319,7 +4319,7 @@
       "executable": false
     },
     "tests/journeys/focus-recovery.mjs": {
-      "sha256": "f599c82468aa5874157526ae396fcee3cd07d5b547b471dd17ecfd0c88d39104",
+      "sha256": "3e9995f8bb79716be36790bf11835e56eef20acb2a1df2436323a8a75f795c5c",
       "executable": false
     },
     "tests/journeys/guests.mjs": {
@@ -4435,7 +4435,7 @@
       "executable": false
     },
     "tests/scenarios/focus-recovery.mjs": {
-      "sha256": "301e52ed52443365273dfd84655d283b6893a043b9da5bf7da362f36cd0ec850",
+      "sha256": "ea9df517da0152bf2047138572fbb7068ee9f75d79fa09bc5114fd7e8975e0d1",
       "executable": false
     },
     "tests/scenarios/intake-erasure.mjs": {
@@ -4523,7 +4523,7 @@
       "executable": false
     },
     "verification.json": {
-      "sha256": "1e4349515a25d5e627869178eb35aba6953d8b0b8bac594a25f75651ed4e5ba2",
+      "sha256": "0fd49fcc7a7de6955dafb2b67454f89d2c61ba44325b67726eb48418e5059a28",
       "executable": false
     },
     "VERIFY-WORKFLOW.md": {
