@@ -187,7 +187,7 @@
       "executable": false
     },
     ".github/workflows/verify.yml": {
-      "sha256": "09fe6d2a0b274d4925950ef0ddde9c8c7099e15edb5333a601ead2bbcec73a86",
+      "sha256": "8e87b61127c3b31a348a1c06adb5716e74c90219151d42cb7d6ead91c25368b3",
       "executable": false
     },
     ".gitignore": {
@@ -4467,7 +4467,7 @@
       "executable": false
     },
     "verification.json": {
-      "sha256": "864cb778db4d2ece1fa4ff27feeab17ab6f45c143235f521e9c261e2056d52cd",
+      "sha256": "b6c1f383b3e471ff6c1a3d675166da609c88b3295c1b5ed9ac14c80192e7ffef",
       "executable": false
     },
     "VERIFY-WORKFLOW.md": {

@@ -12,7 +12,7 @@ on:
         default: push
       timeout:
         type: number
-        default: 12
+        default: 15
 
 permissions:
   contents: read
@@ -62,7 +62,8 @@ jobs:
     needs: plan
     if: ${{ needs.plan.outputs.has_shards == 'true' }}
     runs-on: ubuntu-24.04
-    timeout-minutes: ${{ inputs.timeout || 12 }}
+    # Grouped unchanged suites need headroom for runner setup and cache uploads.
+    timeout-minutes: ${{ inputs.timeout || 15 }}
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}

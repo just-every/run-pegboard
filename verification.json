@@ -1,38 +1,23 @@
 {
   "push": [
     {
-      "name": "source",
-      "browser": false,
-      "hosted": false,
-      "commands": [
-        "pnpm run check --profile first-party",
-        "node scripts/contract-docs.mjs check PEG-059 PEG-057 PEG-007 PEG-078 PEG-003 PEG-018 PEG-027 PEG-015 PEG-036 PEG-012 PEG-016 PEG-044 PEG-025 PEG-127"
-      ]
-    },
-    {
-      "name": "typecheck",
-      "browser": false,
-      "hosted": false,
-      "commands": [
-        "pnpm run build",
-        "pnpm run typecheck"
-      ]
-    },
-    {
-      "name": "runtime",
-      "browser": true,
-      "hosted": true,
-      "commands": [
-        "pnpm run build",
-        "pnpm run test:runtime"
-      ]
-    },
-    {
       "name": "work-graph",
       "browser": false,
       "hosted": false,
       "commands": [
+        "pnpm run check --profile first-party",
+        "node scripts/contract-docs.mjs check PEG-059 PEG-057 PEG-007 PEG-078 PEG-003 PEG-018 PEG-027 PEG-015 PEG-036 PEG-012 PEG-016 PEG-044 PEG-025 PEG-127",
         "pnpm run test:graph:work-graph"
+      ]
+    },
+    {
+      "name": "work-graph-services",
+      "browser": true,
+      "hosted": true,
+      "commands": [
+        "pnpm run build",
+        "pnpm run test:runtime",
+        "pnpm run test:graph:services"
       ]
     },
     {
@@ -40,71 +25,8 @@
       "browser": false,
       "hosted": false,
       "commands": [
-        "pnpm run test:graph:custody"
-      ]
-    },
-    {
-      "name": "work-graph-services",
-      "browser": false,
-      "hosted": false,
-      "commands": [
-        "pnpm run test:graph:services"
-      ]
-    },
-    {
-      "name": "access-control",
-      "browser": false,
-      "hosted": false,
-      "commands": [
+        "pnpm run test:graph:custody",
         "pnpm run test:graph:access-control"
-      ]
-    },
-    {
-      "name": "portfolios",
-      "browser": false,
-      "hosted": false,
-      "commands": [
-        "pnpm run test:graph:portfolios:core"
-      ]
-    },
-    {
-      "name": "capacity",
-      "browser": false,
-      "hosted": false,
-      "commands": [
-        "pnpm run test:graph:capacity"
-      ]
-    },
-    {
-      "name": "workflow-rules",
-      "browser": false,
-      "hosted": false,
-      "commands": [
-        "pnpm run test:graph:workflow-rules"
-      ]
-    },
-    {
-      "name": "schedule",
-      "browser": false,
-      "hosted": false,
-      "commands": [
-        "pnpm run test:graph:schedule"
-      ]
-    },
-    {
-      "name": "journeys-core",
-      "browser": true,
-      "hosted": false,
-      "commands": [
-        "pnpm run test:journeys:core"
-      ]
-    },
-    {
-      "name": "journeys-services",
-      "browser": true,
-      "hosted": false,
-      "commands": [
-        "pnpm run test:journeys:services"
       ]
     },
     {
@@ -112,23 +34,46 @@
       "browser": true,
       "hosted": false,
       "commands": [
-        "pnpm run test:journeys:planning"
+        "pnpm run build",
+        "pnpm run typecheck",
+        "pnpm run test:journeys:planning",
+        "pnpm run test:conversions"
       ]
     },
     {
-      "name": "templates",
+      "name": "journeys-services",
       "browser": true,
       "hosted": false,
       "commands": [
+        "pnpm run test:journeys:services",
+        "pnpm run test:graph:workflow-rules"
+      ]
+    },
+    {
+      "name": "planning-services",
+      "browser": true,
+      "hosted": false,
+      "commands": [
+        "pnpm run test:graph:portfolios:core",
+        "pnpm run test:graph:capacity",
+        "pnpm run test:graph:schedule",
         "pnpm run test:templates"
       ]
     },
     {
-      "name": "conversions",
+      "name": "journeys-core-access",
       "browser": true,
       "hosted": false,
       "commands": [
-        "pnpm run test:conversions"
+        "pnpm exec rer queue test:journeys-core-access -- sh -c \"PEGBOARD_JOURNEY=intake,access-privacy,access-discovery,public-api,approval-routing,guests,goals node tests/journeys/work-graph.journey.mjs\""
+      ]
+    },
+    {
+      "name": "journeys-core-work",
+      "browser": true,
+      "hosted": false,
+      "commands": [
+        "pnpm exec rer queue test:journeys-core-work -- sh -c \"PEGBOARD_JOURNEY=core,recurrence,approvals,time-packets node tests/journeys/work-graph.journey.mjs\""
       ]
     }
   ],
