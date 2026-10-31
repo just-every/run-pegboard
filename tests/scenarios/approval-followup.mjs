@@ -146,6 +146,39 @@ export async function approvalFollowupAuthorityScenario(w) {
   assert.equal(episodeFor(await log(owner), inactive.route.id).events[0].state, 'blocked')
   const renewed = await w.signIn(reviewer.email, 'Authorized reviewer', reviewer.id)
   assert.deepEqual((await inbox(renewed)).notices, [])
+  // A delegated identity can lose authority before dispatch has created its delivery row.
+  const later = await person(w, 3715, 'Queued delegate')
+  let restoredDelegate = later
+  for (const loss of ['deactivation', 'revocation']) {
+    await policy(owner, project, [renewed, later], [later])
+    const delegated = await routeTask(owner, project, author, [renewed], 'Delegated identity fence ' + loss)
+    const grant = await pass(owner.post('/api/v1/grants', { objectType: 'task', objectId: delegated.task.id, granteeId: later.id, level: 'viewer', scope: 'approve' }))
+    await queue(owner)
+    const delegation = await pass(owner.get('/api/v1/approvals/' + delegated.route.id))
+    await pass(owner.post('/api/v1/approvals/' + delegated.route.id + '/change', { token: delegation.token, action: 'delegate', stage: 0, from: renewed.id, to: later.id }))
+    if (loss === 'deactivation') {
+      await pass(owner.post('/api/v1/workspaces/ws_main/people/' + later.id + '/account', { status: 'inactive' }))
+      await pass(restoredDelegate.get('/api/v1/notices/approval-followup'), 401)
+      await pass(owner.post('/api/v1/workspaces/ws_main/people/' + later.id + '/account', { status: 'active' }))
+      restoredDelegate = await w.signIn(later.email, 'Queued delegate', later.id)
+    } else {
+      await pass(owner.delete('/api/v1/grants/' + grant.id))
+      await pass(restoredDelegate.get('/app/approvals/' + delegated.route.id), 404)
+      await pass(owner.post('/api/v1/grants', { objectType: 'task', objectId: delegated.task.id, granteeId: later.id, level: 'viewer', scope: 'approve' }))
+    }
+    await w.restart(); await cron(w, '2030-01-07T10:00:00Z')
+    assert.deepEqual((await inbox(restoredDelegate)).notices, [], loss + ' cannot revive a queued delegated identity before its first dispatch')
+    const excluded = episodeFor(await log(owner), delegated.route.id)
+    assert.equal(excluded.state, 'blocked')
+    assert.ok(excluded.outcomes.some(o => o.state === 'blocked' && o.cause === 'no_authorized_deliverable_reviewer'))
+    // An explicit fresh review may use the renewed authority, with a new episode and event.
+    const freshRoute = await reroute(owner, delegated.task, { ...delegated.input, stages: [{ name: 'Independent review', people: [later.id], quorum: 1 }] })
+    await queue(owner); await cron(w, '2030-01-07T10:00:00Z')
+    const freshNotice = (await inbox(restoredDelegate)).notices
+    assert.equal(freshNotice.length, 1); assert.equal(freshNotice[0].routeId, freshRoute.id)
+    assert.notEqual(freshNotice[0].episodeId, excluded.id); assert.notEqual(freshNotice[0].eventId, excluded.events[0].id)
+    await record(restoredDelegate, freshRoute, 'changes')
+  }
   // The same native decision door stops each supported human outcome before its next escalation.
   for (const action of ['approve', 'changes', 'reject']) {
     const fresh = await routeTask(owner, project, author, action === 'approve' ? [renewed, owner] : [renewed], 'Human decision ' + action)
@@ -162,5 +195,35 @@ export async function approvalFollowupAuthorityScenario(w) {
     for (const key of ['startDate', 'dueDate']) assert.deepEqual(after[key], snapshot[key])
     assert.deepEqual((await inbox(renewed)).notices, [])
   }
+  // Reaching the repeat limit stops scheduling, but existing visible cards still need cancellation.
+  await policy(owner, project, [renewed], [], { maxRounds: 1 })
+  for (const stop of ['material', 'withdrawal', 'routing', 'policy']) {
+    const last = await routeTask(owner, project, author, [renewed], 'Final reminder cancellation ' + stop)
+    let routingGrant
+    if (stop === 'routing') {
+      routingGrant = await pass(owner.post('/api/v1/grants', { objectType: 'project', objectId: project.id, granteeId: manager.id, level: 'admin' }))
+      last.route = await reroute(manager, last.task, last.input)
+    }
+    await queue(owner); await cron(w, '2030-01-07T10:00:00Z')
+    const exhausted = episodeFor(await log(owner), last.route.id)
+    assert.equal(exhausted.state, 'exhausted')
+    assert.equal(exhausted.deliveries.filter(d => d.state === 'visible').length, 1)
+    assert.ok((await inbox(renewed)).notices.some(n => n.routeId === last.route.id))
+    if (stop === 'material') await pass(owner.patch('/api/v1/tasks/' + last.task.id, { description: 'New final material' }))
+    else if (stop === 'withdrawal') {
+      const view = await pass(owner.get('/api/v1/approvals/' + last.route.id))
+      await pass(owner.post('/api/v1/approvals/' + last.route.id + '/change', { token: view.token, action: 'withdraw' }))
+    } else if (stop === 'routing') await pass(owner.delete('/api/v1/grants/' + routingGrant.id))
+    else await policy(owner, project, [renewed], [], { enabled: false, maxRounds: 1 })
+    await w.restart(); await cron(w, '2030-01-08T10:00:00Z')
+    const cancelled = episodeFor(await log(owner), last.route.id)
+    assert.equal(cancelled.state, 'cancelled', stop + ' cancels exhausted work durably')
+    assert.equal(cancelled.cause, { material: 'material_changed', withdrawal: 'route_withdrawn', routing: 'routing_authority_lost', policy: 'policy_replaced' }[stop])
+    assert.ok(cancelled.deliveries.every(d => d.state === 'cancelled' && d.next_at === null))
+    assert.ok(cancelled.outcomes.some(o => o.recipient_id === renewed.id && o.state === 'cancelled' && o.cause === cancelled.cause))
+    assert.ok(!(await inbox(renewed)).notices.some(n => n.routeId === last.route.id))
+  }
+  console.log('PROBE PEG-037 queued identity: delegate before first dispatch, deactivate or revoke, renew authority, restart -> old episode blocked; explicit fresh route delivers one new event')
+  console.log('PROBE PEG-037 terminal outcomes: final visible reminder then changed material, withdrawal, lost routing authority or policy replacement -> persisted cancellation and Inbox removal across restart')
   console.log('PROBE PEG-037 authority and lifecycle: native approvals + Inbox -> hidden, revoked, deactivated and muted readers refused; stale material and withdrawal cancelled; reopened route fresh; approve, request-changes and reject each stop escalation across restart')
 }
