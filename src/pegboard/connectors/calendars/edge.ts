@@ -45,9 +45,9 @@ export function calendarEdge(env: Bindings, service: Service, calendar: string, 
   const cancelled = row.status === 'cancelled' || row.isCancelled === true
   return { id: row.id, etag, cancelled, recurring: !!(row.recurringEventId || row.recurrence || row.type && row.type !== 'singleInstance'), start: cancelled ? '' : instant(row.start), end: cancelled ? '' : instant(row.end) }
  }
- const payload = (slot: Slot, zone: string) => service === 'google'
-  ? { summary: 'Reserved work', visibility: 'private', transparency: 'opaque', start: { dateTime: slot.start, timeZone: zone }, end: { dateTime: slot.end, timeZone: zone } }
-  : { subject: 'Reserved work', sensitivity: 'private', showAs: 'busy', start: { dateTime: slot.start.replace('Z', ''), timeZone: 'UTC' }, end: { dateTime: slot.end.replace('Z', ''), timeZone: 'UTC' } }
+ const timing = (slot: Slot, zone: string) => service === 'google'
+  ? { start: { dateTime: slot.start, timeZone: zone }, end: { dateTime: slot.end, timeZone: zone } }
+  : { start: { dateTime: slot.start.replace('Z', ''), timeZone: 'UTC' }, end: { dateTime: slot.end.replace('Z', ''), timeZone: 'UTC' } }
  return {
   async permission() {
    const row = await call('GET', service === 'google' ? '/calendar/v3/users/me/calendarList/' + encodeURIComponent(calendar) : base)
@@ -96,9 +96,9 @@ export function calendarEdge(env: Bindings, service: Service, calendar: string, 
   },
   async create(transaction: string, slot: Slot, zone: string) {
    const identity = service === 'google' ? { id: transaction.replaceAll('-', '') } : { transactionId: transaction }
-   return event(await call('POST', base + '/events' + (service === 'google' ? '?sendUpdates=none' : ''), { ...payload(slot, zone), ...identity }))
+   return event(await call('POST', base + '/events' + (service === 'google' ? '?sendUpdates=none' : ''), { ...timing(slot, zone), ...(service === 'google' ? { summary: 'Reserved work', visibility: 'private', transparency: 'opaque' } : { subject: 'Reserved work', sensitivity: 'private', showAs: 'busy' }), ...identity }))
   },
-  async move(id: string, etag: string, slot: Slot, zone: string) { return event(await call('PATCH', base + '/events/' + encodeURIComponent(id) + (service === 'google' ? '?sendUpdates=none' : ''), payload(slot, zone), etag)) },
+  async move(id: string, etag: string, slot: Slot, zone: string) { return event(await call('PATCH', base + '/events/' + encodeURIComponent(id) + (service === 'google' ? '?sendUpdates=none' : ''), timing(slot, zone), etag)) },
   async remove(id: string, etag: string) { await call('DELETE', base + '/events/' + encodeURIComponent(id) + (service === 'google' ? '?sendUpdates=none' : ''), undefined, etag, true) },
  }
 }
