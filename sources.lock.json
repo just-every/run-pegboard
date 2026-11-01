@@ -215,7 +215,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "ff6219bc9d904858b2dbdb2035cb33084abf49b614eeadc3677fccf9b580b36a",
+      "sha256": "782337f098a9dadc2776d4758d2fc9d27a45af53268987abd59d98d096511877",
       "executable": false
     },
     "DEMO.md": {
@@ -247,7 +247,7 @@
       "executable": false
     },
     "docs/DATA-CUSTODY.md": {
-      "sha256": "41bdf093f7e913ecefc6bf4201ccdb11987046cdb1dea8baddd86f9a004de98c",
+      "sha256": "8e147c23846811fdadf671a44da8ee872c9c8b11217a666fc6c68bae21da4601",
       "executable": false
     },
     "docs/DATA-RECORD-API.md": {
@@ -690,6 +690,14 @@
       "sha256": "86efa77e10e0b5bc52cb72becc6fed9e8b86c6badcc8ec6028f3a69c19b77b6b",
       "executable": false
     },
+    "migrations/core/0088_focus_recovery.sql": {
+      "sha256": "0214ffcc20d65c0e60bdce3c4ce0802758a8d66b9005b6970f0d78f029266236",
+      "executable": false
+    },
+    "migrations/core/0089_focus_recovery_leases.sql": {
+      "sha256": "5661a0b64a2d5952771a0775134ef25e3ca211f53249447ea41dce1a7b118fd3",
+      "executable": false
+    },
     "ONBOARDING.md": {
       "sha256": "24b685d6eddeae5480ce4dfbf44c0590e54bcfe83641373de5bba985765380bd",
       "executable": false
@@ -703,7 +711,7 @@
       "executable": false
     },
     "package.json": {
-      "sha256": "008d8c09b8bdf2ae196a8f5fa4e62ed433ee1dd73a42ce160656a6ebdf644d6f",
+      "sha256": "bb44c4209bd63cc4c6a09e7cbefa56b758b0cb1762e3a975a33c56645f620a26",
       "executable": false
     },
     "packaging.json": {
@@ -3079,7 +3087,7 @@
       "executable": false
     },
     "src/pegboard/api/calendar-routes.ts": {
-      "sha256": "f995a4810356878193ae1e5664589487647c71eb6ecf6bcc26dc3263d508692f",
+      "sha256": "a3774e8d47f2cf9a381aea340936ff56c2335c5bfdb827e6c8d20b052b8edff5",
       "executable": false
     },
     "src/pegboard/api/canvas-routes.ts": {
@@ -3283,11 +3291,19 @@
       "executable": false
     },
     "src/pegboard/calendars/blocks.ts": {
-      "sha256": "812669711a99f76e59a1ec9358044c9e178733d92eb829d283d58f043ccf24c6",
+      "sha256": "7702943b89bbb81b8e5711bb99ccb467f5c2d7e74ee0f28420af8bed738a7955",
       "executable": false
     },
     "src/pegboard/calendars/connections.ts": {
       "sha256": "043a55ac6296e25d266935e318f1ce784bfa343e2e9277ab631a291342f86263",
+      "executable": false
+    },
+    "src/pegboard/calendars/focus-guards.ts": {
+      "sha256": "cb570b20e006499c436324c7dce41ede55be0decda385d8728510dfe1ab164dc",
+      "executable": false
+    },
+    "src/pegboard/calendars/focus-recovery.ts": {
+      "sha256": "563e38c5a93bc3d444f936a9e38cb03b5659a83c7a4930b098a8b5fc23c3eaf1",
       "executable": false
     },
     "src/pegboard/canvas/nodes.ts": {
@@ -3327,7 +3343,7 @@
       "executable": false
     },
     "src/pegboard/connectors/calendars/edge.ts": {
-      "sha256": "d743a25eaf37cc60d8dbf75201aba075abd41328455354bfe8035f488a3b6e28",
+      "sha256": "4efb7b6c0f059d91782986c017f7de2580ed172f962ffd70d79c306340dd5c92",
       "executable": false
     },
     "src/pegboard/connectors/engineering/edge.ts": {
@@ -3399,7 +3415,7 @@
       "executable": false
     },
     "src/pegboard/data/erasure.ts": {
-      "sha256": "f989060327bc0ada552a4daf21a75e1de24042a7af4340d3c4b386fc3fea1e3e",
+      "sha256": "d3ebb57a16b4324462a96338507934cb2994b187628d040e6abd5cef57305d1d",
       "executable": false
     },
     "src/pegboard/data/expiry.ts": {
@@ -3415,7 +3431,7 @@
       "executable": false
     },
     "src/pegboard/db.ts": {
-      "sha256": "f989895110858226f34d76c6803b2a57096015d5d9e35feef1b820bd103489bf",
+      "sha256": "08f091eba01d5f59e2d8361c8c94d545dc40ce5e7944fb334426634a3aa7fef0",
       "executable": false
     },
     "src/pegboard/decisions/revision.ts": {
@@ -3519,7 +3535,7 @@
       "executable": false
     },
     "src/pegboard/portability/policy.mjs": {
-      "sha256": "93481917c20dcc03df0823bac107f6f3cf0f72120f4162e6f0a308fc11e73662",
+      "sha256": "64029c00a47d7df02c9dd1259a242bef540c3ca2cdccb4f88ae4a4fae7935d7a",
       "executable": false
     },
     "src/pegboard/portfolios/portfolios.ts": {
@@ -3663,7 +3679,7 @@
       "executable": false
     },
     "src/pegboard/schedule/changes.ts": {
-      "sha256": "29d683dcfc3fb5789fd794f1cf0b343a331bfa7e3a6f4fb2e38034e60b04d7a9",
+      "sha256": "6145fd383121a2a977367ae9d0608b2ffdebe241cac72787509cc01e97f880a6",
       "executable": false
     },
     "src/pegboard/schedule/dependencies.ts": {
@@ -3675,7 +3691,7 @@
       "executable": false
     },
     "src/pegboard/schedule/plan.ts": {
-      "sha256": "c468105cc99497bdd1c8ef6db114de9e39824b0863bc2adab01e6bc2869796f8",
+      "sha256": "2004285555fcf9aba99b3f9b5ef98c56602e5de13d95f0b5b1f7bc5867f6b09c",
       "executable": false
     },
     "src/pegboard/schedule/timeline.ts": {
@@ -3867,7 +3883,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/calendar.tsx": {
-      "sha256": "c5618b97620db8506c46405d988196bdfb385432a389c7fd8829e558d22fdd2b",
+      "sha256": "7ba934f03d90f50ff2f14e770a3ce4adbc312a3045a1f72c828c16d6b7501f6d",
       "executable": false
     },
     "src/pegboard/ui/pages/capacity-settings.tsx": {
@@ -3900,6 +3916,10 @@
     },
     "src/pegboard/ui/pages/field-revisions.tsx": {
       "sha256": "8ff0a1b03607fa9e05a60d46cf784021175b74a6eed189afc10d68558c1eaccb",
+      "executable": false
+    },
+    "src/pegboard/ui/pages/focus-recovery.tsx": {
+      "sha256": "c63b9c898a4fd20e63406c206ccb741bdb2dd3ccdba7e12002d8d2e566f7aae0",
       "executable": false
     },
     "src/pegboard/ui/pages/goals.tsx": {
@@ -4031,7 +4051,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/timeline.tsx": {
-      "sha256": "e4f4e9fe1b09f2eff3ef7c06ebab726deeeb3f1b111cdd576520590598bc69c2",
+      "sha256": "23735ae3e72f1eb4f94e3d4976c342caa412430262c7d63ebc4691fd519e5d40",
       "executable": false
     },
     "src/pegboard/ui/pages/workload.tsx": {
@@ -4039,7 +4059,7 @@
       "executable": false
     },
     "src/pegboard/ui/routes.ts": {
-      "sha256": "739d9e85854f4995bf97838785fe05acaf8910f1fb2915cc65ed8b209a7651b1",
+      "sha256": "844c9049bb86bb79e681c14b3de66e53a3217ce2f9dab71be2993d22c481fe90",
       "executable": false
     },
     "src/pegboard/ui/schedule-editor.tsx": {
@@ -4322,6 +4342,10 @@
       "sha256": "a46ac476de86a36cf1caca9798963b762eeccfa3b0c2dbdc68991adab6fe619a",
       "executable": false
     },
+    "tests/journeys/focus-recovery.mjs": {
+      "sha256": "3e9995f8bb79716be36790bf11835e56eef20acb2a1df2436323a8a75f795c5c",
+      "executable": false
+    },
     "tests/journeys/guests.mjs": {
       "sha256": "77336f50df35bd3d6eee34079f50b0515c2107b8f55ae57d814b39c8b5aea060",
       "executable": false
@@ -4395,7 +4419,7 @@
       "executable": false
     },
     "tests/journeys/work-graph.journey.mjs": {
-      "sha256": "2cdc27fe1f0a9b003abe49fd12461873c3109e977a4f1cd4341e3edf330344bc",
+      "sha256": "285b8abed871c030604135f04724b53e1944f30fe67dccdddc28c00b33a89cb2",
       "executable": false
     },
     "tests/journeys/work-rules.mjs": {
@@ -4436,6 +4460,10 @@
     },
     "tests/scenarios/conversions.mjs": {
       "sha256": "b9e64a77cfa2be4325e7fef650a3931ff84e1d655c65620e0b9b078ff09ed1e1",
+      "executable": false
+    },
+    "tests/scenarios/focus-recovery.mjs": {
+      "sha256": "ea9df517da0152bf2047138572fbb7068ee9f75d79fa09bc5114fd7e8975e0d1",
       "executable": false
     },
     "tests/scenarios/intake-erasure.mjs": {
@@ -4487,7 +4515,7 @@
       "executable": false
     },
     "tests/support/calendar-services.mjs": {
-      "sha256": "9532cb0b44c84a1189f33c348b1387cfce456cb3edf6e5770f57630160cb7ce4",
+      "sha256": "508fa57d27f8bfe0ad4c6f378b5f1dafe45df1ea2ee9061dc89c88ce2a138dae",
       "executable": false
     },
     "tests/support/canvas-restore.mjs": {
@@ -4519,7 +4547,7 @@
       "executable": false
     },
     "tests/work-graph.test.mjs": {
-      "sha256": "06725d278ec1fd4d0c6c2327085d84b3389c0c252840b0dd22fe3b9800689b78",
+      "sha256": "28326c2bc8989b8961ca1874769de8935220ef771ae70d0a5843685f3256d2c1",
       "executable": false
     },
     "tsconfig.json": {
@@ -4527,7 +4555,7 @@
       "executable": false
     },
     "verification.json": {
-      "sha256": "4e93632ada6d9addbf34872573e652d97b46cb0f81b7f61ed6c5be0993412db9",
+      "sha256": "f51bb33b357855eabfbea420dedaecc309ca66ab18136d0394293c3205276bdb",
       "executable": false
     },
     "VERIFY-WORKFLOW.md": {
