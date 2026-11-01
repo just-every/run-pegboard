@@ -247,7 +247,7 @@
       "executable": false
     },
     "docs/DATA-CUSTODY.md": {
-      "sha256": "a43749b4647547a2f66feba473311728dc20b2fbb72c959edc8c64e697309013",
+      "sha256": "788afcd843d45af8fabb5c84ba94988233d2b05c0075db79d2f3937fa097a63c",
       "executable": false
     },
     "docs/DATA-RECORD-API.md": {
@@ -3083,7 +3083,7 @@
       "executable": false
     },
     "src/pegboard/api/calendar-routes.ts": {
-      "sha256": "15a339b90a7368498d39ae8c8c856a40b0d6d93fbbaf785b78b7217ea15960e4",
+      "sha256": "a3774e8d47f2cf9a381aea340936ff56c2335c5bfdb827e6c8d20b052b8edff5",
       "executable": false
     },
     "src/pegboard/api/canvas-routes.ts": {
@@ -3299,7 +3299,7 @@
       "executable": false
     },
     "src/pegboard/calendars/focus-recovery.ts": {
-      "sha256": "13b47b94d0de5b28c995eaa71ea9a7113b2ae04a28bf8a16870fc54f9229a61c",
+      "sha256": "38bd3cf47e8ca5ef2dc3f9b191a16eb4dc3a9cbe19f3b38d611dba6839688861",
       "executable": false
     },
     "src/pegboard/canvas/nodes.ts": {
@@ -3411,7 +3411,7 @@
       "executable": false
     },
     "src/pegboard/data/erasure.ts": {
-      "sha256": "c45864bace92734f746520dd3761c18997e5c5422f3887e169155d9c6b0d9541",
+      "sha256": "8fdcb2d5860d5e775d9de519b4d9938f5be61c90ea6c35d241199a72be39001c",
       "executable": false
     },
     "src/pegboard/data/expiry.ts": {
@@ -3531,7 +3531,7 @@
       "executable": false
     },
     "src/pegboard/portability/policy.mjs": {
-      "sha256": "226904a64b89988d9cd1f325538f3634ff800221b3ffd0d1509744bdda46c95b",
+      "sha256": "9df215ddc0c57b92d2a1594f7f836a5b6c312915bf21e85c29702f71b02f50bd",
       "executable": false
     },
     "src/pegboard/portfolios/portfolios.ts": {
@@ -3687,7 +3687,7 @@
       "executable": false
     },
     "src/pegboard/schedule/plan.ts": {
-      "sha256": "c468105cc99497bdd1c8ef6db114de9e39824b0863bc2adab01e6bc2869796f8",
+      "sha256": "2004285555fcf9aba99b3f9b5ef98c56602e5de13d95f0b5b1f7bc5867f6b09c",
       "executable": false
     },
     "src/pegboard/schedule/timeline.ts": {
@@ -3879,7 +3879,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/calendar.tsx": {
-      "sha256": "ecfba0640a67ea9a0675454943afb12fd53711dbec3853f1d0cac309d24961bb",
+      "sha256": "7ba934f03d90f50ff2f14e770a3ce4adbc312a3045a1f72c828c16d6b7501f6d",
       "executable": false
     },
     "src/pegboard/ui/pages/capacity-settings.tsx": {
@@ -3915,7 +3915,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/focus-recovery.tsx": {
-      "sha256": "b5f91d64e6689e7d7466d23a12ba195a488895e3e0f3bd55569f4662c537176e",
+      "sha256": "0684f23aef9a5bd4e97ee794442b3fb1cbc62ff01be4b7767cb75ba28e6a6b63",
       "executable": false
     },
     "src/pegboard/ui/pages/goals.tsx": {
@@ -4047,7 +4047,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/timeline.tsx": {
-      "sha256": "09691734f3c2166ce5f835c88a74701c05bd92aee299f5708fc319244aaecd8d",
+      "sha256": "23735ae3e72f1eb4f94e3d4976c342caa412430262c7d63ebc4691fd519e5d40",
       "executable": false
     },
     "src/pegboard/ui/pages/workload.tsx": {
@@ -4459,7 +4459,7 @@
       "executable": false
     },
     "tests/scenarios/focus-recovery.mjs": {
-      "sha256": "7b997f8966a42aeecfdfa9e71ca0f4f581006b243b7c38cb9c892dfdfec69709",
+      "sha256": "d11c8c32f074ded1fb08709ef2713cbda73d38c7a4dec9a543e0b21a4e1136f0",
       "executable": false
     },
     "tests/scenarios/intake-erasure.mjs": {
