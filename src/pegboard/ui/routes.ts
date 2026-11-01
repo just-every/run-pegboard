@@ -1,8 +1,9 @@
+import { decisionPolicy, previewDecision } from '../intake/decisions'
 import { ApprovalFollowupSettings } from './pages/approval-followup'
 import { followupSettings, previewFollowupPolicy } from '../notices/approval-policy'
 import { approvalFollowupInbox, approvalFollowupLog } from '../notices/approval-followup'
 import { approvalPreferences } from '../notices/preferences'
-import { IntakeScreen,IntakeSettings,IntakeQueue } from './pages/intake'
+import { IntakeScreen,IntakeSettings,IntakeQueue,IntakeDecision } from './pages/intake'
 import { internalForm,safeForm,projectForms,reviewForm,administer } from '../intake/forms'
 import { triageQueue } from '../intake/triage'
 import { intakeDocument } from '../api/intake-routes'
@@ -202,9 +203,10 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
       for(const key of ['projects','recipients','escalation','days'])input[key]=url.searchParams.getAll(key+'[]')
       return page('Approval notice settings',h(ApprovalFollowupSettings,{viewer,preferences:await approvalPreferences(db,actor,workspace),settings:viewer.role==='owner'?await followupSettings(db,actor,workspace):null,preview:url.searchParams.has('preview')?await previewFollowupPolicy(db,actor,workspace,input):null,input,log:viewer.role==='owner'?await approvalFollowupLog(db,actor,workspace):[]}))
     }
+    if(section==='intake'&&id&&tail==='decision'&&segments.length===4){const row=await first<{priority:string}>(db,'SELECT t.priority FROM peg_intake_submissions s JOIN peg_tasks t ON t.id=s.task_id WHERE s.id=?',id);return page('Review intake decision',h(IntakeDecision,{viewer,preview:await previewDecision(db,actor,id,{disposition:url.searchParams.get('disposition')??'accepted',priority:url.searchParams.get('priority')??row?.priority})}))}
     if(section==='intake'&&id&&!tail){const row=await internalForm(db,actor,id),receiptId=url.searchParams.get('receipt'),receipt=receiptId?await first<{id:string;deadline:number}>(db,'SELECT id,deadline FROM peg_intake_submissions WHERE id=? AND form_id=? AND source_actor=?',receiptId,id,actor.id):null;return intakeDocument('Request intake',h(IntakeScreen,{viewer,form:safeForm(row),receipt:receipt?{receipt:receipt.id,deadline:receipt.deadline,acknowledgment:'Request received'}:null}))}
     if(section==='projects'&&id&&tail==='intake'&&segments.length===4)return page('Request triage',h(IntakeQueue,{viewer,view:await triageQueue(db,actor,id)}))
-    if(section==='projects'&&id&&tail==='settings'&&segments[4]==='intake'&&segments.length===5){const {project}=await administer(db,actor,id),reviewId=url.searchParams.get('review');const review=reviewId?await reviewForm(db,actor,reviewId):null;if(review&&review.project.id!==id)throw new PegError(404,'not_found');return page('Intake settings',h(IntakeSettings,{viewer,project,list:await projectForms(db,actor,id),review,people:await peopleOptions(db,actor,workspace)}))}
+    if(section==='projects'&&id&&tail==='settings'&&segments[4]==='intake'&&segments.length===5){const {project}=await administer(db,actor,id),reviewId=url.searchParams.get('review');const review=reviewId?await reviewForm(db,actor,reviewId):null;if(review&&review.project.id!==id)throw new PegError(404,'not_found');return page('Intake settings',h(IntakeSettings,{viewer,project,policy:await decisionPolicy(db,actor,id),list:await projectForms(db,actor,id),review,people:await peopleOptions(db,actor,workspace)}))}
     if(section==='settings'&&id==='reports'&&!tail)return page('Report settings',h(ReportsSettings,{viewer,projects:await listProjects(db,actor,workspace),list:await dashboards(db,actor,workspace)}))
     if(section==='reports'&&!id)return page('Reports',h(ReportsList,{viewer,list:await dashboards(db,actor,workspace)}))
     if(section==='reports'&&id&&!tail){const {row}=await ownDashboard(db,actor,workspace,id);const snapshot=url.searchParams.get('snapshot');return page(row.name,h(ReportPage,{viewer,id,name:row.name,report:snapshot?await readSnapshot(db,actor,workspace,id,snapshot):null}))}

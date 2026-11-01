@@ -216,3 +216,20 @@ export async function changePrefix(db: D1Database, actor: Actor, projectId: stri
   await batch(db, [...statements, auditStatement(db, { workspaceId: project.workspace_id, actorId: actor.id, action: 'project.prefix_changed', targetType: 'project', targetId: project.id, detail: { from: project.prefix, to: prefix } })])
   return prefix
 }
+
+/** Intake changes only reviewed priority; all other task and scheduling values survive. */
+export async function prepareIntakePriority(db:D1Database,actor:Actor,id:string,priority:string,at=now(),apply=false) {
+ const {task,access}=await openTask(db,actor,id)
+ require(access,'edit')
+ const homes=await all<{project_id:string}>(db,'SELECT project_id FROM peg_task_projects WHERE task_id=?',task.id)
+ if(!homes.length)throw conflict('intake_task_home_changed')
+ for(const home of homes)need((await openProject(db,actor,home.project_id)).effective,'edit')
+ if(!priorities.includes(priority))throw invalid('priority')
+ if(await first(db,'SELECT 1 FROM peg_approval_tasks WHERE task_id=?',task.id))throw conflict('intake_task_kind_changed')
+ const statements:D1PreparedStatement[]=[],next={...task}
+ if(apply&&task.priority!==priority){
+  next.priority=priority as TaskRow['priority'];next.updated_at=at
+  statements.push(bound(db,'UPDATE peg_tasks SET priority=?,updated_at=? WHERE id=?',[priority,at,id]),historyStatement(db,id,null,actor.id,'updated',{priority:{from:task.priority,to:priority}}))
+ }
+ return {task:next,statements}
+}
