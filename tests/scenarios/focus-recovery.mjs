@@ -27,8 +27,8 @@ async function withInstallation(run) {
 }
 const taskDates=async(root,id)=>{const t=await pass(root.get(api+'/tasks/'+id));return [t.startDate,t.dueDate]}
 export async function focusRecoveryScenario() {
- for(const service of ['google','microsoft']){
-  await withInstallation(async(w,services)=>{
+ await withInstallation(async(w,services)=>{
+  for(const service of ['google','microsoft']){
    const f=await focusFixture(w,services,service),{root,p,block,task,focused,lockBlock}=f,data=services.state[service]
    const colleague=await w.person(email('691-'+service),'Colleague')
    const deadline=await pass(root.post(api+'/tasks',{projectId:p.id,title:'Colleague commitment',ownerId:colleague.id,startDate:'2026-03-20',dueDate:'2026-03-20'}))
@@ -82,11 +82,22 @@ export async function focusRecoveryScenario() {
    assert.deepEqual(await taskDates(root,task.id),['2026-03-10','2026-03-10'])
    // A subsequent recovery can be undone while the exact task and event remain unchanged.
    r=await f.compare(f.inputs([f.change('2026-03-11'),f.change('2026-03-12')]))
+   data.loseNextMove=true
+   assert.equal((await pass(f.apply(r))).state,'uncertain')
+   // A provider edit can land after an uncertain write and before its readback.
+   const laterContent=service==='google'
+    ? {summary:'Later provider title',description:'Later provider notes',location:'Human meeting room'}
+    : {subject:'Later provider title',body:{contentType:'text',content:'Later provider notes'},location:{displayName:'Human meeting room'}}
+   Object.assign(data.events.get(block.event_id),laterContent,{[service==='google'?'etag':'@odata.etag']:'"42"'})
    assert.equal((await pass(f.apply(r))).state,'reconciled')
    undo=await pass(root.post(api+'/focus-reviews/'+r.id+'/undo-preview',{credential}))
    assert.equal((await pass(f.apply(undo))).state,'reconciled')
    assert.deepEqual(await taskDates(root,task.id),['2026-03-10','2026-03-10'])
    assert.equal((await pass(f.apply(undo))).state,'reconciled')
+   for(const [key,value] of Object.entries(laterContent))assert.deepEqual(data.events.get(block.event_id)[key],value,'Undo preserves later provider content after uncertain readback')
+   assert.equal(data.events.get(block.event_id).start.dateTime.replace(/Z?$/,'Z'),'2026-03-10T13:00:00.000Z')
+   assert.equal(data.events.get(block.event_id).end.dateTime.replace(/Z?$/,'Z'),'2026-03-10T16:00:00.000Z')
+   console.log('PROBE PEG-069 B '+service+': lost acknowledgment, provider content edit, readback and reviewed undo -> prior dates restored; later title, notes and location preserved')
    const audited=await pass(root.get(api+'/admin/audit?action=focus.reconciled'))
    assert.ok(audited.events.some(e=>e.target_id===r.id))
    assert.ok(!JSON.stringify(audited).includes(credential))
@@ -102,8 +113,12 @@ export async function focusRecoveryScenario() {
    assert.ok(!data.error,String(data.error))
    assert.ok(original)
    await f.lock(false)
-  })
- }
+   // Retire this provider's finished fixture through public doors before the next comparison.
+   await pass(root.patch(api+'/tasks/'+task.id,{status:'done'}))
+   await pass(root.patch(api+'/tasks/'+focused.id,{status:'done'}))
+   await pass(root.post(api+'/calendars/'+f.connection.id+'/disconnect',{}))
+  }
+ })
 }
 export async function focusRecoveryRefusalsScenario() {
  await withInstallation(async(w,services)=>{
@@ -161,6 +176,15 @@ export async function focusRecoveryRefusalsScenario() {
   const second=await pass(root.post(api+'/tasks',{projectId:p.id,title:'Second recovery block',ownerId:root.id,estimateHours:1,startDate:'2026-03-09',dueDate:'2026-03-09'}))
   const reserve=await pass(root.post(api+'/tasks/'+second.id+'/calendar-preview',{connectionId:f.connection.id,date:'2026-03-09',minutes:60,credential}))
   const secondBlock=await pass(root.post(api+'/calendar-previews/'+reserve.id+'/apply',{slot:0,credential}))
+  // Surplus reservation on one task cannot cover another task's missing hours.
+  const shortageInput={connectionId:f.connection.id,credential,scenarios:['2026-03-10','2026-03-11'].map((date,i)=>({label:'Human uneven reservation '+(i+1),changes:[f.change(date,1),{blockId:secondBlock.id,start:date+'T14:00:00Z',end:date+'T17:00:00Z',taskStart:date,taskDue:date}]}))}
+  const shortage=await f.compare(shortageInput),shortageWrites=writes()
+  assert.deepEqual(shortage.scenarios.map(s=>[s.requiredHours,s.reservedHours,s.shortageHours,s.feasible]),[[4,4,2,false],[4,4,2,false]])
+  assert.ok(shortage.scenarios.every(s=>s.days[0].shortageHours===2&&s.reasons.includes('capacity_shortage')))
+  await pass(f.apply(shortage),409)
+  assert.equal(writes(),shortageWrites)
+  assert.deepEqual(await taskDates(root,task.id),['2026-03-09','2026-03-09']);assert.deepEqual(await taskDates(root,second.id),['2026-03-09','2026-03-09'])
+  console.log('PROBE PEG-069 A: 1 h reserved for 3 h task plus 3 h for 1 h companion -> shortage 2 h; apply 409; calendar writes and task dates unchanged')
   const multiInput=()=>({connectionId:f.connection.id,credential,scenarios:['2026-03-10','2026-03-11'].map((date,i)=>({label:'Human multi-event '+(i+1),changes:[f.change(date),{blockId:secondBlock.id,start:date+'T16:00:00Z',end:date+'T17:00:00Z',taskStart:date,taskDue:date}]}))})
   r=await pass(root.post(api+'/focus-recovery',multiInput()))
   data.beforeWrite=()=>pass(root.patch(api+'/tasks/'+second.id,{description:'Changed during the first provider write'}))

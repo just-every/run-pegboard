@@ -3303,7 +3303,7 @@
       "executable": false
     },
     "src/pegboard/calendars/focus-recovery.ts": {
-      "sha256": "563e38c5a93bc3d444f936a9e38cb03b5659a83c7a4930b098a8b5fc23c3eaf1",
+      "sha256": "bf69c0f7ac1f591b3f08001a391f5bd67583662ba1f3ea9589184ad45334f49e",
       "executable": false
     },
     "src/pegboard/canvas/nodes.ts": {
@@ -3343,7 +3343,7 @@
       "executable": false
     },
     "src/pegboard/connectors/calendars/edge.ts": {
-      "sha256": "4efb7b6c0f059d91782986c017f7de2580ed172f962ffd70d79c306340dd5c92",
+      "sha256": "e807d509c2f666622fd293d840a821bf90b88176482d67c9047ce8b202492f18",
       "executable": false
     },
     "src/pegboard/connectors/engineering/edge.ts": {
@@ -4463,7 +4463,7 @@
       "executable": false
     },
     "tests/scenarios/focus-recovery.mjs": {
-      "sha256": "ea9df517da0152bf2047138572fbb7068ee9f75d79fa09bc5114fd7e8975e0d1",
+      "sha256": "a5aeb01be07544e953231c37e3a8e15a462d8de65ab94a4de9a2b1c9864c6341",
       "executable": false
     },
     "tests/scenarios/intake-erasure.mjs": {

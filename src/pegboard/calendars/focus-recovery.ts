@@ -153,8 +153,8 @@ async function analyse(env:Bindings,db:D1Database,actor:Actor,c:Connection,input
    const selectedHours=await selectedLoad(db,items,date,calendar)
    const other=rounded(Math.max(0,otherHours-selectedHours))
    const availableHours=rounded(Math.max(0,freeHours-other)),requiredHours=rounded(onDay.reduce((n,i)=>n+remaining.get(i.taskId)!,0))
-   const reserved=onDay.reduce((n,i)=>n+(Date.parse(i.end)-Date.parse(i.start))/3600000,0)
-   const shortageHours=rounded(Math.max(0,requiredHours-availableHours,requiredHours-reserved))
+   const reservationShortage=onDay.reduce((n,i)=>n+Math.max(0,i.remainingHours-(Date.parse(i.end)-Date.parse(i.start))/3600000),0)
+   const shortageHours=rounded(Math.max(0,requiredHours-availableHours,reservationShortage))
    for(const i of onDay){
     const allowed=availableIntervals(dayNumber(date),calendars.calendars.get(i.taskId)!).some(([a,b])=>Date.parse(i.start)>=instantOf(date,a,zone)&&Date.parse(i.end)<=instantOf(date,b,zone))
     if(!allowed||unavailable.some(b=>overlaps(i,b)))reasons.push('meeting_or_availability_collision')
