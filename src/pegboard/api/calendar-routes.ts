@@ -4,15 +4,16 @@ import type { Bindings } from '../../auth.server'
 import { applyBlock, blockPreview, deleteBlock, previewBlock, projectBlocks, syncBlock } from '../calendars/blocks'
 import { calendarSettings, connectCalendar, disconnectCalendar } from '../calendars/connections'
 import { door, json } from './door'
+const focusResult=(r:{id:string},input:Record<string,any>,form:boolean)=>form?new Response(null,{status:303,headers:{location:(typeof input._next==='string'&&/^\/app\/projects\/[a-z0-9_]+\/focus-recovery$/.test(input._next)?input._next:'/app/projects')+'?focusReview='+r.id,'cache-control':'no-store'}}):json(r)
 export function calendarRoutes(app: Hono<{ Bindings: Bindings }>) {
- app.post('/calendar-blocks/:id/focus-preview', door(({env,db,actor,params,input})=>previewFocusLock(env,db,actor,params.id,input),{next:(r,{input})=>String(input._next??'/app/projects')+'?focusReview='+r.id}))
+ app.post('/calendar-blocks/:id/focus-preview', door(async({env,db,actor,params,input,form})=>focusResult(await previewFocusLock(env,db,actor,params.id,input),input,form)))
  app.post('/focus-reviews/:id/lock', door(({env,db,actor,params,input})=>commitFocusLock(env,db,actor,params.id,input)))
- app.post('/focus-recovery', door(({env,db,actor,input})=>previewRecovery(env,db,actor,input),{next:(r,{input})=>String(input._next??'/app/projects')+'?focusReview='+r.id}))
+ app.post('/focus-recovery', door(async({env,db,actor,input,form})=>focusResult(await previewRecovery(env,db,actor,input),input,form)))
  app.get('/focus-reviews/:id', door(({db,actor,params})=>reviewView(db,actor,params.id)))
  app.get('/projects/:id/focus-recovery', door(({db,actor,params})=>recoveryProject(db,actor,params.id)))
  app.post('/focus-reviews/:id/apply', door(({env,db,actor,params,input})=>applyRecovery(env,db,actor,params.id,input)))
  app.post('/focus-reviews/:id/reconcile', door(({env,db,actor,params,input})=>reconcileRecovery(env,db,actor,params.id,input)))
- app.post('/focus-reviews/:id/undo-preview', door(({env,db,actor,params,input})=>previewRecoveryUndo(env,db,actor,params.id,input),{next:(r,{input})=>String(input._next??'/app/projects')+'?focusReview='+r.id}))
+ app.post('/focus-reviews/:id/undo-preview', door(async({env,db,actor,params,input,form})=>focusResult(await previewRecoveryUndo(env,db,actor,params.id,input),input,form)))
  app.get('/workspaces/:id/calendars', door(({ db, actor, params }) => calendarSettings(db, actor, params.id)))
  app.post('/workspaces/:id/calendars', door(({ env, db, actor, params, input }) => connectCalendar(env, db, actor, params.id, input), { next: () => '/app/settings/calendars' }))
  app.post('/calendars/:id/disconnect', door(({ db, actor, params }) => disconnectCalendar(db, actor, params.id), { next: () => '/app/settings/calendars' }))
