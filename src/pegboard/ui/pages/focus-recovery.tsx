@@ -1,0 +1,48 @@
+import type { Viewer } from '../../../ui/viewer'
+import type { calendarChoices, projectBlocks } from '../../calendars/blocks'
+import type { recoveryProject, reviewView } from '../../calendars/focus-recovery'
+import { Card, Check, Field, Form, Pick, Shell, Submit } from '../shell'
+type Review=Awaited<ReturnType<typeof reviewView>>
+const reason=(value:string)=>({
+ calendar_and_task_state_not_reconciled:'Calendar and task state are not yet reconciled.',
+ fresh_review_required:'Context changed. Review a fresh plan before continuing.',
+ partial_fresh_review_required:'Only part of the calendar plan was applied. Task dates stayed unchanged; review a fresh plan.',
+ capacity_context_incomplete:'Availability or work context is incomplete.',
+ other_calendar_context_unavailable:'Another connected calendar has not supplied reviewed availability.',
+ colleague_or_dependency_dates_preserved:'This alternative would move another commitment. Those dates stay unchanged.',
+ task_dates_require_new_review:'Working hours adjust these dates. Enter and review the exact adjusted dates.',
+ running_actual_time_unknown:'An active timer prevents a reliable remaining-work calculation.',
+ meeting_or_availability_collision:'A meeting or unavailable period overlaps this alternative.',
+ block_outside_task_dates:'A block falls outside its reviewed task dates.',
+ scenario_overlap:'The proposed work blocks overlap.',
+ capacity_shortage:'There is not enough available time for the remaining work.'
+} as Record<string,string>)[value]??value.replaceAll('_',' ')
+export function FocusRecoveryPage({viewer,projectId,view,blocks,connections,review}:{viewer:Viewer;projectId:string;view:Awaited<ReturnType<typeof recoveryProject>>;blocks:Awaited<ReturnType<typeof projectBlocks>>;connections:Awaited<ReturnType<typeof calendarChoices>>;review:Review|null}) {
+ const here=`/app/projects/${projectId}/focus-recovery`,choices=blocks.filter(b=>b.state==='scheduled'),current=review?.kind==='lock'?blocks.find(b=>b.id===review.blockId):null
+ const approval=(r:Review,scenario:number,label:string)=><Form action={`/api/v1/focus-reviews/${r.id}/apply`} next={here} label={label}><input type="hidden" name="stamp" value={r.stamp}/><input type="hidden" name="scenario" value={scenario}/><Check name="confirm" label="I reviewed these exact blocks and task dates"/><Field name="credential" label="One-use credential" type="password" required/><Submit>{label}</Submit></Form>
+ return <Shell viewer={viewer} current="/app/projects" title={`${view.project.name}: focus recovery`} chip="HUMAN REVIEW" crumbs={[{label:view.project.name,href:`/app/projects/${projectId}`},{label:'Focus recovery',href:here,current:true}]}>
+  <p><a href={`/app/projects/${projectId}/calendar`}>Calendar</a> · <a href={`/app/projects/${projectId}/timeline`}>Timeline</a></p>
+  <Card title="Human scheduling scenarios"><p>Enter two alternatives for your own mapped work. These are human scenarios. Locked periods, colleague deadlines and shared milestones stay unchanged. Incomplete context prevents a feasibility claim. Each approval is for this exact review; no standing scheduling authority is created.</p>
+   {choices.length&&connections.length?<Form action="/api/v1/focus-recovery" next={here} label="Compare human scenarios">
+    <Pick name="connectionId" label="Calendar" options={connections.map(c=>({value:c.id,label:c.service}))}/>
+    <Pick name="blockId" label="Affected work block" options={choices.map(b=>({value:b.id,label:b.title+' · '+b.service}))}/>
+    {[0,1].map(i=><fieldset key={i}><legend>Human scenario {i+1}</legend><Field name={`label${i}`} label={`Scenario ${i+1} name`} required/><Field name={`start${i}`} label={`Scenario ${i+1} event start in UTC`} placeholder="2026-03-10T13:00:00Z" required/><Field name={`end${i}`} label={`Scenario ${i+1} event end in UTC`} placeholder="2026-03-10T16:00:00Z" required/><Field name={`taskStart${i}`} label={`Scenario ${i+1} task start`} type="date"/><Field name={`taskDue${i}`} label={`Scenario ${i+1} task deadline`} type="date"/></fieldset>)}
+    <Field name="credential" label="One-use credential" type="password" required/><Submit>Compare human scenarios</Submit>
+   </Form>:<p>Connect a calendar in Settings and reserve your work before comparing alternatives.</p>}
+  </Card>
+  <Card title="Reviewed focus locks">{choices.map(b=><div key={b.id}><h3>{b.title}</h3><p>{b.start_at} – {b.end_at} · {b.zone} · {view.locks.some(l=>l.block_id===b.id&&l.locked)?'Locked':'Unlocked'}</p><Form action={`/api/v1/calendar-blocks/${b.id}/focus-preview`} next={here} label={`Review lock for ${b.title}`}><Pick name="locked" label="Focus decision" options={[{value:'true',label:'Lock this period'},{value:'false',label:'Unlock this period'}]}/><Field name="credential" label="One-use credential" type="password" required/><Submit quiet>Review focus decision</Submit></Form></div>)}</Card>
+  {review?.kind==='lock'&&<Card title="Review focus decision"><p>{current?.title} · {current?.start_at} – {current?.end_at} · {review.locked?'Lock this exact period':'Unlock this exact period'}</p><p role="status">{review.state}</p>{review.state==='reviewed'&&<Form action={`/api/v1/focus-reviews/${review.id}/lock`} next={here} label="Confirm focus decision"><input type="hidden" name="stamp" value={review.stamp}/><Check name="confirm" label="I reviewed this exact focus decision"/><Field name="credential" label="One-use credential" type="password" required/><Submit>Confirm focus decision</Submit></Form>}</Card>}
+  {review&&review.kind!=='lock'&&<Card title="Exact recovery review"><p role="status">{review.state}{review.cause?' · '+reason(review.cause):''}</p>
+   {review.locks.length>0&&<p>Unchanged locked periods: {review.locks.map(l=>l.start+' – '+l.end).join('; ')}</p>}
+   {review.scenarios.map((s,i)=><div key={i}><h3>Human scenario {i+1}: {s.label}</h3><p>{s.feasible?'Feasible in the reviewed context':'Not feasible'} · Required {s.requiredHours} h · Reserved {s.reservedHours} h · Shortage {s.shortageHours} h</p>{s.reasons.length>0&&<p role="status">{s.reasons.map(reason).join(' · ')}</p>}<ul className="rows">{s.items.map(item=><li key={item.blockId}><div><h3>{item.title}</h3><p>Estimate {item.estimateHours} h · Actual {item.actualHours} h · Remaining {item.remainingHours} h<br/>Event {item.eventId}<br/>{item.eventStart} – {item.eventEnd}<br/>Proposed: {item.start} – {item.end}<br/>Task dates: {item.fromStart??'No start'} – {item.fromDue??'No deadline'} → {item.taskStart??'No start'} – {item.taskDue??'No deadline'}</p></div></li>)}</ul>
+    {s.days.map(d=><p key={d.date}>{d.date} · {d.zone} · Free {d.freeHours} h · Other commitments {d.otherHours} h · Available {d.availableHours} h · Required {d.requiredHours} h · Shortage {d.shortageHours} h</p>)}
+    {s.feasible&&review.state==='reviewed'&&approval(review,i,review.kind==='undo'?'Apply reviewed undo':`Apply human scenario ${i+1}`)}</div>)}
+   {review.operations.length>0&&<><h3>Event reconciliation</h3><ul className="rows">{review.operations.map(o=><li key={o.block_id}><p>{review.scenarios[review.selected??0]?.items.find(i=>i.blockId===o.block_id)?.title??'Work block'} · {o.state==='sending'?'Uncertain — readback required':o.state==='sent'?'Sent — awaiting readback':o.state==='planned'?'Not sent':o.state}<br/>Block {o.block_id} · Task {o.task_id}</p></li>)}</ul></>}
+   {review.state==='applying'&&<p>A calendar write may still be in progress. Readback waits until it can safely verify the completed attempt.</p>}
+   {['applying','uncertain'].includes(review.state)&&<Form action={`/api/v1/focus-reviews/${review.id}/reconcile`} next={here} label="Reconcile recovery"><Field name="credential" label="One-use credential" type="password" required/><Submit>Read back intended events</Submit></Form>}
+   {review.state==='reconciled'&&review.kind==='recovery'&&<Form action={`/api/v1/focus-reviews/${review.id}/undo-preview`} next={here} label="Review recovery undo"><Field name="credential" label="One-use credential" type="password" required/><Submit quiet>Review recovery undo</Submit></Form>}
+   <p>Partial or uncertain results remain open until both calendar and task state agree. Readback never resends a write. Later edits require a fresh review and are preserved by undo.</p>
+  </Card>}
+  <Card title="Recovery history">{view.reviews.length?<ul className="rows">{view.reviews.map(r=><li key={r.id}><a href={here+'?focusReview='+r.id}>{r.kind} · {r.state}{r.cause?' · '+reason(r.cause):''}</a></li>)}</ul>:<p>No reviewed recovery yet.</p>}</Card>
+ </Shell>
+}

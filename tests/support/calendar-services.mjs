@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict'
 import { createServer } from 'node:http'
 export async function startCalendarServices() {
- const state = Object.fromEntries(['google', 'microsoft'].map(service => [service, { events: new Map(), calls: [], denied: false, readOnly: false, freeBusyDenied: false, loseNextCreate: false, beforeWrite: null, locked: [{ start: '2026-03-06T14:00:00.000Z', end: '2026-03-06T15:00:00.000Z' }] }]))
+ const state = Object.fromEntries(['google', 'microsoft'].map(service => [service, { events: new Map(), calls: [], denied: false, readOnly: false, freeBusyDenied: false, loseNextCreate: false, loseNextMove: false, beforeWrite: null, locked: [{ start: '2026-03-06T14:00:00.000Z', end: '2026-03-06T15:00:00.000Z' }] }]))
  const servers = [], origins = {}
  for (const service of ['google', 'microsoft']) {
   const data = state[service], google = service === 'google'
@@ -23,6 +23,7 @@ export async function startCalendarServices() {
      return send(200, { calendars: { 'synthetic-pegboard-250': data.freeBusyDenied ? { errors: [{ reason: 'forbidden' }] } : { busy: [...data.locked, ...current.filter(r => r.id !== data.excludeBusy).map(r => ({ start: stamp(r.start), end: stamp(r.end) }))] } } })
     }
     if (req.method === 'GET' && (url.pathname === base + '/calendarView' || url.pathname === base + '/events')) {
+     if(data.freeBusyDenied && (url.pathname.endsWith('/calendarView') || url.searchParams.has('timeMin')))return send(403,{error:'unavailable'})
      const records = [...data.events.values()]
      if (url.searchParams.has('startDateTime') || url.searchParams.has('timeMin')) for (const [i, busy] of data.locked.entries()) records.push(google ? { id: 'locked' + i, etag: 'locked', start: { dateTime: busy.start }, end: { dateTime: busy.end }, transparency: 'opaque' } : { id: 'locked' + i, '@odata.etag': 'locked', start: { dateTime: busy.start.replace('Z', ''), timeZone: 'UTC' }, end: { dateTime: busy.end.replace('Z', ''), timeZone: 'UTC' }, showAs: 'busy', type: 'singleInstance' })
      return send(200, google ? { items: records } : { value: records })
@@ -47,7 +48,7 @@ export async function startCalendarServices() {
      if (req.headers['if-match'] !== tag(row)) return send(412, { error: 'changed' })
      if (data.beforeWrite) { const fn = data.beforeWrite; data.beforeWrite = null; await fn() }
      if (req.method === 'DELETE') { data.events.delete(id); return send(204) }
-     if (req.method === 'PATCH') { Object.assign(row, body, google ? { etag: '"' + (Number(tag(row).replaceAll('"', '')) + 1) + '"' } : { '@odata.etag': '"' + (Number(tag(row).replaceAll('"', '')) + 1) + '"' }); return send(200, row) }
+     if (req.method === 'PATCH') { Object.assign(row, body, google ? { etag: '"' + (Number(tag(row).replaceAll('"', '')) + 1) + '"' } : { '@odata.etag': '"' + (Number(tag(row).replaceAll('"', '')) + 1) + '"' }); if(data.loseNextMove){data.loseNextMove=false;return send(503,{error:'synthetic uncertain response'})} return send(200, row) }
     }
     return send(404, { error: 'unexpected schema edge' })
    } catch (error) { data.error = error; return send(500, { error: String(error) }) }
