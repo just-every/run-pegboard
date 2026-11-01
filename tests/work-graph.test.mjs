@@ -1,3 +1,4 @@
+import { intakeDecisionsScenario } from './scenarios/intake-decisions.mjs'
 import { approvalFollowupRoutingScenario, approvalFollowupAuthorityScenario } from './scenarios/approval-followup.mjs'
 import { intakeErasureScenario } from './scenarios/intake-erasure.mjs'
 import { intakeScenario } from './scenarios/intake.mjs'
@@ -49,6 +50,13 @@ describe('Data custody intake erasure', {concurrency:false},()=>{
  before(async()=>{worker=await startWorker()},{timeout:120000})
  after(()=>worker?.stop())
  it('reviews exact intake redactions, retains replay witnesses and fences holds, concurrent changes and native archive restoration',async()=>intakeErasureScenario(worker))
+})
+
+describe('Native intake decisions', {concurrency:false},()=>{
+ let worker
+ before(async()=>{worker=await startWorker()},{timeout:120000})
+ after(()=>worker?.stop())
+ it('records reviewed human priority and disposition once, refuses unsafe authority and preserves exact custody',async()=>intakeDecisionsScenario(worker))
 })
 
 describe('Native text intake', {concurrency:false},()=>{

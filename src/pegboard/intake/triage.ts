@@ -1,3 +1,4 @@
+import { decisionPolicy, decisionHistory } from './decisions'
 import { all, batch, bound, first, notFound, now } from '../db'
 import { guarded, revision } from '../decisions/revision'
 import { openProject,need } from '../workspace/projects'
@@ -10,8 +11,10 @@ export async function triageQueue(db:D1Database,actor:Actor,projectId:string) {
  const rows=await all<Submission & {title:string;owner_id:string;priority:string;name:string}>(db,'SELECT s.*,t.title,t.owner_id,t.priority,f.name FROM peg_intake_submissions s JOIN peg_intake_forms f ON f.id=s.form_id JOIN peg_tasks t ON t.id=s.task_id WHERE f.project_id=? ORDER BY s.submitted_at,s.id',projectId)
  const visible=[]
  for(const row of rows){const opened=await openTask(db,actor,row.task_id).catch(()=>null);if(!opened?.access.capabilities.has('edit'))continue;visible.push(row)}
+ const decisions=new Map(await Promise.all(visible.map(async r=>[r.id,(await decisionHistory(db,actor,r.id).catch(()=>[]))[0]??null] as const)))
+ const policy=await decisionPolicy(db,actor,projectId)
  const names=await displayNames(db,visible.map(r=>r.owner_id))
- return {project:{id:project.id,name:project.name},items:visible.map(r=>({id:r.id,taskId:r.task_id,title:r.title,form:r.name,owner:names.get(r.owner_id)??'Unassigned',priority:r.priority,deadline:r.deadline,submittedAt:r.submitted_at,state:r.triaged_at?'triaged':r.deadline<=now()?'overdue':'waiting',escalation:!r.triaged_at&&r.deadline<=now()?'Project administrator attention required':null,escalatedAt:r.escalated_at}))}
+ return {project:{id:project.id,name:project.name},policy,items:visible.map(r=>({id:r.id,taskId:r.task_id,title:r.title,form:r.name,owner:names.get(r.owner_id)??'Unassigned',priority:r.priority,decision:decisions.get(r.id)??null,deadline:r.deadline,submittedAt:r.submitted_at,state:r.triaged_at?'triaged':r.deadline<=now()?'overdue':'waiting',escalation:!r.triaged_at&&r.deadline<=now()?'Project administrator attention required':null,escalatedAt:r.escalated_at}))}
 }
 export async function triageSubmission(db:D1Database,actor:Actor,id:string) {
  const rev=await revision(db),row=await first<Submission>(db,'SELECT * FROM peg_intake_submissions WHERE id=?',id)
