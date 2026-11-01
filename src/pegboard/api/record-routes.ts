@@ -2,10 +2,10 @@ import type { Hono } from 'hono'
 import type { Bindings } from '../../auth.server'
 import { all } from '../db'
 import { door } from './door'
-import { createProof,proofView,addProofVersion,proofDecisionPreview,decideProof,submitOutput,outputView,searchTasks } from '../records/custody'
+import { createProof,proofView,addProofVersion,proofDecisionPreview,decideProof,submitOutput,outputView } from '../records/custody'
 import { openTask } from '../tasks/access'
 export function recordRoutes(app:Hono<{Bindings:Bindings}>) {
-  app.get('/search',door(({db,actor,workspace,query})=>searchTasks(db,actor,workspace,Object.fromEntries(query))))
+
   app.post('/tasks/:id/proofs',door(({db,actor,params,input})=>createProof(db,actor,params.id,input)))
   app.get('/tasks/:id/proofs',door(async({db,actor,params})=>{
     const {task}=await openTask(db,actor,params.id),rows=await all<{id:string}>(db,'SELECT id FROM peg_proofs WHERE task_id=? ORDER BY id',task.id),proofs=[]
