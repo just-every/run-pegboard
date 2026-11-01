@@ -140,12 +140,14 @@ export async function focusRecoveryRefusalsScenario() {
   data.locked.push({start:'2026-03-10T13:00:00.000Z',end:'2026-03-10T14:00:00.000Z'})
   await pass(f.apply(r),409)
   data.locked.pop()
+  await pass(f.apply(r),409)
   r=await f.compare()
   const leave=await pass(root.post(api+'/workspaces/ws_main/time-off',{start:'2026-03-10',end:'2026-03-10'}))
   await pass(f.apply(r),409)
   const noTime=await f.compare()
   assert.equal(noTime.scenarios[0].feasible,false);assert.equal(noTime.scenarios[0].days[0].availableHours,0)
   await pass(root.post(api+'/workspaces/ws_main/time-off/'+leave.id+'/remove',{}))
+  await pass(root.post(api+'/calendar-previews/'+staleMove.id+'/apply',{slot:0,credential}),409)
   r=await f.compare()
   services.move('google',block.event_id,'2026-03-09T15:00:00.000Z','2026-03-09T18:00:00.000Z')
   await pass(f.apply(r),409)
@@ -170,7 +172,25 @@ export async function focusRecoveryRefusalsScenario() {
   const readback=await pass(root.post(api+'/focus-reviews/'+r.id+'/reconcile',{credential}))
   assert.equal(readback.state,'conflict');assert.equal(readback.cause,'partial_fresh_review_required');assert.equal(writes(),partialWrites)
   r=await pass(root.post(api+'/focus-recovery',multiInput()))
-  const concurrent=await Promise.all([f.apply(r),f.apply(r)])
+  let entered,release
+  const started=new Promise(resolve=>{entered=resolve})
+  data.beforeWrite=async()=>{entered();await new Promise(resolve=>{release=resolve})}
+  const writing=f.apply(r)
+  await started
+  let duplicate,earlyRead
+  try{
+   duplicate=await f.apply(r)
+   earlyRead=await root.post(api+'/focus-reviews/'+r.id+'/reconcile',{credential})
+   const custody=await pass(root.post(api+'/data/erasure-preview',{type:'task',id:task.id}))
+   assert.ok(custody.blockers.includes('focus_reconciliation_required_before_erasure'))
+   const heldWrite=await pass(root.post(api+'/data/erase',{type:'task',id:task.id,token:custody.token,confirm:true}))
+   assert.equal(heldWrite.outcome,'retained')
+   assert.deepEqual(heldWrite.counts,{})
+
+  }finally{release()}
+  const concurrent=[await writing,duplicate]
+  assert.equal(duplicate.status,200);assert.equal(duplicate.body.state,'applying')
+  assert.equal(earlyRead.status,200);assert.equal(earlyRead.body.state,'applying','readback cannot finalize a write still in flight')
   assert.ok(concurrent.some(a=>a.status===200));assert.ok(concurrent.every(a=>a.status===200||a.status===409))
   assert.equal((await pass(root.get(api+'/focus-reviews/'+r.id))).state,'reconciled')
   assert.equal(writes()-partialWrites,2,'one human-approved write per intended event despite concurrent approval')
