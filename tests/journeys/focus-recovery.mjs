@@ -61,7 +61,7 @@ export async function focusRecoveryJourney({w,browser,services}) {
   await form.getByRole('checkbox').check();await form.getByLabel('One-use credential').fill(credential)
   services.state.google.loseNextMove=true
   await keyboard(form.getByRole('button',{name:'Apply human scenario 1',exact:true}))
-  await keyboard(page.getByRole('link',{name:'recovery · uncertain · calendar_and_task_state_not_reconciled',exact:true}))
+  await keyboard(page.getByRole('link',{name:'recovery · uncertain · Calendar and task state are not yet reconciled.',exact:true}))
   await expect(page.getByRole('form',{name:'Reconcile recovery',exact:true})).toBeVisible()
   assert.equal((await pass(w.owner.get('/api/v1/tasks/'+f.task.id))).dueDate,'2026-03-09')
   await proof('uncertain')

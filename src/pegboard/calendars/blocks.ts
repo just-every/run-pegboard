@@ -1,7 +1,7 @@
-import { blockFence } from './focus-guards'
+import { blockFence, operationFence } from './focus-guards'
 import type { Bindings } from '../../auth.server'
 import { all, bound, conflict, first, invalid, newId, now, run } from '../db'
-import { guarded, revision } from '../decisions/revision'
+import { digest, guarded, revision } from '../decisions/revision'
 import { auditStatement } from '../authorization/audit'
 import { openProject } from '../workspace/projects'
 import { openTask, require } from '../tasks/access'
@@ -11,7 +11,7 @@ import { dayNumber, dayString, freeTimeSlots, instantOf, type WorkingCalendar } 
 import { calendarEdge, CalendarFailure, type Event, type Slot } from '../connectors/calendars/edge'
 import { calendarAdmin, calendarSettings, connectionFor, taskFingerprint, type Connection } from './connections'
 export interface Block { id: string; connection_id: string; task_id: string; transaction_id: string; event_id: string | null; etag: string | null; start_at: string; end_at: string; zone: string; task_revision: string; state: 'pending' | 'scheduled' | 'conflict' | 'cancelled'; cause: string | null; revision: number }
-interface Preview { id: string; connection_id: string; task_id: string; owner_id: string; task_revision: string; connection_revision: number; block_id: string | null; block_revision: number | null; observed_etag: string | null; slots: string; zone: string; expires_at: number; applied_block: string | null }
+interface Preview { context_revision:number|null;busy_stamp:string|null;id: string; connection_id: string; task_id: string; owner_id: string; task_revision: string; connection_revision: number; block_id: string | null; block_revision: number | null; observed_etag: string | null; slots: string; zone: string; expires_at: number; applied_block: string | null }
 const activeBlock = (db: D1Database, connection: string, task: string) => first<Block>(db, "SELECT * FROM peg_calendar_blocks WHERE connection_id=? AND task_id=? AND state<>'cancelled'", connection, task)
 async function work(db: D1Database, actor: Actor, id: string, connection: Connection) {
  const { task, access } = await openTask(db, actor, id)
@@ -38,7 +38,7 @@ async function free(db: D1Database, task: Awaited<ReturnType<typeof work>>, date
  const start = new Date(instantOf(date, 0, calendar.zone)).toISOString(), end = new Date(instantOf(dayString(dayNumber(date) + 1), 0, calendar.zone)).toISOString()
  const busy = await edge.busy(start, end, excluding, calendar.zone)
  const slots = freeTimeSlots(date, calendar, busy, minutes).filter(slot => endBeforeDeadline(task.due_date, calendar.zone, slot.end))
- return { slots, zone: calendar.zone }
+ return { slots, zone: calendar.zone, busyStamp:await digest([calendar,busy.sort((a,b)=>a.start.localeCompare(b.start)||a.end.localeCompare(b.end))]) }
 }
 export async function previewBlock(env: Bindings, db: D1Database, actor: Actor, taskId: string, input: Record<string, any>) {
  const connection = await connectionFor(db, actor, String(input.connectionId)), task = await work(db, actor, taskId, connection)
@@ -49,7 +49,7 @@ export async function previewBlock(env: Bindings, db: D1Database, actor: Actor, 
  const edge = await edgeFor(env, db, actor, connection, input.credential), observed = block ? block.event_id ? await edge.read(block.event_id) : await edge.find(block.transaction_id) : null
  if (observed?.recurring) throw conflict('calendar_recurring_exception_review_required')
  const result = await free(db, task, date, minutes, edge, observed?.id), id = newId('calendarpreview')
- await guarded(db, rev, [bound(db, 'INSERT INTO peg_calendar_previews(id,connection_id,task_id,owner_id,task_revision,connection_revision,block_id,block_revision,observed_etag,slots,zone,expires_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)', [id, connection.id, task.id, actor.id, await taskFingerprint(task), connection.revision, block?.id ?? null, block?.revision ?? null, observed?.etag ?? null, JSON.stringify(result.slots), result.zone, now() + 15 * 60000])])
+ await guarded(db, rev, [bound(db, 'INSERT INTO peg_calendar_previews(id,connection_id,task_id,owner_id,task_revision,connection_revision,block_id,block_revision,observed_etag,slots,zone,expires_at,context_revision,busy_stamp) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)', [id, connection.id, task.id, actor.id, await taskFingerprint(task), connection.revision, block?.id ?? null, block?.revision ?? null, observed?.etag ?? null, JSON.stringify(result.slots), result.zone, now() + 15 * 60000,rev.value,result.busyStamp])])
  return { id, ...result, deadline: task.due_date, replacing: observed }
 }
 export async function blockPreview(db: D1Database, actor: Actor, id: string) {
@@ -72,7 +72,7 @@ export async function applyBlock(env: Bindings, db: D1Database, actor: Actor, id
   if (applied.state === 'scheduled' || applied.state === 'cancelled') return applied
   return syncBlock(env, db, actor, applied.id, input)
  }
- if (preview.expires_at <= now() || preview.connection_revision !== connection.revision || preview.task_revision !== fingerprint) throw conflict('calendar_review_changed')
+ if (preview.context_revision !== (await revision(db)).value || preview.expires_at <= now() || preview.connection_revision !== connection.revision || preview.task_revision !== fingerprint) throw conflict('calendar_review_changed')
  const slots: Slot[] = JSON.parse(preview.slots), slot = slots[Number(input.slot)]
  if (!slot || !Number.isInteger(Number(input.slot))) throw invalid('calendar_slot')
  let block = await activeBlock(db, connection.id, task.id)
@@ -82,11 +82,14 @@ export async function applyBlock(env: Bindings, db: D1Database, actor: Actor, id
  if ((observed?.etag ?? null) !== preview.observed_etag) { if (block) return changed(db, block.id, 'calendar_provider_conflict'); throw conflict('calendar_provider_conflict') }
  const date = new Intl.DateTimeFormat('en-CA', { timeZone: preview.zone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(slot.start))
  const available = await free(db, task, date, (Date.parse(slot.end) - Date.parse(slot.start)) / 60000, edge, observed?.id)
+ if(available.busyStamp!==preview.busy_stamp){await run(db,'UPDATE peg_calendar_previews SET expires_at=0 WHERE id=?',id);throw conflict('calendar_review_changed')}
  if (!available.slots.some(s => s.start === slot.start && s.end === slot.end)) throw conflict('calendar_time_no_longer_free')
  const freshTask = await work(db, actor, task.id, await connectionFor(db, actor, connection.id))
  if (await taskFingerprint(freshTask) !== fingerprint) throw conflict('calendar_review_changed')
  await blockFence(db, block?.id ?? null, connection.id, slot)
- const rev = await revision(db), blockId = block?.id ?? newId('block'), transaction = block?.transaction_id ?? crypto.randomUUID()
+ const rev = await revision(db)
+ if(rev.value!==preview.context_revision)throw conflict('calendar_review_changed')
+ const blockId = block?.id ?? newId('block'), transaction = block?.transaction_id ?? crypto.randomUUID()
  await guarded(db, rev, [block ? bound(db, "UPDATE peg_calendar_blocks SET start_at=?,end_at=?,zone=?,task_revision=?,state='pending',cause=NULL,revision=revision+1 WHERE id=?", [slot.start, slot.end, preview.zone, fingerprint, blockId])
   : bound(db, "INSERT INTO peg_calendar_blocks(id,connection_id,task_id,transaction_id,start_at,end_at,zone,task_revision,state) VALUES(?,?,?,?,?,?,?,?,'pending')", [blockId, connection.id, task.id, transaction, slot.start, slot.end, preview.zone, fingerprint]),
   bound(db, 'UPDATE peg_calendar_previews SET applied_block=? WHERE id=?', [blockId, id]),
@@ -108,6 +111,7 @@ async function blockFor(db: D1Database, actor: Actor, id: string) {
 }
 export async function syncBlock(env: Bindings, db: D1Database, actor: Actor, id: string, input: Record<string, any>) {
  const { block, connection, task } = await blockFor(db, actor, id)
+ await operationFence(db,id)
  if (block.state === 'cancelled') return block
  const fingerprint = await taskFingerprint(task)
  if (fingerprint !== block.task_revision) return changed(db, id, 'calendar_task_changed')
