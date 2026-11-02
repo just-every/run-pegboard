@@ -89,6 +89,7 @@ export async function planChange(db: D1Database, actor: Actor, moves: Move[]): P
       crossed: shift.from.start && shift.to.start ? holidaysBetween(shift.from.start.day, shift.to.start.day) : [],
       dst: !!(shift.from.start && shift.to.start && dstChange(shift.from.start, shift.to.start, calendar.zone)) || !!(shift.from.due && shift.to.due && dstChange(shift.from.due, shift.to.due, calendar.zone)), link: `/app/tasks/${task.id}` })
   }
-  const fingerprint = await digest([moves, [...tasks.values()].sort((a, b) => a.id.localeCompare(b.id)).map(t => [t.id, t.workspace_id, t.owner_id, t.start_date, t.due_date, t.status, t.updated_at]), edges.map(e => [e.id, e.type, e.lag]), calendarFingerprint])
+  const focusLocks=await all(db,`SELECT b.task_id,l.block_id,l.locked,l.revision FROM peg_focus_locks l JOIN peg_calendar_blocks b ON b.id=l.block_id WHERE b.task_id IN (${marks([...everyone])}) ORDER BY b.task_id,l.block_id`,...everyone)
+  const fingerprint = await digest([moves, [...tasks.values()].sort((a, b) => a.id.localeCompare(b.id)).map(t => [t.id, t.workspace_id, t.owner_id, t.start_date, t.due_date, t.status, t.updated_at]), edges.map(e => [e.id, e.type, e.lag]), calendarFingerprint,focusLocks])
   return { moves, shifts, stamp: fingerprint.slice(0, 24), editable: editableMoves.every(Boolean), waits, blocked, all: all2 }
 }
