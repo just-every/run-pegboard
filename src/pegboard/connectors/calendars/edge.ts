@@ -59,7 +59,7 @@ export function calendarEdge(env: Bindings, service: Service, calendar: string, 
    }
    return row.id as string
   },
-  async busy(start: string, end: string, excluding?: string, zone = 'America/New_York'): Promise<Slot[]> {
+  async busy(start: string, end: string, excluding?: string | string[], zone = 'America/New_York'): Promise<Slot[]> {
    if (service === 'google') {
     const row = await call('POST', '/calendar/v3/freeBusy', { timeMin: start, timeMax: end, items: [{ id: calendar }] }), value = row?.calendars?.[calendar]
     if (!value || value.errors?.length || !Array.isArray(value.busy)) throw new CalendarFailure(403, 'calendar_free_busy_refused')
@@ -70,7 +70,7 @@ export function calendarEdge(env: Bindings, service: Service, calendar: string, 
     : base + '/calendarView?' + new URLSearchParams({ startDateTime: start, endDateTime: end, '$top': '250' })
    const rows = await call('GET', path), values = service === 'google' ? rows?.items : rows?.value
    if (!Array.isArray(values) || rows.nextPageToken || rows['@odata.nextLink']) throw new CalendarFailure(503, 'calendar_busy_window_incomplete')
-   return values.filter((r: any) => r.id !== excluding && r.status !== 'cancelled' && !r.isCancelled && r.transparency !== 'transparent' && r.showAs !== 'free').map((r: any) => {
+   return values.filter((r: any) => !(Array.isArray(excluding)?excluding:[excluding]).includes(r.id) && r.status !== 'cancelled' && !r.isCancelled && r.transparency !== 'transparent' && r.showAs !== 'free').map((r: any) => {
     // An all-day meeting is locked for its entire local date range.
     const point = (v: any) => v?.date ? new Date(instantOf(v.date, 0, providerZone || zone)).toISOString() : instant(v)
     return { start: point(r.start), end: point(r.end) }

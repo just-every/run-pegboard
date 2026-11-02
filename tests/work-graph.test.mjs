@@ -1,3 +1,4 @@
+import { focusRecoveryScenario, focusRecoveryRefusalsScenario } from './scenarios/focus-recovery.mjs'
 import { approvalFollowupRoutingScenario, approvalFollowupAuthorityScenario } from './scenarios/approval-followup.mjs'
 import { intakeErasureScenario } from './scenarios/intake-erasure.mjs'
 import { intakeScenario } from './scenarios/intake.mjs'
@@ -2481,4 +2482,9 @@ describe('Native approval follow-up', {concurrency:false},()=>{
  after(()=>worker?.stop())
  it('routes finite internal follow-up through working hours, DND, queued delegation, restart and a real decision',async()=>approvalFollowupRoutingScenario(worker))
  it('cancels obsolete follow-up and refuses hidden, revoked, deactivated and muted recipients without reviving old episodes',async()=>approvalFollowupAuthorityScenario(worker))
+})
+
+describe('Human focus recovery through provider schema edges', {concurrency:false},()=>{
+ it('compares exact human scenarios, preserves locks and commitments, reconciles lost responses and reviews undo without overwriting later work', {timeout:180000}, focusRecoveryScenario)
+ it('refuses shortages, hidden context, changed authority and stale reviews, and restores inactive custody without replay', {timeout:240000}, focusRecoveryRefusalsScenario)
 })
