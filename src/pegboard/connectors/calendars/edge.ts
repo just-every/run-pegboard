@@ -45,9 +45,9 @@ export function calendarEdge(env: Bindings, service: Service, calendar: string, 
   const cancelled = row.status === 'cancelled' || row.isCancelled === true
   return { id: row.id, etag, cancelled, recurring: !!(row.recurringEventId || row.recurrence || row.type && row.type !== 'singleInstance'), start: cancelled ? '' : instant(row.start), end: cancelled ? '' : instant(row.end) }
  }
- const payload = (slot: Slot, zone: string) => service === 'google'
-  ? { summary: 'Reserved work', visibility: 'private', transparency: 'opaque', start: { dateTime: slot.start, timeZone: zone }, end: { dateTime: slot.end, timeZone: zone } }
-  : { subject: 'Reserved work', sensitivity: 'private', showAs: 'busy', start: { dateTime: slot.start.replace('Z', ''), timeZone: 'UTC' }, end: { dateTime: slot.end.replace('Z', ''), timeZone: 'UTC' } }
+ const timing = (slot: Slot, zone: string) => service === 'google'
+  ? { start: { dateTime: slot.start, timeZone: zone }, end: { dateTime: slot.end, timeZone: zone } }
+  : { start: { dateTime: slot.start.replace('Z', ''), timeZone: 'UTC' }, end: { dateTime: slot.end.replace('Z', ''), timeZone: 'UTC' } }
  return {
   async permission() {
    const row = await call('GET', service === 'google' ? '/calendar/v3/users/me/calendarList/' + encodeURIComponent(calendar) : base)
@@ -59,7 +59,7 @@ export function calendarEdge(env: Bindings, service: Service, calendar: string, 
    }
    return row.id as string
   },
-  async busy(start: string, end: string, excluding?: string, zone = 'America/New_York'): Promise<Slot[]> {
+  async busy(start: string, end: string, excluding?: string | string[], zone = 'America/New_York'): Promise<Slot[]> {
    if (service === 'google') {
     const row = await call('POST', '/calendar/v3/freeBusy', { timeMin: start, timeMax: end, items: [{ id: calendar }] }), value = row?.calendars?.[calendar]
     if (!value || value.errors?.length || !Array.isArray(value.busy)) throw new CalendarFailure(403, 'calendar_free_busy_refused')
@@ -70,7 +70,7 @@ export function calendarEdge(env: Bindings, service: Service, calendar: string, 
     : base + '/calendarView?' + new URLSearchParams({ startDateTime: start, endDateTime: end, '$top': '250' })
    const rows = await call('GET', path), values = service === 'google' ? rows?.items : rows?.value
    if (!Array.isArray(values) || rows.nextPageToken || rows['@odata.nextLink']) throw new CalendarFailure(503, 'calendar_busy_window_incomplete')
-   return values.filter((r: any) => r.id !== excluding && r.status !== 'cancelled' && !r.isCancelled && r.transparency !== 'transparent' && r.showAs !== 'free').map((r: any) => {
+   return values.filter((r: any) => !(Array.isArray(excluding)?excluding:[excluding]).includes(r.id) && r.status !== 'cancelled' && !r.isCancelled && r.transparency !== 'transparent' && r.showAs !== 'free').map((r: any) => {
     // An all-day meeting is locked for its entire local date range.
     const point = (v: any) => v?.date ? new Date(instantOf(v.date, 0, providerZone || zone)).toISOString() : instant(v)
     return { start: point(r.start), end: point(r.end) }
@@ -96,9 +96,9 @@ export function calendarEdge(env: Bindings, service: Service, calendar: string, 
   },
   async create(transaction: string, slot: Slot, zone: string) {
    const identity = service === 'google' ? { id: transaction.replaceAll('-', '') } : { transactionId: transaction }
-   return event(await call('POST', base + '/events' + (service === 'google' ? '?sendUpdates=none' : ''), { ...payload(slot, zone), ...identity }))
+   return event(await call('POST', base + '/events' + (service === 'google' ? '?sendUpdates=none' : ''), { ...timing(slot, zone), ...(service === 'google' ? { summary: 'Reserved work', visibility: 'private', transparency: 'opaque' } : { subject: 'Reserved work', sensitivity: 'private', showAs: 'busy' }), ...identity }))
   },
-  async move(id: string, etag: string, slot: Slot, zone: string) { return event(await call('PATCH', base + '/events/' + encodeURIComponent(id) + (service === 'google' ? '?sendUpdates=none' : ''), payload(slot, zone), etag)) },
+  async move(id: string, etag: string, slot: Slot, zone: string) { return event(await call('PATCH', base + '/events/' + encodeURIComponent(id) + (service === 'google' ? '?sendUpdates=none' : ''), timing(slot, zone), etag)) },
   async remove(id: string, etag: string) { await call('DELETE', base + '/events/' + encodeURIComponent(id) + (service === 'google' ? '?sendUpdates=none' : ''), undefined, etag, true) },
  }
 }

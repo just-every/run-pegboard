@@ -6,7 +6,7 @@
       "hosted": false,
       "commands": [
         "pnpm run check --profile first-party",
-        "node scripts/contract-docs.mjs check PEG-059 PEG-057 PEG-007 PEG-078 PEG-003 PEG-018 PEG-031 PEG-027 PEG-015 PEG-036 PEG-012 PEG-016 PEG-044 PEG-025 PEG-127 PEG-037"
+        "node scripts/contract-docs.mjs check PEG-069 PEG-059 PEG-057 PEG-007 PEG-078 PEG-003 PEG-018 PEG-031 PEG-027 PEG-015 PEG-036 PEG-012 PEG-016 PEG-044 PEG-025 PEG-127 PEG-037"
       ]
     },
     {
@@ -32,7 +32,7 @@
       "browser": false,
       "hosted": false,
       "commands": [
-        "pnpm exec rer queue test:work-graph-core -- sh -c \"node --test --test-skip-pattern='^(?:Local rule audit|Data custody|PEG-064 retained graph recovery|Native reporting|Goal visibility and accountability|Engineering handoff|Meeting review|Analyst exports|Project planning canvas|Work planning time, recurrence and decisions|Approval routing custody|Calendar work blocks through provider schema edges|Native approval follow-up)(?: |$)' tests/work-graph.test.mjs\""
+        "pnpm exec rer queue test:work-graph-core -- sh -c \"node --test --test-skip-pattern='^(?:Local rule audit|Data custody|PEG-064 retained graph recovery|Native reporting|Goal visibility and accountability|Engineering handoff|Meeting review|Analyst exports|Project planning canvas|Work planning time, recurrence and decisions|Approval routing custody|Calendar work blocks through provider schema edges|Human focus recovery through provider schema edges|Native approval follow-up)(?: |$)' tests/work-graph.test.mjs\""
       ]
     },
     {
@@ -41,6 +41,14 @@
       "hosted": false,
       "commands": [
         "pnpm exec rer queue test:work-graph-time -- sh -c \"node --test --test-name-pattern='^(?:Work planning time, recurrence and decisions|Approval routing custody|Calendar work blocks through provider schema edges|Native approval follow-up)(?: |$)' tests/work-graph.test.mjs\""
+      ]
+    },
+    {
+      "name": "work-graph-focus",
+      "browser": false,
+      "hosted": false,
+      "commands": [
+        "pnpm exec rer queue test:work-graph-focus -- sh -c \"node --test --test-name-pattern='^(?:Human focus recovery through provider schema edges)(?: |$)' tests/work-graph.test.mjs\""
       ]
     },
     {
@@ -120,7 +128,7 @@
       "browser": true,
       "hosted": false,
       "commands": [
-        "pnpm exec rer queue test:journeys-core-work -- sh -c \"PEGBOARD_JOURNEY=core,recurrence,approvals,time-packets node tests/journeys/work-graph.journey.mjs\""
+        "pnpm exec rer queue test:journeys-core-work -- sh -c \"PEGBOARD_JOURNEY=focus-recovery,core,recurrence,approvals,time-packets node tests/journeys/work-graph.journey.mjs\""
       ]
     },
     {

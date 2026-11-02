@@ -2,6 +2,7 @@
 // preview, or Apply) executes every shift together, once, attributed to them, with no second sign-off. A set that reaches
 // work outside the editor's grant, or that an agent proposed, waits for a person who may edit all of it. Nothing is applied
 // in part, and a plan whose revision no longer matches is refused.
+import { scheduleLockFence } from '../calendars/focus-guards'
 import { all, batch, bound, conflict, first, forbidden, invalid, newId, notFound, now } from '../db'
 import { auditStatement } from '../authorization/audit'
 import { taskAccess } from '../authorization/effective'
@@ -37,6 +38,7 @@ export async function applyChange(db: D1Database, actor: Actor, input: { moves: 
   if (typeof input.revision !== 'string' || input.revision !== plan.stamp) throw conflict('stale_plan')
   if (!plan.editable) throw forbidden('edit')
   if (plan.blocked) throw conflict(plan.blocked)
+  await scheduleLockFence(db, plan.all.map(t=>t.id))
   const workspaceId = await workspaceOf(db, plan), role = await workspaceRole(db, actor.id, workspaceId), kind = role === 'agent' ? 'agent' : 'human', setId = newId('sch'), at = now()
   if (kind === 'agent' || plan.waits) {
     let approver: string | null = null
@@ -86,6 +88,7 @@ export async function approveChange(db: D1Database, actor: Actor, id: string, in
   if (plan.stamp !== set.stamp || input.revision !== set.stamp) throw conflict('stale_plan')
   if (!plan.editable || plan.waits) throw forbidden('edit')
   if (plan.blocked) throw conflict(plan.blocked)
+  await scheduleLockFence(db, plan.all.map(t=>t.id))
   const at = now()
   await guarded(db, rev, [...execute(db, plan, actor.id, set.id, [], 'applied', null, set.workspace_id), bound(db, "UPDATE peg_schedule_sets SET status='applied',decided_by=?,decided_at=? WHERE id=? AND status='pending'", [actor.id, at, set.id])])
   return { id: set.id, status: 'applied' as const, shifts: plan.all.length }
@@ -119,6 +122,7 @@ export async function undoChange(db: D1Database, actor: Actor, id: string) {
     const access = await taskAccess(db, actor, task)
     if (!access.capabilities.has('edit')) throw forbidden('edit')
   }
+  await scheduleLockFence(db, changes.map(t=>t.task_id))
   await guarded(db, rev, [
     ...changes.flatMap(change => [bound(db, 'UPDATE peg_tasks SET start_date=?,due_date=?,updated_at=? WHERE id=?', [change.from_start, change.from_due, at, change.task_id]), historyStatement(db, change.task_id, null, actor.id, 'schedule.undone', { setId: id, restored: { start: change.from_start, due: change.from_due } })]),
     bound(db, "UPDATE peg_schedule_sets SET status='undone',undone_by=?,undone_at=? WHERE id=? AND status='applied'", [actor.id, at, id]),

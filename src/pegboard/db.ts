@@ -22,6 +22,8 @@ export async function run(db: D1Database, sql: string, ...args: Param[]) {
   return bound(db, sql, args).run()
 }
 /** One transaction: D1 applies a batch atomically. */
-export const batch = (db: D1Database, statements: D1PreparedStatement[]) => db.batch(statements)
+export async function batch(db: D1Database, statements: D1PreparedStatement[]) {
+ try{return await db.batch(statements)}catch(error){if(String(error).includes('focus_locked'))throw conflict('focus_locked');throw error}
+}
 
 export const placeholders = (values: unknown[]) => values.map(() => '?').join(',') || 'NULL'

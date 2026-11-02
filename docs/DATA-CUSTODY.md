@@ -173,3 +173,7 @@ remain explicit acceptance gaps. PEG-057, PEG-059 and PEG-065 stay partial for t
 CT rulings approve scoped redacted audit, owner-reviewed erasure, hold precedence
 and separately consented processor custody; retained identity stores and external
 limits remain disclosed.
+
+Focus recovery keeps owner-reviewed lock decisions, human scenario reviews, exact task references and per-event readback intents in the native database. Task erasure enumerates dependent reviews, subjects, operations, locks and calendar mappings in the same irreversible scope. Erasure review includes holds on every affected task and recorded focus lock, including other tasks in a shared recovery; permanent audit retains only opaque identities. Unresolved calendar writes block erasure until reconciliation, so an in-flight intent cannot outlive its reviewed task. Existing time-retention blockers still apply. External calendar event deletion is never claimed by native erasure.
+
+Native archives retain noncredential calendar mappings as historical provenance, with redacted calendar account identities and inactive, version-fenced connections. Focus locks restore unlocked; recovery reviews and operations restore inactive, with historical review bodies retained and approval stamps removed. Old operation identities cannot resume a provider write. Reconnection and a fresh exact human review are required. Previously sent external event copies remain outside native custody.
