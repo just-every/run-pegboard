@@ -40,7 +40,15 @@
       "browser": false,
       "hosted": false,
       "commands": [
-        "pnpm exec rer queue test:work-graph-time -- sh -c \"node --test --test-name-pattern='^(?:Work planning time, recurrence and decisions|Approval routing custody|Calendar work blocks through provider schema edges|Human focus recovery through provider schema edges|Native approval follow-up)(?: |$)' tests/work-graph.test.mjs\""
+        "pnpm exec rer queue test:work-graph-time -- sh -c \"node --test --test-name-pattern='^(?:Work planning time, recurrence and decisions|Approval routing custody|Calendar work blocks through provider schema edges|Native approval follow-up)(?: |$)' tests/work-graph.test.mjs\""
+      ]
+    },
+    {
+      "name": "work-graph-focus",
+      "browser": false,
+      "hosted": false,
+      "commands": [
+        "pnpm exec rer queue test:work-graph-focus -- sh -c \"node --test --test-name-pattern='^(?:Human focus recovery through provider schema edges)(?: |$)' tests/work-graph.test.mjs\""
       ]
     },
     {
