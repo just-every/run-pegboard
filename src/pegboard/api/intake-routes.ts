@@ -1,3 +1,4 @@
+import { intakeTemplatePreview, applyIntakeTemplate } from '../intake/template-mapping'
 import { createElement as h } from 'react'
 import type { Hono } from 'hono'
 import { runtimeBindings, type Bindings } from '../../auth.server'
@@ -38,7 +39,7 @@ export async function publicIntakePage(request:Request,original:Bindings):Promis
 }
 export function intakeRoutes(app:Hono<{Bindings:Bindings}>) {
  app.post('/projects/:id/intake/forms',door(async({db,actor,params,input,form})=>{
-  const value=form?{name:input.name,fields:[{id:'title',label:input.titleLabel,required:true},{id:'kind',label:input.branchLabel,required:true,choices:String(input.choices??'').split(',').map(v=>v.trim())},{id:'details',label:input.detailLabel,required:true,when:{field:'kind',equals:input.branchValue}}],mapping:{title:'title',description:['kind','details'],ownerId:input.ownerId,priority:input.priority},hours:input.hours}:input
+  const value=form?{name:input.name,fields:[{id:'title',label:input.titleLabel,required:true},{id:'kind',label:input.branchLabel,required:true,choices:String(input.choices??'').split(',').map(v=>v.trim())},{id:'details',label:input.detailLabel,required:true,when:{field:'kind',equals:input.branchValue}}],mapping:{title:'title',description:['kind','details'],ownerId:input.ownerId,priority:input.priority},hours:input.hours,...(input.template?{template:input.template}:{})}:input
   const result=await saveForm(db,actor,params.id,value)
   return form?new Response(null,{status:303,headers:{location:`/app/projects/${params.id}/settings/intake?review=${result.id}`,'cache-control':'no-store'}}):result
  },{next:(r,{params})=>`/app/projects/${params.id}/settings/intake?review=${r.id}`}))
@@ -59,6 +60,8 @@ export function intakeRoutes(app:Hono<{Bindings:Bindings}>) {
   const receipt=await submitIntake(db,{actor,formId:params.id},await readSubmission(request))
   return (request.headers.get('content-type')??'').includes('form')?new Response(null,{status:303,headers:{location:`/app/intake/${params.id}?receipt=${receipt.receipt}`,'cache-control':'no-store'}}):json(receipt)
  },{raw:true}))
+ app.post('/intake/submissions/:id/template/preview',door(({db,actor,params,input})=>intakeTemplatePreview(db,actor,params.id,input)))
+ app.post('/intake/submissions/:id/template/apply',door(({db,actor,params,input})=>applyIntakeTemplate(db,actor,params.id,input)))
  app.get('/projects/:id/intake',door(({db,actor,params})=>triageQueue(db,actor,params.id)))
  app.post('/intake/submissions/:id/triage',door(({db,actor,params})=>triageSubmission(db,actor,params.id)))
  app.get('/public-intake/:cap',async c=>{try{return json(safeForm(await publicForm(runtimeBindings(c.env).DB,c.req.param('cap'))))}catch(error){const failure=describe(error);return json({error:'intake_unavailable'},failure.status)}})

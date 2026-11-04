@@ -1,3 +1,4 @@
+import { intakeTemplatesScenario } from './scenarios/intake-templates.mjs'
 import {pdfFeedbackScenario,pdfFeedbackCustodyScenario} from './scenarios/pdf-feedback.mjs'
 import { approvalFollowupRoutingScenario, approvalFollowupAuthorityScenario } from './scenarios/approval-followup.mjs'
 import { intakeErasureScenario } from './scenarios/intake-erasure.mjs'
@@ -71,6 +72,7 @@ describe('Native text intake', {concurrency:false},()=>{
  let worker
  before(async()=>{worker=await startWorker()},{timeout:120000})
  after(()=>worker?.stop())
+ it('applies an internal pinned task template once after exact human review and preserves source custody',async()=>intakeTemplatesScenario(worker))
  it('publishes branching intake, creates one attributable task after replay and restart, and refuses unsafe submissions',async()=>intakeScenario(worker))
 })
 

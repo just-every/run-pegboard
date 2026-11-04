@@ -11,7 +11,7 @@ export async function triageQueue(db:D1Database,actor:Actor,projectId:string) {
  const visible=[]
  for(const row of rows){const opened=await openTask(db,actor,row.task_id).catch(()=>null);if(!opened?.access.capabilities.has('edit'))continue;visible.push(row)}
  const names=await displayNames(db,visible.map(r=>r.owner_id))
- return {project:{id:project.id,name:project.name},items:visible.map(r=>({id:r.id,taskId:r.task_id,title:r.title,form:r.name,owner:names.get(r.owner_id)??'Unassigned',priority:r.priority,deadline:r.deadline,submittedAt:r.submitted_at,state:r.triaged_at?'triaged':r.deadline<=now()?'overdue':'waiting',escalation:!r.triaged_at&&r.deadline<=now()?'Project administrator attention required':null,escalatedAt:r.escalated_at}))}
+ return {project:{id:project.id,name:project.name},items:visible.map(r=>({id:r.id,taskId:r.task_id,title:r.title,form:r.name,owner:names.get(r.owner_id)??'Unassigned',priority:r.priority,deadline:r.deadline,submittedAt:r.submitted_at,state:r.triaged_at?'triaged':r.deadline<=now()?'overdue':'waiting',escalation:!r.triaged_at&&r.deadline<=now()?'Project administrator attention required':null,escalatedAt:r.escalated_at,templateAvailable:!!(r as Submission & {template_pin?:string}).template_pin}))}
 }
 export async function triageSubmission(db:D1Database,actor:Actor,id:string) {
  const rev=await revision(db),row=await first<Submission>(db,'SELECT * FROM peg_intake_submissions WHERE id=?',id)

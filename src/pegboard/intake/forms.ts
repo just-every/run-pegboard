@@ -1,3 +1,4 @@
+import { permittedIntakeTemplate, type TemplatePin } from './template-mapping'
 import { all, batch, bound, conflict, first, forbidden, invalid, newId, notFound, now } from '../db'
 import { digest, guarded, revision } from '../decisions/revision'
 import { auditStatement } from '../authorization/audit'
@@ -6,7 +7,7 @@ import { operatorRow, workspaceRole, type Actor } from '../workspace/people'
 import { workspaceCalendar } from '../schedule/availability'
 
 export interface IntakeField { id: string; label: string; required: boolean; choices?: string[]; when?: { field: string; equals: string } }
-export interface Definition { fields: IntakeField[]; mapping: { title: string; description: string[]; ownerId: string | null; priority: string }; hours: number }
+export interface Definition { fields: IntakeField[]; mapping: { title: string; description: string[]; ownerId: string | null; priority: string }; hours: number; template?:TemplatePin }
 export interface FormRow { erased_custody: number; id: string; project_id: string; version: number; name: string; definition: string; publisher_id: string | null; publisher_version: number | null; published_version: number | null; published_calendar: string | null; public_hash: string | null; revoked_at: number | null }
 export const text = (v: unknown, max = 200): string => { if (typeof v !== 'string' || !v.trim() || v.length > max || /[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(v)) throw invalid('intake_input'); return v.trim() }
 export async function administer(db: D1Database, actor: Actor, projectId: string) {
@@ -43,7 +44,13 @@ export async function checkedDefinition(db: D1Database, actor: Actor, projectId:
  if (!role || ['guest','agent'].includes(role)) throw invalid('intake_owner')
  const hours=Number(input.hours)
  if (!Number.isInteger(hours)||hours<1||hours>80) throw invalid('intake_hours')
- return {fields:clean,mapping:{title:m.title,description:m.description,ownerId:m.ownerId,priority:m.priority},hours}
+ let template:TemplatePin|undefined
+ if(input.template){
+  let pin=input.template;try{if(typeof pin==='string')pin=JSON.parse(pin)}catch{throw invalid('intake_template_pin')}
+  if(typeof pin?.id!=='string'||!Number.isInteger(pin.version)||pin.version<1)throw invalid('intake_template_pin')
+  template={id:pin.id,version:pin.version};await permittedIntakeTemplate(db,actor,project.workspace_id,template)
+ }
+ return {...(template?{template}:{}),fields:clean,mapping:{title:m.title,description:m.description,ownerId:m.ownerId,priority:m.priority},hours}
 }
 export async function saveForm(db:D1Database,actor:Actor,projectId:string,input:Record<string,any>,id?:string) {
  const rev=await revision(db), {project}=await administer(db,actor,projectId)
@@ -61,6 +68,7 @@ export async function reviewForm(db:D1Database,actor:Actor,id:string) {
 }
 export async function publishForm(db:D1Database,actor:Actor,id:string,input:Record<string,any>) {
  const rev=await revision(db),row=await formRow(db,id),review=await reviewForm(db,actor,id)
+ if(review.definition.template&&input.audience!=='internal')throw invalid('intake_template_internal_only')
  if(row.erased_custody)throw conflict('intake_custody_review_required')
  if(input.review!==review.review||Number(input.version)!==row.version||!['internal','public'].includes(input.audience)||!(input.consent===true||input.consent==='on'))throw conflict('intake_review_required')
  await checkedDefinition(db,actor,row.project_id,{...review.definition})

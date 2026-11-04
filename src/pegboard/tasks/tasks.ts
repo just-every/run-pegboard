@@ -34,14 +34,14 @@ async function sectionFor(db: D1Database, projectId: string, sectionId?: string 
 }
 const nextPosition = async (db: D1Database, projectId: string, sectionId: string | null) => (await first<{ n: number }>(db, 'SELECT COALESCE(MAX(position),0)+1 n FROM peg_task_projects WHERE project_id=? AND COALESCE(section_id,\'\')=COALESCE(?,\'\')', projectId, sectionId))!.n
 
-export async function prepareTask(db: D1Database, actor: Actor, input: TaskInput, options:{queueRules?:boolean;sourceActorId?:'public_intake'}={}) {
+export async function prepareTask(db: D1Database, actor: Actor, input: TaskInput, options:{queueRules?:boolean;sourceActorId?:'public_intake';pendingParentId?:string}={}) {
   const kind = input.kind ?? (input.parentId ? 'subtask' : 'task')
   if (!kinds.includes(kind)) throw invalid('kind')
   let projectId = input.projectId ?? null, workspaceId = input.workspaceId ?? 'ws_main', parent: TaskRow | null = null
   if (input.parentId) {
     const opened = await openTask(db, actor, input.parentId)
     require(opened.access, 'edit')
-    parent = opened.task; workspaceId = parent.workspace_id
+    parent = options.pendingParentId ? {...opened.task,id:options.pendingParentId} : opened.task; workspaceId = parent.workspace_id
     if (!opened.access.personal && !projectId) projectId = [...opened.access.contexts].find(([, effective]) => effective.capabilities.has('edit'))?.[0] ?? null
     if (opened.access.personal && projectId) throw conflict('personal_task')
     if (!opened.access.personal && !projectId) throw forbidden('edit')

@@ -50,3 +50,29 @@ review, and the PEG-012 fixed-designer and AI-proposal acceptance remain unprove
 The conservative workspace owner or administrator publication floor is adopted
 pending ct approval; scoped publisher delegation remains unproved. No provider
 or mail qualification is claimed, and PEG-012 behavior is unchanged.
+
+
+## Reviewed internal task templates
+
+An owner or workspace administrator can pin the current version of a permitted
+plain task template in an internal form draft and review it at publication.
+Every later application is a separate human decision from the request queue.
+The preview shows the existing request identity and retained answers, role
+choices, exact owner and date changes, estimates and proposed nested work.
+Confirmation changes the existing root and creates the reviewed nested tasks
+once. The request title, description, source attribution and triage clock remain.
+No project, grants, copied decisions or active rules are created.
+
+This door rejects project templates, fields, dependencies, rules, milestones and
+required approvals explicitly. Existing root dependencies, approvals, calendar
+blocks, multi-homing and nested work require their own doors. Publication and
+application recheck publisher, template and destination authority. Any relevant
+revision change requires a new review; applied requests cannot be applied again.
+Public and automatic template application are unavailable.
+
+Mapping provenance is opaque permanent audit metadata. Native archives keep
+historical identities with inactive applications and publications. Exact owner
+erasure review includes mapping attribution and owner references, preserves
+inactive replay witnesses and respects holds. Existing retained template and
+recurring-snapshot custody blockers remain in force. No attachment, provider or
+device qualification is established here.
