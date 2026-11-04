@@ -48,7 +48,7 @@ export async function checkedDefinition(db: D1Database, actor: Actor, projectId:
  if(input.template){
   let pin=input.template;try{if(typeof pin==='string')pin=JSON.parse(pin)}catch{throw invalid('intake_template_pin')}
   if(typeof pin?.id!=='string'||!Number.isInteger(pin.version)||pin.version<1)throw invalid('intake_template_pin')
-  template={id:pin.id,version:pin.version};await permittedIntakeTemplate(db,actor,project.workspace_id,template)
+  template={id:pin.id,version:pin.version};const allowed=await permittedIntakeTemplate(db,actor,project.workspace_id,template);if(allowed.headVersion!==template.version)throw conflict('intake_template_changed')
  }
  return {...(template?{template}:{}),fields:clean,mapping:{title:m.title,description:m.description,ownerId:m.ownerId,priority:m.priority},hours}
 }

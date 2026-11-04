@@ -59,10 +59,10 @@ export async function applyIntakeTemplate(db:D1Database,actor:Actor,id:string,in
  const applicationId=newId('mapping'),at=now(),ids=new Map(view.tasks.map(t=>[t.key,t.parent?newId('tsk'):task.id])),statements:D1PreparedStatement[]=[]
  // Prepare every child through the ordinary task checks against the existing root.
  // A deeper parent is substituted only after its validated ancestor is prepared.
- const remaining=view.tasks.filter(t=>t.parent)
+ const remaining=view.tasks.filter(t=>t.parent);let referenceOffset=0
  while(remaining.length){
   const index=remaining.findIndex(t=>t.parent===view.rootKey||!remaining.some(p=>p.key===t.parent));if(index<0)throw invalid('intake_template_parent')
-  const child=remaining.splice(index,1)[0],prepared=await prepareTask(db,actor,{parentId:task.id,projectId:project.id,title:child.title,ownerId:child.ownerId!,startDate:child.startDate,dueDate:child.dueDate,estimateHours:child.hours},{queueRules:false,pendingParentId:ids.get(child.parent!)!})
+  const child=remaining.splice(index,1)[0],prepared=await prepareTask(db,actor,{parentId:task.id,projectId:project.id,title:child.title,ownerId:child.ownerId!,startDate:child.startDate,dueDate:child.dueDate,estimateHours:child.hours},{queueRules:false,pendingParentId:ids.get(child.parent!)!,pendingReferenceOffset:referenceOffset++})
   ids.set(child.key,prepared.id)
   // The prepared parent is from this exact reviewed tree.
   statements.push(...prepared.statements)

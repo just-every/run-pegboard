@@ -699,7 +699,7 @@
       "executable": false
     },
     "migrations/core/0089_intake_templates.sql": {
-      "sha256": "605ee6a4de2fdbc3acf54710ad1000236b74d302a81dba2706121d9441ad4c27",
+      "sha256": "aa9b1f0518a3e4a570745278dd249c1498eaeacca12db6de9668a59b6cf0da26",
       "executable": false
     },
     "ONBOARDING.md": {
@@ -3499,7 +3499,7 @@
       "executable": false
     },
     "src/pegboard/intake/forms.ts": {
-      "sha256": "108bf9869912f4dfb291c4fc4f708ba6e75985b55671d20bff1e6a4197147dd7",
+      "sha256": "4e2f5681650f9d6266957ffb7f31145e4f37af6a478405724477f42f784d60dc",
       "executable": false
     },
     "src/pegboard/intake/submissions.ts": {
@@ -3507,7 +3507,7 @@
       "executable": false
     },
     "src/pegboard/intake/template-mapping.ts": {
-      "sha256": "a5b3bb9ea09b04cacc87c1ba7f97c10838d0aa9d9520a84fa52bfebbfdb9f3bf",
+      "sha256": "5cf6e5a250d60afd7c66b008f16de0554440df0a289056ead4816abe36fa3549",
       "executable": false
     },
     "src/pegboard/intake/triage.ts": {
@@ -3631,7 +3631,7 @@
       "executable": false
     },
     "src/pegboard/references/refs.ts": {
-      "sha256": "d54e6be7746c56def74037f0660c32a485fe0c6f7fe5f112fc101eedf085e3b0",
+      "sha256": "90d186ac154c17a875517bcd0ff43077ccacf8436fcd37afddfa726b7d99c0d4",
       "executable": false
     },
     "src/pegboard/register/citations.ts": {
@@ -3767,7 +3767,7 @@
       "executable": false
     },
     "src/pegboard/tasks/tasks.ts": {
-      "sha256": "5090126ffde5dd7f9b4cf583269f521fa9eccd71f44836d5608908bfc4895541",
+      "sha256": "86eaf1e01095854881220849ef451575b1752ffd01e364c5d62e15846347b851",
       "executable": false
     },
     "src/pegboard/tasks/view.ts": {
@@ -4371,7 +4371,7 @@
       "executable": false
     },
     "tests/journeys/intake-templates.mjs": {
-      "sha256": "85e660b78960d0f0ad0129fcadd62d25d6d2022238dcea137a5abf5d1e6d4aa2",
+      "sha256": "798681ef2388ab96ed0a98ddcbd82423f3a3c8b0d39fe729a971c32e63084ca4",
       "executable": false
     },
     "tests/journeys/intake.mjs": {
@@ -4491,7 +4491,7 @@
       "executable": false
     },
     "tests/scenarios/intake-templates.mjs": {
-      "sha256": "98e9e7ea020a919e3ab1ac2b541a74cb50162134dca408b370e9fd2d2d5853be",
+      "sha256": "e58e239379dd282defa012e2bffcc97ca9d93bfdb1f422939ca2c00f87a54fae",
       "executable": false
     },
     "tests/scenarios/intake.mjs": {

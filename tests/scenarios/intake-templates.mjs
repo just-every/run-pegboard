@@ -6,6 +6,7 @@ export async function intakeTemplateFixture(w){
  const owner=w.owner,peer=await w.person(['synthetic-pegboard-7101','example.invalid'].join('@'),'Template designer')
  const project=await pass(owner.post('/api/v1/projects',{name:'Intake template work'}))
  await pass(owner.post('/api/v1/grants',{objectType:'project',objectId:project.id,granteeId:peer.id,level:'editor'}))
+ await pass(owner.post(`/api/v1/projects/${project.id}/prefix`,{prefix:'PBT'}))
  const definition={kind:'task',description:'Plain nested work',roles:['Lead','Designer'],phases:['Work'],fields:[],rules:[],dependencies:[],tasks:[
   {key:'root',title:'Template root',phase:'Work',role:'Lead',start:0,due:4,hours:2,fields:{}},
   {key:'draft',title:'Create draft',phase:'Work',role:'Designer',start:1,due:2,hours:3,parent:'root',fields:{}},
@@ -28,6 +29,7 @@ export async function intakeTemplateFixture(w){
 }
 export async function intakeTemplatesScenario(w){
  const f=await intakeTemplateFixture(w),{owner,peer,project,input}=f,item=await f.send('7102')
+ const before=archiveRows(await exportCanvasInstallation(owner)),count=(rows,table)=>rows.filter(r=>r.table===table).length
  let review=await pass(owner.post(item.path+'/preview',input))
  assert.equal(review.taskId,item.taskId);assert.deepEqual(review.answers,f.answers)
  assert.equal(review.deadline,item.deadline);assert.equal(review.submittedAt,item.submittedAt)
@@ -49,6 +51,7 @@ export async function intakeTemplatesScenario(w){
  await pass(owner.post(item.path+'/apply',{...command,roles:{...input.roles,Lead:peer.id}}),409)
  const root=await pass(owner.get('/api/v1/tasks/'+item.taskId)),draft=await pass(owner.get('/api/v1/tasks/'+root.subtasks[0].id)),check=await pass(owner.get('/api/v1/tasks/'+draft.subtasks[0].id))
  assert.deepEqual(new Set(result.taskIds),new Set([item.taskId,draft.id,check.id]))
+ assert.equal(root.ref,'PBT-1');assert.equal(draft.ref,'PBT-2');assert.equal(check.ref,'PBT-3')
  assert.equal(root.title,f.answers.title);assert.equal(root.description,'Details: '+f.answers.details);assert.equal(root.priority,'urgent')
  for(const [task,parent,person,start,due,hours]of [[root,null,owner.id,'2026-01-05','2026-01-09',2],[draft,root.id,peer.id,'2026-01-06','2026-01-07',3],[check,draft.id,owner.id,'2026-01-08','2026-01-09',1]]){
   assert.equal(task.parentId,parent);assert.equal(task.owner.id,person);assert.equal(task.startDate,start);assert.equal(task.dueDate,due);assert.equal(task.estimateHours,hours)
@@ -64,6 +67,8 @@ export async function intakeTemplatesScenario(w){
  const mapped=rows.filter(r=>r.table==='peg_intake_template_applications').map(r=>r.value??r.row)
  // Inspect the native archive rather than infer custody from policy declarations.
  assert.deepEqual(mapped.map(r=>[r.id,r.submission_id,r.template_id,r.template_version,r.state]),[[result.applicationId,item.receipt,f.template.id,1,'inactive']])
+ for(const table of ['peg_projects','peg_grants','peg_task_decisions','peg_local_rules','peg_template_rules'])assert.equal(count(rows,table),count(before,table),table+' unchanged')
+ assert.equal(count(rows,'peg_tasks'),count(before,'peg_tasks')+2)
  const originRows=rows.filter(r=>r.table==='peg_intake_template_tasks').map(r=>r.row)
  assert.deepEqual(new Set(originRows.map(r=>r.task_id)),new Set(result.taskIds))
  const submissionRow=rows.find(r=>r.table==='peg_intake_submissions'&&r.row.id===item.receipt).row
@@ -74,13 +79,15 @@ export async function intakeTemplatesScenario(w){
   await pass(restored.worker.owner.post(item.path+'/apply',command),404)
   const restoredQueue=await pass(restored.worker.owner.get(`/api/v1/projects/${project.id}/intake`));assert.equal(restoredQueue.items[0].deadline,item.deadline)
  }finally{await restored.stop()}
- const stale=await f.send('7103'),old=await pass(owner.post(stale.path+'/preview',input))
+ await intakeMappingErasure(w,f,item,result,draft)
+ await intakeMappingAuthority(w,f)
+ const safeInput={...input,roles:{Lead:owner.id,Designer:owner.id}},stale=await f.send('7103'),old=await pass(owner.post(stale.path+'/preview',safeInput))
  await pass(owner.post(`/api/v1/templates/${f.template.id}/versions`,{baseVersion:1,definition:{...f.definition,description:'Changed template'}}))
- await pass(owner.post(stale.path+'/apply',{...input,token:old.token,confirm:true}),409)
+ await pass(owner.post(stale.path+'/apply',{...safeInput,token:old.token,confirm:true}),409)
  assert.equal((await pass(owner.get('/api/v1/tasks/'+stale.taskId))).subtasks.length,0)
- const refreshed=await pass(owner.post(stale.path+'/preview',input));assert.equal(refreshed.version,1);assert.equal(refreshed.headVersion,2);assert.notEqual(refreshed.token,old.token)
+ const refreshed=await pass(owner.post(stale.path+'/preview',safeInput));assert.equal(refreshed.version,1);assert.equal(refreshed.headVersion,2);assert.notEqual(refreshed.token,old.token)
  await pass(owner.post(f.base+'/revoke',{}))
- await pass(owner.post(stale.path+'/apply',{...input,token:refreshed.token,confirm:true}),404)
+ await pass(owner.post(stale.path+'/apply',{...safeInput,token:refreshed.token,confirm:true}),404)
  for(const change of [{kind:'project'},{rules:[{key:'rule',name:'Priority rule',trigger:'task_created',action:'set_priority',priority:'high'}]},{fields:[{key:'note',label:'Note',type:'text'}]},{tasks:f.definition.tasks.map((t,i)=>i===0?{...t,approval:true}:t)},{dependencies:[{predecessor:'draft',successor:'check',type:'fs',lag:0}]}]){
   const unsupported=await pass(owner.post('/api/v1/templates',{name:'Unsupported intake template',definition:{...f.definition,...change}}))
   await pass(owner.post(`/api/v1/projects/${project.id}/intake/forms`,{...f.config,template:{id:unsupported.id,version:1}}),400)
@@ -89,4 +96,41 @@ export async function intakeTemplatesScenario(w){
  console.log('PROBE PEG-007 stale and replay: changed task, triage and template; concurrent apply; restart -> stale refusals with no extra work and one attributable application')
  console.log('PROBE PEG-007 inactive archive: native export and restore -> same work identities and deadline, inactive publication and refused old application')
  return {f,item,result}
+}
+
+async function intakeMappingErasure(w,f,item,result,draft){
+ const {owner,peer}=f,preview=()=>pass(owner.post('/api/v1/data/erasure-preview',{type:'person',id:peer.id})),erase=review=>pass(owner.post('/api/v1/data/erase',{type:'person',id:peer.id,token:review.token,confirm:true}))
+ const active=await preview();assert.ok(active.blockers.includes('deactivate_person_before_erasure'));assert.ok(active.blockers.includes('transfer_owned_work_before_erasure'))
+ await pass(owner.patch('/api/v1/tasks/'+draft.id,{ownerId:owner.id}))
+ await pass(owner.post(`/api/v1/workspaces/ws_main/people/${peer.id}/account`,{status:'inactive'}))
+ let review=await preview();assert.deepEqual(review.blockers,[]);assert.deepEqual(review.intake.mappings.map(r=>r.id),[result.applicationId]);assert.equal(review.counts.intake_template_redactions,1)
+ const hold=await pass(owner.post('/api/v1/data/holds',{type:'task',id:draft.id,authority:'synthetic-pegboard-intake-custody',expiresAt:Date.now()+86400000}))
+ await pass(owner.post('/api/v1/data/erase',{type:'person',id:peer.id,token:review.token,confirm:true}),409)
+ const held=await preview();assert.ok(held.blockers.includes('active_legal_hold'));const retained=await erase(held);assert.equal(retained.outcome,'retained');assert.deepEqual(retained.counts,{})
+ await pass(owner.post(`/api/v1/data/holds/${hold.id}/release`,{confirm:true}))
+ review=await preview();const receipt=await erase(review);assert.equal(receipt.counts.intake_template_redactions,1);assert.deepEqual(receipt.intake.mappings,review.intake.mappings)
+ const durable=await pass(owner.get('/api/v1/data/receipts/'+receipt.id));assert.equal(durable.applied,true);assert.equal(durable.counts.intake_template_redactions,1)
+ const after=archiveRows(await exportCanvasInstallation(owner)),mapped=after.filter(r=>r.table==='peg_intake_template_tasks'&&r.row.application_id===result.applicationId)
+ assert.equal(mapped.length,3);assert.ok(mapped.every(r=>r.row.owner_id!==peer.id&&r.row.before_owner!==peer.id))
+ assert.equal(after.find(r=>r.table==='peg_intake_template_applications'&&r.row.id===result.applicationId).row.state,'inactive')
+ assert.equal((await pass(owner.get('/api/v1/tasks/'+item.taskId))).subtasks[0].id,draft.id)
+ console.log('PROBE PEG-007 mapping erasure: active and held person review -> retained; transferred deactivated person -> exact one mapping redaction and inactive replay witness with unchanged work')
+}
+async function intakeMappingAuthority(w,f){
+ const {owner,project,config,input}=f,person=await w.person(['synthetic-pegboard-7104','example.invalid'].join('@'),'Intake publisher')
+ await pass(owner.post(`/api/v1/workspaces/ws_main/people/${person.id}/account`,{role:'admin'}))
+ const admin=await w.signIn(person.email,person.name,person.id)
+ const form=await pass(admin.post(`/api/v1/projects/${project.id}/intake/forms`,config)),base=`/api/v1/intake/forms/${form.id}`
+ const publication=await pass(admin.get(base+'/review'))
+ await pass(admin.post(base+'/publish',{version:1,review:publication.review,audience:'internal',consent:true}))
+ const receipt=await pass(owner.post(base+'/submit',{version:1,requestKey:'synthetic-pegboard-authority',answers:f.answers})),path=`/api/v1/intake/submissions/${receipt.receipt}/template`
+ const queue=await pass(owner.get(`/api/v1/projects/${project.id}/intake`)),taskId=queue.items.find(r=>r.id===receipt.receipt).taskId
+ const next={...input,roles:{Lead:owner.id,Designer:owner.id}},review=await pass(admin.post(path+'/preview',next))
+ await pass(owner.post(`/api/v1/workspaces/ws_main/people/${person.id}/account`,{status:'inactive'}))
+ await pass(admin.post(path+'/apply',{...next,token:review.token,confirm:true}),401)
+ await pass(owner.post(path+'/apply',{...next,token:review.token,confirm:true}),404)
+ await pass(owner.post(`/api/v1/workspaces/ws_main/people/${person.id}/account`,{status:'active'}))
+ await pass(owner.post(path+'/preview',next),404)
+ assert.equal((await pass(owner.get('/api/v1/tasks/'+taskId))).subtasks.length,0)
+ console.log('PROBE PEG-007 revoked authority: publisher and reviewer deactivated then renewed -> old session and publication refused without nested work or revived authority')
 }

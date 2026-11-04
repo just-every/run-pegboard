@@ -16,7 +16,7 @@ export async function intakeTemplatesJourney({w,browser}){
  try{
   await page.goto(w.origin+`/app/projects/${f.project.id}/settings/intake?review=${f.form.id}`)
   await expect(page.getByText('Internal task template pinned:',{exact:false})).toContainText('Creative task')
-  await expect(page.getByRole('form',{name:'Publish intake form'}).getByLabel('Audience')).toHaveValue('internal')
+  await expect(page.getByRole('form',{name:'Publish intake form'}).getByLabel('Audience',{exact:true})).toHaveValue('internal')
   await proof('publication')
   await page.goto(w.origin+`/app/projects/${f.project.id}/intake`)
   await page.getByRole('link',{name:'Review task template'}).click()

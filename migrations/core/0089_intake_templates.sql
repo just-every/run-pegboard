@@ -25,3 +25,7 @@ CREATE TRIGGER peg_intake_mapping_peg_intake_template_applications_delete AFTER 
 CREATE TRIGGER peg_intake_mapping_peg_intake_template_tasks_insert AFTER INSERT ON peg_intake_template_tasks BEGIN UPDATE peg_personal_revision SET value=value+1 WHERE id=1; UPDATE peg_data_revision SET value=value+1 WHERE id=1; END;
 CREATE TRIGGER peg_intake_mapping_peg_intake_template_tasks_update AFTER UPDATE ON peg_intake_template_tasks BEGIN UPDATE peg_personal_revision SET value=value+1 WHERE id=1; UPDATE peg_data_revision SET value=value+1 WHERE id=1; END;
 CREATE TRIGGER peg_intake_mapping_peg_intake_template_tasks_delete AFTER DELETE ON peg_intake_template_tasks BEGIN UPDATE peg_personal_revision SET value=value+1 WHERE id=1; UPDATE peg_data_revision SET value=value+1 WHERE id=1; END;
+DROP TRIGGER peg_intake_task_erased;
+CREATE TRIGGER peg_intake_task_erased AFTER DELETE ON peg_tasks BEGIN
+ UPDATE peg_intake_submissions SET source_actor='erased',answers=NULL WHERE task_id=OLD.id;
+END;
