@@ -258,6 +258,10 @@
       "sha256": "a6e91c7f3936ceb842d044b62ee886733413b8936532b3aa83cc33d16feb202a",
       "executable": false
     },
+    "docs/HUBSPOT-HANDOFFS.md": {
+      "sha256": "bde3b5a50671167ec9e2c1b5c1bfd19c8874105a2c77d08b0eb754bff5621280",
+      "executable": false
+    },
     "docs/INTAKE.md": {
       "sha256": "f126f0c2ca3826f715c7bb408bb09a5ee04c75e4593f6737f79afa2c7872f845",
       "executable": false
@@ -692,6 +696,10 @@
     },
     "migrations/core/0088_commercial_hubspot.sql": {
       "sha256": "b6fbf6849c86c9e5b5d4d386591c9bb408b7872b46b3abf4504dc776d7eaf9aa",
+      "executable": false
+    },
+    "migrations/core/0089_commercial_event_identity.sql": {
+      "sha256": "4077ff6e635e2f9c92fd9c03dc7eed89c56544cbb6b5b258d1204e015a579dc2",
       "executable": false
     },
     "ONBOARDING.md": {
@@ -3339,7 +3347,7 @@
       "executable": false
     },
     "src/pegboard/commercial/handoffs.ts": {
-      "sha256": "b4e2d8f48930b89ce25df41595d136dab2c6280b092af0d51b73045989fe3caa",
+      "sha256": "4f39c1860dbba3d0abcb9c5870055560241798dbde52dbbb6dc7f642c60e764f",
       "executable": false
     },
     "src/pegboard/connectors/calendars/edge.ts": {
@@ -3895,7 +3903,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/commercial.tsx": {
-      "sha256": "ddff90bb84fa1b5b15c10857fa97c7d4e31e16f892106cbba069cb2280947fe1",
+      "sha256": "da85dac5a4ee3326d052936acfaf129f91127d49e9e65977669f9b2e80f5c99d",
       "executable": false
     },
     "src/pegboard/ui/pages/conversion-evidence.tsx": {
@@ -4063,7 +4071,7 @@
       "executable": false
     },
     "src/pegboard/ui/routes.ts": {
-      "sha256": "71d64d6b56c71ec4f05400ba45237dd3236c506bd5afb5c5111fbd9da88349aa",
+      "sha256": "702db2c0330959ffd8e6f33635cc63faebe6561107f31d48aaca5f1498471b7c",
       "executable": false
     },
     "src/pegboard/ui/schedule-editor.tsx": {
@@ -4331,7 +4339,7 @@
       "executable": false
     },
     "tests/journeys/commercial-hubspot.mjs": {
-      "sha256": "4ed5f9151a1e603b0800258d566c2995a8b84ea9ab006b76f9e291c414fb0e8d",
+      "sha256": "21a7bf722e07f43f17d1acb4687f15e6e3f4703a64a5e5f2d289ef3b50ffe444",
       "executable": false
     },
     "tests/journeys/conversion-hierarchy.mjs": {
@@ -4463,7 +4471,7 @@
       "executable": false
     },
     "tests/scenarios/commercial-hubspot.mjs": {
-      "sha256": "4c1b66e1394e4fa4de77d57ba7b297eef663f860f62e009f9ed392b201f327cd",
+      "sha256": "033297c0eddb5d3d70ab81721c65815eaf97b22147dfefa8c928baee941e070e",
       "executable": false
     },
     "tests/scenarios/conversions.mjs": {

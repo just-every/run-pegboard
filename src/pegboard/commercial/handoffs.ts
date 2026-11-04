@@ -60,7 +60,7 @@ export async function receiveHubspot(request: Request, env: Bindings) {
     if (!candidate) continue
     try { await currentPortal(db, candidate) } catch (error) { if (error instanceof PegError) continue; throw error }
     const rev = await revision(db), id = newId('handoff')
-    await guarded(db, rev, [bound(db, "INSERT OR IGNORE INTO peg_commercial_handoffs(id,workspace_id,portal_auth_id,portal_id,deal_id,state,created_at) VALUES(?,?,?,?,?,'pending',?)", [id, candidate.workspace_id, candidate.id, portalId, dealId, now()]), bound(db, 'INSERT OR IGNORE INTO peg_commercial_events SELECT ?,?,id,? FROM peg_commercial_handoffs WHERE workspace_id=? AND portal_id=? AND deal_id=?', [portalId, eventId, event.occurredAt, candidate.workspace_id, portalId, dealId]), audit(db, null, candidate.workspace_id, 'event_received', id)])
+    await guarded(db, rev, [bound(db, "INSERT OR IGNORE INTO peg_commercial_handoffs(id,workspace_id,portal_auth_id,portal_id,deal_id,state,created_at) VALUES(?,?,?,?,?,'pending',?)", [id, candidate.workspace_id, candidate.id, portalId, dealId, now()]), bound(db, 'INSERT OR IGNORE INTO peg_commercial_events SELECT ?,?,?,id,? FROM peg_commercial_handoffs WHERE workspace_id=? AND portal_id=? AND deal_id=?', [portalId, dealId, eventId, event.occurredAt, candidate.workspace_id, portalId, dealId]), audit(db, null, candidate.workspace_id, 'event_received', id)])
     accepted++
   }
   return { accepted, notice: 'Events create no projects or grants.' }
@@ -82,8 +82,8 @@ export async function reviewAdoption(db: D1Database, env: Bindings, actor: Actor
   if (input.targetProjectId) throw invalid('commercial_new_private_project_required')
   const deal = await hubspot(env, input.credential).read(source.portal_id, source.deal_id)
   if (!deal.won) throw conflict('commercial_won_deal_required')
-  const native = readTemplateInput(input), template = await templatePreview(db, actor, workspace, native)
-  if (template.missingRoles.length || template.unreachableOwners.length || template.configurationConflicts.length || template.kind !== 'project') throw invalid('commercial_template_roles_required')
+  const native = readTemplateInput({...input,roles:input.roles??Object.fromEntries(Object.entries(input).filter(([key])=>key.startsWith('role:')).map(([key,value])=>[key.slice(5),value]))}), template = await templatePreview(db, actor, workspace, native)
+  if (template.missingRoles.length || template.configurationConflicts.length || template.kind !== 'project') throw invalid('commercial_template_roles_required')
   const plan = { source: projection(deal), native: { ...native, token: undefined }, template: nativePlan(template), ownerId: actor.id, clientShare: { audience: [], grants: [], visibility: 'private', excluded: ['contacts', 'email', 'amount', 'account health', 'ticket SLA', 'unselected customer properties'] } }
   return saveReview(db, actor, source, 'adoption', plan, rev)
 }
@@ -137,6 +137,7 @@ export async function reconcileReturn(db: D1Database, env: Bindings, actor: Acto
   try {
     const deal = await hubspot(env, input.credential).read(source.portal_id, source.deal_id)
     await own(db, actor, workspace, source.id)
+    if (review.state === 'acknowledged') return { id, state: 'acknowledged', cause: null, current: deal.deliveryOperation === id && deal.deliveryStatus === plan.status }
     if (deal.deliveryOperation === id && deal.deliveryStatus === plan.status) return finishReturn(db, actor, workspace, id, 'acknowledged', null)
     return finishReturn(db, actor, workspace, id, 'uncertain', 'readback_does_not_match')
   } catch (error) {

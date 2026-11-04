@@ -199,7 +199,7 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
   const editorFor=async(projectId:string,tasks:{value:string;label:string}[],here:string):Promise<ScheduleEditorProps>=>({here,projectId,tasks,people:await peopleOptions(db,actor,workspace),input:scheduleInput,preview:await schedulePreview(db,actor,scheduleInput)})
 
   try {
-    if(section==='settings'&&id==='commercial'&&!tail)return page('Commercial handoffs',h(CommercialPage,{viewer,data:await commercialSettings(db,actor,workspace),templates:await listTemplates(db,actor,workspace),actorId:actor.id,reviewId:url.searchParams.get('review')}))
+    if(section==='settings'&&id==='commercial'&&!tail)return page('Commercial handoffs',h(CommercialPage,{viewer,data:await commercialSettings(db,actor,workspace),templates:await listTemplates(db,actor,workspace),actorId:actor.id,reviewId:url.searchParams.get('review'),selectedTemplateId:url.searchParams.get('templateId'),people:await peopleOptions(db,actor,workspace)}))
     if(section==='settings'&&id==='approval-followup'&&!tail){
       const input:Record<string,any>=Object.fromEntries(url.searchParams)
       for(const key of ['projects','recipients','escalation','days'])input[key]=url.searchParams.getAll(key+'[]')
