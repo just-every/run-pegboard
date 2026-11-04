@@ -7,6 +7,16 @@ import { profileFixture, pass } from '../scenarios/profiles.mjs'
 export async function profilesJourney({ w, browser }) {
  const f = await profileFixture(w)
  const contexts = []
+ const keyboardOpen = async (page, link) => {
+  for (let attempt = 0; attempt < 100; attempt++) {
+   await page.keyboard.press('Tab')
+   if (await link.evaluate(element=>element===document.activeElement)) {
+    await page.keyboard.press('Enter')
+    return
+   }
+  }
+  assert.fail('Link could not be reached with Tab')
+ }
  const open = async client => {
   const context = await browser.newContext({viewport:{width:1440,height:900}})
   contexts.push(context)
@@ -32,15 +42,13 @@ export async function profilesJourney({ w, browser }) {
  try {
   const page = await open(f.colleague)
   await page.goto(w.origin+'/app/projects')
-  await page.getByRole('link',{name:'People',exact:true}).focus()
-  await page.keyboard.press('Enter')
+  await keyboardOpen(page, page.getByRole('link',{name:'People',exact:true}))
   await expect(page.getByRole('heading',{name:'People',exact:true})).toBeVisible()
   await expect(page.getByRole('link',{name:'Profile teammate',exact:true})).toBeVisible()
   assert.ok(!(await page.locator('main').innerText()).includes('Profile guest'))
   assert.ok(!(await page.locator('main').innerText()).includes('Outside workspace identity'))
   await proof(page,'directory')
-  await page.getByRole('link',{name:'Profile teammate',exact:true}).focus()
-  await page.keyboard.press('Enter')
+  await keyboardOpen(page, page.getByRole('link',{name:'Profile teammate',exact:true}))
   await expect(page.getByRole('heading',{name:'Profile teammate',exact:true})).toBeVisible()
   assert.deepEqual((await page.locator('[data-task-id]').evaluateAll(rows=>rows.map(row=>row.dataset.taskId))).sort(), [f.shared.id,f.subtask.id,f.done.id,f.directTask.id].sort())
   assert.equal(await page.getByRole('link',{name:'Shared profile assignment',exact:true}).count(),1)
@@ -55,8 +63,7 @@ export async function profilesJourney({ w, browser }) {
   assert.deepEqual(await page.getByRole('list',{name:'Availability by day'}).locator('li > span:last-child').allTextContents(), ['8 hours available','0 hours available','5 hours available','8 hours available','8 hours available','0 hours available','0 hours available'])
   await safe(page)
   await proof(page,'permitted')
-  await page.getByRole('link',{name:'Inherited profile subtask',exact:true}).focus()
-  await page.keyboard.press('Enter')
+  await keyboardOpen(page, page.getByRole('link',{name:'Inherited profile subtask',exact:true}))
   await expect(page.getByRole('heading',{name:'Inherited profile subtask',exact:true})).toBeVisible()
   await page.goto(w.origin+'/app/people/'+f.teammate.id+'?from=2026-03-09')
   const feed = await pass(f.owner.post('/api/v1/workspaces/ws_main/capacity-feeds', {service:'willow',origin:'https://willow.example.com',mapping:{'synthetic-pegboard-6002':f.teammate.id}}))
@@ -81,6 +88,11 @@ export async function profilesJourney({ w, browser }) {
   await expect(page.getByText('No permitted project assignments.',{exact:true})).toBeVisible()
   assert.equal(await page.locator('[data-task-id]').count(),0)
   await proof(page,'revoked')
+  await pass(f.owner.post('/api/v1/workspaces/ws_main/people/'+f.teammate.id+'/role', {role:'guest'}))
+  assert.equal((await page.reload()).status(),404)
+  assert.ok(!(await page.locator('main').innerText()).includes('Profile teammate'))
+  await proof(page,'membership-refusal')
+  await pass(f.owner.post('/api/v1/workspaces/ws_main/people/'+f.teammate.id+'/role', {role:'member'}))
   await pass(f.owner.post('/api/v1/workspaces/ws_main/people/'+f.teammate.id+'/account', {status:'inactive'}))
   await w.restart()
   assert.equal((await page.reload()).status(),404)
