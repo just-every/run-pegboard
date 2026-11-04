@@ -173,3 +173,15 @@ remain explicit acceptance gaps. PEG-057, PEG-059 and PEG-065 stay partial for t
 CT rulings approve scoped redacted audit, owner-reviewed erasure, hold precedence
 and separately consented processor custody; retained identity stores and external
 limits remain disclosed.
+
+HubSpot handoffs retain portal, deal and event identities and the original native
+project mapping. Incoming events grant no work or audience authority. Only the
+reviewed deal name and close expectation enter an adoption review; contacts,
+revenue and other customer properties are excluded. Credentials are confined to
+the request and never enter product records, audit metadata or archives.
+Project erasure previews exact commercial review removals and commitment
+redactions under the same owner confirmation and holds. An opaque erased mapping
+remains to prevent a replay from creating replacement work. Archives retain
+historical commercial mappings with portal authority inactive, handoffs inactive
+and reviews expired. A restored operation never resumes a provider write. External
+copies and source deletion remain subject to the source system's own custody.

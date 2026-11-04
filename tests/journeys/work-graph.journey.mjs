@@ -1,3 +1,5 @@
+import { commercialHubspotJourney } from './commercial-hubspot.mjs'
+import { startHubspotService } from '../support/hubspot-services.mjs'
 import { approvalFollowupJourney } from './approval-followup.mjs'
 import { intakeErasureJourney } from './intake-erasure.mjs'
 import { intakeJourney } from './intake.mjs'
@@ -34,14 +36,15 @@ import { portfolioJourney } from './portfolios.mjs'
 import { timelineJourney } from './timeline.mjs'
 import {searchBulkJourney} from './search-bulk.mjs'
 
-const journeyNames = ["approval-followup", "intake-erasure", "intake", "rule-audit", "reporting", "work-views", "search-bulk", "access-privacy", "access-discovery", "analytics", "calendar-blocks", "capacity", "portfolio-capacity", "public-api", "approval-routing", "guests", "core", "recurrence", "approvals", "time-packets", "goals", "engineering", "meetings", "custody", "recovery", "departure", "canvas", "portfolio", "timeline", "register", "bundles"]
+const journeyNames = ["commercial-hubspot", "approval-followup", "intake-erasure", "intake", "rule-audit", "reporting", "work-views", "search-bulk", "access-privacy", "access-discovery", "analytics", "calendar-blocks", "capacity", "portfolio-capacity", "public-api", "approval-routing", "guests", "core", "recurrence", "approvals", "time-packets", "goals", "engineering", "meetings", "custody", "recovery", "departure", "canvas", "portfolio", "timeline", "register", "bundles"]
 const selected = new Set(process.env.PEGBOARD_JOURNEY === undefined ? journeyNames : process.env.PEGBOARD_JOURNEY.split(',').map(name => name.trim()))
 for (const name of selected) if (!journeyNames.includes(name)) throw new Error(`Unknown PEGBOARD_JOURNEY: ${name}`)
 
 // Harvest and QuickBooks Time schema fakes at the network edge; every Worker below reaches them through local origins.
 const engineering = await startEngineeringServices(), meetings = await startMeetingServices()
 const capacityServices = await startCapacityServices(), calendarServices = await startCalendarServices()
-const services = await startTimeServices(), settings = { PEGBOARD_LOCAL_CALENDAR_ORIGINS:calendarServices.origins, PEGBOARD_LOCAL_CAPACITY_ORIGINS:capacityServices.origins, PEGBOARD_LOCAL_TIME_SERVICE_ORIGINS: services.origins, PEGBOARD_VECTOR_ORIGIN:'https://vector.example.com',PEGBOARD_LOCAL_ENGINEERING_ORIGINS:engineering.origins, PEGBOARD_LOCAL_MEETING_ORIGINS:meetings.origins }
+const hubspotService = await startHubspotService()
+const services = await startTimeServices(), settings = { ...hubspotService.settings, PEGBOARD_LOCAL_CALENDAR_ORIGINS:calendarServices.origins, PEGBOARD_LOCAL_CAPACITY_ORIGINS:capacityServices.origins, PEGBOARD_LOCAL_TIME_SERVICE_ORIGINS: services.origins, PEGBOARD_VECTOR_ORIGIN:'https://vector.example.com',PEGBOARD_LOCAL_ENGINEERING_ORIGINS:engineering.origins, PEGBOARD_LOCAL_MEETING_ORIGINS:meetings.origins }
 let w = await startWorker({ settings })
 const browser = await chromium.launch({ headless: true, ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH?{executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH}:{}), args: ['--use-mock-keychain', '--password-store=basic', '--no-sandbox'] })
 const cookies = client => client.cookie.split('; ').map(pair => ({ name: pair.slice(0, pair.indexOf('=')), value: pair.slice(pair.indexOf('=') + 1), url: w.origin }))
@@ -60,6 +63,7 @@ try {
     usedWorker = true
     return true
   }
+  if(await select('commercial-hubspot'))await commercialHubspotJourney({w,browser,edge:hubspotService})
   if(await select('approval-followup'))await approvalFollowupJourney({w,browser})
   if(await select('intake-erasure'))await intakeErasureJourney({w,browser})
   if(await select('intake'))await intakeJourney({w,browser})
@@ -942,7 +946,7 @@ try {
   await browser.close()
   await w.stop()
   await capacityServices.stop()
-  await calendarServices.stop()
+  await hubspotService.stop();await calendarServices.stop()
   await services.stop()
   await engineering.stop()
   await meetings.stop()

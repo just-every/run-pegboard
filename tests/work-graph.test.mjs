@@ -1,3 +1,5 @@
+import { commercialHubspotScenario } from './scenarios/commercial-hubspot.mjs'
+import { startHubspotService } from './support/hubspot-services.mjs'
 import { approvalFollowupRoutingScenario, approvalFollowupAuthorityScenario } from './scenarios/approval-followup.mjs'
 import { intakeErasureScenario } from './scenarios/intake-erasure.mjs'
 import { intakeScenario } from './scenarios/intake.mjs'
@@ -44,6 +46,13 @@ function csvRecords(text) {
   return rows.filter(row=>row.some(value=>value.length))
 }
 let campaign, launch, shared, mkt
+
+describe('Commercial HubSpot handoff', {concurrency:false},()=>{
+ let worker,edge
+ before(async()=>{edge=await startHubspotService();worker=await startWorker({settings:edge.settings})},{timeout:120000})
+ after(async()=>{await worker?.stop();await edge?.stop()})
+ it('adopts one private reviewed deal, reconciles exact human returns and preserves custody without replay authority',async()=>commercialHubspotScenario(worker,edge))
+})
 
 describe('Data custody intake erasure', {concurrency:false},()=>{
  let worker

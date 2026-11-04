@@ -50,14 +50,14 @@ export async function templatePreview(db:D1Database,actor:Actor,workspace:string
  const plan={templateId:view.template.id,version:view.version,headVersion:view.headVersion,name:input.name,startDate:input.startDate,targetProjectId:input.targetProjectId??null,kind:view.definition.kind,description:view.definition.description,phases:view.definition.phases,fields:view.definition.fields,dependencies:view.definition.dependencies,rules:view.definition.rules.map(r=>({...r,active:false})),roles:roleMap,keepUnassigned:input.keepUnassigned??false,missingRoles,unassignedRoles,unreachableOwners,configurationConflicts,tasks,capacity,visibility:target?.visibility??'private',timezone:workspaceZone}
  return {...plan,rev,token:await digest([actor.id,workspace,rev,plan]),notice:'New projects are private. Assignment grants no access. Rules stay inactive. Comments, files, secrets, client guests and prior decisions are not copied.'}
 }
-export async function applyTemplate(db:D1Database,actor:Actor,workspace:string,raw:TemplateInput|Record<string,any>,internalRule?:{id:string},commit?: (result:{projectId:string;taskIds:string[];applicationId:string})=>D1PreparedStatement[]){
+export async function applyTemplate(db:D1Database,actor:Actor,workspace:string,raw:TemplateInput|Record<string,any>,internalRule?:{id:string},commit?: (result:{projectId:string;taskIds:string[];applicationId:string})=>D1PreparedStatement[],requestNamespace?:string){
  const input=readTemplateInput(raw),role=await templateMember(db,actor,workspace);if(role==='agent')throw forbidden('human_template_review')
- const requestKey=input.token??'',prior=await first<{result:string;input:string}>(db,'SELECT result,input FROM peg_template_applications WHERE workspace_id=? AND actor_id=? AND request_key=?',workspace,actor.id,requestKey)
+ const token=input.token??'',requestKey=(requestNamespace?requestNamespace+':':'')+token,prior=await first<{result:string;input:string}>(db,'SELECT result,input FROM peg_template_applications WHERE workspace_id=? AND actor_id=? AND request_key=?',workspace,actor.id,requestKey)
  if(prior){if(JSON.stringify({...input,token:undefined})!==JSON.stringify({...readTemplateInput(JSON.parse(prior.input)),token:undefined}))throw conflict('template_preview_changed');const result=JSON.parse(prior.result),opened=await openProject(db,actor,result.projectId);if(!internalRule)need(opened.effective,'manage_templates');return result as {projectId:string;taskIds:string[];applicationId:string}}
  const view=await templatePreview(db,actor,workspace,input)
  if(view.missingRoles.length)throw invalid('template_roles_unresolved')
  if(view.configurationConflicts.length)throw conflict('template_configuration_conflict')
- if(!internalRule&&requestKey!==view.token)throw conflict('template_preview_changed')
+ if(!internalRule&&token!==view.token)throw conflict('template_preview_changed')
  const ruleGuard=internalRule?await (await import('./rule-execution')).assertTemplateRuleExecution(db,actor,internalRule.id,requestKey,input):null
  const projectId=input.targetProjectId??newId('prj'),applicationId=newId('application'),at=now(),statements:D1PreparedStatement[]=[...(ruleGuard?.statements??[])]
  if(!input.targetProjectId)statements.push(bound(db,'INSERT INTO peg_projects(id,workspace_id,name,description,owner_id,visibility,start_date,due_date,created_by,created_at) VALUES(?,?,?,?,?,?,?,?,?,?)',[projectId,workspace,view.name,view.description,actor.id,'private',view.startDate,view.tasks.map(t=>t.dueDate).sort().at(-1)!,actor.id,at]))

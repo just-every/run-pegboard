@@ -1,3 +1,4 @@
+import { commercialErasureScope, commercialErasureStatements } from '../commercial/custody'
 import { formErasureScope, formErasureStatements } from '../intake/forms'
 import { submissionErasureScope, submissionErasureStatements } from '../intake/submissions'
 import {capacityErasureSources,capacityErasureStatements} from '../capacity/custody'
@@ -130,6 +131,7 @@ export async function erasurePlan(db:D1Database,actor:Actor,workspace:string,typ
     await take('peg_projects',projectScoped('id'),projects)
   }
   if(proofFiles.length)await take('peg_attachments',`id IN (${placeholders(proofFiles)})`,proofFiles)
+  const commercial=await commercialErasureScope(db,type==='person'?id:null,projects)
   const intake=type==='person'?{forms:await formErasureScope(db,id),submissions:await submissionErasureScope(db,id)}:null
   const affectedTasks=new Set(tasks)
   if(intake)for(const row of intake.submissions)affectedTasks.add(row.taskId)
@@ -142,6 +144,7 @@ export async function erasurePlan(db:D1Database,actor:Actor,workspace:string,typ
     for(const t of await all<{task_id:string}>(db,'SELECT task_id FROM peg_comments WHERE author_id=? UNION SELECT task_id FROM peg_attachments WHERE created_by=? UNION SELECT task_id FROM peg_agent_outputs WHERE actor_id=?',id,id,id))affectedTasks.add(t.task_id)
   }
   const affected=[...affectedTasks], relatedProjects=new Set([...projects,...(intake?.forms.map(f=>f.projectId)??[]),...(intake?.submissions.map(s=>s.projectId)??[])]), relatedPeople=new Set<string>()
+  for(const handoff of commercial.handoffs)if(handoff.project_id)relatedProjects.add(handoff.project_id)
   for(const r of await all<{project_id:string}>(db,`SELECT project_id FROM peg_task_projects WHERE task_id IN (${placeholders(affected)})`,...affected))relatedProjects.add(r.project_id)
   for(const r of await all<{person:string}>(db,`SELECT owner_id person FROM peg_tasks WHERE id IN (${placeholders(affected)}) UNION SELECT creator_id person FROM peg_tasks WHERE id IN (${placeholders(affected)}) UNION SELECT author_id person FROM peg_comments WHERE task_id IN (${placeholders(affected)}) UNION SELECT created_by person FROM peg_attachments WHERE task_id IN (${placeholders(affected)})`,...affected,...affected,...affected,...affected))relatedPeople.add(r.person)
   // Person anonymization affects installation identity, so every workspace hold participates.
@@ -174,7 +177,10 @@ export async function erasurePlan(db:D1Database,actor:Actor,workspace:string,typ
   const processorRequests=await processorFollowups(db,selections)
   const capacitySources=type==='person'?await capacityErasureSources(db,id):[]
   if(capacitySources.length)counts.capacity_source_mappings=capacitySources.length
-  const plan={type,id,name,intake,capacitySources,tasks,projects,proofs,processorRequests,reopenTasks,selections,counts,blockers:[...new Set(blockers)],holds:holds.map(h=>({id:h.id,authority:h.authority,expiresAt:h.expires_at})),retained,externalLimits}
+  if(commercial.handoffs.length){counts.commercial_redactions=commercial.handoffs.length;retained.commercial_replay_witnesses=commercial.handoffs.length}
+  if(commercial.reviews.length)counts.commercial_reviews=commercial.reviews.length
+  if(commercial.portals.length)counts.commercial_portals=commercial.portals.length
+  const plan={type,id,name,intake,commercial,capacitySources,tasks,projects,proofs,processorRequests,reopenTasks,selections,counts,blockers:[...new Set(blockers)],holds:holds.map(h=>({id:h.id,authority:h.authority,expiresAt:h.expires_at})),retained,externalLimits}
   return {...plan,revision,token:await digest([workspace,actor.id,revision,plan])}
 }
 export async function erase(db:D1Database,actor:Actor,workspace:string,input:Record<string,any>) {
@@ -187,6 +193,7 @@ export async function erase(db:D1Database,actor:Actor,workspace:string,input:Rec
   if(!blocked){
     const service=await createPortability({db,policy})
     statements.push(...followupStatements(db,actor,workspace,plan.processorRequests))
+    statements.push(...commercialErasureStatements(db,plan.commercial))
     statements.push(...await service.invalidateTransfersStatements())
     for(const task of plan.reopenTasks)statements.push(reopenGuard(db,task,actor.id,'custody_erasure'),bound(db,"UPDATE peg_tasks SET status='todo',completed_at=NULL,updated_at=? WHERE id=?",[at,task]))
     for(const proof of plan.proofs)statements.push(bound(db,'INSERT INTO peg_data_erasing_proofs VALUES(?)',[proof]))

@@ -247,7 +247,7 @@
       "executable": false
     },
     "docs/DATA-CUSTODY.md": {
-      "sha256": "41bdf093f7e913ecefc6bf4201ccdb11987046cdb1dea8baddd86f9a004de98c",
+      "sha256": "bb188e91d7fbb694972be2725c3a3779f546ee5fe0b5f9a77e5bfd8ccda1d621",
       "executable": false
     },
     "docs/DATA-RECORD-API.md": {
@@ -707,7 +707,7 @@
       "executable": false
     },
     "package.json": {
-      "sha256": "008d8c09b8bdf2ae196a8f5fa4e62ed433ee1dd73a42ce160656a6ebdf644d6f",
+      "sha256": "28cc76966840a463ad41f1d8b6c8754a493494ade78dd884367c8c34824f08dd",
       "executable": false
     },
     "packaging.json": {
@@ -3094,6 +3094,10 @@
       "sha256": "ebe4918b4451b13f1752534ebf0aae9eb33ef0dd2f3de5ae9b1c585dd558891c",
       "executable": false
     },
+    "src/pegboard/api/commercial-routes.ts": {
+      "sha256": "c048aca6837fb0a39bcddcf2bb6cfc8e7d93e02681703124a231a804771998d0",
+      "executable": false
+    },
     "src/pegboard/api/conversion-routes.ts": {
       "sha256": "5076bc5045cc9183b8a03c4cd2fc08c665bd85b738aa17f5c2c4045f4f3e005d",
       "executable": false
@@ -3123,7 +3127,7 @@
       "executable": false
     },
     "src/pegboard/api/index.ts": {
-      "sha256": "c01012f430fc8ce82ffc55b96c990447cce91c91ac9b6d1b0704b6a93435ee13",
+      "sha256": "dc5e3f2e71b908bf5a08ee773efd2d8c447f5f132e852e2bb8c2f8a09abb7cfc",
       "executable": false
     },
     "src/pegboard/api/intake-routes.ts": {
@@ -3330,6 +3334,14 @@
       "sha256": "ce481d86f648e6f4db90dc1368a22b2e055f7de02deac8f1717ef0f56e36f407",
       "executable": false
     },
+    "src/pegboard/commercial/custody.ts": {
+      "sha256": "381d6fcecb8e80ac01766e07c258287a0a6c7e06b022a1cdd2cbc40d2b4bc6cf",
+      "executable": false
+    },
+    "src/pegboard/commercial/handoffs.ts": {
+      "sha256": "b4e2d8f48930b89ce25df41595d136dab2c6280b092af0d51b73045989fe3caa",
+      "executable": false
+    },
     "src/pegboard/connectors/calendars/edge.ts": {
       "sha256": "d743a25eaf37cc60d8dbf75201aba075abd41328455354bfe8035f488a3b6e28",
       "executable": false
@@ -3407,7 +3419,7 @@
       "executable": false
     },
     "src/pegboard/data/erasure.ts": {
-      "sha256": "f989060327bc0ada552a4daf21a75e1de24042a7af4340d3c4b386fc3fea1e3e",
+      "sha256": "9b0fe9964ba8bed04616f91e081eaad85ec2ab71d0e61fa0c44bd8ab7f8d5932",
       "executable": false
     },
     "src/pegboard/data/expiry.ts": {
@@ -3527,7 +3539,7 @@
       "executable": false
     },
     "src/pegboard/portability/policy.mjs": {
-      "sha256": "93481917c20dcc03df0823bac107f6f3cf0f72120f4162e6f0a308fc11e73662",
+      "sha256": "8b26bc4412131af85d30097023226740d48a59d4e3b13f10fc6082434f158d8f",
       "executable": false
     },
     "src/pegboard/portfolios/portfolios.ts": {
@@ -3763,7 +3775,7 @@
       "executable": false
     },
     "src/pegboard/templates/instantiation.ts": {
-      "sha256": "9f1ac319d1c89231e10be02bf7ea1e4679a2f143f7c7a0cdc2e5a8430d64341e",
+      "sha256": "c59a1ef63b389d586859b8398143196b8b7f26dfd550d30bd41fc22139f8e805",
       "executable": false
     },
     "src/pegboard/templates/page-data.ts": {
@@ -3880,6 +3892,10 @@
     },
     "src/pegboard/ui/pages/capacity-settings.tsx": {
       "sha256": "9ee71266c3fdfa02567256ef41321f35d0ddbe87addb9aea14b5781dc2efd0ae",
+      "executable": false
+    },
+    "src/pegboard/ui/pages/commercial.tsx": {
+      "sha256": "ddff90bb84fa1b5b15c10857fa97c7d4e31e16f892106cbba069cb2280947fe1",
       "executable": false
     },
     "src/pegboard/ui/pages/conversion-evidence.tsx": {
@@ -4047,7 +4063,7 @@
       "executable": false
     },
     "src/pegboard/ui/routes.ts": {
-      "sha256": "739d9e85854f4995bf97838785fe05acaf8910f1fb2915cc65ed8b209a7651b1",
+      "sha256": "71d64d6b56c71ec4f05400ba45237dd3236c506bd5afb5c5111fbd9da88349aa",
       "executable": false
     },
     "src/pegboard/ui/schedule-editor.tsx": {
@@ -4314,6 +4330,10 @@
       "sha256": "c6c2dd62f6dca3fa61e1e05abc63fbc7982b9c1cc98b8b9275ccbc26c48761f2",
       "executable": false
     },
+    "tests/journeys/commercial-hubspot.mjs": {
+      "sha256": "4ed5f9151a1e603b0800258d566c2995a8b84ea9ab006b76f9e291c414fb0e8d",
+      "executable": false
+    },
     "tests/journeys/conversion-hierarchy.mjs": {
       "sha256": "d3482819ee88f69d374443d441c114cbe56c74bb1f89f33a5007e8530036af0d",
       "executable": false
@@ -4403,7 +4423,7 @@
       "executable": false
     },
     "tests/journeys/work-graph.journey.mjs": {
-      "sha256": "2cdc27fe1f0a9b003abe49fd12461873c3109e977a4f1cd4341e3edf330344bc",
+      "sha256": "dd97ac9eeded5078335e92da8602c2e9c6e25df6a81041f56f0489b4c56299f6",
       "executable": false
     },
     "tests/journeys/work-rules.mjs": {
@@ -4440,6 +4460,10 @@
     },
     "tests/scenarios/calendar-blocks.mjs": {
       "sha256": "53b4a06bc710be0df6aad93f2020b06f6b6254f899a752c28bd9bae6cdc3a1e3",
+      "executable": false
+    },
+    "tests/scenarios/commercial-hubspot.mjs": {
+      "sha256": "4c1b66e1394e4fa4de77d57ba7b297eef663f860f62e009f9ed392b201f327cd",
       "executable": false
     },
     "tests/scenarios/conversions.mjs": {
@@ -4514,6 +4538,10 @@
       "sha256": "9e010b8c0666daf54f33dbca8d154a27f4c6dc181352118235906286ae49b993",
       "executable": false
     },
+    "tests/support/hubspot-services.mjs": {
+      "sha256": "74f52071f84d79d4966edd546232d89446d587b8e08d5e5fe4cf6901726603f5",
+      "executable": false
+    },
     "tests/support/meeting-services.mjs": {
       "sha256": "179e0b4ee0e81673482e23298c24bad1f867a713537a4b9087fb2c73afd223b1",
       "executable": false
@@ -4527,7 +4555,7 @@
       "executable": false
     },
     "tests/work-graph.test.mjs": {
-      "sha256": "06725d278ec1fd4d0c6c2327085d84b3389c0c252840b0dd22fe3b9800689b78",
+      "sha256": "740de9d6c39d05e66c0990bff4b425265c3caaf0de5f5fb9f876e141541d590a",
       "executable": false
     },
     "tsconfig.json": {
@@ -4535,7 +4563,7 @@
       "executable": false
     },
     "verification.json": {
-      "sha256": "4e93632ada6d9addbf34872573e652d97b46cb0f81b7f61ed6c5be0993412db9",
+      "sha256": "55517d3133d16cc770b01903b1026a0fda9627e1a881342a2e97cf82bd16334d",
       "executable": false
     },
     "VERIFY-WORKFLOW.md": {

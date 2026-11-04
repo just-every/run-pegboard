@@ -1,3 +1,4 @@
+import { commercialRoutes } from './commercial-routes'
 import { intakeRoutes } from './intake-routes'
 import { reportingRoutes } from './reporting-routes'
 import {searchRoutes} from './search-routes'
@@ -97,3 +98,5 @@ reportingRoutes(pegboardApi)
 viewRoutes(pegboardApi)
 intakeRoutes(pegboardApi)
 searchRoutes(pegboardApi)
+
+commercialRoutes(pegboardApi)
