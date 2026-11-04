@@ -215,7 +215,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "bfec9a89a3c216ec79a19fb4c09aef545c8154ed7efc754e55e938d31035750a",
+      "sha256": "30ef231518a5a516616c1ec73874aca0d5cf7212e97f8eeaa40d81a5b84b8b8c",
       "executable": false
     },
     "DEMO.md": {
@@ -3559,7 +3559,7 @@
       "executable": false
     },
     "src/pegboard/proofs/feedback.ts": {
-      "sha256": "9115a4486f29882725cb1c627c5bd36fad18dfb9653ca3cb3d7a038f808f319c",
+      "sha256": "a70768379a154e98541025e2e472bbd9aec1f92b41f414afe7532376c652aec0",
       "executable": false
     },
     "src/pegboard/public-api/credentials.ts": {
@@ -3979,7 +3979,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/proof-review.tsx": {
-      "sha256": "af281a8840915a56c017cedff7056ff18b08f541175a097f575b41de07358eea",
+      "sha256": "7037b113a7f6283d839b4a8f4a0578462af709f7f65e1a3308caaa7eb704b444",
       "executable": false
     },
     "src/pegboard/ui/pages/readiness-notices.tsx": {
@@ -4371,7 +4371,7 @@
       "executable": false
     },
     "tests/journeys/pdf-feedback.mjs": {
-      "sha256": "dd6454bef7352ecd1da05741bba59cc17c8057f86df388773938ec6421bad65f",
+      "sha256": "9e027b6f6e47f4ba811319aefb2b311dd7a9b8289157439d541d77cfced3bdf3",
       "executable": false
     },
     "tests/journeys/planning-canvas.mjs": {
@@ -4431,7 +4431,7 @@
       "executable": false
     },
     "tests/journeys/work-graph.journey.mjs": {
-      "sha256": "0b5365b64c119a6853bf76dfd34dda07005c91632d96200a1119b6441def9c7f",
+      "sha256": "4f3605a454a82720288c361d88b7efc235c3f97a239ba01799b11cb88117b761",
       "executable": false
     },
     "tests/journeys/work-rules.mjs": {
@@ -4483,7 +4483,7 @@
       "executable": false
     },
     "tests/scenarios/pdf-feedback.mjs": {
-      "sha256": "1e68f121b366e5de64594094806dee17d6148f6d75353f7aadb4b9a9889dfa5f",
+      "sha256": "901c81413d8fc98ff42b4fc5a43c71ba2b1d807c02cd8e400455320914787a79",
       "executable": false
     },
     "tests/scenarios/portfolio-capacity.mjs": {
@@ -4567,7 +4567,7 @@
       "executable": false
     },
     "verification.json": {
-      "sha256": "e2c7b94f5be006f1a3b6723ecc64640068338fdea0cf82bc018b37b4ff16f13b",
+      "sha256": "73b95292d809e265756d6dff05a88775cd9d95e0ce97c9c39036f222f5a5542f",
       "executable": false
     },
     "VERIFY-WORKFLOW.md": {
