@@ -22,7 +22,9 @@ async function pdfVersion(db:D1Database,actor:Actor,id:string,versionId:string){
 }
 export async function feedbackView(db:D1Database,actor:Actor,id:string,left?:string,right?:string){
   const rev=await revision(db),context=await internalProof(db,actor,id)
-  const selected=[...new Set([left||context.proof.current_version||'',right].filter((v):v is string=>!!v))]
+  const versions=context.versions.filter(v=>v.contentType==='application/pdf')
+  const selected=[...new Set([left||versions.at(-1)?.id||'',right].filter((v):v is string=>!!v))]
+  if(!selected.length)throw notFound()
   const documents:Array<Awaited<ReturnType<typeof pdfVersion>>['version'] & {pages:{width:number;height:number}[]}>=[]
   for(const versionId of selected){const v=await pdfVersion(db,actor,id,versionId);documents.push({...v.version,pages:v.pages})}
   const feedback=await all<Feedback>(db,`SELECT * FROM peg_proof_feedback WHERE proof_id=? AND version_id IN (${placeholders(selected)}) ORDER BY created_at,id`,id,...selected)
@@ -30,7 +32,7 @@ export async function feedbackView(db:D1Database,actor:Actor,id:string,left?:str
   const names=Object.fromEntries(await displayNames(db,[...feedback.map(f=>f.author_id),...history.map(h=>h.actor_id)]))
   const tokens=Object.fromEntries(await Promise.all(documents.map(async d=>[d.id,await digest([actor.id,rev,context.proof,[d],feedback.filter(f=>f.version_id===d.id)])])))
   return {id,taskId:context.task.id,title:context.task.title,currentVersion:context.versions.some(v=>v.id===context.proof.current_version)?context.proof.current_version:null,
-    versions:context.versions.filter(v=>v.contentType==='application/pdf'),documents,
+    versions,documents,
     feedback:feedback.map(({operation_key,...f})=>({...f,canEdit:f.author_id===actor.id&&documents.some(d=>d.id===f.version_id&&d.canComment)})),history,names,
     token:await digest([actor.id,rev,context.proof,documents,feedback]),tokens,rev}
 }

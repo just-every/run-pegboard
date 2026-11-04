@@ -3555,7 +3555,7 @@
       "executable": false
     },
     "src/pegboard/proofs/feedback.ts": {
-      "sha256": "52814b754152b1c49cbae9f617fffe787b8e1fe6ef4ef8574fa0075a2f8e82fa",
+      "sha256": "c4f8a1c7ff99df0ee9517a30e5ab0566c0bd69aac5add497118aff67ff595f73",
       "executable": false
     },
     "src/pegboard/public-api/credentials.ts": {
@@ -4367,7 +4367,7 @@
       "executable": false
     },
     "tests/journeys/pdf-feedback.mjs": {
-      "sha256": "510586a76b130c185bfc8db07ec81ec8ae3d257aa82a39454d849eed5dc4875e",
+      "sha256": "e8ba3ee11ef6de7e3ca0976a6061e5a4ec948e00c78d62bbe3df1f8b9a261a9e",
       "executable": false
     },
     "tests/journeys/planning-canvas.mjs": {
@@ -4479,7 +4479,7 @@
       "executable": false
     },
     "tests/scenarios/pdf-feedback.mjs": {
-      "sha256": "50aa1c5b95b4768a9a392517ceb0e41b60b2afdf8406c039e2ac2e64d7c00a77",
+      "sha256": "9ab7b7a271701f176ee9a4e415e27b3150724a399ecb44b9e2242dacbe1c0e02",
       "executable": false
     },
     "tests/scenarios/portfolio-capacity.mjs": {

@@ -75,6 +75,8 @@ export async function pdfFeedbackScenario(w){
  const stale=await f.view(),three=await f.upload('v3',f.hidden.id),v3=await pass(owner.post(api+'/versions',{attachmentId:three.file.id,currentVersion:two.versionId}))
  await pass(writer.post(api+'/feedback',{...first.input,key:'synthetic-pegboard-stale',token:stale.token}),409)
  const limited=await f.view(reader);assert.equal(limited.currentVersion,null);assert.deepEqual(limited.versions.map(v=>v.id),[two.versionId]);assert.ok(!JSON.stringify(limited).includes(v3.versionId))
+ const retained=await pass(reader.get(api+'/review'));assert.equal(retained.currentVersion,null);assert.deepEqual(retained.documents.map(d=>d.id),[two.versionId]);assert.equal(retained.feedback[0].id,first.id);assert.equal(retained.history.length,3);assert.ok(!JSON.stringify(retained).includes(v3.versionId))
+ await pass(reader.get(api+'/review?version='+v3.versionId),404)
  await pass(reader.get(api+'/review?version='+two.versionId+'&compare='+v3.versionId),404)
  const latest=await pass(writer.get(api+'/review'));assert.equal(latest.currentVersion,v3.versionId);assert.deepEqual(latest.feedback,[])
  const old=await f.view();assert.equal(old.feedback[0].id,first.id);assert.equal(old.feedback[0].digest,two.digest);assert.equal(old.history.length,3)
