@@ -13,7 +13,6 @@ import type { Actor } from '../workspace/people'
 export interface TemplatePin { id:string; version:number }
 export async function permittedIntakeTemplate(db:D1Database,actor:Actor,workspace:string,pin:TemplatePin) {
  const view=await getTemplate(db,actor,workspace,pin.id,pin.version),d=view.definition
- if(view.headVersion!==pin.version)throw conflict('intake_template_changed')
  // This door applies only nested plain work; it never silently drops other configuration.
  if(d.kind!=='task'||d.fields.length||d.dependencies.length||d.rules.length||d.tasks.length>30||d.tasks.some(t=>t.approval||t.kind==='milestone'||Object.keys(t.fields).length))throw invalid('intake_template_unsupported')
  return view
@@ -30,7 +29,8 @@ export async function mappingContext(db:D1Database,actor:Actor,id:string) {
  if(JSON.stringify((JSON.parse(row.definition) as Definition).template)!==JSON.stringify(pin))throw conflict('intake_template_changed')
  await permittedIntakeTemplate(db,publisher,project.workspace_id,pin)
  const template=await permittedIntakeTemplate(db,actor,project.workspace_id,pin)
- return {submission,row,project,task:opened.task,pin,template}
+ const application=await first<{id:string;state:string;actor_id:string;created_at:number}>(db,'SELECT id,state,actor_id,created_at FROM peg_intake_template_applications WHERE submission_id=?',id)
+ return {submission,row,project,task:opened.task,pin,template,application}
 }
 export async function intakeTemplatePreview(db:D1Database,actor:Actor,id:string,input:Record<string,any>) {
  const rev=await revision(db),context=await mappingContext(db,actor,id),{submission,project,task,pin}=context
@@ -39,7 +39,7 @@ export async function intakeTemplatePreview(db:D1Database,actor:Actor,id:string,
  const preview=await templatePreview(db,actor,project.workspace_id,{templateId:pin.id,version:pin.version,startDate:input.startDate,name:task.title,roles:input.roles,keepUnassigned:false,targetProjectId:project.id})
  if(preview.missingRoles.length||preview.unreachableOwners.length||preview.configurationConflicts.length)throw invalid('intake_template_roles')
  const root=preview.tasks.find(t=>!t.parent)!
- const plan={submissionId:id,taskId:task.id,projectId:project.id,templateId:pin.id,version:pin.version,templateName:context.template.template.name,answers:JSON.parse(submission.answers!),title:task.title,description:task.description,submittedAt:submission.submitted_at,deadline:submission.deadline,triagedAt:submission.triaged_at,roles:preview.roles,startDate:preview.startDate,rootKey:root.key,before:{ownerId:task.owner_id,startDate:task.start_date,dueDate:task.due_date,hours:task.estimate_hours},tasks:preview.tasks.map(t=>({...t,title:t.parent?t.title:task.title,existingTaskId:t.parent?null:task.id})),capacity:preview.capacity}
+ const plan={submissionId:id,taskId:task.id,projectId:project.id,templateId:pin.id,version:pin.version,headVersion:context.template.headVersion,templateName:context.template.template.name,answers:JSON.parse(submission.answers!),title:task.title,description:task.description,submittedAt:submission.submitted_at,deadline:submission.deadline,triagedAt:submission.triaged_at,roles:preview.roles,startDate:preview.startDate,rootKey:root.key,before:{ownerId:task.owner_id,startDate:task.start_date,dueDate:task.due_date,hours:task.estimate_hours},tasks:preview.tasks.map(t=>({...t,title:t.parent?t.title:task.title,existingTaskId:t.parent?null:task.id})),capacity:preview.capacity}
  return {...plan,rev,token:await digest([actor.id,rev,plan])}
 }
 export async function applyIntakeTemplate(db:D1Database,actor:Actor,id:string,input:Record<string,any>) {

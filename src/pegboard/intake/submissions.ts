@@ -66,5 +66,5 @@ export async function submissionErasureScope(db:D1Database,person:string) {
  return rows.map(row=>({id:row.id,taskId:row.task_id,formId:row.form_id,projectId:row.project_id,source:!!row.source,triager:!!row.triager}))
 }
 export function submissionErasureStatements(db:D1Database,person:string,submissions:Awaited<ReturnType<typeof submissionErasureScope>>) {
- return submissions.filter(row=>row.source||row.triager).map(row=>bound(db,"UPDATE peg_intake_submissions SET source_actor=CASE WHEN source_actor=? THEN 'erased' ELSE source_actor END,triaged_by=CASE WHEN triaged_by=? THEN NULL ELSE triaged_by END WHERE id=?",[person,person,row.id]))
+ return submissions.filter(row=>row.source||row.triager).map(row=>bound(db,"UPDATE peg_intake_submissions SET answers=CASE WHEN source_actor=? THEN NULL ELSE answers END,source_actor=CASE WHEN source_actor=? THEN 'erased' ELSE source_actor END,triaged_by=CASE WHEN triaged_by=? THEN NULL ELSE triaged_by END WHERE id=?",[person,person,person,row.id]))
 }

@@ -63,7 +63,11 @@ export async function intakeTemplatesScenario(w){
  const archive=await exportCanvasInstallation(owner),rows=archiveRows(archive)
  const mapped=rows.filter(r=>r.table==='peg_intake_template_applications').map(r=>r.value??r.row)
  // Inspect the native archive rather than infer custody from policy declarations.
- assert.ok(archive.includes(result.applicationId));assert.ok(archive.includes('inactive'))
+ assert.deepEqual(mapped.map(r=>[r.id,r.submission_id,r.template_id,r.template_version,r.state]),[[result.applicationId,item.receipt,f.template.id,1,'inactive']])
+ const originRows=rows.filter(r=>r.table==='peg_intake_template_tasks').map(r=>r.row)
+ assert.deepEqual(new Set(originRows.map(r=>r.task_id)),new Set(result.taskIds))
+ const submissionRow=rows.find(r=>r.table==='peg_intake_submissions'&&r.row.id===item.receipt).row
+ assert.deepEqual(JSON.parse(submissionRow.answers),f.answers);assert.deepEqual(JSON.parse(submissionRow.template_pin),{id:f.template.id,version:1})
  const restored=await restoreCanvasInstallation(owner)
  try{
   const task=await pass(restored.worker.owner.get('/api/v1/tasks/'+root.id));assert.equal(task.subtasks[0].id,draft.id)
@@ -74,6 +78,9 @@ export async function intakeTemplatesScenario(w){
  await pass(owner.post(`/api/v1/templates/${f.template.id}/versions`,{baseVersion:1,definition:{...f.definition,description:'Changed template'}}))
  await pass(owner.post(stale.path+'/apply',{...input,token:old.token,confirm:true}),409)
  assert.equal((await pass(owner.get('/api/v1/tasks/'+stale.taskId))).subtasks.length,0)
+ const refreshed=await pass(owner.post(stale.path+'/preview',input));assert.equal(refreshed.version,1);assert.equal(refreshed.headVersion,2);assert.notEqual(refreshed.token,old.token)
+ await pass(owner.post(f.base+'/revoke',{}))
+ await pass(owner.post(stale.path+'/apply',{...input,token:refreshed.token,confirm:true}),404)
  for(const change of [{kind:'project'},{rules:[{key:'rule',name:'Priority rule',trigger:'task_created',action:'set_priority',priority:'high'}]},{fields:[{key:'note',label:'Note',type:'text'}]},{tasks:f.definition.tasks.map((t,i)=>i===0?{...t,approval:true}:t)},{dependencies:[{predecessor:'draft',successor:'check',type:'fs',lag:0}]}]){
   const unsupported=await pass(owner.post('/api/v1/templates',{name:'Unsupported intake template',definition:{...f.definition,...change}}))
   await pass(owner.post(`/api/v1/projects/${project.id}/intake/forms`,{...f.config,template:{id:unsupported.id,version:1}}),400)

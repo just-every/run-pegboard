@@ -3423,7 +3423,7 @@
       "executable": false
     },
     "src/pegboard/data/erasure.ts": {
-      "sha256": "025353ce242f957da25ee1557ac5e50d5741eaff07b1ce9e1d23a51693c319c0",
+      "sha256": "331a46ac2cadeeba738af133e537a74b13eab33b04e690cb3eddd5a1d4c8bdee",
       "executable": false
     },
     "src/pegboard/data/expiry.ts": {
@@ -3503,11 +3503,11 @@
       "executable": false
     },
     "src/pegboard/intake/submissions.ts": {
-      "sha256": "fecf3015dd1d1945e021b77bcfd78284f2be110178f52a27e2d39e05b53558f7",
+      "sha256": "5e152d4f2c53e4373031a4990afb7327cdaee24b8f7a030d93e85cd286ca681b",
       "executable": false
     },
     "src/pegboard/intake/template-mapping.ts": {
-      "sha256": "a3ff92050a4c673f0607f5416318cb299dd867b351d37d54aa3f42a525783260",
+      "sha256": "a5b3bb9ea09b04cacc87c1ba7f97c10838d0aa9d9520a84fa52bfebbfdb9f3bf",
       "executable": false
     },
     "src/pegboard/intake/triage.ts": {
@@ -3947,7 +3947,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/intake.tsx": {
-      "sha256": "75877b5d87562d790b2a7e305f09afcd35d11affc1b9f8e2e56f3c0cd979674b",
+      "sha256": "aed655e883cb77ae8971fb8c999125068911f21b1c77e6e4af5075ad871b4aeb",
       "executable": false
     },
     "src/pegboard/ui/pages/member-removal.tsx": {
@@ -4370,6 +4370,10 @@
       "sha256": "a94cfc550ca87a6bf7e4bb3a9c7965abdca06bd0354e059d574892d787b0daec",
       "executable": false
     },
+    "tests/journeys/intake-templates.mjs": {
+      "sha256": "85e660b78960d0f0ad0129fcadd62d25d6d2022238dcea137a5abf5d1e6d4aa2",
+      "executable": false
+    },
     "tests/journeys/intake.mjs": {
       "sha256": "d8ac98df52a2b612c30f3ae846d0fc9d397ded8296519d73ce97090468de7c55",
       "executable": false
@@ -4439,7 +4443,7 @@
       "executable": false
     },
     "tests/journeys/work-graph.journey.mjs": {
-      "sha256": "0b5365b64c119a6853bf76dfd34dda07005c91632d96200a1119b6441def9c7f",
+      "sha256": "924f281411c091a3d2fb52e1ec338cc5bfde1d3c9434662c538dfe505231e165",
       "executable": false
     },
     "tests/journeys/work-rules.mjs": {
@@ -4487,7 +4491,7 @@
       "executable": false
     },
     "tests/scenarios/intake-templates.mjs": {
-      "sha256": "d44d97a87619aa9312ccdcd50dad7d5042918d2c5e896d9be562247e1801a158",
+      "sha256": "98e9e7ea020a919e3ab1ac2b541a74cb50162134dca408b370e9fd2d2d5853be",
       "executable": false
     },
     "tests/scenarios/intake.mjs": {
@@ -4579,7 +4583,7 @@
       "executable": false
     },
     "verification.json": {
-      "sha256": "e2c7b94f5be006f1a3b6723ecc64640068338fdea0cf82bc018b37b4ff16f13b",
+      "sha256": "3e086acd0a790e0756dc0b2348a12d68c6802868dfe4d88b730d15e97ae5a156",
       "executable": false
     },
     "VERIFY-WORKFLOW.md": {

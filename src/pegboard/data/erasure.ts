@@ -134,12 +134,13 @@ export async function erasurePlan(db:D1Database,actor:Actor,workspace:string,typ
     await take('peg_projects',projectScoped('id'),projects)
   }
   if(proofFiles.length)await take('peg_attachments',`id IN (${placeholders(proofFiles)})`,proofFiles)
-  const intake=type==='person'?{forms:await formErasureScope(db,id),submissions:await submissionErasureScope(db,id),mappings:await mappingErasureScope(db,id)}:null
+  const mappings=type==='person'?await mappingErasureScope(db,id):[]
+  const intake=type==='person'?{forms:await formErasureScope(db,id),submissions:await submissionErasureScope(db,id),...(mappings.length?{mappings}:{})}:null
   const affectedTasks=new Set(tasks)
   const feedbackKeys=selections.find(s=>s.table==='peg_proof_feedback')?.keys.map(k=>k.id)??[]
   const feedbackScope=await all<{task_id:string;proof_id:string;attachment_id:string;author_id:string}>(db,`SELECT p.task_id,f.proof_id,f.attachment_id,f.author_id FROM peg_proof_feedback f JOIN peg_proofs p ON p.id=f.proof_id WHERE f.id IN (${placeholders(feedbackKeys)})`,...feedbackKeys)
   for(const pin of feedbackScope)affectedTasks.add(pin.task_id)
-  if(intake){for(const row of intake.submissions)affectedTasks.add(row.taskId);for(const row of intake.mappings){const links=await all<{task_id:string}>(db,'SELECT task_id FROM peg_intake_template_tasks WHERE application_id=?',row.id);for(const link of links)affectedTasks.add(link.task_id)}}
+  if(intake){for(const row of intake.submissions)affectedTasks.add(row.taskId);for(const row of intake.mappings??[]){const links=await all<{task_id:string}>(db,'SELECT task_id FROM peg_intake_template_tasks WHERE application_id=?',row.id);for(const link of links)affectedTasks.add(link.task_id)}}
   if(proofs.length)for(const proof of await all<{task_id:string}>(db,`SELECT task_id FROM peg_proofs WHERE id IN (${placeholders(proofs)})`,...proofs))affectedTasks.add(proof.task_id)
   if(projects.length){const roots=(await all<{task_id:string}>(db,`SELECT task_id FROM peg_task_projects WHERE project_id IN (${placeholders(projects)})`,...projects)).map(t=>t.task_id);for(const t of await descendants(db,roots))affectedTasks.add(t.id)}
   if(type==='attachment'){
@@ -170,7 +171,7 @@ export async function erasurePlan(db:D1Database,actor:Actor,workspace:string,typ
   }
   const counts=Object.fromEntries(selections.map(s=>[s.table,s.keys.length]))
   if(intake){
-    counts.intake_template_redactions=intake.mappings.length
+    if(intake.mappings?.length)counts.intake_template_redactions=intake.mappings.length
     counts.intake_submission_sources=intake.submissions.filter(s=>s.source).length
     counts.intake_submission_triagers=intake.submissions.filter(s=>s.triager).length
     counts.intake_form_authors=intake.forms.filter(f=>f.author).length
@@ -212,7 +213,7 @@ export async function erase(db:D1Database,actor:Actor,workspace:string,input:Rec
     for(const task of plan.tasks)statements.push(bound(db,"INSERT INTO peg_data_erased_objects VALUES('task',?,?)",[task,at]))
     for(const project of plan.projects)statements.push(bound(db,"INSERT INTO peg_data_erased_objects VALUES('project',?,?)",[project,at]))
     if(plan.type==='person'){
-      statements.push(...mappingErasureStatements(db,plan.id,plan.intake!.mappings),...submissionErasureStatements(db,plan.id,plan.intake!.submissions),...formErasureStatements(db,plan.id,plan.intake!.forms,at))
+      statements.push(...mappingErasureStatements(db,plan.id,plan.intake!.mappings??[]),...submissionErasureStatements(db,plan.id,plan.intake!.submissions),...formErasureStatements(db,plan.id,plan.intake!.forms,at))
       statements.push(...capacityErasureStatements(db,plan.id,plan.capacitySources))
       statements.push(bound(db,'INSERT OR IGNORE INTO peg_erased_people VALUES(?,?)',[plan.id,at]),bound(db,"UPDATE oa_operators SET email=?,display_name='Erased actor',version=version+1 WHERE id=? AND status<>'active' AND role<>'owner'",[`erased-${plan.id}@invalid.example`,plan.id]))
       // Tokens and sessions can no longer authenticate an inactive, version-fenced identity. Their expired bytes use transient cleanup.
