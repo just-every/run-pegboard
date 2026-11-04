@@ -20,7 +20,7 @@ export async function pdfFeedbackFixture(w){
  const project=await pass(owner.post('/api/v1/projects',{name:'PDF production'})),hidden=await pass(owner.post('/api/v1/projects',{name:'Restricted first draft'}))
  const grants=[]
  for(const [person,level]of [[writer,'commenter'],[reader,'viewer'],[scoped,'commenter'],[guest,'commenter']])grants.push(await pass(owner.post('/api/v1/grants',{objectType:'project',objectId:project.id,granteeId:person.id,level})))
- await pass(owner.post('/api/v1/grants',{objectType:'project',objectId:hidden.id,granteeId:writer.id,level:'commenter'}))
+ const hiddenGrant=await pass(owner.post('/api/v1/grants',{objectType:'project',objectId:hidden.id,granteeId:writer.id,level:'commenter'}))
  const task=await pass(owner.post('/api/v1/tasks',{projectId:project.id,title:'Review retained campaign PDFs',ownerId:writer.id}))
  await pass(owner.post(`/api/v1/tasks/${task.id}/projects`,{projectId:hidden.id}))
  const upload=async(version,projectId=project.id)=>{const bytes=await pdfBytes(version),file=await pass(owner.post(`/api/v1/tasks/${task.id}/attachments?projectId=${projectId}&name=synthetic-pegboard-${version}.pdf`,bytes,{'content-type':['application','pdf'].join('/')}));return {bytes,file,digest:hash(bytes)}}
@@ -30,7 +30,7 @@ export async function pdfFeedbackFixture(w){
  const api='/api/v1/proofs/'+proof.id
  const view=(client=writer,version=two.versionId,compare)=>pass(client.get(api+'/review?version='+version+(compare?'&compare='+compare:'')))
  const pin=async(client=writer,version=two.versionId,key='synthetic-pegboard-1105')=>{const review=await view(client,version);const input={versionId:version,token:review.token,key,body:'Keep this exact paragraph',page:2,x:0.25,y:0.75};return {...await pass(client.post(api+'/feedback',input)),input}}
- return {w,owner,writer,reader,scoped,guest,project,hidden,grants,task,one,two,proof,api,upload,view,pin}
+ return {w,owner,writer,reader,scoped,guest,project,hidden,hiddenGrant,grants,task,one,two,proof,api,upload,view,pin}
 }
 export async function pdfFeedbackScenario(w){
  const f=await pdfFeedbackFixture(w),{owner,writer,reader,scoped,guest,api,one,two,proof}=f
@@ -90,6 +90,18 @@ export async function pdfFeedbackScenario(w){
  await pass(scoped.get(api+'/review?version='+two.versionId),404);await pass(scoped.get(api+'/versions/'+two.versionId+'/material'),404)
  await pass(scoped.post(api+'/feedback',{...first.input,token:revoking.token,key:'synthetic-pegboard-revoked'}),404)
  assert.equal((await f.view()).feedback.length,1)
+ // Two submitted pins compete against the same review; the losing write leaves no history.
+ const reviewed=await f.view(),submission={...first.input,token:reviewed.token,key:'synthetic-pegboard-concurrent-pin'}
+ const submissions=[submission,{...submission,key:'synthetic-pegboard-alternative-pin',body:'A competing second-page comment'}]
+ const competing=await Promise.all(submissions.map(input=>writer.post(api+'/feedback',input)))
+ assert.deepEqual(competing.map(r=>r.status).sort(),[200,409])
+ const saved=competing.find(r=>r.status===200).body,afterCreate=await f.view()
+ assert.equal(afterCreate.feedback.length,2)
+ assert.deepEqual(afterCreate.feedback.filter(p=>p.id===saved.id).map(p=>[p.version_id,p.author_id,p.page,p.x,p.y]),[[two.versionId,writer.id,2,0.25,0.75]])
+ assert.equal(afterCreate.history.filter(h=>h.feedback_id===saved.id).length,1)
+ await w.restart()
+ assert.equal((await pass(writer.post(api+'/feedback',submissions[competing.findIndex(r=>r.status===200)]))).id,saved.id)
+ assert.equal((await f.view()).history.filter(h=>h.feedback_id===saved.id).length,1)
  console.log('PROBE PEG-011 render and identity: retained v1 and v2 material routes -> two real PDF pages, independent byte digests and exact version-specific pin identities')
  console.log('PROBE PEG-011 authority and concurrency: guest, hidden version, Viewer, nonauthor, revoked reader, stale and simultaneous writes -> refused without duplicate or changed feedback')
  console.log('PROBE PEG-011 version history: replace approved v2 with v3, restart and replay -> v2 feedback and approval retained, v3 pending with no inherited pins')
@@ -97,20 +109,35 @@ export async function pdfFeedbackScenario(w){
 
 export async function pdfFeedbackCustodyScenario(w){
  const f=await pdfFeedbackFixture(w),{owner,writer,api,proof,two}=f,pin=await f.pin()
+ const initial=await f.view()
+ const resolution={versionId:two.versionId,token:initial.token,revision:1,body:'Resolved on the retained second page',state:'resolved'}
+ await pass(writer.post(api+'/feedback/'+pin.id,resolution))
  const original=await f.view(),archive=await exportCanvasInstallation(owner)
  const restored=await restoreCanvasInstallation(owner)
  try{
   const view=await pass(restored.worker.owner.get(api+'/review?version='+two.versionId))
   assert.deepEqual(view.feedback.map(({canEdit,...p})=>p),original.feedback.map(({canEdit,...p})=>p));assert.deepEqual(view.history,original.history)
-  const bytes=await fetch(restored.worker.origin+api+'/versions/'+two.versionId+'/material',{headers:{cookie:restored.worker.owner.cookie}})
-  assert.equal(bytes.status,200);assert.equal(hash(new Uint8Array(await bytes.arrayBuffer())),two.digest)
+  for(const source of [f.one,two]){
+   const bytes=await fetch(restored.worker.origin+api+'/versions/'+source.versionId+'/material',{headers:{cookie:restored.worker.owner.cookie}})
+   assert.equal(bytes.status,200)
+   const actual=new Uint8Array(await bytes.arrayBuffer());assert.deepEqual(actual,source.bytes);assert.equal(hash(actual),source.digest)
+  }
+  assert.deepEqual(view.history.map(h=>[h.feedback_id,h.version_id,h.actor_id,h.revision,h.state,h.body]),[[pin.id,two.versionId,writer.id,1,'open',pin.input.body],[pin.id,two.versionId,writer.id,2,'resolved',resolution.body]])
   assert.equal((await fetch(restored.worker.origin+api+'/review?version='+two.versionId,{headers:{cookie:writer.cookie}})).status,401)
  }finally{await restored.stop()}
+ // A new feedback revision invalidates irreversible review, even when selected IDs are unchanged.
+ const proofScope={type:'proof',id:proof.id},beforeEdit=await pass(owner.post('/api/v1/data/erasure-preview',proofScope))
+ const latest=await f.view()
+ await pass(writer.post(api+'/feedback/'+pin.id,{...resolution,token:latest.token,revision:2,state:'open',body:'Reopened before irreversible review'}))
+ const kept=await f.view()
+ await pass(owner.post('/api/v1/data/erase',{...proofScope,token:beforeEdit.token,confirm:true}),409)
+ assert.deepEqual((await f.view()).feedback,kept.feedback);assert.deepEqual((await f.view()).history,kept.history)
+ await pass(writer.post('/api/v1/data/erase',{...proofScope,token:beforeEdit.token,confirm:true}),403)
  // Feedback has its own exact reviewed person scope, including the retained proof's holds.
  await pass(owner.patch('/api/v1/tasks/'+f.task.id,{ownerId:owner.id}))
  await pass(owner.post(`/api/v1/workspaces/ws_main/people/${writer.id}/account`,{status:'inactive'}))
  const person={type:'person',id:writer.id},preview=()=>pass(owner.post('/api/v1/data/erasure-preview',person))
- let plan=await preview();assert.equal(plan.counts.peg_proof_feedback,1);assert.equal(plan.counts.peg_proof_feedback_history,1);assert.deepEqual(plan.blockers,[])
+ let plan=await preview();assert.equal(plan.counts.peg_proof_feedback,1);assert.equal(plan.counts.peg_proof_feedback_history,3);assert.deepEqual(plan.blockers,[])
  assert.deepEqual(plan.selections.find(s=>s.table==='peg_proof_feedback').keys,[{id:pin.id}])
  const hold=await pass(owner.post('/api/v1/data/holds',{type:'proof',id:proof.id,authority:'synthetic-pegboard-1106',expiresAt:Date.now()+86400000}))
  await pass(owner.post('/api/v1/data/erase',{...person,token:plan.token,confirm:true}),409)
@@ -119,7 +146,7 @@ export async function pdfFeedbackCustodyScenario(w){
  assert.equal((await pass(owner.get(api+'/review?version='+two.versionId))).feedback.length,1)
  await pass(owner.post('/api/v1/data/holds/'+hold.id+'/release',{confirm:true}))
  plan=await preview();const receipt=await pass(owner.post('/api/v1/data/erase',{...person,token:plan.token,confirm:true}))
- assert.equal(receipt.counts.peg_proof_feedback,1);assert.equal(receipt.counts.peg_proof_feedback_history,1)
+ assert.equal(receipt.counts.peg_proof_feedback,1);assert.equal(receipt.counts.peg_proof_feedback_history,3)
  const after=await pass(owner.get(api+'/review?version='+two.versionId));assert.deepEqual(after.feedback,[]);assert.deepEqual(after.history,[])
  await pass(writer.post(api+'/feedback',pin.input),401)
  const reconciled=await restoreCanvasInstallation(owner,{earlierArchive:archive})

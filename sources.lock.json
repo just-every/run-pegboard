@@ -4479,7 +4479,7 @@
       "executable": false
     },
     "tests/scenarios/pdf-feedback.mjs": {
-      "sha256": "50aa1c5b95b4768a9a392517ceb0e41b60b2afdf8406c039e2ac2e64d7c00a77",
+      "sha256": "3c474db9a5620174c2167d4fb000fa4e961632376eea17cb79bcadb40d07ded5",
       "executable": false
     },
     "tests/scenarios/portfolio-capacity.mjs": {
