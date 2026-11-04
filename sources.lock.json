@@ -215,7 +215,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "69597e8f7f99a81550bbedb29a814bc6f472cc086eb8999ef7aa26a31b4a30be",
+      "sha256": "be7ad0090424591826aeebfc41b376364cdb8bfc4409120e029b5dfdc85fe2b2",
       "executable": false
     },
     "DEMO.md": {
@@ -247,7 +247,7 @@
       "executable": false
     },
     "docs/DATA-CUSTODY.md": {
-      "sha256": "6131912c782232f88aab8a9c3d82757b69676648ab64954be183fa7e3d4ebd07",
+      "sha256": "e7ecd5e861607fbe78a05a9936132e3f8ce18204e7c6f878d65e0eabb5776d0a",
       "executable": false
     },
     "docs/DATA-RECORD-API.md": {
@@ -3555,7 +3555,7 @@
       "executable": false
     },
     "src/pegboard/proofs/feedback.ts": {
-      "sha256": "52814b754152b1c49cbae9f617fffe787b8e1fe6ef4ef8574fa0075a2f8e82fa",
+      "sha256": "9115a4486f29882725cb1c627c5bd36fad18dfb9653ca3cb3d7a038f808f319c",
       "executable": false
     },
     "src/pegboard/public-api/credentials.ts": {
@@ -4367,7 +4367,7 @@
       "executable": false
     },
     "tests/journeys/pdf-feedback.mjs": {
-      "sha256": "e5877096b6eef6d42bcd45489f52311f2e6c8b3b8900b0fc58cc876a2652fb9b",
+      "sha256": "0c6d7207ffa1f7a1468481422f8ca7a2fd27d784cfc09f1bbeeff6575af4df3b",
       "executable": false
     },
     "tests/journeys/planning-canvas.mjs": {
@@ -4479,7 +4479,7 @@
       "executable": false
     },
     "tests/scenarios/pdf-feedback.mjs": {
-      "sha256": "3c474db9a5620174c2167d4fb000fa4e961632376eea17cb79bcadb40d07ded5",
+      "sha256": "d01f1400d2fcbd424080b65749dc1e82f787728f9ba1f3908a1696ccde7d770f",
       "executable": false
     },
     "tests/scenarios/portfolio-capacity.mjs": {

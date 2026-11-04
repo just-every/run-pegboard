@@ -74,6 +74,9 @@ export async function pdfFeedbackScenario(w){
  await pass(owner.post(api+'/decisions',{token:approve.token,versionId:two.versionId,action:'approve',reason:'Independent version review'}))
  const stale=await f.view(),three=await f.upload('v3',f.hidden.id),v3=await pass(owner.post(api+'/versions',{attachmentId:three.file.id,currentVersion:two.versionId}))
  await pass(writer.post(api+'/feedback',{...first.input,key:'synthetic-pegboard-stale',token:stale.token}),409)
+ const defaultRead=await pass(reader.get(api+'/review'))
+ assert.deepEqual(defaultRead.documents.map(d=>d.id),[two.versionId],'default review selects a readable retained PDF when the current file is hidden')
+ assert.equal(defaultRead.currentVersion,null);assert.ok(!JSON.stringify(defaultRead).includes(v3.versionId))
  const limited=await f.view(reader);assert.equal(limited.currentVersion,null);assert.deepEqual(limited.versions.map(v=>v.id),[two.versionId]);assert.ok(!JSON.stringify(limited).includes(v3.versionId))
  await pass(reader.get(api+'/review?version='+two.versionId+'&compare='+v3.versionId),404)
  const latest=await pass(writer.get(api+'/review'));assert.equal(latest.currentVersion,v3.versionId);assert.deepEqual(latest.feedback,[])
@@ -102,6 +105,17 @@ export async function pdfFeedbackScenario(w){
  await w.restart()
  assert.equal((await pass(writer.post(api+'/feedback',submissions[competing.findIndex(r=>r.status===200)]))).id,saved.id)
  assert.equal((await f.view()).history.filter(h=>h.feedback_id===saved.id).length,1)
+ // Keeping read access after comment revocation never preserves annotation authority.
+ const commentGrant=await pass(owner.post('/api/v1/grants',{objectType:'project',objectId:f.project.id,granteeId:reader.id,level:'commenter'}))
+ const readerPin=await f.pin(reader,two.versionId,'synthetic-pegboard-comment-revocation'),commentReview=await f.view(reader)
+ await pass(owner.post('/api/v1/grants/'+commentGrant.id+'/revoke',{}))
+ const readOnly=await f.view(reader),retainedPin=readOnly.feedback.find(p=>p.id===readerPin.id)
+ assert.equal(retainedPin.canEdit,false)
+ await pass(reader.post(api+'/feedback/'+readerPin.id,{versionId:two.versionId,token:commentReview.token,revision:1,body:'Changed without comment authority',state:'resolved'}),403)
+ await pass(reader.post(api+'/feedback',readerPin.input),403)
+ const afterRefusal=await f.view(reader)
+ assert.deepEqual(afterRefusal.feedback,readOnly.feedback);assert.deepEqual(afterRefusal.history,readOnly.history)
+ console.log('PROBE PEG-011 comment authority: author loses comment grant but retains Viewer access -> retained pages and feedback readable, old create replay and resolution refused without changes')
  console.log('PROBE PEG-011 render and identity: retained v1 and v2 material routes -> two real PDF pages, independent byte digests and exact version-specific pin identities')
  console.log('PROBE PEG-011 authority and concurrency: guest, hidden version, Viewer, nonauthor, revoked reader, stale and simultaneous writes -> refused without duplicate or changed feedback')
  console.log('PROBE PEG-011 version history: replace approved v2 with v3, restart and replay -> v2 feedback and approval retained, v3 pending with no inherited pins')
@@ -165,5 +179,25 @@ export async function pdfFeedbackCustodyScenario(w){
  assert.deepEqual(expiring.selections.find(s=>s.table==='peg_proof_feedback').keys,[{id:next.id}])
  const expired=await pass(owner.post('/api/v1/data/expire',{...expiryInput,token:expiring.token,confirm:true}));assert.equal(expired.counts.peg_proof_feedback,1)
  await pass(owner.get(api+'/review?version='+two.versionId),404);await pass(owner.post(api+'/feedback',pin.input),404)
+ // Explicit proof erasure removes all reviewed versions and pins without losing the task.
+ const erased=await pdfFeedbackFixture(w),erasedPin=await erased.pin(),erasedScope={type:'proof',id:erased.proof.id}
+ const erasePreview=await pass(owner.post('/api/v1/data/erasure-preview',erasedScope))
+ for(const [table,ids]of [['peg_proof_feedback',[erasedPin.id]],['peg_proof_versions',[erased.one.versionId,erased.two.versionId]],['peg_attachments',[erased.one.file.id,erased.two.file.id]]]){
+  assert.deepEqual(erasePreview.selections.find(s=>s.table===table).keys.map(k=>k.id).sort(),ids.sort())
+ }
+ assert.equal(erasePreview.counts.peg_proof_feedback_history,1)
+ const proofArchive=await exportCanvasInstallation(owner)
+ await pass(erased.writer.post('/api/v1/data/erase',{...erasedScope,token:erasePreview.token,confirm:true}),403)
+ const erasedReceipt=await pass(owner.post('/api/v1/data/erase',{...erasedScope,token:erasePreview.token,confirm:true}))
+ for(const [table,count]of [['peg_proof_feedback',1],['peg_proof_feedback_history',1],['peg_proof_versions',2],['peg_attachments',2]])assert.equal(erasedReceipt.counts[table],count)
+ for(const path of ['/review','/versions/'+erased.one.versionId+'/material','/versions/'+erased.two.versionId+'/material'])await pass(owner.get(erased.api+path),404)
+ await pass(erased.writer.post(erased.api+'/feedback',erasedPin.input),404)
+ assert.equal((await pass(owner.get('/api/v1/tasks/'+erased.task.id))).id,erased.task.id)
+ const postErasure=await restoreCanvasInstallation(owner,{earlierArchive:proofArchive})
+ try{
+  await pass(postErasure.worker.owner.get(erased.api+'/review'),404)
+  assert.equal((await pass(postErasure.worker.owner.get('/api/v1/tasks/'+erased.task.id))).id,erased.task.id)
+ }finally{await postErasure.stop()}
+ console.log('PROBE PEG-011 proof erasure: exact owner-reviewed proof group -> both byte streams and feedback removed, task survives, old feedback replay and earlier native archive cannot restore proof')
  console.log('PROBE PEG-011 custody: native archive, person erasure, proof hold and reviewed expiry -> exact feedback counts, byte continuity, inactive old session and older-archive journal refusal')
 }

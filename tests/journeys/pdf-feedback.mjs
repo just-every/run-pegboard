@@ -10,14 +10,14 @@ export async function pdfFeedbackJourney({w,browser}){
  await context.addCookies(writer.cookie.split('; ').map(pair=>({name:pair.slice(0,pair.indexOf('=')),value:pair.slice(pair.indexOf('=')+1),url:w.origin})))
  const page=await context.newPage(),errors=[]
  page.on('pageerror',error=>errors.push(error.message))
- const capture=async(name,{unavailable=false}={})=>{
-  if(!unavailable)for(const status of await page.locator('[data-pdf-status]').all())await expect(status).toHaveText('Verified PDF · 2 pages')
+ const capture=async(name,{unavailable=false,target=page}={})=>{
+  if(!unavailable)for(const status of await target.locator('[data-pdf-status]').all())await expect(status).toHaveText('Verified PDF · 2 pages')
   for(const width of [1440,390]){
-   await page.setViewportSize({width,height:1000})
-   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),name+' reflows at '+width)
-   if(process.env.PEGBOARD_PROOF_DIR){await mkdir(process.env.PEGBOARD_PROOF_DIR,{recursive:true});await page.screenshot({path:join(process.env.PEGBOARD_PROOF_DIR,'pdf-'+name+'-'+width+'.png'),fullPage:true})}
+   await target.setViewportSize({width,height:1000})
+   assert.ok(await target.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),name+' reflows at '+width)
+   if(process.env.PEGBOARD_PROOF_DIR){await mkdir(process.env.PEGBOARD_PROOF_DIR,{recursive:true});await target.screenshot({path:join(process.env.PEGBOARD_PROOF_DIR,'pdf-'+name+'-'+width+'.png'),fullPage:true})}
   }
-  await page.setViewportSize({width:1440,height:1000})
+  await target.setViewportSize({width:1440,height:1000})
  }
  const here=w.origin+'/app/proof-viewer/'+proof.id
  try{
@@ -61,7 +61,24 @@ export async function pdfFeedbackJourney({w,browser}){
   await expect(page.locator('[data-feedback-id] details li')).toHaveCount(2)
   await expect(page.getByRole('region',{name:'Version 2',exact:true}).getByRole('status')).toHaveText('Verified PDF · 2 pages')
   await capture('resolved-history')
-  const three=await f.upload('v3'),v3=await pass(owner.post(api+'/versions',{attachmentId:three.file.id,currentVersion:two.versionId}))
+  const three=await f.upload('v3',f.hidden.id),v3=await pass(owner.post(api+'/versions',{attachmentId:three.file.id,currentVersion:two.versionId}))
+  // The ordinary review entry stays usable for a reader of retained bytes only.
+  const readerContext=await browser.newContext({viewport:{width:1440,height:1000}})
+  try{
+   await readerContext.addCookies(f.reader.cookie.split('; ').map(pair=>({name:pair.slice(0,pair.indexOf('=')),value:pair.slice(pair.indexOf('=')+1),url:w.origin})))
+   const readerPage=await readerContext.newPage()
+   await readerPage.goto(w.origin+'/app/tasks/'+f.task.id)
+   await readerPage.getByRole('link',{name:'Proof reviews',exact:true}).click()
+   await readerPage.getByRole('link',{name:'Review PDF versions'}).click()
+   await expect(readerPage.getByRole('region',{name:'Version 2',exact:true}).getByRole('status')).toHaveText('Verified PDF · 2 pages')
+   await expect(readerPage.getByRole('heading',{name:'Version 2 · Retained',exact:true})).toBeVisible()
+   await expect(readerPage.locator('[data-proof-version]')).toHaveCount(1)
+   await expect(readerPage.getByLabel('Review version',{exact:true}).locator('option')).toHaveText(['Version 2 · synthetic-pegboard-v2.pdf'])
+   await expect(readerPage.getByRole('form',{name:'Add feedback to version 2'})).toHaveCount(0)
+   await expect(readerPage.getByRole('form',{name:'Edit pin 1 on version 2'})).toHaveCount(0)
+   assert.ok(!(await readerPage.content()).includes(v3.versionId),'the hidden current version is not disclosed')
+   await capture('reader-retained-entry',{target:readerPage})
+  }finally{await readerContext.close()}
   await page.goto(here+'?version='+v3.versionId+'&compare='+two.versionId)
   await expect(page.getByRole('region',{name:'Version 3',exact:true}).getByRole('status')).toHaveText('Verified PDF · 2 pages')
   await expect(page.getByRole('region',{name:'Version 3',exact:true})).toContainText('No feedback on this version.')
@@ -89,6 +106,7 @@ export async function pdfFeedbackJourney({w,browser}){
   assert.equal((await f.view()).feedback[0].id,pin.id)
   assert.deepEqual(errors,[])
   console.log('PROBE PEG-011 UI: keyboard selects retained PDF comparison, adds a page-coordinate pin and resolves it -> real page pixels and text, exact author and retained v2 history after v3; screens inspected at 1440 and 390')
+  console.log('PROBE PEG-011 retained entry: reader follows task and proof list after hidden v3 replacement -> readable v2 opens with retained feedback, no hidden version identity or annotation controls')
   console.log('PROBE PEG-011 unavailable source: revoke selected v1 access before material read -> 404, no v1 pixels or text, permitted v2 still renders; refreshed hidden comparison refuses')
  }finally{await context.close()}
 }
