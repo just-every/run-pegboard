@@ -4379,7 +4379,7 @@
       "executable": false
     },
     "tests/journeys/portfolio-capacity.mjs": {
-      "sha256": "a969b5207cef7bc6d55b3940f8e685ba585512e8b2495ae2469d8c25891d4408",
+      "sha256": "0854f02971eb3de606e085ac95cc7d51dbfd0fd0d4d36ef815c3b2d34a4d201d",
       "executable": false
     },
     "tests/journeys/portfolios.mjs": {
