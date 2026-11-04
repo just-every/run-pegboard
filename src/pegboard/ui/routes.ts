@@ -1,4 +1,4 @@
-import { commercialSettings } from '../commercial/handoffs'
+import { commercialProjectSource, commercialSettings } from '../commercial/handoffs'
 import { CommercialPage } from './pages/commercial'
 import { ApprovalFollowupSettings } from './pages/approval-followup'
 import { followupSettings, previewFollowupPolicy } from '../notices/approval-policy'
@@ -327,7 +327,7 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
     if(section==='time' &&!tail){const prefs=await settings(db,actor);return page('Timesheets',h(TimePage,{viewer,sheets:await listSheets(db,actor,workspace),view:id?await sheetView(db,actor,id):null,deliveries:id?await timeDeliveries(db,actor,id):null,tasks:await timeTaskOptions(db,actor,workspace),day:localDay(Date.now(),prefs.timezone)}))}
     if (section === 'projects' && !id) return page('Projects', h(ProjectsPage, { viewer, projects: await listProjects(db, actor, workspace), teams: (await listTeams(db, actor, workspace)).teams, canCreate: !!(await workspaceRole(db, actor.id, workspace)) && !['guest', 'analyst', 'agent'].includes((await workspaceRole(db, actor.id, workspace)) as string), workspace }))
     if (section === 'projects' && id && !tail) {
-      try { return await page('Project', h(ProjectPage, { viewer, data: await board(db, actor, id), id, conversionLinks:await listConversionLinks(db,actor,'project',id),editor:(await openProject(db,actor,id)).effective.capabilities.has('edit')?await editorFor(id,(await board(db,actor,id)).columns.flatMap(c=>c.tasks.map(t=>({value:t.id,label:t.title}))),`/app/projects/${id}`):null })) } catch (error) { if (error instanceof PegError && error.status === 404) return refuse(db, actor, viewer, id); throw error }
+      try { return await page('Project', h(ProjectPage, { viewer, data: await board(db, actor, id), id, commercialSource:await commercialProjectSource(db,actor,id), conversionLinks:await listConversionLinks(db,actor,'project',id),editor:(await openProject(db,actor,id)).effective.capabilities.has('edit')?await editorFor(id,(await board(db,actor,id)).columns.flatMap(c=>c.tasks.map(t=>({value:t.id,label:t.title}))),`/app/projects/${id}`):null })) } catch (error) { if (error instanceof PegError && error.status === 404) return refuse(db, actor, viewer, id); throw error }
     }
     if(section==='projects'&&id&&tail==='field-report'&&segments.length===4)return page('Field report',h(FieldReportPage,{viewer,data:await fieldReport(db,actor,id,url.searchParams.get('tag')??undefined)}))
     if(section==='tags'&&!id)return page('Tags',h(TagsPage,{viewer,tags:await tagCatalogue(db,actor,workspace),filtered:url.searchParams.get('tag')?await tagFilter(db,actor,url.searchParams.get('tag')!):null,projects:(await listProjects(db,actor,workspace)).filter(p=>p.level&&['editor','admin'].includes(p.level)).map(p=>({value:p.id,label:p.name}))}))

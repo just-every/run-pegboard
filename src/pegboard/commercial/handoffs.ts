@@ -141,7 +141,7 @@ export async function reconcileReturn(db: D1Database, env: Bindings, actor: Acto
     if (deal.deliveryOperation === id && deal.deliveryStatus === plan.status) return finishReturn(db, actor, workspace, id, 'acknowledged', null)
     return finishReturn(db, actor, workspace, id, 'uncertain', 'readback_does_not_match')
   } catch (error) {
-    if (!(error instanceof PegError)) throw error
+    if (!(error instanceof PegError) || review.state === 'acknowledged') throw error
     return finishReturn(db, actor, workspace, id, 'uncertain', error.code)
   }
 }
@@ -164,4 +164,14 @@ export async function sendReturn(db: D1Database, env: Bindings, actor: Actor, wo
   }
   // Every response, including a lost acknowledgment, is reconciled before any possible future write.
   return reconcileReturn(db, env, actor, workspace, id, input)
+}
+
+/** The native project links to its source without publishing commercial identity to its audience. */
+export async function commercialProjectSource(db: D1Database, actor: Actor, projectId: string) {
+  const { project } = await openProject(db, actor, projectId)
+  if (await workspaceRole(db, actor.id, project.workspace_id) !== 'owner') return null
+  const source = await first<Handoff>(db, "SELECT * FROM peg_commercial_handoffs WHERE project_id=? AND state='adopted'", projectId)
+  if (!source) return null
+  try { await own(db, actor, project.workspace_id, source.id) } catch (error) { if (error instanceof PegError) return null; throw error }
+  return { handoffId: source.id, portalId: source.portal_id, dealId: source.deal_id, originalRevision: source.source_revision, url: 'https://app.hubspot.com/contacts/' + source.portal_id + '/record/0-3/' + source.deal_id }
 }

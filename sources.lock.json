@@ -215,7 +215,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "ff6219bc9d904858b2dbdb2035cb33084abf49b614eeadc3677fccf9b580b36a",
+      "sha256": "688bf475111627e7c926bc0b2bcd8107978af131b009b7affba61e7ad161b317",
       "executable": false
     },
     "DEMO.md": {
@@ -3103,7 +3103,7 @@
       "executable": false
     },
     "src/pegboard/api/commercial-routes.ts": {
-      "sha256": "c048aca6837fb0a39bcddcf2bb6cfc8e7d93e02681703124a231a804771998d0",
+      "sha256": "7f89e4806aea1d7aefcb551bb59c9fe2c43a028b0563ab6a92179324c67c130b",
       "executable": false
     },
     "src/pegboard/api/conversion-routes.ts": {
@@ -3347,7 +3347,7 @@
       "executable": false
     },
     "src/pegboard/commercial/handoffs.ts": {
-      "sha256": "4f39c1860dbba3d0abcb9c5870055560241798dbde52dbbb6dc7f642c60e764f",
+      "sha256": "165e54147f5aaff61e8252715be65c05db4150f16a021a30a9994bf18f43e1de",
       "executable": false
     },
     "src/pegboard/connectors/calendars/edge.ts": {
@@ -3975,7 +3975,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/project.tsx": {
-      "sha256": "328b3d411a0d1866bc0c7c53d5bcc64ee1ef9b87ee9fd632989319e2d57ccdb7",
+      "sha256": "82eb270055670262c3a728f18aa7a30df79de726c3c047a6094eadbd6621e008",
       "executable": false
     },
     "src/pegboard/ui/pages/projects.tsx": {
@@ -4071,7 +4071,7 @@
       "executable": false
     },
     "src/pegboard/ui/routes.ts": {
-      "sha256": "702db2c0330959ffd8e6f33635cc63faebe6561107f31d48aaca5f1498471b7c",
+      "sha256": "93336f494b5ef9811b272ce3b54cd980834f321f9ae48621461932193071e539",
       "executable": false
     },
     "src/pegboard/ui/schedule-editor.tsx": {
@@ -4339,7 +4339,7 @@
       "executable": false
     },
     "tests/journeys/commercial-hubspot.mjs": {
-      "sha256": "21a7bf722e07f43f17d1acb4687f15e6e3f4703a64a5e5f2d289ef3b50ffe444",
+      "sha256": "4ba49136a9917074302459a6390599cf07bd8ac3c02e17ca8c0033b479524bde",
       "executable": false
     },
     "tests/journeys/conversion-hierarchy.mjs": {
@@ -4471,7 +4471,7 @@
       "executable": false
     },
     "tests/scenarios/commercial-hubspot.mjs": {
-      "sha256": "033297c0eddb5d3d70ab81721c65815eaf97b22147dfefa8c928baee941e070e",
+      "sha256": "86a2b4f8936b94e3996c10ec1a3ce09bb6580f604c7f19792368d9ad3b3d59fe",
       "executable": false
     },
     "tests/scenarios/conversions.mjs": {

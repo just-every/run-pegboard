@@ -30,9 +30,18 @@ export async function commercialHubspotScenario(w,edge){
  await pass(owner.post(`${root}/reviews/${reviewed.id}/adopt`,{credential,confirm:true}),409)
  const exact=await pass(owner.post(`${root}/${source.id}/reviews`,commercialInput(owner.id)))
  await pass(owner.post(`${root}/reviews/${exact.id}/adopt`,{credential,confirm:false}),400)
- const adopted=await pass(owner.post(`${root}/reviews/${exact.id}/adopt`,{credential,confirm:true}))
+ const concurrent=await Promise.all([1,2].map(()=>owner.post(`${root}/reviews/${exact.id}/adopt`,{credential,confirm:true})))
+ assert.ok(concurrent.every(r=>[200,409].includes(r.status)),JSON.stringify(concurrent))
+ const adopted=concurrent.find(r=>r.status===200)?.body
+ assert.ok(adopted,'one concurrent adoption succeeds')
+ assert.equal(new Set(concurrent.filter(r=>r.status===200).map(r=>r.body.projectId)).size,1)
  assert.ok(adopted.projectId);assert.equal((await pass(owner.get('/api/v1/projects/'+adopted.projectId))).project.visibility,'private')
  await pass(guest.get('/api/v1/projects/'+adopted.projectId),404)
+ const backlink=await pass(owner.get(`/api/v1/projects/${adopted.projectId}/commercial-source`))
+ assert.equal(backlink.handoffId,source.id);assert.equal(backlink.portalId,'1001');assert.equal(backlink.dealId,'2001');assert.equal(backlink.url,'https://app.hubspot.com/contacts/1001/record/0-3/2001')
+ await pass(owner.post('/api/v1/grants',{objectType:'project',objectId:adopted.projectId,granteeId:member.id,level:'viewer'}))
+ assert.equal(await pass(member.get(`/api/v1/projects/${adopted.projectId}/commercial-source`)),null)
+ await pass(guest.get(`/api/v1/projects/${adopted.projectId}/commercial-source`),404)
  const board=await pass(owner.get('/api/v1/projects/'+adopted.projectId)),tasks=board.columns.flatMap(c=>c.tasks)
  assert.equal(tasks.length,5);assert.equal(new Set(tasks.map(t=>t.id)).size,5)
  assert.ok(tasks.some(t=>t.title==='Welcome client and agree goals'&&t.owner===owner.name))
@@ -42,7 +51,7 @@ export async function commercialHubspotScenario(w,edge){
  edge.change('2001',{stage:'open',close:'2027-01-10T00:00:00Z'});await pass(edge.event(w,'2001','3002'))
  source=(await settings()).handoffs[0];assert.equal(source.project_id,adopted.projectId);assert.deepEqual(source.commitment,commitment)
  // A distinct declined source never creates work, even after replay or reopen.
- await pass(edge.event(w,'2002','3010'));const decline=(await settings()).handoffs.find(h=>h.deal_id==='2002')
+ await pass(edge.event(w,'2002','3001'));const decline=(await settings()).handoffs.find(h=>h.deal_id==='2002')
  await pass(owner.post(`${root}/${decline.id}/decline`,{confirm:true}));await pass(edge.event(w,'2002','3011'))
  assert.equal((await settings()).handoffs.find(h=>h.id===decline.id).project_id,null)
  await pass(owner.post(`${root}/${decline.id}/reviews`,commercialInput(owner.id)),409)
@@ -73,14 +82,26 @@ export async function commercialHubspotScenario(w,edge){
  assert.equal((await pass(owner.post(`${root}/reviews/${delivered.id}/send`,{credential,confirm:true}))).state,'acknowledged')
  assert.equal(edge.deal().delivery,'delivered');assert.equal(edge.deal().operation,delivered.id);assert.equal(edge.deal().stage,'open','delivery does not own CRM deal state')
  assert.equal(edge.writes,2)
+ assert.equal((await pass(owner.post(`${root}/reviews/${ret.id}/send`,{credential,confirm:true}))).state,'acknowledged')
+ assert.equal(edge.deal().delivery,'delivered','replaying an older receipt cannot return an earlier status')
+ edge.refused=true
+ await pass(owner.post(`${root}/reviews/${ret.id}/send`,{credential,confirm:true}),403)
+ assert.equal((await settings()).reviews.find(r=>r.id===ret.id).state,'acknowledged','revoked source access cannot rewrite a historical acknowledgment')
+ await pass(owner.post(`${root}/reviews/${exact.id}/adopt`,{credential,confirm:true}),403);edge.refused=false
+ const audit=await pass(owner.get('/api/v1/admin/audit?limit=500'))
+ const commercial=audit.events.filter(e=>e.action.startsWith('commercial.'))
+ assert.ok(commercial.some(e=>e.action==='commercial.adopted'&&e.target_id===source.id))
+ assert.ok(commercial.some(e=>e.action==='commercial.return_rejected'&&e.target_id===ret.id) || commercial.some(e=>e.action==='commercial.return_rejected'))
+ for(const value of [credential,'synthetic-pegboard-excluded-customer','Synthetic private delivery'])assert.ok(!JSON.stringify(commercial).includes(value))
  // Archive restoration preserves mapping but has no source or pending-operation authority.
- let restored
+ let restored,earlierArchive
  try{
   restored=await restoreCanvasInstallation(owner)
   const inactive=await pass(restored.worker.owner.get(root))
   assert.ok(inactive.portals.every(p=>!p.active));assert.ok(inactive.handoffs.every(h=>h.state==='inactive'))
   await pass(restored.worker.owner.post(`${root}/reviews/${delivered.id}/send`,{credential,confirm:true}),404)
   assert.equal(edge.writes,2)
+  earlierArchive=restored.archive
   assert.ok(!restored.archive.includes(credential));assert.ok(!restored.archive.includes('synthetic-pegboard-excluded-customer'))
  }finally{await restored?.stop()}
  // Exact erasure scope, holds and replay witness through the supported Data door.
@@ -98,7 +119,25 @@ export async function commercialHubspotScenario(w,edge){
  assert.equal(erased.state,'erased');assert.deepEqual(erased.commitment,{})
  await pass(edge.event(w,'2001','3090'));assert.equal((await settings()).handoffs.filter(h=>h.deal_id==='2001').length,1)
  await pass(owner.post(`${root}/${source.id}/reviews`,commercialInput(owner.id)),404)
+ let journalRestore
+ try{journalRestore=await restoreCanvasInstallation(owner,{earlierArchive});const rows=await pass(journalRestore.worker.owner.get(root));assert.deepEqual(rows.handoffs.find(h=>h.id===source.id).commitment,{});await pass(journalRestore.worker.owner.post(`${root}/${source.id}/reviews`,commercialInput(owner.id)),404)}finally{await journalRestore?.stop()}
+ // A pending review referring to an erased person is in the exact reviewed redaction scope.
+ await pass(edge.event(w,'2003','3020'))
+ const personSource=(await settings()).handoffs.find(h=>h.deal_id==='2003')
+ const withPerson=commercialInput(owner.id);withPerson.roles.Specialist=member.id
+ const personReview=await pass(owner.post(`${root}/${personSource.id}/reviews`,withPerson))
+ await pass(owner.post(`/api/v1/workspaces/ws_main/people/${member.id}/account`,{status:'inactive'}))
+ const personErase=await pass(owner.post(data+'/erasure-preview',{type:'person',id:member.id}))
+ assert.equal(personErase.counts.commercial_redactions,1);assert.equal(personErase.counts.commercial_reviews,1)
+ await pass(owner.post(data+'/erase',{type:'person',id:member.id,token:personErase.token,confirm:true}))
+ assert.ok(!(await settings()).reviews.some(r=>r.id===personReview.id));assert.equal((await settings()).handoffs.find(h=>h.id===personSource.id).state,'erased')
+ await pass(edge.event(w,'2004','3030'))
+ const blockedSource=(await settings()).handoffs.find(h=>h.deal_id==='2004')
+ const blockedReview=await pass(owner.post(`${root}/${blockedSource.id}/reviews`,commercialInput(owner.id)))
  await pass(owner.post(root+'/portals/'+portal.id+'/revoke',{}))
+ await pass(owner.post(`${root}/reviews/${blockedReview.id}/adopt`,{credential,confirm:true}),403)
+ await pass(owner.post(root+'/portals',{portalId:'1001',credential,confirm:true}))
+ await pass(owner.post(`${root}/reviews/${blockedReview.id}/adopt`,{credential,confirm:true}),403)
  await pass(owner.post(`${root}/${decline.id}/decline`,{confirm:true}),403)
  assert.equal(edge.writes,2)
  return {projectId:adopted.projectId,sourceId:source.id,returns:[ret.id,delivered.id],writes:edge.writes}

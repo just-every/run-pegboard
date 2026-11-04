@@ -1,13 +1,14 @@
 import type { Hono } from 'hono'
 import type { Bindings } from '../../auth.server'
 import { door, describe, json } from './door'
-import { authorizePortal, revokePortal, commercialSettings, receiveHubspot, reviewAdoption, adoptHandoff, declineHandoff, reviewReturn, sendReturn, reconcileReturn } from '../commercial/handoffs'
+import { commercialProjectSource, authorizePortal, revokePortal, commercialSettings, receiveHubspot, reviewAdoption, adoptHandoff, declineHandoff, reviewReturn, sendReturn, reconcileReturn } from '../commercial/handoffs'
 const next = '/app/settings/commercial'
 export function commercialRoutes(app: Hono<{ Bindings: Bindings }>) {
   app.post('/commercial/hubspot/events', async c => {
     try { return json(await receiveHubspot(c.req.raw, c.env)) }
     catch (error) { const e = describe(error); return json({ error: e.code }, e.status) }
   })
+  app.get('/projects/:id/commercial-source', door(async d => json(await commercialProjectSource(d.db, d.actor, d.params.id))))
   app.get('/commercial', door(d => commercialSettings(d.db, d.actor, d.workspace)))
   app.post('/commercial/portals', door(d => authorizePortal(d.db, d.env, d.actor, d.workspace, d.input), { next: () => next }))
   app.post('/commercial/portals/:id/revoke', door(d => revokePortal(d.db, d.actor, d.workspace, d.params.id), { next: () => next }))
