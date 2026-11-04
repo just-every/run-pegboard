@@ -4,10 +4,16 @@ const importSafety={peg_approval_followup_policies:{enabled:[0]},peg_approval_fo
 export default {
  product:'runeditrun/foundation',
  includeTables:['oa_operators','oa_bootstrap','oa_external_identities','oa_invitation_cancellations','oa_tokens','oa_auth_settings','oa_auth_audit','oa_domain_rules','oa_logout_events','oc_owner_claims','oc_idp_grants'],
- excludeTables:['peg_intake_guards','peg_intake_limits','peg_report_snapshots','peg_report_guards','peg_project_request_intake','peg_analytics_dependencies','peg_analytics_schedules','peg_analytics_runs','peg_calendar_connections','peg_calendar_blocks','peg_calendar_previews','peg_status_rights_guards','peg_status_review_guards','peg_api_cursors','peg_api_guards','peg_webhook_deliveries','peg_api_keys','peg_api_intents','peg_api_events','peg_api_receipts','peg_template_rule_execution_guards','peg_departure_guards','peg_canvas_guards','peg_analytics_keys','peg_analytics_snapshots','peg_analytics_rows','peg_analytics_guards','peg_meeting_guards','rer_dependency_keys','rer_dependency_pending','rer_dependency_codes','peg_webhooks','peg_data_guards','peg_data_erasing_tasks','peg_data_erasing_proofs'],
+ excludeTables:['peg_data_erasing_feedback','peg_intake_guards','peg_intake_limits','peg_report_snapshots','peg_report_guards','peg_project_request_intake','peg_analytics_dependencies','peg_analytics_schedules','peg_analytics_runs','peg_calendar_connections','peg_calendar_blocks','peg_calendar_previews','peg_status_rights_guards','peg_status_review_guards','peg_api_cursors','peg_api_guards','peg_webhook_deliveries','peg_api_keys','peg_api_intents','peg_api_events','peg_api_receipts','peg_template_rule_execution_guards','peg_departure_guards','peg_canvas_guards','peg_analytics_keys','peg_analytics_snapshots','peg_analytics_rows','peg_analytics_guards','peg_meeting_guards','rer_dependency_keys','rer_dependency_pending','rer_dependency_codes','peg_webhooks','peg_data_guards','peg_data_erasing_tasks','peg_data_erasing_proofs'],
  requiredConfiguration:['OWNER_EMAIL','SESSION_SECRET','SETUP_TOKEN','AUTH_ORIGIN','MAIL_PROVIDER','MAIL_FROM'],
  async validateStaged({db,tables}){
   const search=tables.peg_search_records,tasks=tables.peg_tasks
+  const feedback=tables.peg_proof_feedback,history=tables.peg_proof_feedback_history,versions=tables.peg_proof_versions
+  if(feedback){
+   if(!versions||!history)return false
+   if(await db.prepare(`SELECT 1 FROM "${feedback}" f LEFT JOIN "${versions}" v ON v.id=f.version_id WHERE v.id IS NULL OR v.proof_id<>f.proof_id OR v.attachment_id<>f.attachment_id OR v.digest<>f.digest OR NOT EXISTS(SELECT 1 FROM "${history}" h WHERE h.feedback_id=f.id AND h.revision=f.revision AND h.body=f.body AND h.state=f.state AND h.actor_id=f.author_id) LIMIT 1`).first())return false
+   if(await db.prepare(`SELECT 1 FROM "${history}" h LEFT JOIN "${feedback}" f ON f.id=h.feedback_id WHERE f.id IS NULL OR f.proof_id<>h.proof_id OR f.version_id<>h.version_id OR f.author_id<>h.actor_id LIMIT 1`).first())return false
+  }
   const canvas=tables.peg_canvas_nodes,projects=tables.peg_projects
   if(canvas){
    if(!projects||!tasks)return false

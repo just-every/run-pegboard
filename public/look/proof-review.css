@@ -1,0 +1,10 @@
+.proof-comparison { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:24px; grid-column:1/-1; min-width:0; }
+.proof-version { min-width:0; display:flex; flex-direction:column; gap:24px; font-size:15px; }
+.proof-version .panel { width:100%; min-width:0; box-sizing:border-box; }
+.proof-version canvas { display:block; width:100%; height:auto; border:1px solid var(--edge); border-radius:4px; box-sizing:border-box; cursor:crosshair; }
+.proof-version code { overflow-wrap:anywhere; font-size:13px; }
+.proof-version dd { margin-inline-start:0; }
+.proof-version details { margin-block:12px; }
+.proof-version summary { cursor:pointer; font-size:15px; }
+.proof-version [data-pdf-pages] section { margin-block:20px; }
+@media(max-width:1000px) { .proof-comparison { grid-template-columns:minmax(0,1fr); } }

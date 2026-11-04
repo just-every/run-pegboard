@@ -36,7 +36,11 @@ import { WorkloadPage } from './pages/workload'
 import { AccountAvailabilityPage,CapacitySettingsPage } from './pages/capacity-settings'
 import {ApprovalPage,RoutingPage} from './pages/approvals'
 import {routeFor,routeView,reviewLink,previewRoute} from '../approvals/routing'
-import {proofView} from '../records/custody'
+import {proofView,internalProof} from '../records/custody'
+import {feedbackView} from '../proofs/feedback'
+import {ProofReviewPage,ProofListPage} from './pages/proof-review'
+import pdfModule from 'pdfjs-dist/build/pdf.mjs?url'
+import pdfWorker from 'pdfjs-dist/build/pdf.worker.mjs?url'
 import {pendingRuleSchedulePreview} from '../bundles/pending-schedule'
 import {availabilityView} from '../schedule/availability'
 import {AvailabilityPage} from './pages/availability'
@@ -211,7 +215,19 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
     if(section==='approvals'&&id)return page('Review approval',h(ApprovalPage,{viewer,view:await routeView(db,actor,id),people:await peopleOptions(db,actor,workspace)}))
     if(section==='proof-reviews'&&id)return page('Review approval',h(ApprovalPage,{viewer,view:await reviewLink(db,actor,id),linkId:id,people:[]}))
     if(section==='approval-routing'&&id){const input:Record<string,any>=Object.fromEntries(url.searchParams);for(const n of [1,2])input['people'+n]=url.searchParams.getAll('people'+n+'[]');const kind=input.kind??'task';const target=kind==='proof'?(await proofView(db,actor,id)).taskId:id;const access=(await openTask(db,actor,target)).access;if(!access.capabilities.has('manage_shares')||access.role==='guest'||access.role==='agent')throw new PegError(403,'forbidden');const existing=await routeFor(db,kind,id);if(existing&&!input.new&&!input.preview)return new Response(null,{status:303,headers:{location:'/app/approvals/'+existing.id}});return page('Approval routing',h(RoutingPage,{viewer,kind,id,people:await peopleOptions(db,actor,workspace),input,preview:input.preview?await previewRoute(db,actor,kind,id,input):null}))}
-    if(section==='proofs'&&id){const task=await viewTask(db,actor,id);if(!task.capabilities.includes('edit'))throw new PegError(403,'forbidden');const proofs=await all<{id:string}>(db,'SELECT id FROM peg_proofs WHERE task_id=?',id);return page('Proof reviews',h(Shell,{viewer,current:'/app/projects',title:'Proof reviews',children:h(Card,{title:'Reviewed versions',children:[h('form',{method:'post',action:'/api/v1/tasks/'+id+'/proofs',className:'stack'},h('input',{type:'hidden',name:'_next',value:'/app/proofs/'+id}),h('label',null,'File to review',h('select',{className:'select',name:'attachmentId','aria-label':'File to review'},task.attachments.map(a=>h('option',{value:a.id},a.name)))),h('button',{className:'button quiet'},'Create proof')), ...await Promise.all(proofs.map(async p=>{const v=await proofView(db,actor,p.id);return h('section',null,h('a',{href:'/app/approval-routing/'+p.id+'?kind=proof'},'Route proof for review'),h('form',{method:'post',action:'/api/v1/proofs/'+p.id+'/versions',className:'stack'},h('input',{type:'hidden',name:'_next',value:'/app/proofs/'+id}),h('input',{type:'hidden',name:'currentVersion',value:v.proof.current_version??''}),h('label',null,'Replacement file',h('select',{className:'select',name:'attachmentId','aria-label':'Replacement file'},task.attachments.map(a=>h('option',{value:a.id},a.name)))),h('button',{className:'button quiet'},'Add reviewed version')))}))]})}))}
+    if(section==='proof-viewer'&&id&&!tail){
+      const view=await feedbackView(db,actor,id,url.searchParams.get('version')??undefined,url.searchParams.get('compare')??undefined)
+      const response=await page('PDF proof review',h(ProofReviewPage,{viewer,view,pdfModule,pdfWorker})),headers=new Headers(response.headers)
+      headers.set('content-security-policy',headers.get('content-security-policy')+"; connect-src 'self'; worker-src 'self'")
+      return new Response((await response.text()).replace('</head>','<link rel="stylesheet" href="/look/proof-review.css"></head>'),{status:response.status,headers})
+    }
+    if(section==='proofs'&&id&&!tail){
+      const task=await viewTask(db,actor,id),role=await workspaceRole(db,actor.id,(await openTask(db,actor,task.id)).task.workspace_id)
+      if(!role||role==='guest'||role==='agent')throw new PegError(404,'not_found')
+      const rows=await all<{id:string}>(db,'SELECT id FROM peg_proofs WHERE task_id=?',task.id),proofs=[]
+      for(const row of rows)proofs.push(await internalProof(db,actor,row.id))
+      return page('Proof reviews',h(ProofListPage,{viewer,task,proofs,canEdit:task.capabilities.includes('edit')}))
+    }
     if(section==='settings'&&id==='analytics'&&tail&&segments.length===4) return page('Analyst report',h(AnalystReportPage,{viewer,keyId:tail,workspace,report:await readReport(db,await ownKey(db,actor,workspace,tail),url.searchParams.get('snapshot')??'')}))
     if(section==='settings'&&id==='analytics'&&!tail) {
       const response = await page('Analyst access', h(AnalyticsPage, { viewer, workspace, data: await analystSettings(db, actor, workspace) }))
