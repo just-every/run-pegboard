@@ -180,7 +180,9 @@ limits remain disclosed.
 Internal members can review already retained PDF versions using their current
 file access. The viewer verifies the stored SHA-256 digest before rendering page
 pixels and an accessible text alternative. Embedded PDF actions are not executed.
-Comparison requires current access to both selected files. A pin keeps its proof,
+Comparison requires current access to both selected files. When the current
+version is hidden, the ordinary review entry opens the newest retained PDF the
+reader can access; it does not disclose the hidden replacement. A pin keeps its proof,
 version, attachment, digest, page, normalized coordinates and author identities;
 replacing the current version does not move a pin or an existing human decision.
 
