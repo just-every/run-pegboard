@@ -18,8 +18,8 @@ let acceptance=await readFile('ACCEPTANCE.md','utf8')
 for(const id of ids){
  const clause=contract.clauses.find(clause=>clause.id===id),row=rows.get(id)
  if(!clause||!row)throw Error('Unknown clause: '+id)
- const definition=source.split('\n').find(line=>line.startsWith('**'+id+' — '))
- const marker='**Acceptance evidence:**',at=definition.indexOf(marker)
+ const definition=source.split('\n').find(line=>line.startsWith('**'+id+' — '))??clause.text
+ const marker=definition.includes('**Acceptance evidence:**')?'**Acceptance evidence:**':'**Acceptance.**',at=definition.indexOf(marker)
  if(at<0)throw Error('Missing acceptance evidence: '+id)
  const evidence=definition.slice(at+marker.length).split('**As built:**')[0].trim()
  const line=`- **${id} — ${clause.title}. Status: ${clause.status}.** ${prose(evidence)} Evidence: ${prose(row[4]||'none')}. Gap: ${prose(row[5]||'None for this clause.')}`
