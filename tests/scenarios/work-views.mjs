@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { restoreCanvasInstallation } from '../support/canvas-restore.mjs'
 
 const modes = ['list', 'board', 'table', 'calendar', 'timeline', 'workload']
 const pass = async (request, status = 200) => { const response = await request; assert.equal(response.status, status, JSON.stringify(response.body)); return response.body }
@@ -121,4 +122,120 @@ export function registerWorkViewTests({test, context}) {
   assert.equal((await task(root,visible.id)).title,'Assigned client delivery','erasing a configuration owner changes no shared task')
 
  })
+}
+
+export async function teamWorkViewsScenario(w) {
+ const root=w.owner, author=await invite(w,3020,'Team view author'), reader=await invite(w,3021,'Team view editor'), guest=await invite(w,3022,'Team view guest','guest')
+ const team=await pass(root.post('/api/v1/teams',{name:'Regional delivery team',privacy:'private'}))
+ const teamGrant=async(person,level)=>pass(root.post('/api/v1/grants',{objectType:'team',objectId:team.id,granteeId:person.id,level}))
+ const authorTeam=await teamGrant(author,'editor'),readerTeam=await teamGrant(reader,'viewer');await teamGrant(guest,'viewer')
+ const projects=[], tasks=[], readerGrants=[], authorGrants=[]
+ for(let i=0;i<30;i++){
+  const project=await pass(root.post('/api/v1/projects',{name:`Regional delivery ${i+1}`,teamId:team.id,visibility:'private'}));projects.push(project)
+  authorGrants.push(await grant(root,project,author))
+  if(i!==29){readerGrants.push(await grant(root,project,reader));await grant(root,project,guest,'viewer')}
+  tasks.push(await pass(root.post('/api/v1/tasks',{projectId:project.id,title:`Delivery ${i+1}`,ownerId:root.id,startDate:'2026-07-06',dueDate:i===28?'2026-07-20':'2026-07-09',estimateHours:2})))
+ }
+ await pass(root.post(`/api/v1/tasks/${tasks[0].id}/projects`,{projectId:projects[1].id}))
+ const privateTask=await pass(root.post('/api/v1/tasks',{title:'Private personal delivery',dueDate:'2026-07-09'}))
+ const internal=await pass(root.post('/api/v1/tasks',{projectId:projects[0].id,title:'Internal team pricing',internalOnly:true,dueDate:'2026-07-09'}))
+ const left=await pass(root.post(`/api/v1/projects/${projects[0].id}/sections`,{name:'Creative review',mapsTo:'doing'}))
+ const right=await pass(root.post(`/api/v1/projects/${projects[1].id}/sections`,{name:'Operations queue',mapsTo:'todo'}))
+ await pass(root.post(`/api/v1/tasks/${tasks[0].id}/section`,{projectId:projects[0].id,sectionId:left.id}))
+ await pass(root.post(`/api/v1/tasks/${tasks[0].id}/section`,{projectId:projects[1].id,sectionId:right.id}))
+ const a=await pass(root.post(`/api/v1/projects/${projects[0].id}/fields`,{key:'creative_units',label:'Creative units',type:'number'}))
+ const b=await pass(root.post(`/api/v1/projects/${projects[1].id}/fields`,{key:'operations_units',label:'Operations units',type:'number'}))
+ const secret=await pass(root.post(`/api/v1/projects/${projects[29].id}/fields`,{key:'hidden_units',label:'Hidden units',type:'number'}))
+ await pass(root.post(`/api/v1/tasks/${tasks[0].id}/fields`,{projectId:projects[0].id,values:{creative_units:7}}))
+ await pass(root.post(`/api/v1/tasks/${tasks[0].id}/fields`,{projectId:projects[1].id,values:{operations_units:19}}))
+ const base=`/api/v1/teams/${team.id}`,input={name:'Due this week across the team',projectIds:projects.map(project=>project.id),mode:'table',filters:{status:[],ownerIds:[],dueFrom:'2026-07-06',dueTo:'2026-07-12'},groupBy:'owner',sort:[{column:'dueDate',direction:'asc'}],columns:['title','status','section','dueDate',`field:${a.id}`,`field:${b.id}`,`field:${secret.id}`],shared:true}
+ const saved=await pass(author.post(`${base}/work-views`,input))
+ const readTeam=(client,mode='table',group='owner')=>pass(client.get(`${base}/work-view?view=${saved.id}&mode=${mode}&groupBy=${group}&from=2026-07-06&days=7`))
+ const expected=tasks.slice(0,28).map(task=>task.id).sort()
+ for(const mode of modes){
+  const view=await readTeam(reader,mode)
+  assert.deepEqual(view.rows.map(row=>row.id).sort(),[...expected,internal.id].sort(),mode)
+  assert.equal(view.counts.tasks,29)
+  assert.equal(view.counts.estimate,56)
+  assert.deepEqual(view.config.projectIds,projects.slice(0,29).map(project=>project.id))
+  const shared=view.rows.find(row=>row.id===tasks[0].id)
+  assert.deepEqual(shared.memberships.map(home=>[home.projectId,home.section.id]),[[projects[0].id,left.id],[projects[1].id,right.id]])
+  assert.equal(shared.fields.find(field=>field.id===a.id).value,7)
+  assert.equal(shared.fields.find(field=>field.id===b.id).value,19)
+  const payload=JSON.stringify(view)
+  for(const hidden of [privateTask.id,privateTask.title,tasks[29].id,projects[29].id,projects[29].name,secret.id])assert.ok(!payload.includes(hidden),hidden)
+  if(mode==='workload'){assert.deepEqual(view.workload.taskIds.sort(),[...expected,internal.id].sort());assert.equal(view.workload.totals.taskEstimateHours,56)}
+ }
+ const limited=await readTeam(guest)
+ assert.deepEqual(limited.rows.map(row=>row.id).sort(),expected)
+ assert.equal(limited.counts.tasks,28)
+ assert.ok(!JSON.stringify(limited).includes(internal.title))
+ const grouped=await readTeam(reader,'board','membership')
+ assert.equal(grouped.counts.tasks,29)
+ assert.equal(grouped.groups.reduce((sum,group)=>sum+group.taskIds.length,0),30)
+ assert.ok(grouped.groups.every(group=>group.label.endsWith('project membership')))
+ assert.deepEqual(grouped.groups.find(group=>group.key===JSON.stringify(projects[1].id)).taskIds.sort(),[tasks[0].id,tasks[1].id].sort())
+ const row=grouped.rows.find(row=>row.id===tasks[0].id), edit={viewId:saved.id,viewRevision:saved.revision,projectId:projects[0].id,revision:row.revision,sectionId:left.id}
+ await pass(reader.post(`/api/v1/work-view-tasks/${row.id}/move`,edit))
+ await pass(reader.post(`/api/v1/work-view-tasks/${row.id}/move`,{...edit,sectionId:right.id}),409)
+ const moved=(await readTeam(reader)).rows.find(task=>task.id===row.id)
+ await pass(reader.post(`/api/v1/work-view-tasks/${row.id}/move`,{...edit,revision:moved.revision,sectionId:right.id}),400)
+ assert.equal((await task(root,row.id)).status,'doing')
+ const home=await read(root,projects[0]),other=await read(root,projects[1])
+ assert.equal(home.rows.find(task=>task.id===row.id).section.id,left.id)
+ assert.equal(other.rows.find(task=>task.id===row.id).section.id,right.id)
+ const moves=[{taskId:tasks[1].id,due:'2026-07-10'}],dateInput={viewId:saved.id,viewRevision:saved.revision,projectId:projects[1].id,moves}
+ const plan=await pass(reader.post(`/api/v1/work-view-tasks/${tasks[1].id}/date-preview`,dateInput))
+ await pass(reader.post(`/api/v1/work-view-tasks/${tasks[1].id}/date-apply`,{...dateInput,revision:plan.stamp}))
+ await pass(reader.post(`/api/v1/work-view-tasks/${tasks[1].id}/date-apply`,{...dateInput,revision:plan.stamp}),409)
+ for(const mode of ['list','board','table','calendar','timeline'])assert.equal((await readTeam(reader,mode)).rows.find(row=>row.id===tasks[1].id).dueDate,'2026-07-10')
+ let catalogue=await pass(reader.get(`${base}/work-views`))
+ await pass(reader.post(`${base}/work-view-defaults`,{revision:catalogue.defaultsRevision,scope:'personal',viewId:saved.id}))
+ catalogue=await pass(root.get(`${base}/work-views`))
+ await pass(root.post(`${base}/work-view-defaults`,{revision:catalogue.defaultsRevision,scope:'team',viewId:saved.id}))
+ await pass(reader.post(`${base}/work-view-defaults`,{revision:catalogue.defaultsRevision,scope:'team',viewId:saved.id}),409)
+ await w.restart()
+ const fresh=await w.signIn(reader.email,reader.name,reader.id)
+ assert.equal((await pass(fresh.get(`${base}/work-view`))).config.id,saved.id)
+ assert.equal((await pass(guest.get(`${base}/work-view`))).config.id,saved.id)
+ const restored=await restoreCanvasInstallation(root)
+ try {
+  const restoredCatalogue=await pass(restored.worker.owner.get(`${base}/work-views`))
+  const archived=restoredCatalogue.views.find(view=>view.id===saved.id)
+  assert.ok(!archived,'the former author has no restored team authority and does not publish a shared view')
+  const inspection=await restored.worker.sql(`SELECT shared,config FROM peg_team_work_views WHERE id='${saved.id}'`)
+  assert.ok(inspection.includes('\"shared\": 0'),'restored configuration is inactive')
+  assert.ok(inspection.includes(projects[0].id),'selected project provenance survives')
+  const defaults=await restored.worker.sql(`SELECT COUNT(*) n FROM peg_team_work_view_defaults WHERE view_id IS NOT NULL`)
+  assert.ok(defaults.includes('\"n\": 0'),'restored defaults supply no source authority')
+ } finally { await restored.stop() }
+ // Current source and recipient project authority are independently intersected on reads and writes.
+ await pass(root.delete(`/api/v1/grants/${authorGrants[1].id}`))
+ const narrowed=await readTeam(reader)
+ assert.ok(!narrowed.rows.some(row=>row.id===tasks[1].id))
+ assert.equal(narrowed.rows.find(row=>row.id===tasks[0].id).memberships.length,1)
+ assert.ok(!JSON.stringify(narrowed).includes(b.id))
+ assert.equal((await reader.post(`/api/v1/work-view-tasks/${tasks[1].id}/date-preview`,dateInput)).status,404)
+ assert.equal((await task(root,tasks[1].id)).dueDate,'2026-07-10')
+ await pass(root.delete(`/api/v1/grants/${readerGrants[0].id}`))
+ assert.ok(!(await readTeam(reader)).rows.some(row=>row.id===tasks[0].id))
+ const current=await readTeam(author),ownRow=current.rows.find(row=>row.id===tasks[2].id)
+ const changed=await pass(author.post(`/api/v1/work-views/${saved.id}`,{...input,projectIds:projects.filter((_,i)=>i!==1).map(p=>p.id),revision:saved.revision,name:'Reviewed team delivery'}))
+ await pass(author.post(`/api/v1/work-view-tasks/${ownRow.id}/edit`,{projectId:projects[2].id,viewId:saved.id,viewRevision:saved.revision,revision:ownRow.revision,title:'Stale view overwrite'}),409)
+ assert.equal((await task(root,ownRow.id)).title,'Delivery 3')
+ await pass(root.delete(`/api/v1/grants/${authorTeam.id}`))
+ assert.equal((await reader.get(`${base}/work-view?view=${saved.id}`)).status,404)
+ assert.equal((await author.post(`/api/v1/work-views/${saved.id}`,{...input,revision:changed.revision})).status,404)
+ await pass(root.delete(`/api/v1/grants/${readerTeam.id}`))
+ assert.equal((await reader.get(`${base}/work-views`)).status,404)
+ // Exact owner-reviewed erasure removes saved configuration and all defaults pointing at it.
+ await pass(root.post('/api/v1/workspaces/ws_main/people/'+author.id+'/account',{status:'inactive'}))
+ const erasure=await pass(root.post('/api/v1/data/erasure-preview',{type:'person',id:author.id}))
+ assert.deepEqual(erasure.blockers,[])
+ assert.equal(erasure.counts.peg_team_work_views,1)
+ assert.equal(erasure.counts.peg_team_work_view_defaults,2)
+ await pass(root.post('/api/v1/data/erase',{type:'person',id:author.id,token:erasure.token,confirm:true}))
+ assert.equal((await root.get(`${base}/work-view?view=${saved.id}`)).status,404)
+ assert.equal((await task(root,tasks[2].id)).title,'Delivery 3')
+ console.log('PROBE PEG-003 team scope: 30 selected projects -> 29 permitted projects, 28 due guest tasks, one multi-home identity, exact local sections and fields; edits, restart, stale and revoked reads and writes, and exact person erasure passed')
 }

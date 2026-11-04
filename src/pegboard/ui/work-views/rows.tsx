@@ -22,7 +22,7 @@ export function DateEdit({ row }: { row: WorkRow }) {
   if (!row.canEdit) return null
   const timed = row.dueDateKind === 'instant'
   return <form className="stack work-actions" method="post" action="/api/v1/schedule/preview" aria-label={`Change due date for ${row.title}`} data-date-edit>
-    <input type="hidden" name="taskId" value={row.id}/><input type="hidden" name="dateKind" value={timed ? 'instant' : 'date'}/>
+    <input type="hidden" name="projectId" value={row.homeProject.id}/><input type="hidden" name="taskId" value={row.id}/><input type="hidden" name="dateKind" value={timed ? 'instant' : 'date'}/>
     <Field label={timed ? 'Due time in UTC' : 'Due date'} name="due" type={timed ? 'datetime-local' : 'date'} value={timed ? row.dueDate!.slice(0, 16) : row.dueDate}/>
     <Submit quiet>Preview date change</Submit>
   </form>

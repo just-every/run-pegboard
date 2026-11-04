@@ -224,4 +224,110 @@ export async function workViewsJourney({w,browser,ok}) {
   assert.equal((await guest.get(`/api/v1/projects/${project.id}/work-view?view=${savedId}`)).status,404)
   await pass(owner.delete(`/api/v1/grants/${grant.id}`))
  } finally { for(const context of contexts)await context.close() }
+ await teamWorkViewsJourney({w,browser,ok})
+}
+
+async function teamWorkViewsJourney({w,browser,ok}) {
+ const pass=async(request,status=200)=>ok(await request,status),root=w.owner
+ const editor=await w.person(['synthetic-pegboard-3031','example.com'].join('@'),'Rae Regional lead')
+ const guest=await w.person(['synthetic-pegboard-3032','example.com'].join('@'),'Regional client','guest')
+ const team=await pass(root.post('/api/v1/teams',{name:'Regional campaign delivery',privacy:'private'}))
+ const teamGrant=await pass(root.post('/api/v1/grants',{objectType:'team',objectId:team.id,granteeId:editor.id,level:'viewer'}))
+ await pass(root.post('/api/v1/grants',{objectType:'team',objectId:team.id,granteeId:guest.id,level:'viewer'}))
+ const projects=[],tasks=[]
+ for(let i=0;i<30;i++){
+  const project=await pass(root.post('/api/v1/projects',{name:i===29?'Confidential expansion':`Region ${i+1}`,teamId:team.id,visibility:'private'}));projects.push(project)
+  if(i!==29)await pass(root.post('/api/v1/grants',{objectType:'project',objectId:project.id,granteeId:editor.id,level:'editor'}))
+  if(i<2)await pass(root.post('/api/v1/grants',{objectType:'project',objectId:project.id,granteeId:guest.id,level:'viewer'}))
+  tasks.push(await pass(root.post('/api/v1/tasks',{projectId:project.id,title:`Regional delivery ${i+1}`,startDate:'2026-07-06',dueDate:i===28?'2026-07-20':'2026-07-09',estimateHours:2})))
+ }
+ await pass(root.post(`/api/v1/tasks/${tasks[0].id}/projects`,{projectId:projects[1].id}))
+ const privateTask=await pass(root.post('/api/v1/tasks',{title:'Private personal negotiation',dueDate:'2026-07-09'}))
+ const section=await pass(root.post(`/api/v1/projects/${projects[0].id}/sections`,{name:'Regional review',mapsTo:'doing'}))
+ const field=await pass(root.post(`/api/v1/projects/${projects[1].id}/fields`,{key:'regional_units',label:'Regional units',type:'number'}))
+ await pass(root.post(`/api/v1/tasks/${tasks[0].id}/fields`,{projectId:projects[1].id,values:{regional_units:19}}))
+ const contexts=[]
+ const open=async client=>{const context=await browser.newContext({viewport:{width:1440,height:900}});contexts.push(context);await context.addCookies(client.cookie.split('; ').map(pair=>({name:pair.slice(0,pair.indexOf('=')),value:pair.slice(pair.indexOf('=')+1),url:w.origin})));return {context,page:await context.newPage()}}
+ const a=await open(root),b=await open(editor),g=await open(guest),base=`${w.origin}/app/teams/${team.id}`
+ const row=(page,id)=>page.locator(`[data-work-row="${id}"]`)
+ const ids=page=>page.locator('[data-work-row]').evaluateAll(rows=>rows.map(row=>row.dataset.workRow).sort())
+ const proof=async(name,page)=>{
+  if(!process.env.PEGBOARD_PROOF_DIR)return
+  await mkdir(process.env.PEGBOARD_PROOF_DIR,{recursive:true})
+  for(const [width,height] of [[1440,900],[390,844]]){await page.setViewportSize({width,height});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),name+' overflow');await page.screenshot({path:join(process.env.PEGBOARD_PROOF_DIR,`team-work-views-${name}-${width}.png`),fullPage:true})}
+  await page.setViewportSize({width:1440,height:900})
+ }
+ try{
+  await a.page.goto(base)
+  await a.page.getByRole('link',{name:'Work views',exact:true}).focus();await a.page.keyboard.press('Enter')
+  await a.page.getByRole('link',{name:'Saved view settings'}).focus();await a.page.keyboard.press('Enter')
+  const settings=a.page.getByRole('form',{name:'Save view configuration'})
+  await settings.getByLabel('View name',{exact:true}).fill('Team due this week')
+  for(const project of projects)await settings.getByLabel(project.name,{exact:true}).check()
+  await settings.getByLabel('Initial view').selectOption('table')
+  await settings.getByLabel('Group by',{exact:true}).selectOption('owner')
+  await settings.getByLabel('Sort by',{exact:true}).selectOption('dueDate')
+  await settings.getByLabel('Due from').fill('2026-07-06');await settings.getByLabel('Due through').fill('2026-07-12')
+  await settings.getByLabel('Regional units',{exact:true}).check()
+  await settings.getByLabel('Share configuration with current team readers').check()
+  await proof('selection',a.page)
+  await settings.getByRole('button',{name:'Save view',exact:true}).focus();await a.page.keyboard.press('Enter')
+  await a.page.waitForURL(/savedView=view_/)
+  const savedId=new URL(a.page.url()).searchParams.get('savedView')
+  const defaults=a.page.getByRole('form',{name:'Set team default'})
+  await defaults.getByLabel('Team default view').selectOption(savedId);await defaults.getByRole('button',{name:'Set team default'}).click()
+  const expected=tasks.slice(0,28).map(task=>task.id).sort()
+  for(const mode of ['list','board','table','calendar','timeline']){
+   await b.page.goto(`${base}/views?savedView=${savedId}&mode=${mode}`)
+   assert.deepEqual(await ids(b.page),expected,mode)
+   await expect(b.page.locator('[data-task-count]')).toContainText('28 permitted tasks')
+   const html=await b.page.content()
+   for(const hidden of [projects[29].id,projects[29].name,tasks[29].id,privateTask.id,privateTask.title])assert.ok(!html.includes(hidden),mode+': '+hidden)
+   if(mode==='table')await expect(row(b.page,tasks[0].id).locator('[data-column="field:'+field.id+'"]')).toContainText('19')
+   await proof(mode,b.page)
+  }
+  await b.page.goto(`${base}/views?savedView=${savedId}&mode=board&groupBy=membership`)
+  const grouped=await ids(b.page)
+  assert.equal(grouped.length,29);assert.equal(grouped.filter(id=>id===tasks[0].id).length,2)
+  await expect(b.page.locator('[data-task-count]')).toContainText('28 permitted tasks')
+  await expect(b.page.getByRole('heading',{name:'Region 2 — project membership',exact:true})).toBeVisible()
+  await proof('membership',b.page)
+  await b.page.goto(`${base}/views?savedView=${savedId}&mode=board`)
+  await a.page.goto(`${base}/views?savedView=${savedId}&mode=table`)
+  let reloads=0;a.page.on('framenavigated',frame=>{if(frame===a.page.mainFrame())reloads++})
+  const move=row(b.page,tasks[0].id).getByRole('form',{name:'Move Regional delivery 1'})
+  await move.getByLabel('Move to section').selectOption(section.id)
+  await move.getByRole('button',{name:'Move card'}).focus();await b.page.keyboard.press('Enter')
+  await expect(row(a.page,tasks[0].id).locator('[data-summary]')).toContainText('doing')
+  const dates=row(a.page,tasks[1].id).getByRole('form',{name:'Change due date for Regional delivery 2'})
+  await dates.getByLabel('Due date',{exact:true}).fill('2026-07-10');await dates.getByRole('button',{name:'Preview date change'}).click()
+  await expect(a.page.locator('[data-date-preview]')).toContainText('2026-07-10')
+  await proof('date-review',a.page)
+  await a.page.getByRole('button',{name:'Apply this change set'}).focus();await a.page.keyboard.press('Enter')
+  await expect(row(b.page,tasks[1].id).locator('[data-summary]')).toContainText('2026-07-10')
+  assert.equal(reloads,0,'team edits paint in the other open view without reload')
+  for(const project of projects.slice(0,2)){
+   const home=await pass(root.get(`/api/v1/projects/${project.id}/work-view`))
+   assert.equal(home.rows.filter(row=>row.id===tasks[0].id).length,1)
+   assert.equal(home.rows.find(row=>row.id===tasks[0].id).status,'doing')
+  }
+  await proof('committed-board',b.page)
+  await b.page.goto(`${base}/settings/views`)
+  const personal=b.page.getByRole('form',{name:'Set personal default'})
+  await personal.getByLabel('My default view').selectOption(savedId);await personal.getByRole('button',{name:'Set personal default'}).click()
+  const fresh=await w.signIn(editor.email,editor.name,editor.id),restored=await open(fresh)
+  await restored.page.goto(`${base}/views`)
+  await expect(restored.page.getByLabel('Saved view',{exact:true})).toHaveValue(savedId)
+  assert.deepEqual(await ids(restored.page),expected)
+  await g.page.goto(`${base}/views`)
+  assert.deepEqual(await ids(g.page),tasks.slice(0,2).map(task=>task.id).sort())
+  const guestHtml=await g.page.content()
+  for(const hidden of [projects[2].id,projects[2].name,projects[29].name,privateTask.title])assert.ok(!guestHtml.includes(hidden))
+  await proof('shared-guest',g.page)
+  await pass(root.delete(`/api/v1/grants/${teamGrant.id}`))
+  await expect(restored.page.locator('#main')).toContainText('This view is no longer available')
+  assert.equal(await restored.page.locator('[data-work-row]').count(),0)
+  await proof('revoked',restored.page)
+  console.log('PROBE PEG-003 browser: team Settings selects 30 projects -> five views show 28 unique permitted due tasks; labeled membership grouping shows 29 placements, keyboard card and date review updates the same home records and other browser without reload; defaults, shared guest and revoked team flows passed')
+ }finally{for(const context of contexts)await context.close()}
 }

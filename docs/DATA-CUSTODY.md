@@ -203,3 +203,24 @@ these records as history, validate their version relationships and restore no
 source grants or sessions. Later erasure journals prevent older archive content
 from returning. This is database custody of the existing attachment door;
 large-file, native-device, resumable-upload and R2 qualification remain unproved.
+
+## Team saved work views
+
+A team saved view stores an explicit set of project identities, a name, filters,
+grouping, sorting and columns. It stores no task snapshot and creates no grants.
+Every read intersects the author's and recipient's current team, project, task
+and field permissions. Hidden projects supply no names, counts, memberships or
+field definitions. Ordinary rows deduplicate immutable task identities; the
+explicit project-membership grouping labels its repeated placements and keeps
+counts and workload deduplicated. Each permitted membership retains its local
+section and field identities. Reviewed card and date edits use the selected
+home project's existing task and schedule services.
+
+Exact owner-reviewed person erasure includes authored team views and personal
+or team defaults that reference them. Legal holds and revision checks still
+apply, and shared tasks survive configuration removal. Native archives retain
+selected project provenance and configuration as inactive personal history:
+shared publication is cleared, saved defaults are cleared, and source grants
+remain revoked. Restoring a view never restores authority or changes work.
+Portfolio and workspace saved scopes and fixed-device timing qualification
+remain outside this implementation.

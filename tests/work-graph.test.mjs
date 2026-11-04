@@ -26,7 +26,7 @@ import { startEngineeringServices, vectorTodo, vectorDone } from './support/engi
 import { startTimeServices } from './support/time-services.mjs'
 import { restoreCanvasInstallation } from './support/canvas-restore.mjs'
 import {registerConversionTests} from './scenarios/conversions.mjs'
-import {registerWorkViewTests} from './scenarios/work-views.mjs'
+import {registerWorkViewTests,teamWorkViewsScenario} from './scenarios/work-views.mjs'
 
 let w, owner, mia, gus, nina
 const ok = async (promise, status = 200) => { const r = await promise; assert.equal(r.status, status, JSON.stringify(r.body)); return r.body }
@@ -79,6 +79,7 @@ describe('Work views through the native graph', {concurrency:false}, () => {
  before(async () => { worker = await startWorker() }, {timeout:120000})
  after(() => worker?.stop())
  registerWorkViewTests({test:it,context:()=>({w:worker})})
+ it('reconciles thirty selected team projects, membership mappings, reviewed edits and current custody',async()=>teamWorkViewsScenario(worker))
 })
 
 describe('Search and reviewed bulk selection',{concurrency:false},()=>{

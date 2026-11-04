@@ -6,6 +6,7 @@ export type Mode = typeof modes[number]
 export const nativeColumns = ['title', 'status', 'owner', 'dueDate', 'startDate', 'estimate', 'section'] as const
 export interface ViewConfig {
   mode: Mode
+  projectIds?: string[]
   filters: { status: string[]; ownerIds: string[]; dueFrom: string | null; dueTo: string | null }
   groupBy: string | null
   sort: { column: string; direction: 'asc' | 'desc' }[]
@@ -14,6 +15,7 @@ export interface ViewConfig {
 export const initialConfig = (): ViewConfig => ({ mode: 'list', filters: { status: [], ownerIds: [], dueFrom: null, dueTo: null }, groupBy: 'section', sort: [], columns: [...nativeColumns] })
 export const fieldColumn = (field: Pick<FieldRow, 'id'>) => `field:${field.id}`
 export const columnSet = (fields: FieldRow[]) => new Set<string>([...nativeColumns, ...fields.map(fieldColumn)])
+export const projectSelection = (value: unknown) => strings(value, 'view_projects', 100)
 export function modeOf(value: unknown): Mode {
   if (!modes.includes(value as Mode)) throw invalid('view_mode')
   return value as Mode

@@ -45,7 +45,7 @@ if (root) {
       const focused = document.activeElement
       let conflict = false
       for (const row of current.querySelectorAll('[data-work-row][data-dirty="1"]')) {
-        const replacement = [...fresh.querySelectorAll('[data-work-row]')].find(candidate => candidate.dataset.workRow === row.dataset.workRow)
+        const replacement = [...fresh.querySelectorAll('[data-work-row]')].find(candidate => candidate.dataset.workRow === row.dataset.workRow && candidate.dataset.homeProject === row.dataset.homeProject)
         if (!replacement) continue
         const changed = replacement.dataset.revision !== row.dataset.revision
         let retained = false
@@ -112,13 +112,15 @@ if (root) {
     const button = form.querySelector('button[type="submit"]'), row = form.closest('[data-work-row]')
     const input = Object.fromEntries(new FormData(form))
     delete input._next
+    if (root.dataset.scope === 'team') { input.viewId = root.dataset.savedView; input.viewRevision = root.dataset.viewRevision }
     writing = true; button.disabled = true
     try {
       if (form.matches('[data-date-edit]')) {
         let due = input.due
         if (input.dateKind === 'instant' && due) due = new Date(due + 'Z').toISOString().replace('.000Z', 'Z')
         const moves = [{ taskId: input.taskId, due: due || null }]
-        const plan = await post('/api/v1/schedule/preview', { moves })
+        const viewContext = root.dataset.scope === 'team' ? {viewId: input.viewId, viewRevision: input.viewRevision, projectId: input.projectId} : {}
+        const plan = await post(root.dataset.scope === 'team' ? `/api/v1/work-view-tasks/${input.taskId}/date-preview` : '/api/v1/schedule/preview', { moves, ...viewContext })
         preview.replaceChildren()
         const title = document.createElement('h2'); title.textContent = 'Review date changes'; preview.append(title)
         preview.append(showShifts(plan.shifts))
@@ -126,8 +128,8 @@ if (root) {
         note.textContent = plan.blocked ? 'This change cannot be applied because it would move completed work.' : plan.waits ? 'Some affected work needs its authorized approver. No dates will change now.' : 'Apply confirms this exact set. Current permissions and record versions are checked again.'
         preview.append(note)
         if (!plan.blocked && plan.shifts.length) {
-          const apply = document.createElement('form'); apply.dataset.dateApply = '1'; apply.action = '/api/v1/schedule/apply'; apply.setAttribute('aria-label', 'Apply reviewed date')
-          for (const [name, value] of Object.entries({ moves: JSON.stringify(moves), revision: plan.stamp })) { const field = document.createElement('input'); field.type = 'hidden'; field.name = name; field.value = value; apply.append(field) }
+          const apply = document.createElement('form'); apply.dataset.dateApply = '1'; apply.action = root.dataset.scope === 'team' ? `/api/v1/work-view-tasks/${input.taskId}/date-apply` : '/api/v1/schedule/apply'; apply.setAttribute('aria-label', 'Apply reviewed date')
+          for (const [name, value] of Object.entries({ moves: JSON.stringify(moves), revision: plan.stamp, ...viewContext })) { const field = document.createElement('input'); field.type = 'hidden'; field.name = name; field.value = value; apply.append(field) }
           const commit = document.createElement('button'); commit.type = 'submit'; commit.className = 'button primary'; commit.textContent = plan.waits ? 'Submit for authorized approval' : 'Apply this change set'; apply.append(commit); preview.append(apply)
         }
         const cancel = document.createElement('button'); cancel.type = 'button'; cancel.className = 'button quiet'; cancel.dataset.cancelDate = '1'; cancel.textContent = 'Cancel date change'; preview.append(cancel)

@@ -53,6 +53,8 @@ export async function canonicalRows(db: D1Database, actor: Actor, owner: Actor, 
       dueDateKind: task.due_date === null ? null : task.due_date.length === 10 ? 'date' : 'instant',
       startDateKind: task.start_date === null ? null : task.start_date.length === 10 ? 'date' : 'instant', estimate: task.estimate_hours,
       section: section ? { id: section.id, name: section.name, mapsTo: section.maps_to } : null,
+      homeProject: { id: projectId, sections: sections.map(section => ({ id: section.id, name: section.name, mapsTo: section.maps_to })) },
+      memberships: [] as { projectId: string; name: string; section: { id: string; name: string; mapsTo: SectionRow['maps_to'] } | null; sections: {id: string; name: string; mapsTo: SectionRow['maps_to']}[]; canEdit: boolean }[],
       revision: await taskRevision(db, task), canEdit: !!context?.capabilities.has('edit'), fields: values })
   }
   return rows
@@ -60,6 +62,7 @@ export async function canonicalRows(db: D1Database, actor: Actor, owner: Actor, 
 export type WorkRow = Awaited<ReturnType<typeof canonicalRows>>[number]
 export function columnValue(row: WorkRow, column: string): unknown {
   if (column.startsWith('field:')) { const field = row.fields.find(field => field.id === column.slice(6)); return field?.error ?? field?.value ?? null }
+  if (column === 'membership') return (row.memberships.find(member => member.projectId === row.homeProject.id)?.name ?? 'Project') + ' — project membership'
   if (column === 'owner') return row.owner.name
   if (column === 'section') return row.section?.name ?? null
   return row[column as keyof WorkRow]
@@ -76,4 +79,10 @@ export function sortRows(rows: WorkRow[], config: ViewConfig) {
     }
     return 0
   })
+}
+
+/** Repetition is opt-in and visibly labeled; ordinary representations retain one immutable task identity. */
+export function displayedRows(rows: WorkRow[], grouping: string | null): WorkRow[] {
+  return grouping !== 'membership' ? rows : rows.flatMap(row => row.memberships.map(member => ({ ...row,
+    section: member.section, homeProject: { id: member.projectId, sections: member.sections }, canEdit: member.canEdit })))
 }

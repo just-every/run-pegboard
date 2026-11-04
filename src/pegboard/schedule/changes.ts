@@ -7,7 +7,7 @@ import { auditStatement } from '../authorization/audit'
 import { taskAccess } from '../authorization/effective'
 import { openTask } from '../tasks/access'
 import { isAdministrator } from '../authorization/levels'
-import { guarded, revision } from '../decisions/revision'
+import { guarded, revision, type Revision } from '../decisions/revision'
 import { historyStatement } from '../tasks/history'
 import { workspaceRole, type Actor } from '../workspace/people'
 import type { TaskRow } from '../model'
@@ -32,8 +32,8 @@ const execute = (db: D1Database, plan: Plan, who: string, setId: string, extra: 
 const workspaceOf = async (db: D1Database, plan: Plan) => (await first<TaskRow>(db, 'SELECT * FROM peg_tasks WHERE id=?', plan.moves[0].taskId))!.workspace_id
 
 /** Confirm a previewed change set. `revision` is the preview's own; an approver is named for a set that must wait. */
-export async function applyChange(db: D1Database, actor: Actor, input: { moves: unknown; revision: unknown; approverId?: unknown }) {
-  const moves = moveInput(input.moves), rev = await revision(db), plan = await planChange(db, actor, moves)
+export async function applyChange(db: D1Database, actor: Actor, input: { moves: unknown; revision: unknown; approverId?: unknown }, authority?: Revision) {
+  const moves = moveInput(input.moves), rev = authority ?? await revision(db), plan = await planChange(db, actor, moves)
   if (typeof input.revision !== 'string' || input.revision !== plan.stamp) throw conflict('stale_plan')
   if (!plan.editable) throw forbidden('edit')
   if (plan.blocked) throw conflict(plan.blocked)

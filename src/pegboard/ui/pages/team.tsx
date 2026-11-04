@@ -8,7 +8,7 @@ export function TeamPage({ viewer, team, people }: { viewer: Viewer; team: TeamD
   const can = (capability: string) => team.capabilities.includes(capability), here = `/app/teams/${team.id}`
   return <Shell viewer={viewer} current="/app/teams" title={team.name} chip={levelLabel(team.level).toUpperCase()} facts={[privacyLabel[team.privacy], `New members join as ${levelLabel(team.defaultLevel)}`, `${team.members.length} members`]}
     crumbs={[{ label: 'Teams', href: '/app/teams' }, { label: team.name, href: here, current: true }]}>
-    <Card title="About"><p>{team.description || 'No description yet.'}</p>
+    <Card title="About"><p><a href={`${here}/views`}>Work views</a></p><p>{team.description || 'No description yet.'}</p>
       <ul className="rows">{team.paths.map((path, i) => <li key={i}><span className="grow">{path.via}</span><span className="tagline">{levelLabel(path.level)}</span></li>)}</ul></Card>
     <Card title="Members"><ul className="rows">{team.members.map(member => <li key={member.grantId}><span className="grow">{member.name}</span><span className="tagline">{levelLabel(member.level)}</span><small>{member.source === 'join' ? 'Joined' : member.source === 'request' ? 'Approved request' : 'Added'}</small>
       {can('manage_shares') && <form method="post" action={`/api/v1/grants/${member.grantId}/revoke`}><input type="hidden" name="_next" value={here} /><button className="button quiet" type="submit">Remove</button></form>}</li>)}</ul>

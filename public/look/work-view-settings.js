@@ -6,7 +6,7 @@ if (form) form.addEventListener('submit', async event => {
   const sortColumn = fields.get('sortColumn')
   const input = { name: fields.get('name'), mode: fields.get('mode'), groupBy: fields.get('groupBy') || null,
     filters: { status: fields.getAll('statuses[]'), ownerIds: fields.getAll('owners[]'), dueFrom: fields.get('dueFrom') || null, dueTo: fields.get('dueTo') || null },
-    columns: fields.getAll('columns[]'), sort: sortColumn ? [{ column: sortColumn, direction: fields.get('sortDirection') }] : [], shared: fields.has('shared'), revision: fields.get('revision') }
+    columns: fields.getAll('columns[]'), sort: sortColumn ? [{ column: sortColumn, direction: fields.get('sortDirection') }] : [], shared: fields.has('shared'), revision: fields.get('revision'), ...(form.querySelector('[name="projects[]"]') ? {projectIds: fields.getAll('projects[]')} : {}) }
   try {
     const response = await fetch(form.action, { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify(input) })
     const result = await response.json()

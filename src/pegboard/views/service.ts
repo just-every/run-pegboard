@@ -4,8 +4,9 @@ import type { Actor } from '../workspace/people'
 import { workspaceCalendar } from '../schedule/availability'
 import { columnSet, initialConfig, modeOf, pruneConfig } from './config'
 import { availableColumns, listWorkViews, loadView, presentView, safeDefinitions, stableRead, viewContext } from './store'
-import { canonicalRows, columnValue, filteredTasks, scopedTasks, sortRows } from './rows'
+import { canonicalRows, columnValue, filteredTasks, scopedTasks, sortRows, type WorkRow } from './rows'
 import { projectWorkload } from './workload'
+import { openViewScope, scopeId } from './scope'
 
 export interface WorkViewOptions { viewId?: string; mode?: string; status?: string; groupBy?: string; limit?: number | string; offset?: number | string; from?: string; days?: number | string }
 const bounded = (input: number | string | undefined, fallback: number, max: number, min: number) => {
@@ -13,18 +14,21 @@ const bounded = (input: number | string | undefined, fallback: number, max: numb
   if (!Number.isInteger(value) || value < min || value > max) throw invalid('view_page')
   return value
 }
-/** Every poll is a new permission-checked replacement, never an old cached snapshot or delta. */
+/** Every poll rebuilds one permitted union, including current source-author and team authority. */
 export async function workView(db: D1Database, actor: Actor, projectId: string, options: WorkViewOptions = {}) {
   return stableRead(db, async fence => {
-    const { project, effective } = await openProject(db, actor, projectId)
+    const { project, effective, scope } = await openViewScope(db, actor, projectId)
     const catalogue = await listWorkViews(db, actor, projectId)
     const selected = options.viewId || catalogue.personalDefaultId || catalogue.teamDefaultId
     const saved = selected ? await loadView(db, selected) : null
-    if (saved && saved.project_id !== projectId) throw notFound()
+    if (saved && scopeId(saved) !== projectId) throw notFound()
     const context = saved ? await viewContext(db, actor, saved) : null
     const owner = context?.owner ?? actor
-    const fields = context?.fields ?? (await fieldLibrary(db, projectId)).filter(field => fieldReadable(field, effective))
-    const allowed = columnSet(fields), original = context?.config ?? initialConfig()
+    const projects = context?.projects ?? (scope === 'project' ? [{ ...await openProject(db, actor, projectId), fields: (await fieldLibrary(db, projectId)).filter(field => fieldReadable(field, effective)) }] : [])
+    const fields = [...new Map(projects.flatMap(entry => entry.fields).map(field => [field.id, field])).values()]
+    const allowed = columnSet(fields)
+    if (scope === 'team') allowed.add('membership')
+    const original = context?.config ?? { ...initialConfig(), ...(scope === 'team' ? { projectIds: [] } : {}) }
     let config = pruneConfig(original, allowed)
     if (options.mode !== undefined) config = { ...config, mode: modeOf(options.mode) }
     if (options.status !== undefined) {
@@ -32,22 +36,41 @@ export async function workView(db: D1Database, actor: Actor, projectId: string, 
       config = { ...config, filters: { ...config.filters, status: options.status === 'all' ? [] : [options.status] } }
     }
     if (options.groupBy !== undefined) config = { ...config, groupBy: allowed.has(options.groupBy) ? options.groupBy : null }
-    const tasks = await scopedTasks(db, actor, owner, projectId), timezone = (await workspaceCalendar(db, project.workspace_id)).zone
-    const filtered = filteredTasks(tasks, config, timezone), sections = await listSections(db, projectId)
-    const rows = sortRows(await canonicalRows(db, actor, owner, projectId, filtered, fields, sections), config)
+    const timezone = (await workspaceCalendar(db, project.workspace_id)).zone
+    const union = new Map<string, WorkRow>(), tasks = new Map<string, Awaited<ReturnType<typeof scopedTasks>>[number]>()
+    let sections: Awaited<ReturnType<typeof listSections>> = []
+    // A deterministic permitted home supplies ordinary editing context; memberships retain every local mapping.
+    for (const entry of projects) {
+      const local = await scopedTasks(db, actor, owner, entry.project.id), localSections = await listSections(db, entry.project.id)
+      if (scope === 'project') sections = localSections
+      for (const task of local) tasks.set(task.id, task)
+      const rows = await canonicalRows(db, actor, owner, entry.project.id, filteredTasks(local, config, timezone), entry.fields, localSections)
+      for (const row of rows) {
+        const membership = { projectId: entry.project.id, name: entry.project.name, section: row.section, sections: row.homeProject.sections, canEdit: row.canEdit }
+        const existing = union.get(row.id)
+        if (existing) {
+          existing.memberships.push(membership)
+          existing.fields = [...new Map([...existing.fields, ...row.fields].map(field => [field.id, field])).values()]
+        } else union.set(row.id, { ...row, memberships: [membership] })
+      }
+    }
+    const rows = sortRows([...union.values()], config)
     const limit = bounded(options.limit, 200, 500, 1), offset = bounded(options.offset, 0, 100000, 0), page = rows.slice(offset, offset + limit)
-    // Owner IDs from inaccessible rows are not part of a shared recipient's configuration.
-    config = pruneConfig(config, allowed, owner.id === actor.id ? undefined : new Set(tasks.map(task => task.owner_id)))
+    config = pruneConfig(config, allowed, owner.id === actor.id ? undefined : new Set([...tasks.values()].map(task => task.owner_id)))
     const groups = new Map<string, { key: string; label: string; taskIds: string[] }>()
     for (const row of page) {
-      const value = config.groupBy ? columnValue(row, config.groupBy) : null, key = JSON.stringify(value)
-      const group = groups.get(key) ?? { key, label: value === null ? 'Ungrouped' : String(value), taskIds: [] }
-      group.taskIds.push(row.id); groups.set(key, group)
+      const memberships = config.groupBy === 'membership' ? row.memberships : [null]
+      for (const membership of memberships) {
+        const value = membership ? membership.projectId : config.groupBy ? columnValue(row, config.groupBy) : null, key = JSON.stringify(value)
+        const group = groups.get(key) ?? { key, label: membership ? `${membership.name} — project membership` : value === null ? 'Ungrouped' : String(value), taskIds: [] }
+        group.taskIds.push(row.id); groups.set(key, group)
+      }
     }
+    const filtered = [...tasks.values()].filter(task => union.has(task.id))
     const workload = config.mode === 'workload' ? await projectWorkload(db, actor, project.workspace_id, filtered, options) : null
-    return { project: { id: project.id, name: project.name, timezone, canEdit: effective.capabilities.has('edit') },
+    return { scope, project: { id: project.id, name: project.name, timezone, canEdit: effective.capabilities.has('edit') },
       config: saved ? presentView(saved, config, actor) : { id: null, name: 'Current view', revision: null, shared: false, canEdit: true, ...config },
-      rows: page, fields: safeDefinitions(fields), availableColumns: availableColumns(fields),
+      rows: page, fields: safeDefinitions(fields), availableColumns: [...availableColumns(fields), ...(scope === 'team' ? [{ id: 'membership', label: 'Project memberships (tasks repeat)' }] : [])],
       sections: sections.map(section => ({ id: section.id, name: section.name, mapsTo: section.maps_to })), groups: [...groups.values()],
       counts: { tasks: rows.length, done: rows.filter(row => row.status === 'done').length, estimate: rows.reduce((sum, row) => sum + row.estimate, 0) },
       pagination: { limit, offset, total: rows.length, nextOffset: offset + limit < rows.length ? offset + limit : null },
