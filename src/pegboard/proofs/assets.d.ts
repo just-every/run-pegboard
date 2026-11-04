@@ -1,4 +1,3 @@
-declare module '*?url' {
-  const url:string
-  export default url
+declare module '*pdf-assets.mjs' {
+  export function proofPdfAssets(): import('vite').Plugin
 }

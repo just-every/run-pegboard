@@ -39,8 +39,7 @@ import {routeFor,routeView,reviewLink,previewRoute} from '../approvals/routing'
 import {proofView,internalProof} from '../records/custody'
 import {feedbackView} from '../proofs/feedback'
 import {ProofReviewPage,ProofListPage} from './pages/proof-review'
-import pdfModule from 'pdfjs-dist/build/pdf.mjs?url'
-import pdfWorker from 'pdfjs-dist/build/pdf.worker.mjs?url'
+const pdfModule='/proof/pdf.mjs',pdfWorker='/proof/pdf.worker.mjs'
 import {pendingRuleSchedulePreview} from '../bundles/pending-schedule'
 import {availabilityView} from '../schedule/availability'
 import {AvailabilityPage} from './pages/availability'
@@ -225,7 +224,7 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
       const task=await viewTask(db,actor,id),role=await workspaceRole(db,actor.id,(await openTask(db,actor,task.id)).task.workspace_id)
       if(!role||role==='guest'||role==='agent')throw new PegError(404,'not_found')
       const rows=await all<{id:string}>(db,'SELECT id FROM peg_proofs WHERE task_id=?',task.id),proofs=[]
-      for(const row of rows)proofs.push(await internalProof(db,actor,row.id))
+      for(const row of rows){const proof=await internalProof(db,actor,row.id);if(proof.versions.length)proofs.push(proof)}
       return page('Proof reviews',h(ProofListPage,{viewer,task,proofs,canEdit:task.capabilities.includes('edit')}))
     }
     if(section==='settings'&&id==='analytics'&&tail&&segments.length===4) return page('Analyst report',h(AnalystReportPage,{viewer,keyId:tail,workspace,report:await readReport(db,await ownKey(db,actor,workspace,tail),url.searchParams.get('snapshot')??'')}))

@@ -62,7 +62,7 @@ export function ProofListPage({viewer,task,proofs,canEdit}:{viewer:Viewer;task:{
    {canEdit&&<Form action={'/api/v1/tasks/'+task.id+'/proofs'} next={here} label="Create proof"><Pick label="File to review" name="attachmentId" options={task.attachments.map(a=>({value:a.id,label:a.name}))}/><Submit quiet>Create proof</Submit></Form>}
    {proofs.map(v=><section key={v.proof.id}>
      <p><a href={'/app/proof-viewer/'+v.proof.id}>Review PDF versions</a>{canEdit&&<> · <a href={'/app/approval-routing/'+v.proof.id+'?kind=proof'}>Route proof for review</a></>}</p>
-     {canEdit&&<Form action={'/api/v1/proofs/'+v.proof.id+'/versions'} next={here} label="Add proof version"><input type="hidden" name="currentVersion" value={v.proof.current_version??''}/><Pick label="Replacement file" name="attachmentId" options={task.attachments.map(a=>({value:a.id,label:a.name}))}/><Submit quiet>Add reviewed version</Submit></Form>}
+     {canEdit&&v.versions.some(version=>version.id===v.proof.current_version)&&<Form action={'/api/v1/proofs/'+v.proof.id+'/versions'} next={here} label="Add proof version"><input type="hidden" name="currentVersion" value={v.proof.current_version??''}/><Pick label="Replacement file" name="attachmentId" options={task.attachments.map(a=>({value:a.id,label:a.name}))}/><Submit quiet>Add reviewed version</Submit></Form>}
    </section>)}
  </Card></Shell>
 }

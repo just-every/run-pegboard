@@ -29,7 +29,7 @@ export async function feedbackView(db:D1Database,actor:Actor,id:string,left?:str
   const history=await all<History>(db,`SELECT * FROM peg_proof_feedback_history WHERE proof_id=? AND version_id IN (${placeholders(selected)}) ORDER BY revision,id`,id,...selected)
   const names=Object.fromEntries(await displayNames(db,[...feedback.map(f=>f.author_id),...history.map(h=>h.actor_id)]))
   const tokens=Object.fromEntries(await Promise.all(documents.map(async d=>[d.id,await digest([actor.id,rev,context.proof,[d],feedback.filter(f=>f.version_id===d.id)])])))
-  return {id,taskId:context.task.id,title:context.task.title,currentVersion:context.proof.current_version,
+  return {id,taskId:context.task.id,title:context.task.title,currentVersion:context.versions.some(v=>v.id===context.proof.current_version)?context.proof.current_version:null,
     versions:context.versions.filter(v=>v.contentType==='application/pdf'),documents,
     feedback:feedback.map(({operation_key,...f})=>({...f,canEdit:f.author_id===actor.id&&documents.some(d=>d.id===f.version_id&&d.canComment)})),history,names,
     token:await digest([actor.id,rev,context.proof,documents,feedback]),tokens,rev}
@@ -49,7 +49,7 @@ export async function createFeedback(db:D1Database,actor:Actor,id:string,input:R
   if(input.token!==view.token)throw conflict('stale_feedback')
   const feedbackId=newId('feedback'),at=now()
   await guarded(db,view.rev,[bound(db,'INSERT INTO peg_proof_feedback VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',[feedbackId,id,versionId,document.attachment_id,document.digest,page,x,y,actor.id,body,'open',1,key,at,at]),
-    bound(db,'INSERT INTO peg_proof_feedback_history VALUES(?,?,?,?,?,?,?,?,?,?)',[newId('feedbackevent'),feedbackId,id,versionId,actor.id,body,'open',1,at]),
+    bound(db,'INSERT INTO peg_proof_feedback_history VALUES(?,?,?,?,?,?,?,?,?)',[newId('feedbackevent'),feedbackId,id,versionId,actor.id,body,'open',1,at]),
     permanentEvent(db,{workspace:(await internalProof(db,actor,id)).task.workspace_id,actor:actor.id,action:'proof.feedback_created',type:'proof',id,metadata:{id:feedbackId,sourceId:versionId,version:1}})])
   return {id:feedbackId,versionId,replayed:false}
 }
@@ -62,7 +62,7 @@ export async function updateFeedback(db:D1Database,actor:Actor,id:string,feedbac
   if(Number(input.revision)!==pin.revision||input.token!==view.token)throw conflict('stale_feedback')
   const next=pin.revision+1,at=now()
   await guarded(db,view.rev,[bound(db,'UPDATE peg_proof_feedback SET body=?,state=?,revision=?,updated_at=? WHERE id=?',[body,state,next,at,pin.id]),
-    bound(db,'INSERT INTO peg_proof_feedback_history VALUES(?,?,?,?,?,?,?,?,?,?)',[newId('feedbackevent'),pin.id,id,pin.version_id,actor.id,body,state,next,at]),
+    bound(db,'INSERT INTO peg_proof_feedback_history VALUES(?,?,?,?,?,?,?,?,?)',[newId('feedbackevent'),pin.id,id,pin.version_id,actor.id,body,state,next,at]),
     permanentEvent(db,{workspace:(await internalProof(db,actor,id)).task.workspace_id,actor:actor.id,action:'proof.feedback_changed',type:'proof',id,metadata:{id:pin.id,sourceId:pin.version_id,version:next}})])
   return {id:pin.id,versionId:pin.version_id,revision:next,state}
 }
