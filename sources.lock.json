@@ -4371,7 +4371,7 @@
       "executable": false
     },
     "tests/journeys/pdf-feedback.mjs": {
-      "sha256": "9e027b6f6e47f4ba811319aefb2b311dd7a9b8289157439d541d77cfced3bdf3",
+      "sha256": "026bbebac2843591224e4f5ed246d70bdf7f2e9d0328c83ebf2217c547e44630",
       "executable": false
     },
     "tests/journeys/planning-canvas.mjs": {
@@ -4483,7 +4483,7 @@
       "executable": false
     },
     "tests/scenarios/pdf-feedback.mjs": {
-      "sha256": "901c81413d8fc98ff42b4fc5a43c71ba2b1d807c02cd8e400455320914787a79",
+      "sha256": "2978b3ab5068c6f0cdf3f920b5bc3897474e1e0aaf1c2727a3d4e9e13b10d90c",
       "executable": false
     },
     "tests/scenarios/portfolio-capacity.mjs": {
