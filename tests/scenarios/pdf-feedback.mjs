@@ -72,8 +72,10 @@ export async function pdfFeedbackScenario(w){
  current=await f.view();assert.equal(current.history.length,3);assert.equal(current.feedback[0].revision,3);assert.equal(current.feedback[0].state,'open')
  const approve=await pass(owner.get(api+'/decision-preview'))
  await pass(owner.post(api+'/decisions',{token:approve.token,versionId:two.versionId,action:'approve',reason:'Independent version review'}))
- const stale=await f.view(),three=await f.upload('v3'),v3=await pass(owner.post(api+'/versions',{attachmentId:three.file.id,currentVersion:two.versionId}))
+ const stale=await f.view(),three=await f.upload('v3',f.hidden.id),v3=await pass(owner.post(api+'/versions',{attachmentId:three.file.id,currentVersion:two.versionId}))
  await pass(writer.post(api+'/feedback',{...first.input,key:'synthetic-pegboard-stale',token:stale.token}),409)
+ const limited=await f.view(reader);assert.equal(limited.currentVersion,null);assert.deepEqual(limited.versions.map(v=>v.id),[two.versionId]);assert.ok(!JSON.stringify(limited).includes(v3.versionId))
+ await pass(reader.get(api+'/review?version='+two.versionId+'&compare='+v3.versionId),404)
  const latest=await pass(writer.get(api+'/review'));assert.equal(latest.currentVersion,v3.versionId);assert.deepEqual(latest.feedback,[])
  const old=await f.view();assert.equal(old.feedback[0].id,first.id);assert.equal(old.feedback[0].digest,two.digest);assert.equal(old.history.length,3)
  const custody=await pass(owner.get(api));assert.equal(custody.state,'pending');assert.deepEqual(custody.decisions.map(d=>[d.version_id,d.actor_id,d.action]),[[two.versionId,owner.id,'approve']])
@@ -122,7 +124,7 @@ export async function pdfFeedbackCustodyScenario(w){
  await pass(writer.post(api+'/feedback',pin.input),401)
  const reconciled=await restoreCanvasInstallation(owner,{earlierArchive:archive})
  try{assert.deepEqual((await pass(reconciled.worker.owner.get(api+'/review?version='+two.versionId))).feedback,[])}finally{await reconciled.stop()}
- // Fresh owner-authored feedback participates in proof-group expiry, with person holds winning.
+ // Fresh authorized feedback participates in proof-group expiry, with person holds winning.
  await pass(owner.post('/api/v1/grants',{objectType:'project',objectId:f.project.id,granteeId:f.reader.id,level:'commenter'}))
  const next=await f.pin(f.reader,two.versionId,'synthetic-pegboard-1107')
  await w.sql(`UPDATE peg_attachments SET created_at=1 WHERE task_id='${f.task.id}'`)

@@ -51,6 +51,12 @@ describe('Retained PDF feedback',{concurrency:false},()=>{
  before(async()=>{worker=await startWorker()},{timeout:120000})
  after(()=>worker?.stop())
  it('renders retained PDF contents, pins exact identities and refuses stale, hidden and unauthorized feedback',async()=>pdfFeedbackScenario(worker))
+})
+
+describe('Data custody PDF feedback',{concurrency:false},()=>{
+ let worker
+ before(async()=>{worker=await startWorker()},{timeout:120000})
+ after(()=>worker?.stop())
  it('reconciles native archive feedback, exact person erasure, holds and proof-group expiry',async()=>pdfFeedbackCustodyScenario(worker))
 })
 

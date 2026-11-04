@@ -48,7 +48,7 @@
       "browser": false,
       "hosted": false,
       "commands": [
-        "pnpm exec rer queue test:work-graph-custody-recovery -- sh -c \"node --test --test-name-pattern='^(?:Data custody|PEG-064 retained graph recovery)(?: |$)' --test-skip-pattern='^(?:Data custody intake erasure)(?: |$)' tests/work-graph.test.mjs\""
+        "pnpm exec rer queue test:work-graph-custody-recovery -- sh -c \"node --test --test-name-pattern='^(?:Data custody|PEG-064 retained graph recovery)(?: |$)' --test-skip-pattern='^(?:Data custody intake erasure|Data custody PDF feedback)(?: |$)' tests/work-graph.test.mjs\""
       ]
     },
     {
@@ -57,6 +57,14 @@
       "hosted": false,
       "commands": [
         "pnpm exec rer queue test:work-graph-custody-erasure -- sh -c \"node --test --test-name-pattern='^(?:Data custody intake erasure|Local rule audit attributes background)(?: |$)' tests/work-graph.test.mjs\""
+      ]
+    },
+    {
+      "name": "work-graph-pdf-feedback",
+      "browser": false,
+      "hosted": false,
+      "commands": [
+        "pnpm exec rer queue test:pdf-feedback -- sh -c \"node --test --test-name-pattern='^Data custody PDF feedback(?: |$)' tests/work-graph.test.mjs\""
       ]
     },
     {

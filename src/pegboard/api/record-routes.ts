@@ -18,7 +18,7 @@ export function recordRoutes(app:Hono<{Bindings:Bindings}>) {
   app.get('/proofs/:id/review',door(({db,actor,params,query})=>feedbackView(db,actor,params.id,query.get('version')??undefined,query.get('compare')??undefined)))
   app.get('/proofs/:id/versions/:version/material',door(async({db,actor,params})=>{
     const {file,version}=await proofFile(db,actor,params.id,params.version)
-    return new Response(file.bytes,{headers:{'content-type':file.contentType,'content-disposition':'attachment; filename="proof.pdf"','cache-control':'no-store','x-content-type-options':'nosniff','x-proof-digest':version.digest,'x-proof-version':version.id}})
+    return new Response(file.bytes,{headers:{'content-type':file.contentType,'content-disposition':'attachment; filename="proof.pdf"','cache-control':'no-store','x-content-type-options':'nosniff','x-proof-digest':version.digest,'x-proof-version':version.id,'content-security-policy':"default-src 'none'; sandbox"}})
   }))
   app.post('/proofs/:id/feedback',door(({db,actor,params,input})=>createFeedback(db,actor,params.id,input)))
   app.post('/proofs/:id/feedback/:feedback',door(({db,actor,params,input})=>updateFeedback(db,actor,params.id,params.feedback,input)))

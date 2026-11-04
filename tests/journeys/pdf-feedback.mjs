@@ -21,7 +21,10 @@ export async function pdfFeedbackJourney({w,browser}){
  }
  const here=w.origin+'/app/proof-viewer/'+proof.id
  try{
-  await page.goto(w.origin+'/app/proofs/'+f.task.id)
+  await page.goto(w.origin+'/app/tasks/'+f.task.id)
+  await expect(page.getByRole('link',{name:'Proof reviews',exact:true})).toBeVisible()
+  await capture('task-entry')
+  await page.getByRole('link',{name:'Proof reviews',exact:true}).click()
   await expect(page.getByRole('link',{name:'Review PDF versions'})).toBeVisible()
   await expect(page.getByRole('button',{name:'Create proof'})).toHaveCount(0)
   await capture('proof-list')
