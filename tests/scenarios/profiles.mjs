@@ -26,6 +26,8 @@ export async function profileFixture(w) {
  const subtask = await task('Inherited profile subtask', {parentId:shared.id,projectId:undefined})
  const done = await task('Completed profile assignment', {status:'done'})
  const hidden = await task('Confidential assignment', {projectId:projects[2].id,estimateHours:777,startDate:'2026-03-09',dueDate:'2026-03-09'})
+ const directTask = await task('Directly shared assignment', {projectId:projects[2].id})
+ const directGrant = await pass(owner.post('/api/v1/grants', {objectType:'task',objectId:directTask.id,granteeId:colleague.id,level:'viewer'}))
  const privateTask = await pass(teammate.post('/api/v1/tasks', {title:'Private no-project assignment',estimateHours:999,startDate:'2026-03-09',dueDate:'2026-03-09'}))
  const other = await task('Someone else owns this', {ownerId:owner.id})
  const workspace = await pass(owner.post('/api/v1/workspaces', {name:'Other profile workspace'}))
@@ -36,15 +38,16 @@ export async function profileFixture(w) {
  await pass(teammate.post('/api/v1/workspaces/ws_main/time-off', {start:'2026-03-10',end:'2026-03-10'}))
  await pass(teammate.post('/api/v1/workspaces/ws_main/time-off', {zone:'America/New_York',localStart:'2026-03-11T09:00',localEnd:'2026-03-11T12:00'}))
  const path = '/api/v1/workspaces/ws_main/profiles/'+teammate.id+'?from=2026-03-09&days=7'
- return {owner,colleague,teammate,guest,agent,projects,colleagueGrants,targetGrants,shared,subtask,done,hidden,privateTask,other,workspace,outside,path,grant}
+ return {owner,colleague,teammate,guest,agent,projects,colleagueGrants,targetGrants,shared,subtask,done,hidden,directTask,directGrant,privateTask,other,workspace,outside,path,grant}
 }
 export function assertAssignments(view, f, projectIds = f.projects.slice(0,2).map(p=>p.id)) {
- assert.deepEqual(view.assignments.map(task=>task.id).sort(), [f.shared.id,f.subtask.id,f.done.id].sort())
+ assert.deepEqual(view.assignments.map(task=>task.id).sort(), [f.shared.id,f.subtask.id,f.done.id,f.directTask.id].sort())
  const shared = view.assignments.find(task=>task.id===f.shared.id)
  const subtask = view.assignments.find(task=>task.id===f.subtask.id)
  assert.deepEqual(shared.projects.map(project=>project.id).sort(), [...projectIds].sort())
  assert.deepEqual(subtask.projects.map(project=>project.id).sort(), [...projectIds].sort())
  assert.equal(subtask.parentId, f.shared.id)
+ assert.deepEqual(view.assignments.find(task=>task.id===f.directTask.id).projects, [], 'Direct task access reveals no hidden project identity')
  assert.equal(view.assignments.find(task=>task.id===f.done.id).status, 'done')
  const serialized = JSON.stringify(view)
  for (const forbidden of [f.hidden.id,f.privateTask.id,f.other.id,f.projects[2].id,'Confidential','Private no-project','internalNotes','email','baseRole','otherHours','overloadHours','unscheduledHours','taskCount','estimateHours']) assert.ok(!serialized.includes(forbidden), 'Profile excluded '+forbidden)
@@ -80,6 +83,8 @@ export async function profileAssignmentsScenario(w) {
  await pass(f.owner.delete('/api/v1/grants/'+f.colleagueGrants[1].id))
  assertAssignments(await pass(f.colleague.get(f.path)), f, [f.projects[0].id])
  await pass(f.owner.delete('/api/v1/grants/'+f.colleagueGrants[0].id))
+ assert.deepEqual((await pass(f.colleague.get(f.path))).assignments.map(t=>t.id), [f.directTask.id])
+ await pass(f.owner.delete('/api/v1/grants/'+f.directGrant.id))
  assert.deepEqual((await pass(f.colleague.get(f.path))).assignments, [])
  const renewed = await f.grant(f.projects[0],f.colleague)
  await pass(f.owner.delete('/api/v1/grants/'+f.targetGrants[0].id))
@@ -99,9 +104,17 @@ export async function profileAssignmentsScenario(w) {
  assert.deepEqual((await pass(f.colleague.get(f.path))).assignments, [])
  await pass(f.owner.post('/api/v1/workspaces/ws_main/people/'+f.colleague.id+'/account', {status:'inactive'}))
  await pass(f.colleague.get(f.path), 401)
+ const review = await pass(f.owner.post('/api/v1/data/erasure-preview', {type:'person',id:f.colleague.id}))
+ assert.deepEqual(review.blockers, [])
+ await pass(f.owner.post('/api/v1/data/erase', {type:'person',id:f.colleague.id,token:review.token,confirm:true}))
+ await pass(f.owner.post('/api/v1/workspaces/ws_main/people/'+f.colleague.id+'/account', {status:'active'}))
+ await w.restart()
+ await pass(f.owner.get('/api/v1/workspaces/ws_main/profiles/'+f.colleague.id), 404)
+ assert.ok(!(await pass(f.owner.get('/api/v1/workspaces/ws_main/profiles'))).people.some(person=>person.id===f.colleague.id))
+ await pass(f.colleague.get(f.path), 401)
  assert.ok(renewed.id)
  console.log('PROBE PEG-060 assignments: permitted task identities, shared-task deduplication, inherited subtasks and completed work -> exact IDs; private and hidden content excluded')
- console.log('PROBE PEG-060 authority: guest, agent, guessed and cross-workspace IDs, revoked grants, inactive actor and target, restart -> refused or no assignments; no grant created')
+ console.log('PROBE PEG-060 authority: guest, agent, guessed and cross-workspace IDs, revoked grants, inactive actor and target, erased identity reactivation, restart -> refused or no assignments; no grant created')
 }
 export async function profileAvailabilityScenario(w, services) {
  const f = await profileFixture(w)

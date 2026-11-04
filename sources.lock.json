@@ -215,7 +215,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "caceb47c062670a33f1fbe88d6b5fdc17b5067a1383bd96b9a740c8377b876f1",
+      "sha256": "1ee6137825b2bf3d654a10076eae46a5235d26940fbd001b003ab5ae80a5607a",
       "executable": false
     },
     "DEMO.md": {
@@ -4107,7 +4107,7 @@
       "executable": false
     },
     "src/pegboard/workspace/profiles.ts": {
-      "sha256": "0df6008d4ec7cebd7dbc5ded705c6c05b8a3ef0dc6a023cba69bf342ac3c526e",
+      "sha256": "d8f3c9708c9afa5bc99c930e0532d6779d34f653a3fe2075720bc9c7d4acc6f2",
       "executable": false
     },
     "src/pegboard/workspace/projects.ts": {
@@ -4359,7 +4359,7 @@
       "executable": false
     },
     "tests/journeys/profiles.mjs": {
-      "sha256": "e9cebc33ac338b5a2b1070826ee7d7bd99d32f269553ec61d63ba2ba50806d2f",
+      "sha256": "85d8f0ae77b027dacbdf6158203d70e9ed9244618ee57885214450f0d896432e",
       "executable": false
     },
     "tests/journeys/project-duplicate.mjs": {
@@ -4463,7 +4463,7 @@
       "executable": false
     },
     "tests/scenarios/profiles.mjs": {
-      "sha256": "2fa7d38a651da496453805e40e6a354a4832d472211432cecf517b243c706d6e",
+      "sha256": "564503e87f8b8fb2628165232a96995542d4a02f5736daf0d3d49ab214cab709",
       "executable": false
     },
     "tests/scenarios/public-api.mjs": {

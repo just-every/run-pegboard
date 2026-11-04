@@ -31,13 +31,13 @@ export async function teammateProfile(db: D1Database, actor: Actor, workspace: s
   const assignments: { id: string; title: string; status: string; dueDate: string | null; parentId: string | null; projects: { id: string; name: string }[] }[] = []
   for (const task of candidates) {
     const access = await taskAccess(db, actor, task)
-    if (!access.capabilities.has('read') || !access.contexts.size || !(await taskAccess(db, target, task)).capabilities.has('read')) continue
+    if (!access.capabilities.has('read') || access.personal || !(await taskAccess(db, target, task)).capabilities.has('read')) continue
     const projects: { id: string; name: string }[] = []
     for (const id of access.contexts.keys()) {
       const project = await first<ProjectRow>(db, 'SELECT * FROM peg_projects WHERE id=? AND workspace_id=?', id, workspace)
       if (project && !await isRecoveryHidden(db, 'project', project.id)) projects.push({ id: project.id, name: project.name })
     }
-    if (!projects.length) continue
+    if (access.contexts.size && !projects.length) continue
     let parentId: string | null = null
     if (task.parent_id) {
       const parent = await first<TaskRow>(db, 'SELECT * FROM peg_tasks WHERE id=?', task.parent_id)
