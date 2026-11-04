@@ -5,7 +5,6 @@
       "browser": false,
       "hosted": false,
       "commands": [
-        "pnpm exec rer queue test:pdf-feedback -- sh -c \"node --test --test-name-pattern='^Data custody PDF feedback(?: |$)' tests/work-graph.test.mjs\"",
         "pnpm run test:graph:schedule",
         "pnpm run check --profile first-party",
         "node scripts/contract-docs.mjs check PEG-011 PEG-059 PEG-057 PEG-007 PEG-078 PEG-003 PEG-018 PEG-031 PEG-027 PEG-015 PEG-036 PEG-012 PEG-016 PEG-044 PEG-025 PEG-127 PEG-037"
@@ -38,7 +37,8 @@
       "browser": false,
       "hosted": false,
       "commands": [
-        "pnpm exec rer queue test:work-graph-extensions -- sh -c \"node --test --test-name-pattern='^(?:Direct project duplication through reviewed public doors|Public API and MCP|Work conversions through reviewed public doors)(?: |$)' tests/work-graph.test.mjs\""
+        "pnpm exec rer queue test:work-graph-extensions -- sh -c \"node --test --test-name-pattern='^(?:Direct project duplication through reviewed public doors|Public API and MCP|Work conversions through reviewed public doors)(?: |$)' tests/work-graph.test.mjs\"",
+        "pnpm exec rer queue test:pdf-feedback -- sh -c \"node --test --test-name-pattern='^Data custody PDF feedback(?: |$)' tests/work-graph.test.mjs\""
       ]
     },
     {
