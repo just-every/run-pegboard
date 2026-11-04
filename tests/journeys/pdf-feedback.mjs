@@ -78,6 +78,9 @@ export async function pdfFeedbackJourney({w,browser}){
    await expect(readerPage.getByRole('form',{name:'Edit pin 1 on version 2'})).toHaveCount(0)
    assert.ok(!(await readerPage.content()).includes(v3.versionId),'the hidden current version is not disclosed')
    await capture('reader-retained-entry',{target:readerPage})
+   await pass(owner.post('/api/v1/grants/'+f.grants[1].id+'/revoke',{}))
+   assert.equal((await readerPage.reload()).status(),404)
+   await expect(readerPage.locator('[data-proof-review]')).toHaveCount(0)
   }finally{await readerContext.close()}
   await page.goto(here+'?version='+v3.versionId+'&compare='+two.versionId)
   await expect(page.getByRole('region',{name:'Version 3',exact:true}).getByRole('status')).toHaveText('Verified PDF · 2 pages')
