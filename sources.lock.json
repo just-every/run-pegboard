@@ -199,7 +199,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "5bc10c8db1f8776383b541ac472e7218692c9a0adcef7fb26d1c34b6d2db1c9d",
+      "sha256": "d25c8589a7896f2d91dab9effaa9b77cf6a67aa5699259cacca8129a53096678",
       "executable": false
     },
     "AGENTS.md": {
@@ -215,7 +215,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "89fcdb3058dc3fdecb01347449b7bb204d494a8dd84b6e4e10b0120b3616a84c",
+      "sha256": "dced39311ddef88271111d7005347aeb590ae99fe45bf9a0e2625ad63a694296",
       "executable": false
     },
     "DEMO.md": {
@@ -243,7 +243,7 @@
       "executable": false
     },
     "docs/CLAIMS.md": {
-      "sha256": "40fa90413587a7bc8ecfbf2343423744361ce66d551da1c06dff3075c8328b14",
+      "sha256": "f757a0c08d9edf1fefd235edac870b2c00af223d6834dfb5fa353aa0eae522fb",
       "executable": false
     },
     "docs/contract/PEG-128-rubric.md": {
@@ -251,7 +251,7 @@
       "executable": false
     },
     "docs/DATA-CUSTODY.md": {
-      "sha256": "6131912c782232f88aab8a9c3d82757b69676648ab64954be183fa7e3d4ebd07",
+      "sha256": "e7ecd5e861607fbe78a05a9936132e3f8ce18204e7c6f878d65e0eabb5776d0a",
       "executable": false
     },
     "docs/DATA-RECORD-API.md": {
@@ -3559,7 +3559,7 @@
       "executable": false
     },
     "src/pegboard/proofs/feedback.ts": {
-      "sha256": "52814b754152b1c49cbae9f617fffe787b8e1fe6ef4ef8574fa0075a2f8e82fa",
+      "sha256": "9115a4486f29882725cb1c627c5bd36fad18dfb9653ca3cb3d7a038f808f319c",
       "executable": false
     },
     "src/pegboard/public-api/credentials.ts": {
@@ -4371,7 +4371,7 @@
       "executable": false
     },
     "tests/journeys/pdf-feedback.mjs": {
-      "sha256": "e5877096b6eef6d42bcd45489f52311f2e6c8b3b8900b0fc58cc876a2652fb9b",
+      "sha256": "dd6454bef7352ecd1da05741bba59cc17c8057f86df388773938ec6421bad65f",
       "executable": false
     },
     "tests/journeys/planning-canvas.mjs": {
@@ -4483,7 +4483,7 @@
       "executable": false
     },
     "tests/scenarios/pdf-feedback.mjs": {
-      "sha256": "3c474db9a5620174c2167d4fb000fa4e961632376eea17cb79bcadb40d07ded5",
+      "sha256": "1e68f121b366e5de64594094806dee17d6148f6d75353f7aadb4b9a9889dfa5f",
       "executable": false
     },
     "tests/scenarios/portfolio-capacity.mjs": {

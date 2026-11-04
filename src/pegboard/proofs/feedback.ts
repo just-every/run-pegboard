@@ -22,7 +22,11 @@ async function pdfVersion(db:D1Database,actor:Actor,id:string,versionId:string){
 }
 export async function feedbackView(db:D1Database,actor:Actor,id:string,left?:string,right?:string){
   const rev=await revision(db),context=await internalProof(db,actor,id)
-  const selected=[...new Set([left||context.proof.current_version||'',right].filter((v):v is string=>!!v))]
+  // A hidden replacement must not strand readers of an already retained PDF.
+  const readable=context.versions.filter(version=>version.contentType==='application/pdf')
+  const defaultVersion=readable.find(version=>version.id===context.proof.current_version)??readable.at(-1)
+  const selected=[...new Set([left||defaultVersion?.id,right].filter((v):v is string=>!!v))]
+  if(!selected.length)throw notFound()
   const documents:Array<Awaited<ReturnType<typeof pdfVersion>>['version'] & {pages:{width:number;height:number}[]}>=[]
   for(const versionId of selected){const v=await pdfVersion(db,actor,id,versionId);documents.push({...v.version,pages:v.pages})}
   const feedback=await all<Feedback>(db,`SELECT * FROM peg_proof_feedback WHERE proof_id=? AND version_id IN (${placeholders(selected)}) ORDER BY created_at,id`,id,...selected)
