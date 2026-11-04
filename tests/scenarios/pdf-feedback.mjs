@@ -78,6 +78,8 @@ export async function pdfFeedbackScenario(w){
  assert.deepEqual(defaultRead.documents.map(d=>d.id),[two.versionId],'default review selects a readable retained PDF when the current file is hidden')
  assert.equal(defaultRead.currentVersion,null);assert.ok(!JSON.stringify(defaultRead).includes(v3.versionId))
  const limited=await f.view(reader);assert.equal(limited.currentVersion,null);assert.deepEqual(limited.versions.map(v=>v.id),[two.versionId]);assert.ok(!JSON.stringify(limited).includes(v3.versionId))
+ const retained=await pass(reader.get(api+'/review'));assert.equal(retained.currentVersion,null);assert.deepEqual(retained.documents.map(d=>d.id),[two.versionId]);assert.equal(retained.feedback[0].id,first.id);assert.equal(retained.history.length,3);assert.ok(!JSON.stringify(retained).includes(v3.versionId))
+ await pass(reader.get(api+'/review?version='+v3.versionId),404)
  await pass(reader.get(api+'/review?version='+two.versionId+'&compare='+v3.versionId),404)
  const latest=await pass(writer.get(api+'/review'));assert.equal(latest.currentVersion,v3.versionId);assert.deepEqual(latest.feedback,[])
  const old=await f.view();assert.equal(old.feedback[0].id,first.id);assert.equal(old.feedback[0].digest,two.digest);assert.equal(old.history.length,3)
