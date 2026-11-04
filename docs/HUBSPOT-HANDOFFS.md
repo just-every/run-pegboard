@@ -11,6 +11,8 @@ Subscribe the HubSpot app to deal-stage property changes at
 the v3 HMAC signature and five-minute timestamp window before accepting identities.
 It stores the portal, deal, event and occurrence identities, without the event body.
 Duplicate and reopened events preserve the original source mapping and commitment.
+Their permanent audit receipts identify that same retained native handoff, so a
+retried event never leaves an audit reference to a nonexistent delivery source.
 An event creates neither a project nor a grant.
 
 The owner reviews the current won-stage evidence, permitted deal name and close

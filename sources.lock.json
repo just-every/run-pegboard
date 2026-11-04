@@ -215,7 +215,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "688bf475111627e7c926bc0b2bcd8107978af131b009b7affba61e7ad161b317",
+      "sha256": "37c47af21078533601f3145571daeeb21cc00cf08c04dad05bfbd948018bcf6b",
       "executable": false
     },
     "DEMO.md": {
@@ -259,7 +259,7 @@
       "executable": false
     },
     "docs/HUBSPOT-HANDOFFS.md": {
-      "sha256": "bde3b5a50671167ec9e2c1b5c1bfd19c8874105a2c77d08b0eb754bff5621280",
+      "sha256": "c76d05216d2468a54d6c98bcb5ffd0ab3dcf067a082b7321f4250e4d37fac55a",
       "executable": false
     },
     "docs/INTAKE.md": {
@@ -3347,7 +3347,7 @@
       "executable": false
     },
     "src/pegboard/commercial/handoffs.ts": {
-      "sha256": "165e54147f5aaff61e8252715be65c05db4150f16a021a30a9994bf18f43e1de",
+      "sha256": "d8482f8f0bd3b5ce6e5e0c81fc2d941eac1489b44b944e8697a124f73f0ee9e6",
       "executable": false
     },
     "src/pegboard/connectors/calendars/edge.ts": {
@@ -4471,7 +4471,7 @@
       "executable": false
     },
     "tests/scenarios/commercial-hubspot.mjs": {
-      "sha256": "86a2b4f8936b94e3996c10ec1a3ce09bb6580f604c7f19792368d9ad3b3d59fe",
+      "sha256": "9d58083ea10f20028689b5d9de7d1a4fda01ae746d8c0f314839f739c3e45566",
       "executable": false
     },
     "tests/scenarios/conversions.mjs": {

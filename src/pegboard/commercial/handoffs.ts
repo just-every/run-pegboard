@@ -56,10 +56,13 @@ export async function receiveHubspot(request: Request, env: Bindings) {
   let accepted = 0
   for (const event of events) {
     const portalId = sourceIdentity(event.portalId), dealId = sourceIdentity(event.objectId), eventId = sourceIdentity(event.eventId)
+    const rev = await revision(db)
     const candidate = await first<Portal>(db, 'SELECT * FROM peg_commercial_portals WHERE portal_id=? AND active=1', portalId)
     if (!candidate) continue
     try { await currentPortal(db, candidate) } catch (error) { if (error instanceof PegError) continue; throw error }
-    const rev = await revision(db), id = newId('handoff')
+    // Retries and reopened deals keep the original mapping in their audit receipt too.
+    const existing = await first<{ id: string }>(db, 'SELECT id FROM peg_commercial_handoffs WHERE workspace_id=? AND portal_id=? AND deal_id=?', candidate.workspace_id, portalId, dealId)
+    const id = existing?.id ?? newId('handoff')
     await guarded(db, rev, [bound(db, "INSERT OR IGNORE INTO peg_commercial_handoffs(id,workspace_id,portal_auth_id,portal_id,deal_id,state,created_at) VALUES(?,?,?,?,?,'pending',?)", [id, candidate.workspace_id, candidate.id, portalId, dealId, now()]), bound(db, 'INSERT OR IGNORE INTO peg_commercial_events SELECT ?,?,?,id,? FROM peg_commercial_handoffs WHERE workspace_id=? AND portal_id=? AND deal_id=?', [portalId, dealId, eventId, event.occurredAt, candidate.workspace_id, portalId, dealId]), audit(db, null, candidate.workspace_id, 'event_received', id)])
     accepted++
   }
