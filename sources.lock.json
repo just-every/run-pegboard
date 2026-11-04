@@ -199,7 +199,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "56a7ed50a18ae4f9b60c15188381794c87e2c2a43c5434dad087b3e9ba6d9cc8",
+      "sha256": "a93e8ea6a3c6aff8d5ecd733b93eebc2b0ee51c37315af021d1572c89da6a942",
       "executable": false
     },
     "AGENTS.md": {
@@ -215,7 +215,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "502099a7c518bf587ae3a6530e59b63b152bb73767e5c2c3ccb7bf87ee175fc6",
+      "sha256": "d5732cb55ac7276f966d2476dee09174a05ecd7a90568ba37fdacafe19bddc40",
       "executable": false
     },
     "DEMO.md": {
@@ -243,7 +243,11 @@
       "executable": false
     },
     "docs/CLAIMS.md": {
-      "sha256": "541b221c4b2f703d2cc3a1dc173cc5daa3fc0b69ca76c7398e30931b3204e4f9",
+      "sha256": "b3e829d2a834b1824ac31f66b192e9519e70af02f500df64b6bf98a2209246f7",
+      "executable": false
+    },
+    "docs/contract/PEG-128-rubric.md": {
+      "sha256": "142acd4f730bcecc3994df7495039ce57b0d21d45929fc5d37c02b94d0358789",
       "executable": false
     },
     "docs/DATA-CUSTODY.md": {
@@ -1195,7 +1199,7 @@
       "executable": false
     },
     "RULINGS.md": {
-      "sha256": "c2395e8704a0458f38290b45573fce63b3127a694e858cdded2b72b230ac76bd",
+      "sha256": "23f55624869a0b9fdf65494087fef5890df104c83fc743cd0edc4b0fa195ab5c",
       "executable": false
     },
     "RUN-LOCALLY.md": {
@@ -1207,7 +1211,7 @@
       "executable": false
     },
     "scripts/contract-docs.mjs": {
-      "sha256": "877e4d93dc481afe4dd7ec08431faa0b148aff6ba96e1092b35760ca1311efab",
+      "sha256": "16788c77cff969c73e2846aa50c087930ae68bd20e182d99ddd0a4d7d743bee5",
       "executable": false
     },
     "scripts/delivery/base/artifact.mjs": {
@@ -4579,7 +4583,7 @@
       "executable": false
     },
     "verification.json": {
-      "sha256": "fa2e66ad9788d2b9a93dc9c0d898b6e1762691cdebd3530a474a262c70d71399",
+      "sha256": "0e766e81e27099310a3e93b39e1968d66bfde6c179b02018340fb0df7c57e241",
       "executable": false
     },
     "VERIFY-WORKFLOW.md": {

@@ -19,3 +19,13 @@ Submit an employee rights request affecting cited work and an attributed actor i
 Required Gap:
 
 PEG-015 remains partial. Still required: browser drafting, review, correction history and member and guest discussion, with browser proof at 1440 and 390 pixels; subscriptions and standing internal policy with actual Inbox delivery and Slack, Teams, Nook and email schema-edge outcomes; actual-model on-demand project and portfolio drafting with sourced assertion rejection and editing; announcement history; discussion controls and queued notifications; authenticated inbound email and chat replies with replay refusal; hidden-comment exclusion through the interface and digest; reviewed retained-snapshot erasure, scoped privacy-administrator delegation and deadline-bound rights handling. The current retained-copy blocker prevents false erasure claims but does not establish a lawful retention basis or discharge a rights request. The controlled manual resolution route, complete copy inventory, archive reconciliation and external-copy outcomes remain unproved. No legal compliance or provider-confirmed deletion qualification is claimed.
+
+## RL-107 — Retained-version member review split
+
+Date: 4 November 2026. Ruling authority: ct's 4 November split scope ruling, recorded by this contract-only pass. Clauses: PEG-011 and PEG-128.
+
+Add PEG-128 as one Core target clause, From new, for retained-version member PDF review. Keep PEG-011's acceptance text, partial judgment, Evidence and Gap unchanged; the new clause neither replaces it nor removes any of its obligations. PEG-128 starts missing with an empty Evidence cell. Its four acceptance outcomes are frozen as R1–R4 in `docs/contract/PEG-128-rubric.md`; they are build requirements, not proof of delivery or a field-proof exclusion.
+
+Context supplied by the ruling: sx-pegboard-c-f106 carrier `190cd0b2` lands as gated for the rest of PEG-011. Its gate discovered that retained-version member review returns HTTP 404 when current v3 is hidden and v2 is readable. The split requires the newest readable default, no hidden-version selection, request or existence hint, explicit permitted older-version review, and hidden-version refusal without state changes. This pass changes no application behavior and makes no completion claim.
+
+The lane's supported hold pending independent Opus review of these exact additive clauses remains in force. This record does not release the hold or submit a landing.
