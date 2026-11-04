@@ -1,5 +1,6 @@
 import { profileAssignmentsScenario, profileAvailabilityScenario } from './scenarios/profiles.mjs'
 import { startCapacityServices } from './support/capacity-services.mjs'
+import {pdfFeedbackScenario,pdfFeedbackCustodyScenario} from './scenarios/pdf-feedback.mjs'
 import { approvalFollowupRoutingScenario, approvalFollowupAuthorityScenario } from './scenarios/approval-followup.mjs'
 import { intakeErasureScenario } from './scenarios/intake-erasure.mjs'
 import { intakeScenario } from './scenarios/intake.mjs'
@@ -46,6 +47,20 @@ function csvRecords(text) {
   return rows.filter(row=>row.some(value=>value.length))
 }
 let campaign, launch, shared, mkt
+
+describe('Retained PDF feedback',{concurrency:false},()=>{
+ let worker
+ before(async()=>{worker=await startWorker()},{timeout:120000})
+ after(()=>worker?.stop())
+ it('renders retained PDF contents, pins exact identities and refuses stale, hidden and unauthorized feedback',async()=>pdfFeedbackScenario(worker))
+})
+
+describe('Data custody PDF feedback',{concurrency:false},()=>{
+ let worker
+ before(async()=>{worker=await startWorker()},{timeout:120000})
+ after(()=>worker?.stop())
+ it('reconciles native archive feedback, exact person erasure, holds and proof-group expiry',async()=>pdfFeedbackCustodyScenario(worker))
+})
 
 describe('Data custody intake erasure', {concurrency:false},()=>{
  let worker

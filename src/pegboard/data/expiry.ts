@@ -43,6 +43,10 @@ export async function expiryPlan(db:D1Database,actor:Actor,workspace:string,inpu
           blocked ||=holds.some(h=>h.target_type==='task'&&h.target_id===row.task_id||h.target_type==='attachment'&&h.target_id===key.id||h.target_type==='project'&&projects.some(p=>p.project_id===h.target_id)||h.target_type==='person'&&[row.actor_id,row.created_by].includes(h.target_id))}
       }else if(c.table==='peg_time_delivery_history'&&holds.length)blocked=true
       if(c.table==='peg_attachments'&&holds.some(h=>h.target_type==='proof')){const proof=await first<{proof_id:string}>(db,'SELECT proof_id FROM peg_proof_versions WHERE attachment_id=?',key.id);if(proof&&holds.some(h=>h.target_type==='proof'&&h.target_id===proof.proof_id))blocked=true}
+      if(c.table==='peg_attachments'&&holds.some(h=>h.target_type==='person')){
+        const people=await all<{author_id:string}>(db,'SELECT DISTINCT f.author_id FROM peg_proof_feedback f JOIN peg_proof_versions v ON v.proof_id=f.proof_id WHERE v.attachment_id=?',key.id)
+        if(holds.some(h=>h.target_type==='person'&&people.some(p=>p.author_id===h.target_id)))blocked=true
+      }
       if(blocked)held++;else eligible.keys.push(key)
     }
     if(eligible.keys.length)selections.push(eligible)
@@ -60,7 +64,7 @@ export async function expiryPlan(db:D1Database,actor:Actor,workspace:string,inpu
     }
     files.keys=files.keys.filter(k=>eligible.has(k.id))
     for(const proof of proofs){
-      for(const table of ['peg_proof_decisions','peg_proof_versions'])selections.unshift(await selectKeys(db,table,'proof_id=?',[proof]))
+      for(const table of ['peg_proof_feedback_history','peg_proof_feedback','peg_proof_decisions','peg_proof_versions'])selections.unshift(await selectKeys(db,table,'proof_id=?',[proof]))
       selections.unshift(await selectKeys(db,'peg_proofs','id=?',[proof]))
     }
     for(const key of files.keys){const row=await first<{task_id:string}>(db,'SELECT task_id FROM peg_attachments WHERE id=?',key.id);if(row)tasks.add(row.task_id)}
@@ -72,7 +76,7 @@ export async function expiryPlan(db:D1Database,actor:Actor,workspace:string,inpu
   }
   const reopenTasks=(await all<{id:string}>(db,`SELECT id FROM peg_tasks WHERE id IN (${placeholders([...tasks])}) AND status='done' AND EXISTS(SELECT 1 FROM peg_approval_tasks WHERE task_id=peg_tasks.id)`,...[...tasks])).map(t=>t.id)
   // Child decisions and versions must be removed before their proof and its bytes.
-  const rank=(table:string)=>table==='peg_proof_decisions'?0:table==='peg_proof_versions'?1:table==='peg_proofs'?2:3
+  const rank=(table:string)=>table==='peg_proof_feedback_history'?0:table==='peg_proof_feedback'?1:table==='peg_proof_decisions'?2:table==='peg_proof_versions'?3:table==='peg_proofs'?4:5
   selections.sort((a,b)=>rank(a.table)-rank(b.table))
   const supported=['product_history','attachments_proofs','agent_prompts_outputs','transient_credentials_sessions'].includes(input.class)
   const counts:Record<string,number>={};for(const s of selections)counts[s.table]=(counts[s.table]??0)+s.keys.length

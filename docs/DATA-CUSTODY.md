@@ -173,3 +173,31 @@ remain explicit acceptance gaps. PEG-057, PEG-059 and PEG-065 stay partial for t
 CT rulings approve scoped redacted audit, owner-reviewed erasure, hold precedence
 and separately consented processor custody; retained identity stores and external
 limits remain disclosed.
+
+
+## Internal PDF feedback
+
+Internal members can review already retained PDF versions using their current
+file access. The viewer verifies the stored SHA-256 digest before rendering page
+pixels and an accessible text alternative. Embedded PDF actions are not executed.
+Comparison requires current access to both selected files. A pin keeps its proof,
+version, attachment, digest, page, normalized coordinates and author identities;
+replacing the current version does not move a pin or an existing human decision.
+
+Adding feedback requires comment permission in the selected file’s project.
+Only its author, with that current permission, may edit its text or mark it open
+or resolved. Each revision retains attributable text and status history. Stale
+reviews and concurrent writes are fenced atomically. A repeated creation key
+returns its original pin only under current authority and with identical input.
+Feedback creates neither an approval nor file access. Guests and agents are
+outside this internal review door.
+
+Exact owner-reviewed proof erasure and coherent proof-group expiry include pins
+and their history before removing version records and retained bytes. Person
+erasure includes authored pins and all their revisions, without erasing the
+remaining proof. Related person, task, project, attachment and proof holds win;
+new feedback invalidates an earlier custody preview. Native archives preserve
+these records as history, validate their version relationships and restore no
+source grants or sessions. Later erasure journals prevent older archive content
+from returning. This is database custody of the existing attachment door;
+large-file, native-device, resumable-upload and R2 qualification remain unproved.
