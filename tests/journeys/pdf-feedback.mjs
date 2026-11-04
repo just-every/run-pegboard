@@ -10,8 +10,8 @@ export async function pdfFeedbackJourney({w,browser}){
  await context.addCookies(writer.cookie.split('; ').map(pair=>({name:pair.slice(0,pair.indexOf('=')),value:pair.slice(pair.indexOf('=')+1),url:w.origin})))
  const page=await context.newPage(),errors=[]
  page.on('pageerror',error=>errors.push(error.message))
- const capture=async name=>{
-  for(const status of await page.locator('[data-pdf-status]').all())await expect(status).toHaveText('Verified PDF · 2 pages')
+ const capture=async(name,{unavailable=false}={})=>{
+  if(!unavailable)for(const status of await page.locator('[data-pdf-status]').all())await expect(status).toHaveText('Verified PDF · 2 pages')
   for(const width of [1440,390]){
    await page.setViewportSize({width,height:1000})
    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),name+' reflows at '+width)
@@ -67,7 +67,28 @@ export async function pdfFeedbackJourney({w,browser}){
   await expect(page.getByRole('region',{name:'Version 3',exact:true})).toContainText('No feedback on this version.')
   await expect(page.getByRole('region',{name:'Version 2',exact:true}).locator('[data-feedback-id]')).toHaveAttribute('data-feedback-id',pin.id)
   await capture('retained-after-replacement')
+  // Revoke one selected file after the HTML review, before its real material read.
+  const material=api+'/versions/'+one.versionId+'/material'
+  await page.route('**'+material,async route=>{
+   await pass(owner.post('/api/v1/grants/'+f.hiddenGrant.id+'/revoke',{}))
+   await route.continue()
+  },{times:1})
+  const refused=page.waitForResponse(response=>response.url()===w.origin+material)
+  await page.goto(here+'?version='+two.versionId+'&compare='+one.versionId)
+  assert.equal((await refused).status(),404)
+  await expect(v2.getByRole('status')).toHaveText('Verified PDF · 2 pages')
+  await expect(v1.getByRole('status')).toHaveText('PDF unavailable. Refresh to check current access and retained bytes.')
+  await expect(v1.locator('canvas')).toHaveCount(0)
+  await expect(v1.getByText('Back draft v1',{exact:true})).toHaveCount(0)
+  await capture('revoked-source',{unavailable:true})
+  const refresh=await page.goto(here+'?version='+two.versionId+'&compare='+one.versionId)
+  assert.equal(refresh.status(),404)
+  await expect(page.locator('[data-proof-review]')).toHaveCount(0)
+  await page.goto(here+'?version='+two.versionId)
+  await expect(v2.getByRole('status')).toHaveText('Verified PDF · 2 pages')
+  assert.equal((await f.view()).feedback[0].id,pin.id)
   assert.deepEqual(errors,[])
   console.log('PROBE PEG-011 UI: keyboard selects retained PDF comparison, adds a page-coordinate pin and resolves it -> real page pixels and text, exact author and retained v2 history after v3; screens inspected at 1440 and 390')
+  console.log('PROBE PEG-011 unavailable source: revoke selected v1 access before material read -> 404, no v1 pixels or text, permitted v2 still renders; refreshed hidden comparison refuses')
  }finally{await context.close()}
 }

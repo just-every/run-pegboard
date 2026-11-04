@@ -215,7 +215,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "c40a213938e35e62047de79370daaa325c71f786c9ff81045d51eeed67175022",
+      "sha256": "69597e8f7f99a81550bbedb29a814bc6f472cc086eb8999ef7aa26a31b4a30be",
       "executable": false
     },
     "DEMO.md": {
@@ -4367,7 +4367,7 @@
       "executable": false
     },
     "tests/journeys/pdf-feedback.mjs": {
-      "sha256": "510586a76b130c185bfc8db07ec81ec8ae3d257aa82a39454d849eed5dc4875e",
+      "sha256": "e5877096b6eef6d42bcd45489f52311f2e6c8b3b8900b0fc58cc876a2652fb9b",
       "executable": false
     },
     "tests/journeys/planning-canvas.mjs": {
