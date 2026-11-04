@@ -33,7 +33,7 @@ export async function feedbackView(db:D1Database,actor:Actor,id:string,left?:str
   const history=await all<History>(db,`SELECT * FROM peg_proof_feedback_history WHERE proof_id=? AND version_id IN (${placeholders(selected)}) ORDER BY revision,id`,id,...selected)
   const names=Object.fromEntries(await displayNames(db,[...feedback.map(f=>f.author_id),...history.map(h=>h.actor_id)]))
   const tokens=Object.fromEntries(await Promise.all(documents.map(async d=>[d.id,await digest([actor.id,rev,context.proof,[d],feedback.filter(f=>f.version_id===d.id)])])))
-  return {id,taskId:context.task.id,title:context.task.title,currentVersion:context.versions.some(v=>v.id===context.proof.current_version)?context.proof.current_version:null,
+  return {id,taskId:context.task.id,title:context.task.title,
     versions:context.versions.filter(v=>v.contentType==='application/pdf'),documents,
     feedback:feedback.map(({operation_key,...f})=>({...f,canEdit:f.author_id===actor.id&&documents.some(d=>d.id===f.version_id&&d.canComment)})),history,names,
     token:await digest([actor.id,rev,context.proof,documents,feedback]),tokens,rev}
