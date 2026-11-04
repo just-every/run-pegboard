@@ -8,6 +8,19 @@ import { displayNames, type Actor } from '../workspace/people'
 import { dayString, readStamp } from '../schedule/calendar'
 import type { ViewConfig } from './config'
 
+/** Reuse native permission results within one revision-fenced read snapshot. */
+export function taskAccessSnapshot(): typeof taskAccess {
+  const actors = new WeakMap<Actor, Map<string, ReturnType<typeof taskAccess>>>()
+  return (db, actor, task, includeRemoved = false) => {
+    let tasks = actors.get(actor)
+    if (!tasks) { tasks = new Map(); actors.set(actor, tasks) }
+    const key = task.id + ':' + includeRemoved
+    let access = tasks.get(key)
+    if (!access) { access = taskAccess(db, actor, task, includeRemoved); tasks.set(key, access) }
+    return access
+  }
+}
+
 /** Placements and custom values can change without touching updated_at. */
 export async function taskRevision(db: D1Database, task: TaskRow) {
   const [homes, values] = await Promise.all([
@@ -17,13 +30,13 @@ export async function taskRevision(db: D1Database, task: TaskRow) {
   return digest([task.id, task.updated_at, task.title, task.status, task.owner_id, task.priority, task.start_date, task.due_date,
     task.estimate_hours, task.description, task.internal_only, task.internal_notes, homes, values])
 }
-export async function scopedTasks(db: D1Database, actor: Actor, owner: Actor, projectId: string) {
+export async function scopedTasks(db: D1Database, actor: Actor, owner: Actor, projectId: string, access = taskAccess) {
   const seen = new Set<string>(), result: Placed[] = []
-  for (const task of await readableTasks(db, actor, projectId)) {
+  for (const task of await readableTasks(db, actor, projectId, access)) {
     if (seen.has(task.id)) continue
     seen.add(task.id)
-    if (!(await taskAccess(db, actor, task)).contexts.has(projectId)) continue
-    if (actor.id !== owner.id && !(await taskAccess(db, owner, task)).contexts.has(projectId)) continue
+    if (!(await access(db, actor, task)).contexts.has(projectId)) continue
+    if (actor.id !== owner.id && !(await access(db, owner, task)).contexts.has(projectId)) continue
     result.push(task)
   }
   return result
@@ -35,11 +48,11 @@ export function filteredTasks(tasks: Placed[], config: ViewConfig, zone: string)
       && (!filter.dueFrom || due !== null && due >= filter.dueFrom) && (!filter.dueTo || due !== null && due <= filter.dueTo)
   })
 }
-export async function canonicalRows(db: D1Database, actor: Actor, owner: Actor, projectId: string, tasks: Placed[], fields: FieldRow[], sections: SectionRow[]) {
+export async function canonicalRows(db: D1Database, actor: Actor, owner: Actor, projectId: string, tasks: Placed[], fields: FieldRow[], sections: SectionRow[], access = taskAccess) {
   const names = await displayNames(db, tasks.map(task => task.owner_id)), sectionById = new Map(sections.map(section => [section.id, section]))
   const rows = []
   for (const task of tasks) {
-    const context = (await taskAccess(db, actor, task)).contexts.get(projectId)
+    const context = (await access(db, actor, task)).contexts.get(projectId)
     const section = task.section_id ? sectionById.get(task.section_id) : undefined
     const values = []
     for (const field of fields) {

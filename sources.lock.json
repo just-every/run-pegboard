@@ -3747,7 +3747,7 @@
       "executable": false
     },
     "src/pegboard/tasks/board.ts": {
-      "sha256": "ac41d2b9c702ef4361e9af2eca0ef20f37e5a8ef98774aa291ecf0ee387bc339",
+      "sha256": "9f1655a15113ad9f55844a1062fa70ed91db5413132b5ced329c08d48739be67",
       "executable": false
     },
     "src/pegboard/tasks/history.ts": {
@@ -4119,7 +4119,7 @@
       "executable": false
     },
     "src/pegboard/views/rows.ts": {
-      "sha256": "bd5d69b909c0f9ca07668deb86940c9d6dc3b530f11d06ccfeabf9fe67cb3590",
+      "sha256": "de94ca943062da857fe08773dc8f5686898671f5360cb7c710dee1552cd77303",
       "executable": false
     },
     "src/pegboard/views/scope.ts": {
@@ -4127,7 +4127,7 @@
       "executable": false
     },
     "src/pegboard/views/service.ts": {
-      "sha256": "990bd178a230c57cd376a843b73135e14b166e57b3082f851e66c0fc4073046d",
+      "sha256": "7f4649e27ccadbf348982b8e50c49642047bd62239bfd1baaac4a366f31c189d",
       "executable": false
     },
     "src/pegboard/views/store.ts": {

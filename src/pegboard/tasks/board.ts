@@ -11,14 +11,14 @@ import { displayNames, workspaceSettings, type Actor } from '../workspace/people
 
 export interface Placed extends TaskRow { project_id: string; section_id: string | null; fields: string }
 /** The tasks of a project that this person may read: private-to-guest and assignee-scoped tasks drop out here. */
-export async function readableTasks(db: D1Database, actor: Actor, projectId: string): Promise<Placed[]> {
+export async function readableTasks(db: D1Database, actor: Actor, projectId: string, access = taskAccess): Promise<Placed[]> {
   // The project's own tasks and, under each, the subtasks that hang wherever it does.
   const rows = await all<Placed>(db, `WITH RECURSIVE tree(id,project_id,section_id,fields,position) AS (
       SELECT task_id,project_id,section_id,fields,position FROM peg_task_projects WHERE project_id=?
       UNION ALL SELECT t.id,tree.project_id,tree.section_id,'{}',tree.position FROM peg_tasks t JOIN tree ON t.parent_id=tree.id)
     SELECT t.*,tree.project_id,tree.section_id,tree.fields FROM tree JOIN peg_tasks t ON t.id=tree.id ORDER BY tree.position,t.created_at`, projectId)
   const out: Placed[] = []
-  for (const row of rows) if ((await taskAccess(db, actor, row)).capabilities.has('read')) out.push(row)
+  for (const row of rows) if ((await access(db, actor, row)).capabilities.has('read')) out.push(row)
   return out
 }
 

@@ -4,7 +4,7 @@ import type { Actor } from '../workspace/people'
 import { workspaceCalendar } from '../schedule/availability'
 import { columnSet, initialConfig, modeOf, pruneConfig } from './config'
 import { availableColumns, listWorkViews, loadView, presentView, safeDefinitions, stableRead, viewContext } from './store'
-import { canonicalRows, columnValue, filteredTasks, scopedTasks, sortRows, type WorkRow } from './rows'
+import { canonicalRows, columnValue, filteredTasks, scopedTasks, sortRows, taskAccessSnapshot, type WorkRow } from './rows'
 import { projectWorkload } from './workload'
 import { openViewScope, scopeId } from './scope'
 
@@ -39,14 +39,15 @@ export async function workView(db: D1Database, actor: Actor, projectId: string, 
     }
     if (options.groupBy !== undefined) config = { ...config, groupBy: allowed.has(options.groupBy) ? options.groupBy : null }
     const timezone = (await workspaceCalendar(db, project.workspace_id)).zone
+    const access = taskAccessSnapshot()
     const union = new Map<string, WorkRow>(), tasks = new Map<string, Awaited<ReturnType<typeof scopedTasks>>[number]>()
     let sections: Awaited<ReturnType<typeof listSections>> = []
     // A deterministic permitted home supplies ordinary editing context; memberships retain every local mapping.
     for (const entry of projects) {
-      const local = await scopedTasks(db, actor, owner, entry.project.id), localSections = await listSections(db, entry.project.id)
+      const local = await scopedTasks(db, actor, owner, entry.project.id, access), localSections = await listSections(db, entry.project.id)
       if (scope === 'project') sections = localSections
       for (const task of local) tasks.set(task.id, task)
-      const rows = await canonicalRows(db, actor, owner, entry.project.id, filteredTasks(local, config, timezone), entry.fields, localSections)
+      const rows = await canonicalRows(db, actor, owner, entry.project.id, filteredTasks(local, config, timezone), entry.fields, localSections, access)
       for (const row of rows) {
         const membership = { projectId: entry.project.id, name: entry.project.name, section: row.section, sections: row.homeProject.sections, canEdit: row.canEdit }
         const existing = union.get(row.id)
