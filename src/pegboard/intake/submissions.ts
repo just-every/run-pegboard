@@ -47,7 +47,7 @@ export async function submitIntake(db:D1Database,source:{actor:Actor;formId:stri
   const prepared=await prepareTask(db,publicSource?publisher:source.actor,{projectId:row.project_id,title:answers[definition.mapping.title],description,ownerId:definition.mapping.ownerId!,priority:definition.mapping.priority},{queueRules:false,sourceActorId:publicSource?'public_intake':undefined})
   const submission:Submission={id:newId('submission'),form_id:row.id,form_version:row.version,request_key:key,fingerprint,task_id:prepared.id,source_actor:sourceActor,submitted_at:at,deadline,triaged_at:null,escalated_at:null}
   try {
-   await guarded(db,rev,[bound(db,'INSERT INTO peg_intake_guards VALUES(?,?,?)',[newId('guard'),row.id,row.version]),...prepared.statements,bound(db,'INSERT INTO peg_intake_submissions(id,form_id,form_version,request_key,fingerprint,task_id,source_actor,submitted_at,deadline,calendar) VALUES(?,?,?,?,?,?,?,?,?,?)',[submission.id,row.id,row.version,key,fingerprint,prepared.id,sourceActor,at,deadline,JSON.stringify(calendar)]),historyStatement(db,prepared.id,row.project_id,sourceActor,'intake.submitted',{formId:row.id,version:row.version,deadline})])
+   await guarded(db,rev,[bound(db,'INSERT INTO peg_intake_guards VALUES(?,?,?)',[newId('guard'),row.id,row.version]),...prepared.statements,bound(db,'INSERT INTO peg_intake_submissions(id,form_id,form_version,request_key,fingerprint,task_id,source_actor,submitted_at,deadline,calendar,answers,template_pin) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)',[submission.id,row.id,row.version,key,fingerprint,prepared.id,sourceActor,at,deadline,JSON.stringify(calendar),JSON.stringify(answers),definition.template?JSON.stringify(definition.template):null]),historyStatement(db,prepared.id,row.project_id,sourceActor,'intake.submitted',{formId:row.id,version:row.version,deadline})])
    return {...acknowledgment(submission),replayed:false}
   }catch(error){if(!(error instanceof PegError&&error.code==='review_changed')&&!/intake_changed/.test(String(error)))throw error;if(attempt===3)throw conflict('intake_changed')}
  }
@@ -66,5 +66,5 @@ export async function submissionErasureScope(db:D1Database,person:string) {
  return rows.map(row=>({id:row.id,taskId:row.task_id,formId:row.form_id,projectId:row.project_id,source:!!row.source,triager:!!row.triager}))
 }
 export function submissionErasureStatements(db:D1Database,person:string,submissions:Awaited<ReturnType<typeof submissionErasureScope>>) {
- return submissions.filter(row=>row.source||row.triager).map(row=>bound(db,"UPDATE peg_intake_submissions SET source_actor=CASE WHEN source_actor=? THEN 'erased' ELSE source_actor END,triaged_by=CASE WHEN triaged_by=? THEN NULL ELSE triaged_by END WHERE id=?",[person,person,row.id]))
+ return submissions.filter(row=>row.source||row.triager).map(row=>bound(db,"UPDATE peg_intake_submissions SET answers=CASE WHEN source_actor=? THEN NULL ELSE answers END,source_actor=CASE WHEN source_actor=? THEN 'erased' ELSE source_actor END,triaged_by=CASE WHEN triaged_by=? THEN NULL ELSE triaged_by END WHERE id=?",[person,person,person,row.id]))
 }

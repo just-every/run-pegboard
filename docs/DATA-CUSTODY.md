@@ -203,3 +203,18 @@ these records as history, validate their version relationships and restore no
 source grants or sessions. Later erasure journals prevent older archive content
 from returning. This is database custody of the existing attachment door;
 large-file, native-device, resumable-upload and R2 qualification remain unproved.
+
+
+## Internal intake template provenance
+
+Reviewed internal template applications keep opaque application, submission,
+root and nested-task identities, the pinned template version, applying actor,
+owner mappings and concrete dates. Permanent audit retains only opaque
+correlations and a review digest, never answers, titles or role names. Exact
+person erasure review lists each affected application and task owner reference;
+after work is transferred and the person deactivated, it redacts those references
+and leaves an inactive replay witness. Source-person erasure clears the retained
+answer snapshot. Task erasure clears that task's intake answer snapshot and keeps
+its application inactive. Holds and retained source-snapshot blockers still win.
+Native archives preserve work and mapping provenance while disabling publications
+and applications. Restored or erased application identities cannot create work.

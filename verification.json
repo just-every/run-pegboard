@@ -110,7 +110,7 @@
       "browser": true,
       "hosted": false,
       "commands": [
-        "pnpm exec rer queue test:journeys-core-access -- sh -c \"PEGBOARD_JOURNEY=approval-followup,intake,access-privacy,access-discovery,public-api,approval-routing,guests node tests/journeys/work-graph.journey.mjs\""
+        "pnpm exec rer queue test:journeys-core-access -- sh -c \"PEGBOARD_JOURNEY=approval-followup,intake-templates,intake,access-privacy,access-discovery,public-api,approval-routing,guests node tests/journeys/work-graph.journey.mjs\""
       ]
     },
     {

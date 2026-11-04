@@ -82,6 +82,7 @@ export async function intakeErasureScenario(w){
   for(const submission of [f.source,f.triager,f.both,f.witness,f.owned]){
    const actual=row('peg_intake_submissions',submission.receipt),prior=original.find(r=>r.table==='peg_intake_submissions'&&r.row.id===submission.receipt).row
    assert.ok(actual);assert.equal(actual.source_actor,[f.source,f.both].includes(submission)?'erased':peer.id)
+   assert.equal(actual.answers,[f.source,f.both].includes(submission)?null:prior.answers,'source-person erasure clears the answer snapshot and preserves other submissions')
    assert.equal(actual.triaged_by,[f.triager,f.both].includes(submission)?null:prior.triaged_by)
    for(const key of ['id','form_id','form_version','request_key','fingerprint','task_id','submitted_at','deadline','calendar','triaged_at','escalated_at'])assert.equal(actual[key],prior[key],key+' retained')
    assert.ok(row('peg_tasks',submission.taskId),'owned work survives')

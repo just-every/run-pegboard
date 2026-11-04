@@ -12,13 +12,14 @@ export const normalizePrefix = (value: unknown): string => {
 export const refPattern = /^([A-Z][A-Z0-9]{1,7})-(\d{1,9})$/
 
 /** The statements that issue a task its next reference under the project's prefix; none when the project has no prefix. */
-export async function issueRef(db: D1Database, project: ProjectRow, taskId: string): Promise<{ ref: string; statements: D1PreparedStatement[] } | null> {
+export async function issueRef(db: D1Database, project: ProjectRow, taskId: string, offset = 0): Promise<{ ref: string; statements: D1PreparedStatement[] } | null> {
   if (!project.prefix) return null
   const row = await first<{ next_number: number }>(db, 'SELECT next_number FROM peg_ref_prefixes WHERE prefix=?', project.prefix)
   if (!row) return null
-  const ref = `${project.prefix}-${row.next_number}`
+  const next = row.next_number + offset
+  const ref = `${project.prefix}-${next}`
   return { ref, statements: [
-    bound(db, 'UPDATE peg_ref_prefixes SET next_number=next_number+1 WHERE prefix=? AND next_number=?', [project.prefix, row.next_number]),
+    bound(db, 'UPDATE peg_ref_prefixes SET next_number=next_number+1 WHERE prefix=? AND next_number=?', [project.prefix, next]),
     bound(db, 'INSERT INTO peg_task_refs(ref,task_id,current,created_at) VALUES (?,?,1,?)', [ref, taskId, now()]),
   ] }
 }

@@ -34,14 +34,14 @@ async function sectionFor(db: D1Database, projectId: string, sectionId?: string 
 }
 const nextPosition = async (db: D1Database, projectId: string, sectionId: string | null) => (await first<{ n: number }>(db, 'SELECT COALESCE(MAX(position),0)+1 n FROM peg_task_projects WHERE project_id=? AND COALESCE(section_id,\'\')=COALESCE(?,\'\')', projectId, sectionId))!.n
 
-export async function prepareTask(db: D1Database, actor: Actor, input: TaskInput, options:{queueRules?:boolean;sourceActorId?:'public_intake'}={}) {
+export async function prepareTask(db: D1Database, actor: Actor, input: TaskInput, options:{queueRules?:boolean;sourceActorId?:'public_intake';pendingParentId?:string;pendingReferenceOffset?:number}={}) {
   const kind = input.kind ?? (input.parentId ? 'subtask' : 'task')
   if (!kinds.includes(kind)) throw invalid('kind')
   let projectId = input.projectId ?? null, workspaceId = input.workspaceId ?? 'ws_main', parent: TaskRow | null = null
   if (input.parentId) {
     const opened = await openTask(db, actor, input.parentId)
     require(opened.access, 'edit')
-    parent = opened.task; workspaceId = parent.workspace_id
+    parent = options.pendingParentId ? {...opened.task,id:options.pendingParentId} : opened.task; workspaceId = parent.workspace_id
     if (!opened.access.personal && !projectId) projectId = [...opened.access.contexts].find(([, effective]) => effective.capabilities.has('edit'))?.[0] ?? null
     if (opened.access.personal && projectId) throw conflict('personal_task')
     if (!opened.access.personal && !projectId) throw forbidden('edit')
@@ -60,7 +60,7 @@ export async function prepareTask(db: D1Database, actor: Actor, input: TaskInput
     if (input.ownerId && input.ownerId !== actor.id) { if (!(await workspaceRole(db, input.ownerId, workspaceId))) throw invalid('owner'); owner = input.ownerId }
     const section = await sectionFor(db, projectId, parent ? null : input.sectionId)
     if (section?.maps_to && !input.status && !parent) status = section.maps_to
-    const ref = await issueRef(db, project, id)
+    const ref = await issueRef(db, project, id, options.pendingReferenceOffset)
     // A subtask hangs wherever its parent does; only a root task is placed in a section of its own.
     if (!parent) statements.push(bound(db, 'INSERT INTO peg_task_projects(task_id,project_id,section_id,position,added_by,added_at) VALUES (?,?,?,?,?,?)', [id, projectId, section?.id ?? null, await nextPosition(db, projectId, section?.id ?? null), creator, at]))
     if (ref) statements.push(...ref.statements)
