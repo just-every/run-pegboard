@@ -247,7 +247,7 @@
       "executable": false
     },
     "docs/contract/PEG-128-rubric.md": {
-      "sha256": "c0102eb1d51a3cc8ad133f21efe7b872edddb224b18f2aab19d4ec4aefcd13ce",
+      "sha256": "142acd4f730bcecc3994df7495039ce57b0d21d45929fc5d37c02b94d0358789",
       "executable": false
     },
     "docs/DATA-CUSTODY.md": {
@@ -1199,7 +1199,7 @@
       "executable": false
     },
     "RULINGS.md": {
-      "sha256": "6bad84242f7682bfd2cd96f342090d116ef1143e949022d2f7bcab4f64ce42d1",
+      "sha256": "23f55624869a0b9fdf65494087fef5890df104c83fc743cd0edc4b0fa195ab5c",
       "executable": false
     },
     "RUN-LOCALLY.md": {

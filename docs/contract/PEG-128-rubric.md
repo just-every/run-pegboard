@@ -1,6 +1,6 @@
 # PEG-128 frozen acceptance rubric
 
-Frozen by ct's 4 November 2026 split ruling, recorded as RL-106. R1–R4 are build requirements for retained-version member PDF review. This rubric records no passing proof; PEG-128 is missing with no Evidence. PEG-011 and its judgment remain unchanged.
+Frozen by ct's 4 November 2026 split ruling, recorded as RL-107. R1–R4 are build requirements for retained-version member PDF review. This rubric records no passing proof; PEG-128 is missing with no Evidence. PEG-011 and its judgment remain unchanged.
 
 Use real retained PDF versions v1, v2 and current v3 with distinguishable page content and independently recorded identities and byte digests. The reviewing member may read v1 and v2 but cannot read v3. Establish that state through authorized product doors; do not replace application permissions, persistence or PDF reads with mocks. Keep hidden fixture facts in the privileged proof record, outside the member's responses.
 

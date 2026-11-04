@@ -20,7 +20,7 @@ Required Gap:
 
 PEG-015 remains partial. Still required: browser drafting, review, correction history and member and guest discussion, with browser proof at 1440 and 390 pixels; subscriptions and standing internal policy with actual Inbox delivery and Slack, Teams, Nook and email schema-edge outcomes; actual-model on-demand project and portfolio drafting with sourced assertion rejection and editing; announcement history; discussion controls and queued notifications; authenticated inbound email and chat replies with replay refusal; hidden-comment exclusion through the interface and digest; reviewed retained-snapshot erasure, scoped privacy-administrator delegation and deadline-bound rights handling. The current retained-copy blocker prevents false erasure claims but does not establish a lawful retention basis or discharge a rights request. The controlled manual resolution route, complete copy inventory, archive reconciliation and external-copy outcomes remain unproved. No legal compliance or provider-confirmed deletion qualification is claimed.
 
-### RL-106 — Retained-version member review split
+## RL-107 — Retained-version member review split
 
 Date: 4 November 2026. Ruling authority: ct's 4 November split scope ruling, recorded by this contract-only pass. Clauses: PEG-011 and PEG-128.
 
