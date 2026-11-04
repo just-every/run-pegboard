@@ -60,10 +60,10 @@ Every later application is a separate human decision from the request queue.
 The preview shows the existing request identity and retained answers, role
 choices, exact owner and date changes, estimates and proposed nested work.
 Confirmation changes the existing root and creates the reviewed nested tasks
-once. The request title, description, source attribution and triage clock remain.
+once. The request title, description, project section, source attribution and triage clock remain. A single template phase is a label, not a new project section.
 No project, grants, copied decisions or active rules are created.
 
-This door rejects project templates, fields, dependencies, rules, milestones and
+This door rejects project templates, multiple phases, fields, dependencies, rules, milestones and
 required approvals explicitly. Existing root dependencies, approvals, calendar
 blocks, multi-homing and nested work require their own doors. Publication and
 application recheck publisher, template and destination authority. Any relevant

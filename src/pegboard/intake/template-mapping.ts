@@ -14,7 +14,7 @@ export interface TemplatePin { id:string; version:number }
 export async function permittedIntakeTemplate(db:D1Database,actor:Actor,workspace:string,pin:TemplatePin) {
  const view=await getTemplate(db,actor,workspace,pin.id,pin.version),d=view.definition
  // This door applies only nested plain work; it never silently drops other configuration.
- if(d.kind!=='task'||d.fields.length||d.dependencies.length||d.rules.length||d.tasks.length>30||d.tasks.some(t=>t.approval||t.kind==='milestone'||Object.keys(t.fields).length))throw invalid('intake_template_unsupported')
+ if(d.kind!=='task'||d.phases.length!==1||d.fields.length||d.dependencies.length||d.rules.length||d.tasks.length>30||d.tasks.some(t=>t.approval||t.kind==='milestone'||Object.keys(t.fields).length))throw invalid('intake_template_unsupported')
  return view
 }
 export async function mappingContext(db:D1Database,actor:Actor,id:string) {
@@ -39,7 +39,7 @@ export async function intakeTemplatePreview(db:D1Database,actor:Actor,id:string,
  const preview=await templatePreview(db,actor,project.workspace_id,{templateId:pin.id,version:pin.version,startDate:input.startDate,name:task.title,roles:input.roles,keepUnassigned:false,targetProjectId:project.id})
  if(preview.missingRoles.length||preview.unreachableOwners.length||preview.configurationConflicts.length)throw invalid('intake_template_roles')
  const root=preview.tasks.find(t=>!t.parent)!
- const plan={submissionId:id,taskId:task.id,projectId:project.id,templateId:pin.id,version:pin.version,headVersion:context.template.headVersion,templateName:context.template.template.name,answers:JSON.parse(submission.answers!),title:task.title,description:task.description,submittedAt:submission.submitted_at,deadline:submission.deadline,triagedAt:submission.triaged_at,roles:preview.roles,startDate:preview.startDate,rootKey:root.key,before:{ownerId:task.owner_id,startDate:task.start_date,dueDate:task.due_date,hours:task.estimate_hours},tasks:preview.tasks.map(t=>({...t,title:t.parent?t.title:task.title,existingTaskId:t.parent?null:task.id})),capacity:preview.capacity}
+ const plan={submissionId:id,taskId:task.id,projectId:project.id,templateId:pin.id,version:pin.version,headVersion:context.template.headVersion,templateName:context.template.template.name,answers:JSON.parse(submission.answers!),title:task.title,description:task.description,submittedAt:submission.submitted_at,deadline:submission.deadline,triagedAt:submission.triaged_at,roles:preview.roles,startDate:preview.startDate,rootKey:root.key,before:{ownerId:task.owner_id,startDate:task.start_date,dueDate:task.due_date,hours:task.estimate_hours},tasks:preview.tasks.map(t=>({...t,title:t.parent?t.title:task.title,existingTaskId:t.parent?null:task.id}))}
  return {...plan,rev,token:await digest([actor.id,rev,plan])}
 }
 export async function applyIntakeTemplate(db:D1Database,actor:Actor,id:string,input:Record<string,any>) {
@@ -81,8 +81,15 @@ export async function applyIntakeTemplate(db:D1Database,actor:Actor,id:string,in
 }
 
 export async function mappingErasureScope(db:D1Database,person:string) {
- return all<{id:string;submission_id:string;project_id:string;actor:number}>(db,`SELECT a.id,a.submission_id,a.project_id,a.actor_id=? actor FROM peg_intake_template_applications a WHERE a.actor_id=? OR EXISTS(SELECT 1 FROM peg_intake_template_tasks t WHERE t.application_id=a.id AND (t.owner_id=? OR t.before_owner=?)) ORDER BY a.id`,person,person,person,person)
+ const applications=await all<{id:string;submission_id:string;project_id:string;actor:number}>(db,`SELECT a.id,a.submission_id,a.project_id,a.actor_id=? actor FROM peg_intake_template_applications a WHERE a.actor_id=? OR EXISTS(SELECT 1 FROM peg_intake_template_tasks t WHERE t.application_id=a.id AND (t.owner_id=? OR t.before_owner=?)) ORDER BY a.id`,person,person,person,person)
+ const result=[]
+ for(const application of applications){
+  const tasks=await all<{task_key:string;task_id:string;owner:number;before_owner:number}>(db,'SELECT task_key,task_id,owner_id IS ? owner,before_owner IS ? before_owner FROM peg_intake_template_tasks WHERE application_id=? ORDER BY task_key',person,person,application.id)
+  result.push({...application,actor:!!application.actor,tasks:tasks.map(t=>({key:t.task_key,taskId:t.task_id,owner:!!t.owner,beforeOwner:!!t.before_owner}))})
+ }
+ return result
 }
+
 export function mappingErasureStatements(db:D1Database,person:string,scope:Awaited<ReturnType<typeof mappingErasureScope>>) {
  return scope.flatMap(row=>[bound(db,"UPDATE peg_intake_template_applications SET actor_id=CASE WHEN actor_id=? THEN 'erased' ELSE actor_id END,state='inactive' WHERE id=?",[person,row.id]),bound(db,'UPDATE peg_intake_template_tasks SET owner_id=CASE WHEN owner_id=? THEN NULL ELSE owner_id END,before_owner=CASE WHEN before_owner=? THEN NULL ELSE before_owner END WHERE application_id=?',[person,person,row.id])])
 }

@@ -181,6 +181,8 @@ export async function erasurePlan(db:D1Database,actor:Actor,workspace:string,typ
     retained.intake_replay_witnesses=intake.submissions.length
     retained.intake_form_provenance=intake.forms.length
   }
+  const mappingWitnesses=new Set([...(selections.find(s=>s.table==='peg_intake_template_tasks')?.keys.map(k=>k.application_id)??[]),...(intake?.mappings?.map(m=>m.id)??[])])
+  if(mappingWitnesses.size)retained.intake_template_witnesses=mappingWitnesses.size
   const processorRequests=await processorFollowups(db,selections)
   const capacitySources=type==='person'?await capacityErasureSources(db,id):[]
   if(capacitySources.length)counts.capacity_source_mappings=capacitySources.length

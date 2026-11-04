@@ -79,7 +79,7 @@ export async function intakeTemplatesScenario(w){
   await pass(restored.worker.owner.post(item.path+'/apply',command),404)
   const restoredQueue=await pass(restored.worker.owner.get(`/api/v1/projects/${project.id}/intake`));assert.equal(restoredQueue.items[0].deadline,item.deadline)
  }finally{await restored.stop()}
- await intakeMappingErasure(w,f,item,result,draft)
+ await intakeMappingErasure(w,f,item,result,draft,command,archive)
  await intakeMappingAuthority(w,f)
  const safeInput={...input,roles:{Lead:owner.id,Designer:owner.id}},stale=await f.send('7103'),old=await pass(owner.post(stale.path+'/preview',safeInput))
  await pass(owner.post(`/api/v1/templates/${f.template.id}/versions`,{baseVersion:1,definition:{...f.definition,description:'Changed template'}}))
@@ -88,7 +88,7 @@ export async function intakeTemplatesScenario(w){
  const refreshed=await pass(owner.post(stale.path+'/preview',safeInput));assert.equal(refreshed.version,1);assert.equal(refreshed.headVersion,2);assert.notEqual(refreshed.token,old.token)
  await pass(owner.post(f.base+'/revoke',{}))
  await pass(owner.post(stale.path+'/apply',{...safeInput,token:refreshed.token,confirm:true}),404)
- for(const change of [{kind:'project'},{rules:[{key:'rule',name:'Priority rule',trigger:'task_created',action:'set_priority',priority:'high'}]},{fields:[{key:'note',label:'Note',type:'text'}]},{tasks:f.definition.tasks.map((t,i)=>i===0?{...t,approval:true}:t)},{dependencies:[{predecessor:'draft',successor:'check',type:'fs',lag:0}]}]){
+ for(const change of [{kind:'project'},{phases:['Work','Later']},{rules:[{key:'rule',name:'Priority rule',trigger:'task_created',action:'set_priority',priority:'high'}]},{fields:[{key:'note',label:'Note',type:'text'}]},{tasks:f.definition.tasks.map((t,i)=>i===0?{...t,approval:true}:t)},{dependencies:[{predecessor:'draft',successor:'check',type:'fs',lag:0}]}]){
   const unsupported=await pass(owner.post('/api/v1/templates',{name:'Unsupported intake template',definition:{...f.definition,...change}}))
   await pass(owner.post(`/api/v1/projects/${project.id}/intake/forms`,{...f.config,template:{id:unsupported.id,version:1}}),400)
  }
@@ -98,7 +98,7 @@ export async function intakeTemplatesScenario(w){
  return {f,item,result}
 }
 
-async function intakeMappingErasure(w,f,item,result,draft){
+async function intakeMappingErasure(w,f,item,result,draft,command,earlierArchive){
  const {owner,peer}=f,preview=()=>pass(owner.post('/api/v1/data/erasure-preview',{type:'person',id:peer.id})),erase=review=>pass(owner.post('/api/v1/data/erase',{type:'person',id:peer.id,token:review.token,confirm:true}))
  const active=await preview();assert.ok(active.blockers.includes('deactivate_person_before_erasure'));assert.ok(active.blockers.includes('transfer_owned_work_before_erasure'))
  await pass(owner.patch('/api/v1/tasks/'+draft.id,{ownerId:owner.id}))
@@ -114,6 +114,13 @@ async function intakeMappingErasure(w,f,item,result,draft){
  assert.equal(mapped.length,3);assert.ok(mapped.every(r=>r.row.owner_id!==peer.id&&r.row.before_owner!==peer.id))
  assert.equal(after.find(r=>r.table==='peg_intake_template_applications'&&r.row.id===result.applicationId).row.state,'inactive')
  assert.equal((await pass(owner.get('/api/v1/tasks/'+item.taskId))).subtasks[0].id,draft.id)
+ await pass(owner.post(item.path+'/apply',command),409)
+ const restored=await restoreCanvasInstallation(owner,{earlierArchive})
+ try{
+  const rows=archiveRows(restored.archive)
+  assert.ok(rows.filter(r=>r.table==='peg_intake_template_tasks'&&r.row.application_id===result.applicationId).every(r=>r.row.owner_id!==peer.id&&r.row.before_owner!==peer.id))
+  await pass(restored.worker.owner.post(item.path+'/apply',command),404)
+ }finally{await restored.stop()}
  console.log('PROBE PEG-007 mapping erasure: active and held person review -> retained; transferred deactivated person -> exact one mapping redaction and inactive replay witness with unchanged work')
 }
 async function intakeMappingAuthority(w,f){
