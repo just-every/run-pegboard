@@ -20,6 +20,10 @@ const theme = { href: '/rer-theme.css', productName: branding.name, accentColor:
 export interface Bindings {
  /** Local native webhook schema receiver. Never selected in deployed mode. */
  PEGBOARD_LOCAL_WEBHOOK_ORIGIN?: string
+ /** HubSpot app webhook verification; never stored in product records. */
+ PEGBOARD_HUBSPOT_CLIENT_SECRET?: string
+ /** Official-schema network edge, available in local mode only. */
+ PEGBOARD_LOCAL_HUBSPOT_ORIGIN?: string
  DB: D1Database
  /** Built browser files; hosted deploys run the Worker first (staticAssetResponse). */
  ASSETS?: Fetcher

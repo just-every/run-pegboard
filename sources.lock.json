@@ -690,6 +690,10 @@
       "sha256": "86efa77e10e0b5bc52cb72becc6fed9e8b86c6badcc8ec6028f3a69c19b77b6b",
       "executable": false
     },
+    "migrations/core/0088_commercial_hubspot.sql": {
+      "sha256": "b6fbf6849c86c9e5b5d4d386591c9bb408b7872b46b3abf4504dc776d7eaf9aa",
+      "executable": false
+    },
     "ONBOARDING.md": {
       "sha256": "24b685d6eddeae5480ce4dfbf44c0590e54bcfe83641373de5bba985765380bd",
       "executable": false
@@ -1915,7 +1919,7 @@
       "executable": false
     },
     "src/auth.server.ts": {
-      "sha256": "9f81729b145e8ba093a23903d4e189883347860c72c8661d9efb1ca76b148b20",
+      "sha256": "6c87480df8beedf8bc57d04e96f8d1cae93bad315a81ed7217dbb32997122412",
       "executable": false
     },
     "src/base/actor.ts": {
@@ -3330,6 +3334,10 @@
       "sha256": "d743a25eaf37cc60d8dbf75201aba075abd41328455354bfe8035f488a3b6e28",
       "executable": false
     },
+    "src/pegboard/connectors/commercial/hubspot.ts": {
+      "sha256": "09795c357cb41f24a271884b9073ac933197de5c1730d8f824aef7053f123ad8",
+      "executable": false
+    },
     "src/pegboard/connectors/engineering/edge.ts": {
       "sha256": "e93ef57a9a0a6277a9d8948c31dbf267b6ab06aba7f0f11396a2ce039e702551",
       "executable": false
@@ -3755,7 +3763,7 @@
       "executable": false
     },
     "src/pegboard/templates/instantiation.ts": {
-      "sha256": "916fbc5a2d5bf9746ee01fbcef3f833d73683a4f2a49204bb25553273bc9652d",
+      "sha256": "9f1ac319d1c89231e10be02bf7ea1e4679a2f143f7c7a0cdc2e5a8430d64341e",
       "executable": false
     },
     "src/pegboard/templates/page-data.ts": {
