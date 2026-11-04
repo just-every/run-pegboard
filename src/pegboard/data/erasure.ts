@@ -131,7 +131,7 @@ export async function erasurePlan(db:D1Database,actor:Actor,workspace:string,typ
     await take('peg_projects',projectScoped('id'),projects)
   }
   if(proofFiles.length)await take('peg_attachments',`id IN (${placeholders(proofFiles)})`,proofFiles)
-  const commercial=await commercialErasureScope(db,type==='person'?id:null,projects)
+  const commercial=await commercialErasureScope(db,type==='person'?id:null,projects,tasks)
   const intake=type==='person'?{forms:await formErasureScope(db,id),submissions:await submissionErasureScope(db,id)}:null
   const affectedTasks=new Set(tasks)
   if(intake)for(const row of intake.submissions)affectedTasks.add(row.taskId)
@@ -143,7 +143,7 @@ export async function erasurePlan(db:D1Database,actor:Actor,workspace:string,typ
   if(type==='person'){
     for(const t of await all<{task_id:string}>(db,'SELECT task_id FROM peg_comments WHERE author_id=? UNION SELECT task_id FROM peg_attachments WHERE created_by=? UNION SELECT task_id FROM peg_agent_outputs WHERE actor_id=?',id,id,id))affectedTasks.add(t.task_id)
   }
-  const affected=[...affectedTasks], relatedProjects=new Set([...projects,...(intake?.forms.map(f=>f.projectId)??[]),...(intake?.submissions.map(s=>s.projectId)??[])]), relatedPeople=new Set<string>()
+  const affected=[...affectedTasks], relatedProjects=new Set([...projects,...(intake?.forms.map(f=>f.projectId)??[]),...(intake?.submissions.map(s=>s.projectId)??[])]), relatedPeople=new Set(commercial.people.map(p=>p.id))
   for(const handoff of commercial.handoffs)if(handoff.project_id)relatedProjects.add(handoff.project_id)
   for(const r of await all<{project_id:string}>(db,`SELECT project_id FROM peg_task_projects WHERE task_id IN (${placeholders(affected)})`,...affected))relatedProjects.add(r.project_id)
   for(const r of await all<{person:string}>(db,`SELECT owner_id person FROM peg_tasks WHERE id IN (${placeholders(affected)}) UNION SELECT creator_id person FROM peg_tasks WHERE id IN (${placeholders(affected)}) UNION SELECT author_id person FROM peg_comments WHERE task_id IN (${placeholders(affected)}) UNION SELECT created_by person FROM peg_attachments WHERE task_id IN (${placeholders(affected)})`,...affected,...affected,...affected,...affected))relatedPeople.add(r.person)

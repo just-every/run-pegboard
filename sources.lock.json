@@ -215,7 +215,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "688bf475111627e7c926bc0b2bcd8107978af131b009b7affba61e7ad161b317",
+      "sha256": "855f319380e9510932c3de1a0f76174ba1b084b89f0321268d7913ecc3fa50af",
       "executable": false
     },
     "DEMO.md": {
@@ -259,7 +259,7 @@
       "executable": false
     },
     "docs/HUBSPOT-HANDOFFS.md": {
-      "sha256": "bde3b5a50671167ec9e2c1b5c1bfd19c8874105a2c77d08b0eb754bff5621280",
+      "sha256": "1c4a1a89ff3adae4fd3d65c4fd732bc7ceb2af1a0e135fe85ee16c1e14f18f74",
       "executable": false
     },
     "docs/INTAKE.md": {
@@ -3343,11 +3343,11 @@
       "executable": false
     },
     "src/pegboard/commercial/custody.ts": {
-      "sha256": "381d6fcecb8e80ac01766e07c258287a0a6c7e06b022a1cdd2cbc40d2b4bc6cf",
+      "sha256": "86684ddc73ccd2aa2487059892e15bc97fab55df00a72fa03cfc52bbc78237b7",
       "executable": false
     },
     "src/pegboard/commercial/handoffs.ts": {
-      "sha256": "165e54147f5aaff61e8252715be65c05db4150f16a021a30a9994bf18f43e1de",
+      "sha256": "5474d06b6039138777f45e784726f9b7e6fc0fd282ec88d6ab80d49ef31779ba",
       "executable": false
     },
     "src/pegboard/connectors/calendars/edge.ts": {
@@ -3427,7 +3427,7 @@
       "executable": false
     },
     "src/pegboard/data/erasure.ts": {
-      "sha256": "9b0fe9964ba8bed04616f91e081eaad85ec2ab71d0e61fa0c44bd8ab7f8d5932",
+      "sha256": "bb14a8f4c6c93eda0640856a34e9fc3efdff9289a58a16c8d377fcecb4ecd449",
       "executable": false
     },
     "src/pegboard/data/expiry.ts": {
@@ -4471,7 +4471,7 @@
       "executable": false
     },
     "tests/scenarios/commercial-hubspot.mjs": {
-      "sha256": "86a2b4f8936b94e3996c10ec1a3ce09bb6580f604c7f19792368d9ad3b3d59fe",
+      "sha256": "4b03e0b722ce91c8dedeebca130f0558333a3cff3fcdc5f0d107444255809c5b",
       "executable": false
     },
     "tests/scenarios/conversions.mjs": {
@@ -4547,7 +4547,7 @@
       "executable": false
     },
     "tests/support/hubspot-services.mjs": {
-      "sha256": "74f52071f84d79d4966edd546232d89446d587b8e08d5e5fe4cf6901726603f5",
+      "sha256": "20dce8aaf9675ee056658218d8f74dab7c8a8f135f7e231dfacf6dadd131dfe2",
       "executable": false
     },
     "tests/support/meeting-services.mjs": {

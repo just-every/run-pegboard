@@ -30,10 +30,13 @@ Current portal, project, source and review authority are checked again before cl
 
 A persisted claim precedes the write. All writes require readback. A lost response
 or uncertain readback remains a visible exception; reconciliation reads only and
-never retries the write. A later human-reviewed status cannot be overwritten by
+never retries the write. An unresolved claim also blocks sending a review prepared
+before that claim. A later human-reviewed status cannot be overwritten by
 replaying an older acknowledged receipt. Exported archives preserve historical
 mappings with portal authority inactive and every review expired. Exact owner
-review and legal holds govern commercial erasure under `docs/DATA-CUSTODY.md`.
+review and legal holds govern commercial erasure. Holds on any participant in a
+shared review protect that review. Task erasure includes its copied return-review
+owner, status and dates, retaining only an inactive replay witness, under `docs/DATA-CUSTODY.md`.
 
 This implementation is qualified against official-schema network-edge fakes only.
 It does not establish live HubSpot app registration or source-owner consent.

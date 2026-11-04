@@ -149,6 +149,9 @@ export async function sendReturn(db: D1Database, env: Bindings, actor: Actor, wo
   const { review, source, rev, plan } = await ownReview(db, actor, workspace, id)
   if (review.kind !== 'return' || !confirmed(input.confirm)) throw invalid('commercial_exact_review_required')
   if (review.state !== 'pending') return reconcileReturn(db, env, actor, workspace, id, input)
+  // A review prepared before another send must still respect its unresolved claim.
+  // The revision guard below fences a competing claim during provider readback.
+  if (await first(db, "SELECT 1 FROM peg_commercial_reviews WHERE handoff_id=? AND kind='return' AND state IN ('sending','uncertain')", source.id)) throw conflict('commercial_reconcile_required')
   if (review.expires_at <= now() || !source.project_id) throw conflict('commercial_review_changed')
   const provider = hubspot(env, input.credential)
   const deal = await provider.read(source.portal_id, source.deal_id)

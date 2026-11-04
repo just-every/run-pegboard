@@ -4,7 +4,7 @@ import {createHmac} from 'node:crypto'
 export const hubspotCredential='synthetic-pegboard-701',hubspotSecret='synthetic-pegboard-702'
 export async function startHubspotService(){
  const deals=new Map(),requests=[]
- const state={portalId:'1001',refused:false,rejectWrite:false,lose:false,readOutage:false,writes:0,requests,deals}
+ const state={portalId:'1001',refused:false,rejectWrite:false,lose:false,loseBeforeWrite:false,readOutage:false,writes:0,requests,deals}
  state.deal=(id='2001')=>{if(!deals.has(id))deals.set(id,{id,version:1,stage:'closedwon',name:'Synthetic delivery',close:'2026-11-20T00:00:00Z',delivery:null,operation:null});return deals.get(id)}
  state.change=(id,values)=>{const deal=state.deal(id);Object.assign(deal,values);deal.version++}
  const record=deal=>({id:deal.id,archived:false,createdAt:'2026-10-01T12:00:00Z',updatedAt:new Date(Date.UTC(2026,10,1,12)+deal.version*1000).toISOString(),properties:{dealname:deal.name,pipeline:'default',dealstage:deal.stage,closedate:deal.close,hs_lastmodifieddate:new Date(Date.UTC(2026,10,1,12)+deal.version*1000).toISOString(),pegboard_delivery_status:deal.delivery,pegboard_delivery_operation:deal.operation,amount:'900000',private_notes:'synthetic-pegboard-excluded-customer',contact_email:['synthetic-pegboard-9','example.invalid'].join('@')}})
@@ -31,6 +31,7 @@ export async function startHubspotService(){
    return send(200,record(deal))
   }
   if(req.method==='PATCH'){
+   if(state.loseBeforeWrite){state.loseBeforeWrite=false;state.readOutage=true;req.socket.destroy();return}
    if(state.rejectWrite)return send(403,{status:'error',message:'Write refused'})
    if(Object.keys(input??{}).join(',')!=='properties'||Object.keys(input.properties??{}).sort().join(',')!=='pegboard_delivery_operation,pegboard_delivery_status'||!['in_progress','delivered'].includes(input.properties.pegboard_delivery_status))return send(400,{status:'error'})
    deal.delivery=input.properties.pegboard_delivery_status;deal.operation=input.properties.pegboard_delivery_operation;deal.version++;state.writes++
