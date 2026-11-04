@@ -58,10 +58,11 @@ export function availableColumns(fields: Awaited<ReturnType<typeof fieldLibrary>
   return [...['title', 'status', 'owner', 'dueDate', 'startDate', 'estimate', 'section'].map(id => ({ id, label: ({ dueDate: 'Due date', startDate: 'Start date', estimate: 'Estimate hours' } as Record<string, string>)[id] ?? id[0].toUpperCase() + id.slice(1) })),
     ...fields.map(field => ({ id: `field:${field.id}`, label: field.label }))]
 }
-export async function listWorkViews(db: D1Database, actor: Actor, projectId: string) {
+export async function listWorkViews(db: D1Database, actor: Actor, projectId: string, compact = false, contexts?: Map<string, Awaited<ReturnType<typeof viewContext>>>) {
   return stableRead(db, async fence => {
     const { project, effective, scope } = await openViewScope(db, actor, projectId)
-    const projects = await scopeProjects(db, actor, projectId)
+    contexts?.clear()
+    const projects = compact ? [] : await scopeProjects(db, actor, projectId)
     const fields = [], owners = new Set<string>()
     for (const project of projects) {
       const opened = await openProject(db, actor, project.id)
@@ -73,7 +74,14 @@ export async function listWorkViews(db: D1Database, actor: Actor, projectId: str
     const views = []
     for (const row of rows) {
       const context = await viewContext(db, actor, row).catch(error => { if (error?.status === 404) return null; throw error })
-      if (context) views.push(presentView(row, pruneConfig(context.config, context.allowed, row.owner_id === actor.id ? undefined : owners), actor))
+      if (context) {
+        contexts?.set(row.id, context)
+        const permittedOwners = compact && row.owner_id !== actor.id && context.config.filters.ownerIds.length ? new Set<string>() : owners
+        if (compact && row.owner_id !== actor.id && context.config.filters.ownerIds.length) {
+          for (const entry of context.projects) for (const task of await scopedTasks(db, actor, context.owner, entry.project.id)) permittedOwners.add(task.owner_id)
+        }
+        views.push(presentView(row, pruneConfig(context.config, context.allowed, row.owner_id === actor.id ? undefined : permittedOwners), actor))
+      }
     }
     const defaults = await all<DefaultRow>(db, `SELECT * FROM ${defaultTable(projectId)} WHERE ${scopeKey(projectId)}=? AND subject_id IN (?,?)`, projectId, actor.id, '')
     const personal = defaults.find(row => row.subject_id === actor.id), team = defaults.find(row => row.subject_id === '')

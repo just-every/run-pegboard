@@ -4127,11 +4127,11 @@
       "executable": false
     },
     "src/pegboard/views/service.ts": {
-      "sha256": "08d57d14392edfb6f7f4baa9fd3ca9a95910b0cbc983142b73705f9fdbcd205a",
+      "sha256": "990bd178a230c57cd376a843b73135e14b166e57b3082f851e66c0fc4073046d",
       "executable": false
     },
     "src/pegboard/views/store.ts": {
-      "sha256": "1cfe7c9118ac4c7ae63678c8a1f1fb4c99089b60d7f2caaf2394de4acb32491f",
+      "sha256": "3a539bd01632e2a56a8d8d2c088027fe8830ef0888c5121104c33261f6ca562a",
       "executable": false
     },
     "src/pegboard/views/workload.ts": {
@@ -4447,7 +4447,7 @@
       "executable": false
     },
     "tests/journeys/work-views.mjs": {
-      "sha256": "dfbf4f428963d74fc0bf6b8baf4ade3015f7ae4d707d01d62b406b96b827e649",
+      "sha256": "6a85412b464974840e1fbc564b4df0927fab819428d4601a226aabfe34de1ba6",
       "executable": false
     },
     "tests/journeys/workflow-bundles.mjs": {
@@ -4527,7 +4527,7 @@
       "executable": false
     },
     "tests/scenarios/work-views.mjs": {
-      "sha256": "e3ad0c227be787d6da41a273c6d3532854ecf0cdc6c952e2e225622307141b60",
+      "sha256": "b1ed0c2680b24f665ea8ce6924f35d72d0abfaec2e83d701fd4ac6c3f12de10d",
       "executable": false
     },
     "tests/schedule.test.mjs": {

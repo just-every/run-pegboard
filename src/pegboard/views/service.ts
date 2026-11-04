@@ -18,11 +18,13 @@ const bounded = (input: number | string | undefined, fallback: number, max: numb
 export async function workView(db: D1Database, actor: Actor, projectId: string, options: WorkViewOptions = {}) {
   return stableRead(db, async fence => {
     const { project, effective, scope } = await openViewScope(db, actor, projectId)
-    const catalogue = await listWorkViews(db, actor, projectId)
+    // Polls need configurations and defaults, not the Settings catalogue of every task owner and field.
+    const contexts = new Map<string, Awaited<ReturnType<typeof viewContext>>>()
+    const catalogue = await listWorkViews(db, actor, projectId, true, contexts)
     const selected = options.viewId || catalogue.personalDefaultId || catalogue.teamDefaultId
     const saved = selected ? await loadView(db, selected) : null
     if (saved && scopeId(saved) !== projectId) throw notFound()
-    const context = saved ? await viewContext(db, actor, saved) : null
+    const context = saved ? contexts.get(saved.id) ?? await viewContext(db, actor, saved) : null
     const owner = context?.owner ?? actor
     const projects = context?.projects ?? (scope === 'project' ? [{ ...await openProject(db, actor, projectId), fields: (await fieldLibrary(db, projectId)).filter(field => fieldReadable(field, effective)) }] : [])
     const fields = [...new Map(projects.flatMap(entry => entry.fields).map(field => [field.id, field])).values()]

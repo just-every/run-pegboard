@@ -227,7 +227,7 @@ export async function workViewsJourney({w,browser,ok}) {
  await teamWorkViewsJourney({w,browser,ok})
 }
 
-async function teamWorkViewsJourney({w,browser,ok}) {
+export async function teamWorkViewsJourney({w,browser,ok}) {
  const pass=async(request,status=200)=>ok(await request,status),root=w.owner
  const editor=await w.person(['synthetic-pegboard-3031','example.com'].join('@'),'Rae Regional lead')
  const guest=await w.person(['synthetic-pegboard-3032','example.com'].join('@'),'Regional client','guest')
@@ -297,13 +297,21 @@ async function teamWorkViewsJourney({w,browser,ok}) {
   let reloads=0;a.page.on('framenavigated',frame=>{if(frame===a.page.mainFrame())reloads++})
   const move=row(b.page,tasks[0].id).getByRole('form',{name:'Move Regional delivery 1'})
   await move.getByLabel('Move to section').selectOption(section.id)
+  const movedResponse=b.page.waitForResponse(response=>response.url().endsWith(`/work-view-tasks/${tasks[0].id}/move`)&&response.request().method()==='POST')
   await move.getByRole('button',{name:'Move card'}).focus();await b.page.keyboard.press('Enter')
+  const moved=await movedResponse
+  assert.equal(moved.status(),200,JSON.stringify(await moved.json()))
+  assert.equal((await pass(root.get(`/api/v1/tasks/${tasks[0].id}`))).status,'doing')
   await expect(row(a.page,tasks[0].id).locator('[data-summary]')).toContainText('doing')
   const dates=row(a.page,tasks[1].id).getByRole('form',{name:'Change due date for Regional delivery 2'})
   await dates.getByLabel('Due date',{exact:true}).fill('2026-07-10');await dates.getByRole('button',{name:'Preview date change'}).click()
   await expect(a.page.locator('[data-date-preview]')).toContainText('2026-07-10')
   await proof('date-review',a.page)
+  const dateResponse=a.page.waitForResponse(response=>response.url().endsWith(`/work-view-tasks/${tasks[1].id}/date-apply`)&&response.request().method()==='POST')
   await a.page.getByRole('button',{name:'Apply this change set'}).focus();await a.page.keyboard.press('Enter')
+  const appliedDate=await dateResponse
+  assert.equal(appliedDate.status(),200,JSON.stringify(await appliedDate.json()))
+  assert.equal((await pass(root.get(`/api/v1/tasks/${tasks[1].id}`))).dueDate,'2026-07-10')
   await expect(row(b.page,tasks[1].id).locator('[data-summary]')).toContainText('2026-07-10')
   assert.equal(reloads,0,'team edits paint in the other open view without reload')
   for(const project of projects.slice(0,2)){
