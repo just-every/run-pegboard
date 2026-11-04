@@ -215,7 +215,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "483c7fa3ac5443c2b08e1752522fae470471a2247beba88e16bd0a3b791f167b",
+      "sha256": "fed7b2f51c1f688b6b08873b75defc627713f0c9d4ff611e34c27566b71820ba",
       "executable": false
     },
     "DEMO.md": {
@@ -4487,11 +4487,11 @@
       "executable": false
     },
     "tests/scenarios/intake-erasure.mjs": {
-      "sha256": "27a6b08c90083dcbb830acc427da22f912ee3d532767174d7052b6b15feeae20",
+      "sha256": "d6ffc94547d6ba107250ee4dce0071a21cc14b16d449d67780ec6afbc49d308f",
       "executable": false
     },
     "tests/scenarios/intake-templates.mjs": {
-      "sha256": "c9e501d4c96b50b5c4b45805c798576d786c91c5501d003d1b9ceda060437d99",
+      "sha256": "ac8be3742af24e48e2ee9b30434483e333187f0f8fb8dc7a41a32488d2f31b9d",
       "executable": false
     },
     "tests/scenarios/intake.mjs": {

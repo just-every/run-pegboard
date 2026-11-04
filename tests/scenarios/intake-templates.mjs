@@ -121,6 +121,17 @@ async function intakeMappingErasure(w,f,item,result,draft,command,earlierArchive
   assert.ok(rows.filter(r=>r.table==='peg_intake_template_tasks'&&r.row.application_id===result.applicationId).every(r=>r.row.owner_id!==peer.id&&r.row.before_owner!==peer.id))
   await pass(restored.worker.owner.post(item.path+'/apply',command),404)
  }finally{await restored.stop()}
+ const taskReview=await pass(owner.post('/api/v1/data/erasure-preview',{type:'task',id:item.taskId}))
+ assert.deepEqual(taskReview.blockers,[]);assert.equal(taskReview.counts.peg_tasks,3);assert.equal(taskReview.counts.peg_intake_template_tasks,3);assert.equal(taskReview.retained.intake_template_witnesses,1)
+ const erased=await pass(owner.post('/api/v1/data/erase',{type:'task',id:item.taskId,token:taskReview.token,confirm:true}))
+ assert.equal(erased.counts.peg_tasks,3)
+ await pass(owner.get('/api/v1/tasks/'+item.taskId),404)
+ await pass(owner.post(item.path+'/apply',command),404)
+ await pass(owner.post(f.base+'/submit',{version:1,requestKey:'synthetic-pegboard-7102',answers:f.answers}),410)
+ const erasedRows=archiveRows(await exportCanvasInstallation(owner))
+ assert.equal(erasedRows.find(r=>r.table==='peg_intake_submissions'&&r.row.id===item.receipt).row.answers,null)
+ assert.equal(erasedRows.filter(r=>r.table==='peg_intake_template_tasks'&&r.row.application_id===result.applicationId).length,0)
+ console.log('PROBE PEG-007 erased mapping replay: exact root with two descendants erased -> all three native task identities absent, answer snapshot cleared and both submit and application replay refused')
  console.log('PROBE PEG-007 mapping erasure: active and held person review -> retained; transferred deactivated person -> exact one mapping redaction and inactive replay witness with unchanged work')
 }
 async function intakeMappingAuthority(w,f){
