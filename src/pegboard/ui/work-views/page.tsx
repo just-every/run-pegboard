@@ -34,11 +34,12 @@ export function WorkViewPage({ viewer, data, presets, input }: { viewer:Viewer; 
 export function WorkViewContent({data}:{data:Data}) {
   const columns = data.config.columns.length ? data.config.columns : ['title']
   const labels = new Map(data.availableColumns.map(column=>[column.id,column.label]))
-  const grouping = data.config.mode === 'calendar' ? 'dueDate' : data.config.groupBy
+  const grouping = data.config.mode === 'calendar' && data.config.groupBy !== 'membership' ? 'dueDate' : data.config.groupBy
   const groups = new Map<string,WorkRow[]>()
   for(const row of displayedRows(data.rows,grouping)) {
     const value = grouping === 'dueDate' ? row.dueDate?.slice(0,10)??'Undated' : grouping ? textValue(columnValue(row,grouping)) : 'Tasks'
-    groups.set(value,[...(groups.get(value)??[]),row])
+    const key = grouping === 'membership' ? row.homeProject.id : value
+    groups.set(key,[...(groups.get(key)??[]),row])
   }
   const card = (row:WorkRow) => <li className="work-row" key={`${row.id}-${row.homeProject.id}`} data-work-row={row.id} data-home-project={row.homeProject.id} data-revision={row.revision}>
     <div className="grow"><a href={`/app/tasks/${row.id}`}>{row.title}</a><p data-summary>{summary(row)}</p>
@@ -54,7 +55,7 @@ export function WorkViewContent({data}:{data:Data}) {
     {data.config.mode==='table'?<Card title="Task table"><WorkTable rows={displayedRows(data.rows,data.config.groupBy)} columns={columns} availableColumns={data.availableColumns} projectId={data.project.id} groupBy={data.config.groupBy}/></Card>:<>
       {data.config.mode==='timeline'&&<Card title="Schedule overview"><TimelineRange rows={data.rows}/></Card>}
       {data.config.mode==='workload'&&data.workload&&<Card title="Committed workload"><p>Capacity for the same filtered work. Completed tasks stay in the task list and add no committed hours.</p>{data.workload.people.map(person=><section key={person.id}><h3>{person.name}</h3><p>{person.hours} committed h · {person.days.reduce((sum,day)=>sum+day.availableHours,0)} available h · {person.zone}</p><ul className="rows">{person.days.map(day=><li key={day.date}>{day.date} · {day.hours} h committed · {day.availableHours} h available</li>)}</ul></section>)}</Card>}
-      {[...groups].map(([name,rows])=><Card key={name} title={name}><ul className="rows">{rows.map(card)}</ul></Card>)}
+      {[...groups].map(([key,rows])=><Card key={key} title={grouping==='membership'?textValue(columnValue(rows[0],'membership')):key}><ul className="rows">{rows.map(card)}</ul></Card>)}
       {data.rows.length===0&&<Card title="No matching work"><p>No permitted tasks match these filters.</p></Card>}
     </>}
     {data.pagination&&data.pagination.total>data.rows.length&&<p>Showing {data.rows.length} of {data.pagination.total} matching tasks. Narrow this view to see the work you need.</p>}

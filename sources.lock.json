@@ -4031,7 +4031,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/table.tsx": {
-      "sha256": "abe299ced82a96504601051092f58a0995168963c26ca617e84146540a6b6466",
+      "sha256": "82482ad64ea745aaa74b6933de9656a73e2bd0b8bbeb5e7e0fce47be3dde0020",
       "executable": false
     },
     "src/pegboard/ui/pages/tags.tsx": {
@@ -4095,7 +4095,7 @@
       "executable": false
     },
     "src/pegboard/ui/work-views/page.tsx": {
-      "sha256": "c70577aa093375612541d3fc638ebf0241c854135d02d15715be67e4747fbfa4",
+      "sha256": "657d03b81656ed96188cd5695dcdeb936477af3fb8e2870aebbe1e33592c18f2",
       "executable": false
     },
     "src/pegboard/ui/work-views/rows.tsx": {
@@ -4447,7 +4447,7 @@
       "executable": false
     },
     "tests/journeys/work-views.mjs": {
-      "sha256": "6a85412b464974840e1fbc564b4df0927fab819428d4601a226aabfe34de1ba6",
+      "sha256": "e92a56351c81017f74a87c70801f1fc85b6479681cd58c4d04f98466d6c7df71",
       "executable": false
     },
     "tests/journeys/workflow-bundles.mjs": {
@@ -4527,7 +4527,7 @@
       "executable": false
     },
     "tests/scenarios/work-views.mjs": {
-      "sha256": "b1ed0c2680b24f665ea8ce6924f35d72d0abfaec2e83d701fd4ac6c3f12de10d",
+      "sha256": "1120a9123dee311f452e72527e2de44ea2d60d8de1f515ac4054810a760c8133",
       "executable": false
     },
     "tests/schedule.test.mjs": {
