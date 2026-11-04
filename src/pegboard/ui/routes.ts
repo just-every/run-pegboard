@@ -1,3 +1,5 @@
+import { colleagueDirectory, teammateProfile } from '../workspace/profiles'
+import { ColleaguesPage, ProfilePage } from './pages/profile'
 import { ApprovalFollowupSettings } from './pages/approval-followup'
 import { followupSettings, previewFollowupPolicy } from '../notices/approval-policy'
 import { approvalFollowupInbox, approvalFollowupLog } from '../notices/approval-followup'
@@ -197,6 +199,11 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
   const editorFor=async(projectId:string,tasks:{value:string;label:string}[],here:string):Promise<ScheduleEditorProps>=>({here,projectId,tasks,people:await peopleOptions(db,actor,workspace),input:scheduleInput,preview:await schedulePreview(db,actor,scheduleInput)})
 
   try {
+    if (section === 'people' && segments.length <= 3) {
+      const scope = url.searchParams.get('workspace') ?? workspace
+      if (id) return page('Teammate profile', h(ProfilePage, { viewer, view: await teammateProfile(db, actor, scope, id, Object.fromEntries(url.searchParams)) }))
+      return page('People', h(ColleaguesPage, { viewer, view: await colleagueDirectory(db, actor, scope) }))
+    }
     if(section==='settings'&&id==='approval-followup'&&!tail){
       const input:Record<string,any>=Object.fromEntries(url.searchParams)
       for(const key of ['projects','recipients','escalation','days'])input[key]=url.searchParams.getAll(key+'[]')

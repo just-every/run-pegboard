@@ -1,3 +1,5 @@
+import { profileAssignmentsScenario, profileAvailabilityScenario } from './scenarios/profiles.mjs'
+import { startCapacityServices } from './support/capacity-services.mjs'
 import { approvalFollowupRoutingScenario, approvalFollowupAuthorityScenario } from './scenarios/approval-followup.mjs'
 import { intakeErasureScenario } from './scenarios/intake-erasure.mjs'
 import { intakeScenario } from './scenarios/intake.mjs'
@@ -2481,4 +2483,18 @@ describe('Native approval follow-up', {concurrency:false},()=>{
  after(()=>worker?.stop())
  it('routes finite internal follow-up through working hours, DND, queued delegation, restart and a real decision',async()=>approvalFollowupRoutingScenario(worker))
  it('cancels obsolete follow-up and refuses hidden, revoked, deactivated and muted recipients without reviving old episodes',async()=>approvalFollowupAuthorityScenario(worker))
+})
+
+
+describe('Teammate profiles', {concurrency:false}, () => {
+ it('reads only permitted assigned work and refuses guests, inactive people and revoked access after restart', async () => {
+  const worker = await startWorker()
+  try { await profileAssignmentsScenario(worker) } finally { await worker.stop() }
+ }, {timeout:180000})
+ it('reports working availability without hidden-work totals or private leave and keeps unavailable freshness unknown', async () => {
+  const services = await startCapacityServices()
+  let worker
+  try { worker = await startWorker({settings:{PEGBOARD_LOCAL_CAPACITY_ORIGINS:services.origins}}); await profileAvailabilityScenario(worker, services) }
+  finally { await worker?.stop(); await services.stop() }
+ }, {timeout:180000})
 })
