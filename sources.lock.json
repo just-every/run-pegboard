@@ -199,7 +199,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "bf33e884bfa8fd301034b6dee610e459a6b58b0df8391527ea5f5dde1ff90b90",
+      "sha256": "2c58ce5bf3de4dc37605f72cbd33a96fb2c8da1a73d683202adc91ee5c646d00",
       "executable": false
     },
     "AGENTS.md": {
@@ -243,7 +243,7 @@
       "executable": false
     },
     "docs/CLAIMS.md": {
-      "sha256": "5f5707568b69890ad239209375a4a03f2d0c8470681b63bbed3284345e11a40d",
+      "sha256": "614230bf1c7cd0ccec9a0cc7f4fe9598b9c5ff6af1772a988125200a5eabe4cc",
       "executable": false
     },
     "docs/contract/PEG-128-rubric.md": {
@@ -4499,7 +4499,7 @@
       "executable": false
     },
     "tests/scenarios/provider-log-retention.mjs": {
-      "sha256": "9eabf2094f2e0c468169c98427cc3630aee0df8f4b82762284a3a80b5494fff2",
+      "sha256": "2f6b8073a7fcbcd534651e69c5094054214a8466448cd8529bc281d9b7d860d2",
       "executable": false
     },
     "tests/scenarios/public-api.mjs": {

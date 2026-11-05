@@ -66,7 +66,7 @@ export async function providerLogRetentionScenario(){
  try{
   w=await startWorker({settings:{PEGBOARD_LOCAL_TIME_SERVICE_ORIGINS:services.origins}})
   const f=await providerLogFixture(w,services),{owner,member,admin}=f
-  const original=await baseline(w),audit=await query(w,'SELECT * FROM peg_permanent_audit ORDER BY id'),history=f.rows,unresolved=history.filter(row=>row.entry_id===f.entries[0].id)
+  const retentionCalls=services.requests.length,original=await baseline(w),audit=await query(w,'SELECT * FROM peg_permanent_audit ORDER BY id'),history=f.rows,unresolved=history.filter(row=>row.entry_id===f.entries[0].id)
   const approvedTotal=async()=>{
    let total=0
    for(const id of [f.sheet.id,f.correction.id]){
@@ -87,6 +87,9 @@ export async function providerLogRetentionScenario(){
    history.map(row=>({id:row.id,service:row.service,account:row.account,actorId:row.actor_id,at:row.at,entryId:row.entry_id,sheetId:row.sheet_id,state:row.state})),
    'the reviewed diagnostic identities and attribution match the persisted delivery door records')
   for(const row of unresolved)assert.ok(preview.providerRows.find(r=>r.id===row.id).reason)
+  const recent=preview.providerRows.find(row=>row.entryId===f.entries[4].id&&row.state==='sending')
+  assert.ok(recent.at>preview.cutoff);assert.ok(recent.acknowledgmentId)
+  assert.match(recent.reason,/newer than the frozen cutoff/,'a settled but recent attempt remains with its actual cutoff reason')
   for(const client of [member,admin]){
    await pass(client.post('/api/v1/data/expiry-preview',{class:'provider_logs',cutoff:f.cutoff}),403)
    await pass(expireLogs(f,preview,client),403)
@@ -104,16 +107,20 @@ export async function providerLogRetentionScenario(){
   await pass(expireLogs(f,stale),409)
   assert.deepEqual(await query(w,'SELECT * FROM peg_time_delivery_history ORDER BY id'),history)
   const changedPolicy=await previewLogs(f)
-  for(const days of [2,1]){
+  for(const days of [null,2,1]){
    const policy=await pass(owner.post('/api/v1/data/retention-preview',{class:'provider_logs',days}))
    await pass(owner.post('/api/v1/data/retention',{class:'provider_logs',days,token:policy.token,confirm:true}))
+   if(days===null){
+    const refused=await pass(expireLogs(f,changedPolicy),409)
+    assert.equal(refused.error,'retention_not_configured')
+   }
   }
   await pass(expireLogs(f,changedPolicy),409)
   assert.deepEqual(await query(w,'SELECT * FROM peg_time_delivery_history ORDER BY id'),history,'restoring a policy never revives an earlier review')
   await pass(owner.post(`/api/v1/workspaces/ws_main/people/${admin.id}/account`,{role:'owner'}))
   const successor=await w.signIn(admin.email,admin.name,admin.id)
   const boundReview=await previewLogs(f)
-  await pass(expireLogs(f,boundReview,successor),409,'another current owner must obtain their own exact review')
+  await pass(expireLogs(f,boundReview,successor),409)
   const erasedProject=await pass(owner.post('/api/v1/projects',{name:'Later independently erased scope'}))
   const erasedTask=await pass(owner.post('/api/v1/tasks',{projectId:erasedProject.id,title:'Later erasure must not restore diagnostics'}))
   const earlierArchive=await exportCanvasInstallation(owner),review=await previewLogs(f)
@@ -169,6 +176,8 @@ export async function providerLogRetentionScenario(){
   await pass(successor.post(`/api/v1/workspaces/ws_main/people/${owner.id}/account`,{status:'inactive'}))
   await pass(expireLogs(f,final),401)
   assert.deepEqual(await query(w,'SELECT * FROM peg_time_delivery_history ORDER BY id'),remaining)
+  assert.equal(services.requests.length,retentionCalls,'preview, holds, refused confirmations, expiry, later erasure and archive recovery make zero provider calls')
+  console.log('PROBE PEG-065 policy and cutoff: keep-until-erasure refuses expiry; restored policy refuses old review; recent settled diagnostic stays newer than the frozen cutoff')
   console.log('PROBE PEG-065 exact expiry: schema-fake time-delivery door -> real persisted sending rows, exact expired IDs '+expected.join(',')+' and retained IDs '+remaining.map(r=>r.id).join(','))
   console.log('PROBE PEG-065 authority and holds: owner review, administrator and member refusal, active hold, stale and concurrent confirmation -> one receipt, unchanged held history and no provider calls')
   console.log('PROBE PEG-065 durable custody: expiry, later independent erasure, restart, replay and native archive with later journal -> no resurrection; ledger, approved original 18000 seconds and corrected total 17640 seconds, signed sheets and time history unchanged')
