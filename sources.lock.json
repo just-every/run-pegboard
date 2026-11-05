@@ -4555,11 +4555,11 @@
       "executable": false
     },
     "tests/support/worker.mjs": {
-      "sha256": "f81711f0d81a344f730b8728a9cb5730367fe813dfd5af75f0c15a7155283b07",
+      "sha256": "45aecd03077f7476fc0d548087470c74ef2ea1d8b13b21fe5d81048706701ad0",
       "executable": false
     },
     "tests/work-graph.test.mjs": {
-      "sha256": "741d64b780ba565ee2e386034c708348ada6d7a0679a373da8af8253e2eead52",
+      "sha256": "51996c9a24213b82cd0be85b6915a91031466d22bc90e558540a4b0f2e18953e",
       "executable": false
     },
     "tsconfig.json": {

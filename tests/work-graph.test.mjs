@@ -47,7 +47,7 @@ function csvRecords(text) {
 let campaign, launch, shared, mkt
 
 describe('Test worker lifecycle', {concurrency:false}, () => {
- it('recovers from an occupied startup port without contacting its listener and keeps the new origin through restart', {timeout:120000}, async () => {
+ it('recovers from an occupied startup port with colored logs, leaves its listener alone and keeps the new origin through restart', {timeout:120000}, async () => {
   let foreignRequests = 0, worker
   const occupied = createMailServer((request, response) => {
    foreignRequests++
@@ -57,7 +57,8 @@ describe('Test worker lifecycle', {concurrency:false}, () => {
   await new Promise(resolve => occupied.listen(0, '127.0.0.1', resolve))
   const preferredPort = occupied.address().port
   try {
-   worker = await startWorker({preferredPort})
+   worker = await startWorker({preferredPort,settings:{FORCE_COLOR:'1'}})
+   assert.ok(worker.output().includes('\u001b['), 'exercise terminal-formatted Vite output')
    assert.ok(worker.output().includes(`Port ${preferredPort} is already in use`), 'exercise an actual failed Vite bind')
    assert.notEqual(worker.origin, `http://127.0.0.1:${preferredPort}`)
    assert.equal(foreignRequests, 0, 'never accept another listener as a ready Worker')

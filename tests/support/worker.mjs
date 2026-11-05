@@ -6,6 +6,7 @@ import { createServer } from 'node:net'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { stripVTControlCharacters } from 'node:util'
 
 const wrangler = ['node_modules/wrangler/bin/wrangler.js']
 const quiet = { ...process.env, CI: '1', WRANGLER_SEND_METRICS: 'false' }
@@ -58,14 +59,14 @@ export async function startWorker({ settings = {}, restoredPersist, preferredPor
     for (let attempt = 0; ; attempt++) {
       if (child.exitCode !== null || attempt > 480) throw new Error(`Worker did not start\n${output}`)
       // A competing listener's healthy response cannot make our Worker ready.
-      try { if (attemptOutput.includes(`${origin}/`) && (await fetch(`${origin}/health`)).ok) break } catch {}
+      try { if (stripVTControlCharacters(attemptOutput).includes(`${origin}/`) && (await fetch(`${origin}/health`)).ok) break } catch {}
       await new Promise(resolve => setTimeout(resolve, 250))
     }
   }
   for (let attempt = 0; ; attempt++) {
     launch()
     try { await ready(); break } catch (error) {
-      if (attempt >= 2 || child.exitCode === null || !attemptOutput.includes(`Port ${port} is already in use`)) throw error
+      if (attempt >= 2 || child.exitCode === null || !stripVTControlCharacters(attemptOutput).includes(`Port ${port} is already in use`)) throw error
       port = await unusedPort()
       origin = `http://127.0.0.1:${port}`
       env.AUTH_ORIGIN = origin
