@@ -61,6 +61,11 @@ planning or approval states:
   and mapped task must currently permit export, with that origin explicitly
   selected. Moving a task elsewhere does not move its receipt's origin.
   Membership access requests and erased or unreadable work are excluded.
+  Read access alone does not authorize reporting: losing export on a selected
+  origin refuses capture and saved downloads even when another placement still
+  makes its task readable. A higher workspace export minimum also applies to
+  existing snapshots. Restoring export authority makes the same frozen values
+  available again; it does not recapture changed work.
   Business source records show the receipt identity and link to the permitted
   task. Reports contain no raw answers, submitter identity, public capability or
   fingerprint. Revoking form publication does not delete already received work

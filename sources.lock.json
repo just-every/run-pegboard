@@ -215,7 +215,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "5dd8dba9dd842650fad3c4c681c5c9a81a23d67613378f563aa79b032d1e4a01",
+      "sha256": "7489fbf40b0f5ed29481ce994be14ccf0cbb5390f553f5049912901b01f35773",
       "executable": false
     },
     "DEMO.md": {
@@ -291,7 +291,7 @@
       "executable": false
     },
     "docs/REPORTING.md": {
-      "sha256": "3cc5cf55b67da52bc991b6404b2d78f2746f8cc082d9304fdbd64e88cf4979f2",
+      "sha256": "f3417dce4a36a6baa85cc623a6e82faa328ea5d2f369f247a2da7e47a6e4e3d4",
       "executable": false
     },
     "docs/STATUS-API.md": {
@@ -4487,7 +4487,7 @@
       "executable": false
     },
     "tests/scenarios/intake-reporting.mjs": {
-      "sha256": "d2d6dbb6ee41b6488c99004f8616945d8a80cffcf144b14300993d37c3c59248",
+      "sha256": "949d860629f4feb74815f3def2c64cd756fdec710f2011ba3578879a6c78aef4",
       "executable": false
     },
     "tests/scenarios/intake.mjs": {
