@@ -215,7 +215,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "61875076fe1d8277751fb913e76925e00bf1037d71e93cc256dad141805e2b79",
+      "sha256": "5dd8dba9dd842650fad3c4c681c5c9a81a23d67613378f563aa79b032d1e4a01",
       "executable": false
     },
     "DEMO.md": {
@@ -291,7 +291,7 @@
       "executable": false
     },
     "docs/REPORTING.md": {
-      "sha256": "e215a676f92ffb949a40134d70fd85a449d4d27d5b7957728e1db81f5e2ec890",
+      "sha256": "3cc5cf55b67da52bc991b6404b2d78f2746f8cc082d9304fdbd64e88cf4979f2",
       "executable": false
     },
     "docs/STATUS-API.md": {
@@ -3651,7 +3651,7 @@
       "executable": false
     },
     "src/pegboard/reporting/metrics.ts": {
-      "sha256": "095639a2c1495ad4cd5e1ff6dc61037fb14431092e17099ea70dac648783e601",
+      "sha256": "4e8d682a6ff6c20c1e18eef119f17b1edd746b10eb7c5d5343279d4baceb5e08",
       "executable": false
     },
     "src/pegboard/revisions/briefs.ts": {
@@ -4007,7 +4007,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/reports.tsx": {
-      "sha256": "c5048f39442d265d6525762c338ae9f6c20935a546f8be6c3e232a65dd2a0750",
+      "sha256": "b280c830e21321ec0a67dc20399070fadcb70830a825dac9e1c391b4b3fc6895",
       "executable": false
     },
     "src/pegboard/ui/pages/rule-request.tsx": {
@@ -4407,7 +4407,7 @@
       "executable": false
     },
     "tests/journeys/reporting.mjs": {
-      "sha256": "258e4f839954229da65cf6b6af24b547b5ed435e78866181399809490db2ea56",
+      "sha256": "a3663ab0c00edbda72f0e838e02d266bab802c24ca416d14764fb21daab5c9ab",
       "executable": false
     },
     "tests/journeys/rule-audit.mjs": {
@@ -4484,6 +4484,10 @@
     },
     "tests/scenarios/intake-erasure.mjs": {
       "sha256": "27a6b08c90083dcbb830acc427da22f912ee3d532767174d7052b6b15feeae20",
+      "executable": false
+    },
+    "tests/scenarios/intake-reporting.mjs": {
+      "sha256": "d2d6dbb6ee41b6488c99004f8616945d8a80cffcf144b14300993d37c3c59248",
       "executable": false
     },
     "tests/scenarios/intake.mjs": {
@@ -4571,7 +4575,7 @@
       "executable": false
     },
     "tests/work-graph.test.mjs": {
-      "sha256": "1fac15a074e53a2ed94b55cd0b4d7c39e7dc520e44d5e5ef4089f7dd929ef656",
+      "sha256": "3b0e64e0a4a5cae69ed83a043562f29e7465e0826300ef3c81a3102e7e7af8cc",
       "executable": false
     },
     "tsconfig.json": {

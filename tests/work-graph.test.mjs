@@ -1,3 +1,4 @@
+import { intakeReportingScenario } from './scenarios/intake-reporting.mjs'
 import {providerLogRetentionScenario} from './scenarios/provider-log-retention.mjs'
 import {pdfFeedbackScenario,pdfFeedbackCustodyScenario} from './scenarios/pdf-feedback.mjs'
 import { approvalFollowupRoutingScenario, approvalFollowupAuthorityScenario } from './scenarios/approval-followup.mjs'
@@ -2489,7 +2490,7 @@ describe('Native reporting',{concurrency:false},()=>{
  before(async()=>{worker=await startWorker()},{timeout:120000})
  after(()=>worker?.stop())
  it('reconciles dashboard history, real downloads and revoked access across three projects',async()=>{
-  for(const {files,report} of [await reportingScenario(worker),await reportingBusinessScenario(worker)]){
+  for(const {files,report} of [await reportingScenario(worker),await reportingBusinessScenario(worker),await intakeReportingScenario(worker)]){
   const csv=new TextDecoder().decode(files.csv),records=csvRecords(csv),columns=records[0]
   const data=records.slice(1).map(values=>Object.fromEntries(columns.map((name,i)=>[name,values[i]])))
   assert.equal(data[0].snapshot,report.id)
