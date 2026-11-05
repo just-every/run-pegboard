@@ -4575,7 +4575,7 @@
       "executable": false
     },
     "tests/work-graph.test.mjs": {
-      "sha256": "3b0e64e0a4a5cae69ed83a043562f29e7465e0826300ef3c81a3102e7e7af8cc",
+      "sha256": "7201621c6f2ea6f5b424b2e46e38b12aad31320b2eadbb4ee142dfaa10e48c98",
       "executable": false
     },
     "tsconfig.json": {
