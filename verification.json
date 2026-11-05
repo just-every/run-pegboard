@@ -134,7 +134,7 @@
       "browser": true,
       "hosted": false,
       "commands": [
-        "pnpm exec rer queue test:journeys-services-work -- sh -c \"PEGBOARD_JOURNEY=search-bulk,analytics,engineering,meetings,custody,departure node tests/journeys/work-graph.journey.mjs\""
+        "pnpm exec rer queue test:journeys-services-work -- sh -c \"PEGBOARD_JOURNEY=search-bulk,analytics,engineering,meetings,custody,provider-log-retention,departure node tests/journeys/work-graph.journey.mjs\""
       ]
     },
     {

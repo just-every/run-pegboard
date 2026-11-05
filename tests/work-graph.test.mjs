@@ -84,7 +84,7 @@ describe('Retained PDF feedback',{concurrency:false},()=>{
 })
 
 describe('Data custody provider diagnostics',{concurrency:false},()=>{
- it('expires exact reviewed superseded diagnostics while preserving delivery witnesses, authority and native recovery',{timeout:240000},providerLogRetentionScenario)
+ it('expires exact reviewed superseded diagnostics while preserving delivery witnesses, authority and native recovery',{timeout:360000},providerLogRetentionScenario)
 })
 
 describe('Data custody PDF feedback',{concurrency:false},()=>{

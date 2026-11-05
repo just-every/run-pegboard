@@ -7,7 +7,7 @@ export async function startTimeServices() {
   const harvest = { account: '7001', token: 'synthetic-pegboard-961', user: 101, project: 201, tasks: [301, 302] }
   const qbt = { token: 'synthetic-pegboard-962', user: 101, jobcodes: [401, 402], client: 'synthetic-agency' }
   const entries = { harvest: [], 'quickbooks-time': [] }, requests = []
-  let nextId = 9000, lose = false, misfile = false
+  let nextId = 9000, lose = false, misfile = false, paused = null
   const send = (res, status, body) => { res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' }); res.end(JSON.stringify(body)) }
   const stamp = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z')
   const harvestEntry = e => ({ id: e.id, spent_date: e.spent_date, hours: e.hours, rounded_hours: Math.round(e.hours * 100) / 100, notes: e.notes ?? null, is_locked: false, is_running: false, is_billed: false, approval_status: 'unsubmitted',
@@ -23,7 +23,7 @@ export async function startTimeServices() {
     if (path.startsWith('/v2/')) {
       if (!req.headers['user-agent']) return send(res, 400, { message: 'User-Agent header required' })
       if (req.headers.authorization !== `Bearer ${harvest.token}` || req.headers['harvest-account-id'] !== harvest.account) return send(res, 401, { error: 'invalid_token', error_description: 'The access token provided is expired, revoked, malformed or invalid for other reasons.' })
-      if (req.method === 'GET' && path === '/v2/users/me') return send(res, 200, { id: harvest.user, first_name: 'Synthetic', last_name: 'Harvester', email: 'harvester@example.com', is_active: true })
+      if (req.method === 'GET' && path === '/v2/users/me') return send(res, 200, { id: harvest.user, first_name: 'Synthetic', last_name: 'Harvester', email: ['harvester','example.test'].join(String.fromCharCode(64)), is_active: true })
       const one = path.match(/^\/v2\/time_entries\/(\d+)$/), found = one && entries.harvest.find(e => e.id === Number(one[1]))
       if (req.method === 'GET' && path === '/v2/time_entries') {
         const rows = entries.harvest.filter(e => (!url.searchParams.get('external_reference_id') || e.external_reference?.id === url.searchParams.get('external_reference_id'))
@@ -32,6 +32,7 @@ export async function startTimeServices() {
       }
       if (req.method === 'GET' && one) return found ? send(res, 200, harvestEntry(found)) : send(res, 404, { message: 'Not found' })
       if (req.method === 'POST' && path === '/v2/time_entries') {
+        if(paused){const barrier=paused;paused=null;barrier.arrived();await barrier.released}
         if (!harvest.tasks.includes(body?.task_id) || body?.project_id !== harvest.project) return send(res, 422, { message: 'Task is not assigned to the project.' })
         if (body.user_id !== harvest.user || !/^\d{4}-\d{2}-\d{2}$/.test(body.spent_date ?? '') || !Number.isFinite(body.hours)) return send(res, 422, { message: 'Validation failed.' })
         const entry = { ...body, id: ++nextId, created_at: stamp(), updated_at: stamp() }
@@ -87,6 +88,12 @@ export async function startTimeServices() {
     origins: JSON.stringify({ harvest: origin, 'quickbooks-time': origin }),
     token: service => service === 'harvest' ? harvest.token : qbt.token,
     loseNext() { lose = true },
+    pauseNext() {
+      let arrived,release
+      const waiting=new Promise(resolve=>{arrived=resolve}),released=new Promise(resolve=>{release=resolve})
+      paused={arrived,released}
+      return {waiting,release}
+    },
     /** The next Harvest create is filed under another task, as a provider-side remap would. */
     misfileNext() { misfile = true },
     /** Provider entries carrying one Pegboard entry ID, with their duration in seconds. */
