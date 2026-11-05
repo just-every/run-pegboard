@@ -23,13 +23,13 @@ export async function expiryPlan(db:D1Database,actor:Actor,workspace:string,inpu
   if(input.class==='product_history')candidates.push({table:'peg_history',where:'at<=? AND task_id IN(SELECT id FROM peg_tasks WHERE workspace_id=?)',args:[cutoff,workspace],taskColumn:'task_id'})
   if(input.class==='attachments_proofs')candidates.push({table:'peg_attachments',where:'created_at<=? AND task_id IN(SELECT id FROM peg_tasks WHERE workspace_id=?)',args:[cutoff,workspace],taskColumn:'task_id'})
   if(input.class==='agent_prompts_outputs')candidates.push({table:'peg_agent_outputs',where:'created_at<=? AND task_id IN(SELECT id FROM peg_tasks WHERE workspace_id=?)',args:[cutoff,workspace],taskColumn:'task_id'})
-  const providerRows:Array<{id:number;entryId:string;sheetId:string;state:string;acknowledgmentId:number|null;reason:string|null}>=[]
+  const providerRows:Array<{id:number;service:string;account:string;actorId:string;at:number;entryId:string;sheetId:string;state:string;acknowledgmentId:number|null;reason:string|null}>=[]
   if(input.class==='provider_logs'){
-    const rows=await all<{id:number;entry_id:string;sheet_id:string;state:string;at:number;acknowledgment_id:number|null}>(db,`SELECT h.id,h.entry_id,h.sheet_id,h.state,h.at,e.acknowledgment_id FROM peg_time_delivery_history h JOIN peg_timesheets s ON s.id=h.sheet_id LEFT JOIN peg_time_expirable_diagnostics e ON e.id=h.id WHERE s.workspace_id=? ORDER BY h.id`,workspace)
+    const rows=await all<{id:number;service:string;account:string;actor_id:string;entry_id:string;sheet_id:string;state:string;at:number;acknowledgment_id:number|null}>(db,`SELECT h.id,h.service,h.account,h.actor_id,h.entry_id,h.sheet_id,h.state,h.at,e.acknowledgment_id FROM peg_time_delivery_history h JOIN peg_timesheets s ON s.id=h.sheet_id LEFT JOIN peg_time_expirable_diagnostics e ON e.id=h.id WHERE s.workspace_id=? ORDER BY h.id`,workspace)
     const selected:Selection={table:'peg_time_delivery_history',keys:[]}
     for(const row of rows){
       const reason=row.state!=='sending'?'Terminal outcomes and reconciliation history remain retained.':row.acknowledgment_id===null?'No matching settled acknowledgment; this attempt remains a reconciliation witness.':holds.length?'An active hold pauses provider diagnostic expiry.':row.at>cutoff?'This diagnostic is newer than the frozen cutoff.':null
-      providerRows.push({id:row.id,entryId:row.entry_id,sheetId:row.sheet_id,state:row.state,acknowledgmentId:row.acknowledgment_id,reason})
+      providerRows.push({id:row.id,service:row.service,account:row.account,actorId:row.actor_id,at:row.at,entryId:row.entry_id,sheetId:row.sheet_id,state:row.state,acknowledgmentId:row.acknowledgment_id,reason})
       if(reason===null)selected.keys.push({id:row.id});else if(row.state==='sending'&&row.acknowledgment_id!==null&&row.at<=cutoff&&holds.length)held++
     }
     if(selected.keys.length)selections.push(selected)

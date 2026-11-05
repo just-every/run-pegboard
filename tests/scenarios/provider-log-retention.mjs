@@ -83,6 +83,9 @@ export async function providerLogRetentionScenario(){
   const preview=await previewLogs(f)
   assert.deepEqual(preview.selections,[{table:'peg_time_delivery_history',keys:expected.map(id=>({id}))}])
   assert.deepEqual(preview.providerRows.filter(row=>row.reason===null).map(row=>row.id),expected)
+  assert.deepEqual(preview.providerRows.map(row=>({id:row.id,service:row.service,account:row.account,actorId:row.actorId,at:row.at,entryId:row.entryId,sheetId:row.sheetId,state:row.state})),
+   history.map(row=>({id:row.id,service:row.service,account:row.account,actorId:row.actor_id,at:row.at,entryId:row.entry_id,sheetId:row.sheet_id,state:row.state})),
+   'the reviewed diagnostic identities and attribution match the persisted delivery door records')
   for(const row of unresolved)assert.ok(preview.providerRows.find(r=>r.id===row.id).reason)
   for(const client of [member,admin]){
    await pass(client.post('/api/v1/data/expiry-preview',{class:'provider_logs',cutoff:f.cutoff}),403)
@@ -100,6 +103,19 @@ export async function providerLogRetentionScenario(){
   await pass(member.patch(`/api/v1/tasks/${f.tasks[2].id}`,{title:'Later human edit survives'}))
   await pass(expireLogs(f,stale),409)
   assert.deepEqual(await query(w,'SELECT * FROM peg_time_delivery_history ORDER BY id'),history)
+  const changedPolicy=await previewLogs(f)
+  for(const days of [2,1]){
+   const policy=await pass(owner.post('/api/v1/data/retention-preview',{class:'provider_logs',days}))
+   await pass(owner.post('/api/v1/data/retention',{class:'provider_logs',days,token:policy.token,confirm:true}))
+  }
+  await pass(expireLogs(f,changedPolicy),409)
+  assert.deepEqual(await query(w,'SELECT * FROM peg_time_delivery_history ORDER BY id'),history,'restoring a policy never revives an earlier review')
+  await pass(owner.post(`/api/v1/workspaces/ws_main/people/${admin.id}/account`,{role:'owner'}))
+  const successor=await w.signIn(admin.email,admin.name,admin.id)
+  const boundReview=await previewLogs(f)
+  await pass(expireLogs(f,boundReview,successor),409,'another current owner must obtain their own exact review')
+  const erasedProject=await pass(owner.post('/api/v1/projects',{name:'Later independently erased scope'}))
+  const erasedTask=await pass(owner.post('/api/v1/tasks',{projectId:erasedProject.id,title:'Later erasure must not restore diagnostics'}))
   const earlierArchive=await exportCanvasInstallation(owner),review=await previewLogs(f)
   await w.restart()
   const calls=services.requests.length
@@ -118,6 +134,14 @@ export async function providerLogRetentionScenario(){
   const receipt=await pass(owner.get('/api/v1/data/receipts/'+done.id))
   assert.equal(receipt.outcome,'partial');assert.equal(receipt.providerDiagnostics.cutoff,f.cutoff)
   assert.deepEqual(receipt.providerDiagnostics.expired,done.expiredDiagnostics)
+  for(const row of receipt.providerDiagnostics.expired){
+   const acknowledgment=history.find(item=>item.id===row.acknowledgmentId)
+   assert.equal(acknowledgment.state,'acknowledged')
+   assert.equal(acknowledgment.service,row.service);assert.equal(acknowledgment.account,row.account)
+   assert.equal(acknowledgment.actor_id,row.actorId);assert.equal(acknowledgment.entry_id,row.entryId)
+   assert.equal(acknowledgment.sheet_id,row.sheetId)
+   assert.ok(remaining.some(item=>item.id===acknowledgment.id),'each expired diagnostic retains its attributable acknowledgment')
+  }
   assert.deepEqual(receipt.providerDiagnostics.retained.map(r=>r.id),remaining.map(r=>r.id))
   await w.restart();await pass(expireLogs(f,review),409)
   assert.deepEqual(await query(w,'SELECT * FROM peg_time_delivery_history ORDER BY id'),remaining)
@@ -125,19 +149,28 @@ export async function providerLogRetentionScenario(){
   for(const row of remaining)await assert.rejects(()=>w.sql(`DELETE FROM peg_time_delivery_history WHERE id=${row.id}`),immutableRefusal)
   // A refused Wrangler write can restart the local Worker; the normal successful store probe waits for readiness.
   assert.deepEqual(await query(w,'SELECT * FROM peg_time_delivery_history ORDER BY id'),remaining,'ordinary write refusals preserve every retained witness')
+  const erasure=await pass(owner.post('/api/v1/data/erasure-preview',{type:'project',id:erasedProject.id}))
+  assert.deepEqual(erasure.blockers,[])
+  const erased=await pass(owner.post('/api/v1/data/erase',{type:'project',id:erasedProject.id,token:erasure.token,confirm:true}))
+  assert.equal(erased.outcome,'complete')
+  await pass(owner.get('/api/v1/projects/'+erasedProject.id),404)
+  await pass(owner.get('/api/v1/tasks/'+erasedTask.id),404)
+  assert.deepEqual(await query(w,'SELECT * FROM peg_time_delivery_history ORDER BY id'),remaining,'later erasure preserves every delivery witness')
+  assert.deepEqual(await baseline(w),original)
   restored=await restoreCanvasInstallation(owner,{earlierArchive})
   assert.deepEqual(await query(restored.worker,'SELECT * FROM peg_time_delivery_history ORDER BY id'),remaining)
   assert.deepEqual(await baseline(restored.worker),original)
   assert.deepEqual((await pass(restored.worker.owner.get('/api/v1/data/receipts/'+done.id))).providerDiagnostics,receipt.providerDiagnostics)
+  await pass(restored.worker.owner.get('/api/v1/projects/'+erasedProject.id),404)
+  await pass(restored.worker.owner.get('/api/v1/tasks/'+erasedTask.id),404)
+  assert.equal((await pass(restored.worker.owner.get('/api/v1/data/receipts/'+erased.id))).outcome,'complete')
   const final=await previewLogs(f)
   assert.deepEqual(final.counts,{})
-  await pass(owner.post(`/api/v1/workspaces/ws_main/people/${admin.id}/account`,{role:'owner'}))
-  const successor=await w.signIn(admin.email,admin.name,admin.id)
   await pass(successor.post(`/api/v1/workspaces/ws_main/people/${owner.id}/account`,{status:'inactive'}))
   await pass(expireLogs(f,final),401)
   assert.deepEqual(await query(w,'SELECT * FROM peg_time_delivery_history ORDER BY id'),remaining)
   console.log('PROBE PEG-065 exact expiry: schema-fake time-delivery door -> real persisted sending rows, exact expired IDs '+expected.join(',')+' and retained IDs '+remaining.map(r=>r.id).join(','))
   console.log('PROBE PEG-065 authority and holds: owner review, administrator and member refusal, active hold, stale and concurrent confirmation -> one receipt, unchanged held history and no provider calls')
-  console.log('PROBE PEG-065 durable custody: expiry, restart, replay and native archive with later journal -> no resurrection; ledger, approved original 18000 seconds and corrected total 17640 seconds, signed sheets and time history unchanged')
+  console.log('PROBE PEG-065 durable custody: expiry, later independent erasure, restart, replay and native archive with later journal -> no resurrection; ledger, approved original 18000 seconds and corrected total 17640 seconds, signed sheets and time history unchanged')
  }finally{await restored?.stop();await w?.stop();await services.stop()}
 }

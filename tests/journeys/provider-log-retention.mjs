@@ -7,7 +7,7 @@ import {providerLogFixture,pass,previewLogs,query} from '../scenarios/provider-l
 // Assertions run at 1440; the same changed screens are captured once more at 390.
 export async function providerLogRetentionJourney({w,browser,services}){
  const f=await providerLogFixture(w,services),{owner}=f
- const expected=(await previewLogs(f)).providerRows.filter(row=>row.reason===null).map(row=>row.id)
+ const persisted=f.rows,expected=persisted.filter(row=>row.state==='sending'&&[f.entries[1].id,f.entries[2].id].includes(row.entry_id)).map(row=>row.id)
  const context=await browser.newContext({viewport:{width:1440,height:900}})
  await context.addCookies(owner.cookie.split('; ').map(pair=>({name:pair.slice(0,pair.indexOf('=')),value:pair.slice(pair.indexOf('=')+1),url:w.origin})))
  const page=await context.newPage()
@@ -26,7 +26,11 @@ export async function providerLogRetentionJourney({w,browser,services}){
   await form.getByLabel('Class to expire').selectOption('provider_logs')
   await form.getByRole('button',{name:'Preview eligible records',exact:true}).focus();await page.keyboard.press('Enter')
   const review=page.getByRole('region',{name:'Exact provider diagnostic review'})
-  for(const id of expected)await expect(review).toContainText('Diagnostic '+id)
+  for(const id of expected){
+   const source=persisted.find(row=>row.id===id),item=review.getByRole('listitem').filter({has:page.getByText('Diagnostic '+id,{exact:true})})
+   await expect(item).toContainText(source.service+' · account '+source.account+' · actor '+source.actor_id)
+   await expect(item).toContainText('Entry '+source.entry_id+' · timesheet '+source.sheet_id)
+  }
   await expect(review).toContainText('Eligible for reviewed expiry.')
   await expect(review).toContainText('No matching settled acknowledgment')
   await expect(page.locator('main')).toContainText('No provider is contacted.')
@@ -57,6 +61,15 @@ export async function providerLogRetentionJourney({w,browser,services}){
   const visible=page.getByRole('region',{name:'Provider diagnostic receipt'}).first()
   await expect(visible).toContainText('Expired diagnostics: '+expected.join(', '))
   await expect(visible).toContainText('Delivery ledger and approved time unchanged.')
+  const expired=visible.getByRole('region',{name:'Expired provider diagnostic scope',exact:true})
+  for(const row of receipt.providerDiagnostics.expired){
+   const item=expired.getByRole('listitem').filter({has:page.getByText('Diagnostic '+row.id,{exact:true})})
+   await expect(item).toContainText('Retained acknowledgment '+row.acknowledgmentId+'.')
+   await expect(item).toContainText('Entry '+row.entryId+' · timesheet '+row.sheetId)
+   await expect(item).toContainText(row.service+' · account '+row.account+' · actor '+row.actorId)
+   await expect(item).toContainText('Expired after exact owner review.')
+   assert.ok(persisted.some(source=>source.id===row.acknowledgmentId&&source.state==='acknowledged'))
+  }
   await expect(visible).toContainText('No matching settled acknowledgment')
   assert.equal(services.requests.length,calls)
   const rows=await query(w,'SELECT * FROM peg_time_delivery_history ORDER BY id')

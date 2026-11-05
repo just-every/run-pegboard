@@ -78,7 +78,11 @@ records, agent outputs/retrieval copies and expired local sessions/tokens.
 Provider-log expiry covers only old sending diagnostics for ordinary time entries
 whose next outcome is an attributable acknowledgment matching the settled ledger.
 The review lists exact diagnostic, entry, timesheet and retained acknowledgment
-identities, the frozen cutoff, retained reasons and consequences. Current owner
+identities, the sending service, receiver account, opaque sender and recorded time,
+the frozen cutoff, retained reasons and consequences. The immutable receipt keeps
+each expired diagnostic linked to its retained acknowledgment with the same source
+identities; later independent erasure leaves those delivery witnesses intact.
+Current owner
 confirmation and an atomic revision check are required. Any active workspace hold
 pauses this cleanup. Corrections, unmatched attempts, terminal outcomes, unresolved
 reconciliation, sending or uncertain deliveries and the remaining provider-log
