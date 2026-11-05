@@ -1,3 +1,4 @@
+import {providerLogRetentionScenario} from './scenarios/provider-log-retention.mjs'
 import {pdfFeedbackScenario,pdfFeedbackCustodyScenario} from './scenarios/pdf-feedback.mjs'
 import { approvalFollowupRoutingScenario, approvalFollowupAuthorityScenario } from './scenarios/approval-followup.mjs'
 import { intakeErasureScenario } from './scenarios/intake-erasure.mjs'
@@ -80,6 +81,10 @@ describe('Retained PDF feedback',{concurrency:false},()=>{
  before(async()=>{worker=await startWorker()},{timeout:120000})
  after(()=>worker?.stop())
  it('renders retained PDF contents, pins exact identities and refuses stale, hidden and unauthorized feedback',async()=>pdfFeedbackScenario(worker))
+})
+
+describe('Data custody provider diagnostics',{concurrency:false},()=>{
+ it('expires exact reviewed superseded diagnostics while preserving delivery witnesses, authority and native recovery',{timeout:240000},providerLogRetentionScenario)
 })
 
 describe('Data custody PDF feedback',{concurrency:false},()=>{
@@ -1368,8 +1373,8 @@ describe('Data custody', {concurrency:false},()=>{
     assert.ok(updated.receipts.some(r=>r.id===done.id&&r.outcome==='partial'))
     await retention('provider_logs',1)
     const retainedLogs=await pass(chief.post('/api/v1/data/expiry-preview',{class:'provider_logs'}))
-    assert.equal(retainedLogs.supported,false);assert.match(retainedLogs.limits,/immutable and retained/);assert.deepEqual(retainedLogs.counts,{})
-    assert.equal((await chief.post('/api/v1/data/expire',{class:'provider_logs',cutoff:retainedLogs.cutoff,token:retainedLogs.token,confirm:true})).status,409)
+    assert.equal(retainedLogs.supported,true);assert.match(retainedLogs.limits,/Terminal history/);assert.deepEqual(retainedLogs.counts,{})
+    assert.deepEqual((await pass(chief.post('/api/v1/data/expire',{class:'provider_logs',cutoff:retainedLogs.cutoff,token:retainedLogs.token,confirm:true}))).counts,{})
   })
 
 

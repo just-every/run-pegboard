@@ -75,8 +75,20 @@ a frozen cutoff.
 
 Current expiry covers work history, attachment/proof bytes and version/decision
 records, agent outputs/retrieval copies and expired local sessions/tokens.
-Provider delivery logs remain immutable and retained; their expiry door is
-unavailable and its class preview discloses that limitation. A proof expires as a coherent group after every version is
+Provider-log expiry covers only old sending diagnostics for ordinary time entries
+whose next outcome is an attributable acknowledgment matching the settled ledger.
+The review lists exact diagnostic, entry, timesheet and retained acknowledgment
+identities, the frozen cutoff, retained reasons and consequences. Current owner
+confirmation and an atomic revision check are required. Any active workspace hold
+pauses this cleanup. Corrections, unmatched attempts, terminal outcomes, unresolved
+reconciliation, sending or uncertain deliveries and the remaining provider-log
+catalogue stay retained. The delivery ledger, time entries, signed timesheets,
+time history and permanent audit are unchanged; expiry makes no provider calls.
+Ordinary history updates and deletions still refuse. A forward migration grants
+one-use exact-row permits only within the reviewed expiry transaction; permits
+never travel in archives. Expired diagnostics have native erasure tombstones,
+and an older archive supplied with the later journal cannot restore them.
+Retained delivery witnesses and immutable exact-scope receipts survive restore. A proof expires as a coherent group after every version is
 eligible and unheld. Otherwise the preview discloses retained dependencies.
 Trash/import-original and agent-prompt stores are not built; no cleanup of those
 stores is claimed. PEG-024/054/064 and PEG-062/074/075 inherit the retention classes

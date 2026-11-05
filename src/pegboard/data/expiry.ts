@@ -23,7 +23,17 @@ export async function expiryPlan(db:D1Database,actor:Actor,workspace:string,inpu
   if(input.class==='product_history')candidates.push({table:'peg_history',where:'at<=? AND task_id IN(SELECT id FROM peg_tasks WHERE workspace_id=?)',args:[cutoff,workspace],taskColumn:'task_id'})
   if(input.class==='attachments_proofs')candidates.push({table:'peg_attachments',where:'created_at<=? AND task_id IN(SELECT id FROM peg_tasks WHERE workspace_id=?)',args:[cutoff,workspace],taskColumn:'task_id'})
   if(input.class==='agent_prompts_outputs')candidates.push({table:'peg_agent_outputs',where:'created_at<=? AND task_id IN(SELECT id FROM peg_tasks WHERE workspace_id=?)',args:[cutoff,workspace],taskColumn:'task_id'})
-  // Provider delivery history is currently immutable. Keep it until a separately reviewed custody door exists.
+  const providerRows:Array<{id:number;entryId:string;sheetId:string;state:string;acknowledgmentId:number|null;reason:string|null}>=[]
+  if(input.class==='provider_logs'){
+    const rows=await all<{id:number;entry_id:string;sheet_id:string;state:string;at:number;acknowledgment_id:number|null}>(db,`SELECT h.id,h.entry_id,h.sheet_id,h.state,h.at,e.acknowledgment_id FROM peg_time_delivery_history h JOIN peg_timesheets s ON s.id=h.sheet_id LEFT JOIN peg_time_expirable_diagnostics e ON e.id=h.id WHERE s.workspace_id=? ORDER BY h.id`,workspace)
+    const selected:Selection={table:'peg_time_delivery_history',keys:[]}
+    for(const row of rows){
+      const reason=row.state!=='sending'?'Terminal outcomes and reconciliation history remain retained.':row.acknowledgment_id===null?'No matching settled acknowledgment; this attempt remains a reconciliation witness.':holds.length?'An active hold pauses provider diagnostic expiry.':row.at>cutoff?'This diagnostic is newer than the frozen cutoff.':null
+      providerRows.push({id:row.id,entryId:row.entry_id,sheetId:row.sheet_id,state:row.state,acknowledgmentId:row.acknowledgment_id,reason})
+      if(reason===null)selected.keys.push({id:row.id});else if(row.state==='sending'&&row.acknowledgment_id!==null&&row.at<=cutoff&&holds.length)held++
+    }
+    if(selected.keys.length)selections.push(selected)
+  }
   // Transient authority is installation-scoped; never mix it with retained work history.
   if(input.class==='transient_credentials_sessions'){
     const expired=await all<{id:string}>(db,'SELECT id FROM oa_sessions WHERE expires_at<=? OR revoked_at IS NOT NULL',cutoff)
@@ -78,26 +88,27 @@ export async function expiryPlan(db:D1Database,actor:Actor,workspace:string,inpu
   // Child decisions and versions must be removed before their proof and its bytes.
   const rank=(table:string)=>table==='peg_proof_feedback_history'?0:table==='peg_proof_feedback'?1:table==='peg_proof_decisions'?2:table==='peg_proof_versions'?3:table==='peg_proofs'?4:5
   selections.sort((a,b)=>rank(a.table)-rank(b.table))
-  const supported=['product_history','attachments_proofs','agent_prompts_outputs','transient_credentials_sessions'].includes(input.class)
+  const supported=['product_history','attachments_proofs','agent_prompts_outputs','transient_credentials_sessions','provider_logs'].includes(input.class)
   const counts:Record<string,number>={};for(const s of selections)counts[s.table]=(counts[s.table]??0)+s.keys.length
   const processorRequests=await processorFollowups(db,selections)
-  const plan={class:input.class as string,cutoff,selections,processorRequests,proofs,reopenTasks,retainedDependencies,counts,held,supported,
-    limits:supported?'Only the named current stores are included. No external deletion has been confirmed.':input.class==='provider_logs'?'Provider delivery history remains immutable and retained. Its expiry door is not implemented; no cleanup is claimed.':'This retention class is published, but its product storage door is not implemented. No expiry or processor cleanup is claimed.'}
+  const plan={class:input.class as string,cutoff,selections,providerRows,processorRequests,proofs,reopenTasks,retainedDependencies,counts,held,supported,
+    limits:input.class==='provider_logs'?'Only the listed superseded sending diagnostics expire. Terminal history, correction and replay witnesses, the delivery ledger, approved time and permanent audit stay unchanged. No provider is contacted. Other provider logs remain retained.':supported?'Only the named current stores are included. No external deletion has been confirmed.':'This retention class is published, but its product storage door is not implemented. No expiry or processor cleanup is claimed.'}
   return {...plan,revision,token:await digest([workspace,actor.id,revision,plan])}
 }
 export async function expire(db:D1Database,actor:Actor,workspace:string,input:Record<string,any>) {
   const plan=await expiryPlan(db,actor,workspace,input)
-  if(input.token!==plan.token||!(input.confirm===true||input.confirm==='yes'))throw conflict('expiry_review_required')
+  if(input.token!==plan.token||!(input.confirm===true||input.confirm==='yes'||input.confirm==='on'))throw conflict('expiry_review_required')
   if(!plan.supported)throw conflict('retention_store_not_implemented')
   const at=now(),id=newId('expiry'),service=await createPortability({db,policy}),deadline=Math.min(at+300000,...(await activeHolds(db,workspace)).map(h=>h.expires_at))
   const statements=[dataGuard(db,actor,plan.revision,deadline),...followupStatements(db,actor,workspace,plan.processorRequests),...await service.invalidateTransfersStatements()]
+  for(const row of plan.providerRows.filter(row=>row.reason===null))statements.push(bound(db,'INSERT INTO peg_time_diagnostic_expiry VALUES(?,?,?,?,?,?)',[row.id,workspace,actor.id,plan.revision,plan.cutoff,deadline]))
   for(const task of plan.reopenTasks)statements.push(reopenGuard(db,task,actor.id,'retention_expiry'),bound(db,"UPDATE peg_tasks SET status='todo',completed_at=NULL,updated_at=? WHERE id=?",[at,task]))
   for(const proof of plan.proofs)statements.push(bound(db,'INSERT INTO peg_data_erasing_proofs VALUES(?)',[proof]))
   for(const selected of plan.selections.filter(s=>s.table==='peg_agent_outputs'))for(const key of selected.keys){const row=await first<{actor_id:string;operation_key:string}>(db,'SELECT actor_id,operation_key FROM peg_agent_outputs WHERE id=?',key.id);if(row)statements.push(bound(db,"INSERT OR IGNORE INTO peg_data_erased_objects VALUES('agent_output_key',?,?)",[await digest([row.actor_id,row.operation_key]),at]))}
   for(const selected of plan.selections){for(const key of selected.keys)statements.push(...await service.erasureStatements(selected.table,key));statements.push(...deletion(db,selected))}
   statements.push(bound(db,'DELETE FROM peg_data_erasing_proofs',[]))
   if(plan.selections.length)statements.push(...await service.redactionStatements())
-  statements.push(bound(db,'INSERT INTO peg_data_receipts VALUES(?,?,?,?,?,?,?,?,?,?)',[id,workspace,actor.id,'retention',plan.class,at,plan.held||plan.retainedDependencies||plan.processorRequests.length?'partial':'complete',JSON.stringify(plan.counts),JSON.stringify({held:plan.held,retainedDependencies:plan.retainedDependencies,processorRequests:plan.processorRequests.length}),externalLimits]),permanentEvent(db,{workspace,actor:actor.id,action:'retention.expired',type:'retention',id,result:plan.held||plan.retainedDependencies||plan.processorRequests.length?'retained':'success'}))
+  statements.push(bound(db,'INSERT INTO peg_data_receipts VALUES(?,?,?,?,?,?,?,?,?,?)',[id,workspace,actor.id,'retention',plan.class,at,plan.held||plan.retainedDependencies||plan.processorRequests.length||plan.providerRows.some(row=>row.reason!==null)?'partial':'complete',JSON.stringify(plan.counts),JSON.stringify({held:plan.held,retainedDependencies:plan.retainedDependencies,processorRequests:plan.processorRequests.length,...(plan.class==='provider_logs'?{cutoff:plan.cutoff,expiredDiagnostics:plan.providerRows.filter(row=>row.reason===null),retainedDiagnostics:plan.providerRows.filter(row=>row.reason!==null)}:{})}),externalLimits]),permanentEvent(db,{workspace,actor:actor.id,action:'retention.expired',type:'retention',id,result:plan.held||plan.retainedDependencies||plan.processorRequests.length||plan.providerRows.some(row=>row.reason!==null)?'retained':'success'}))
   await commitData(db,statements)
-  return {id,counts:plan.counts,held:plan.held,retainedDependencies:plan.retainedDependencies,processorRequests:plan.processorRequests.length,externalLimits}
+  return {id,counts:plan.counts,...(plan.class==='provider_logs'?{cutoff:plan.cutoff,expiredDiagnostics:plan.providerRows.filter(row=>row.reason===null),retainedDiagnostics:plan.providerRows.filter(row=>row.reason!==null)}:{}),held:plan.held,retainedDependencies:plan.retainedDependencies,processorRequests:plan.processorRequests.length,externalLimits}
 }
