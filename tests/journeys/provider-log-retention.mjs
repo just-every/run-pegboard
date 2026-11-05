@@ -53,6 +53,7 @@ export async function providerLogRetentionJourney({w,browser,services}){
   await expect(link).toBeVisible()
   const id=(await link.getAttribute('href')).split('/').pop(),receipt=await pass(owner.get('/api/v1/data/receipts/'+id))
   assert.deepEqual(receipt.providerDiagnostics.expired.map(row=>row.id),expected)
+  await expect(page.getByRole('list',{name:'Data receipts'})).toContainText('Retained: '+receipt.providerDiagnostics.retained.length+' provider diagnostics')
   const visible=page.getByRole('region',{name:'Provider diagnostic receipt'}).first()
   await expect(visible).toContainText('Expired diagnostics: '+expected.join(', '))
   await expect(visible).toContainText('Delivery ledger and approved time unchanged.')
