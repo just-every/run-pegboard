@@ -63,6 +63,7 @@ export function ReportPage({viewer,id,name,report}:{viewer:Viewer;id:string;name
   <Card title="Source rows"><ul className="rows">{report.sources.map(source=><li id={'source-'+source.id} key={source.id}><a href={'/app/tasks/'+source.id}>{source.title}</a> · <code>{source.id}</code><details><summary>Event-time history</summary><ul>{source.events.map(e=><li key={e.seq}>{when(e.at)} · {e.kind} · {e.status} · {e.effort} effort hours · {e.projects.length?'In selected scope':'Outside selected scope'} · Event {e.seq}</li>)}</ul></details></li>)}</ul></Card>
   {!!report.metrics?.length&&<Card title="Business source records"><ul className="rows">{report.metrics.map(row=><li key={row.measure+':'+row.id} id={'metric-'+row.measure+':'+row.id} data-report-metric={row.measure}>
    <a href={'/app/tasks/'+row.taskId}>{report.sources.find(s=>s.id===row.taskId)!.title}</a>{row.label&&<> · {row.label}</>} · {label(row.measure)}: <strong>{number(row.value)}</strong> · {row.day??'Unscheduled'}{row.state&&<> · {row.state}</>}
+   {row.measure==='requests'&&<> · Request record <code>{row.id}</code> · {label(row.status)}</>}
    {row.sheetId&&<> · <a href={'/app/time/'+row.sheetId}>Timesheet record</a></>}{row.subjectKind==='proof'&&<> · <a href={'/app/tasks/'+row.taskId}>Task proof reviews</a></>}
   </li>)}</ul></Card>}</>}
  </Shell>

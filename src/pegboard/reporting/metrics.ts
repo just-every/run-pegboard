@@ -70,9 +70,18 @@ export async function captureMetrics(db:D1Database,actor:Actor,workspace:string,
    }
   }
  }
- if(wanted.has('requests'))for(const request of await all<{id:string;task_id:string;project_id:string;created_at:number}>(db,'SELECT * FROM peg_rule_requests ORDER BY id')){
-  const opened=tasks.get(request.task_id),day=localDay(request.created_at,def.timezone)
-  if(opened&&inWindow(day)&&def.projects.includes(request.project_id)&&opened.access.contexts.get(request.project_id)?.capabilities.has('export'))rows.push({id:request.id,taskId:request.task_id,projectId:request.project_id,measure:'requests',value:1,day,status:opened.task.status})
+ if(wanted.has('requests')){
+  // Each persisted receipt is one request, independent of replay and task placements.
+  // Read only reportable columns; publication secrets and submitter data stay in intake.
+  const requests=await all<{id:string;task_id:string;project_id:string;created_at:number}>(db,`SELECT id,task_id,project_id,created_at FROM peg_rule_requests
+   UNION ALL
+   SELECT s.id,s.task_id,f.project_id,s.submitted_at AS created_at
+   FROM peg_intake_submissions s JOIN peg_intake_forms f ON f.id=s.form_id
+   ORDER BY id`)
+  for(const request of requests){
+   const opened=tasks.get(request.task_id),day=localDay(request.created_at,def.timezone)
+   if(opened&&inWindow(day)&&def.projects.includes(request.project_id)&&opened.access.contexts.get(request.project_id)?.capabilities.has('export'))rows.push({id:request.id,taskId:request.task_id,projectId:request.project_id,measure:'requests',value:1,day,status:opened.task.status})
+  }
  }
  if(wanted.has('pending-approvals')||wanted.has('approved-approvals')){
   const add=(taskId:string,subjectKind:'task'|'proof',subjectId:string,created:number,state:string,projectId?:string)=>{
@@ -126,7 +135,7 @@ export function metricWidget(kind:string,measure:BusinessMeasure,rows:MetricRow[
   'unscheduled-hours':'Current open-work participant hours with no start or deadline. These have no date bucket and are shown separately from scheduled commitments.',
   'available-hours':'Current native calendar availability for the distinct people assigned to selected open work, once per person and day. Their own local calendars and leave apply. Stale availability is Unknown; private leave reasons are excluded.',
   'overload-hours':'Current selected-project scheduled demand above each assigned person’s native daily availability, summed after each person is compared separately. Other projects and hidden commitments are excluded, so this is not a whole-workspace overload total.',
-  requests:'Deduplicated native project requests created during the selected local days, grouped by their current task status. Access requests are not work intake.',
+  requests:'One record per persisted form submission or legacy project request, using its submitted instant in the selected local days and its current task status. Current selected-origin project and task export access are required. Access requests are not work intake.',
   'pending-approvals':'Current pending, reopened, stale or changes-requested task and proof reviews created during the selected local days. Rejected and withdrawn reviews are excluded; no past decision state is inferred.',
   'approved-approvals':'Currently approved task and proof reviews created during the selected local days. A later capture reflects reopening or a new proof version; the frozen snapshot retains its original state.',
  }

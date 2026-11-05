@@ -53,9 +53,23 @@ planning or approval states:
   availability before summing. Hidden and unselected commitments never enter
   these totals. Unknown native availability stays Unknown. These are current
   plans for the selected days; no historical availability claim is made.
-- Requests count deduplicated native project intake created during the selected
-  local-day window. The source task's current status supplies the grouping.
-  Membership access requests are not work intake.
+- Requests include text-only internal and public form receipts as well as legacy
+  project requests. Each persisted receipt counts once, even after submission
+  replay or additional task placements. The persisted submission instant selects
+  its local day, including DST boundaries; the mapped task's current status
+  supplies the grouping and saved status filter. Both the originating project
+  and mapped task must currently permit export, with that origin explicitly
+  selected. Moving a task elsewhere does not move its receipt's origin.
+  Membership access requests and erased or unreadable work are excluded.
+  Read access alone does not authorize reporting: losing export on a selected
+  origin refuses capture and saved downloads even when another placement still
+  makes its task readable. A higher workspace export minimum also applies to
+  existing snapshots. Restoring export authority makes the same frozen values
+  available again; it does not recapture changed work.
+  Business source records show the receipt identity and link to the permitted
+  task. Reports contain no raw answers, submitter identity, public capability or
+  fingerprint. Revoking form publication does not delete already received work
+  or change report authority.
 - Pending and approved reviews include task and proof reviews created during the
   selected local days, using their current native decision state. Pending includes
   reopened, stale and changes-requested reviews; rejected and withdrawn reviews
