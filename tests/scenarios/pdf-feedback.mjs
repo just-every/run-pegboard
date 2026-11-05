@@ -32,7 +32,66 @@ export async function pdfFeedbackFixture(w){
  const pin=async(client=writer,version=two.versionId,key='synthetic-pegboard-1105')=>{const review=await view(client,version);const input={versionId:version,token:review.token,key,body:'Keep this exact paragraph',page:2,x:0.25,y:0.75};return {...await pass(client.post(api+'/feedback',input)),input}}
  return {w,owner,writer,reader,scoped,guest,project,hidden,hiddenGrant,grants,task,one,two,proof,api,upload,view,pin}
 }
+// Both readable revisions have seeded feedback and an independent historical decision.
+export async function retainedMemberReviewFixture(w){
+ const f=await pdfFeedbackFixture(w)
+ await pass(f.owner.post('/api/v1/grants',{objectType:'project',objectId:f.hidden.id,granteeId:f.reader.id,level:'viewer'}))
+ await f.pin(f.writer,f.one.versionId,'synthetic-pegboard-retained-one')
+ await f.pin(f.writer,f.two.versionId,'synthetic-pegboard-retained-two')
+ const review=await pass(f.owner.get(f.api+'/decision-preview'))
+ await pass(f.owner.post(f.api+'/decisions',{token:review.token,versionId:f.two.versionId,action:'approve',reason:'Independent retained PDF review'}))
+ const before=await pass(f.reader.get(f.api+'/review'))
+ const hidden=await pass(f.owner.post('/api/v1/projects',{name:'Confidential replacement campaign'}))
+ await pass(f.owner.post('/api/v1/tasks/'+f.task.id+'/projects',{projectId:hidden.id}))
+ const three=await f.upload('v3',hidden.id)
+ three.versionId=(await pass(f.owner.post(f.api+'/versions',{attachmentId:three.file.id,currentVersion:f.two.versionId}))).versionId
+ return {...f,three,hiddenReplacement:hidden,before}
+}
+// Public owner reads independently observe proof, version, decision and feedback custody.
+export async function retainedReviewState(f){
+ const proof=await pass(f.owner.get(f.api)),review=await f.view(f.owner,f.two.versionId,f.one.versionId)
+ assert.equal(proof.versions.length,3)
+ assert.equal(proof.decisions.length,1)
+ assert.equal(review.feedback.length,2)
+ assert.equal(review.history.length,2)
+ return {proof,feedback:review.feedback,history:review.history}
+}
+export async function retainedMemberReviewScenario(w){
+ const f=await retainedMemberReviewFixture(w),{reader,one,two,three,api}=f
+ const view=await pass(reader.get(api+'/review'))
+ assert.deepEqual(view.documents.map(d=>d.id),[two.versionId])
+ assert.deepEqual(view.versions.map(v=>v.id),[one.versionId,two.versionId])
+ // Current-version metadata must not distinguish a hidden replacement from no replacement.
+ const visible=({token,tokens,rev,...value})=>value
+ assert.deepEqual(visible(view),visible(f.before))
+ assert.ok(!('currentVersion' in view),'member review exposes no global current-version hint')
+ for(const [source,label]of [[two,'v2'],[one,'v1']]){
+  const selected=await pass(reader.get(api+'/review?version='+source.versionId))
+  assert.deepEqual(selected.documents.map(d=>[d.id,d.attachment_id,d.digest]),[[source.versionId,source.file.id,source.digest]])
+  const material=await fetch(w.origin+api+'/versions/'+source.versionId+'/material',{headers:{cookie:reader.cookie}})
+  assert.equal(material.status,200)
+  assert.equal(material.headers.get('x-proof-version'),source.versionId)
+  assert.equal(material.headers.get('x-proof-digest'),source.digest)
+  const bytes=new Uint8Array(await material.arrayBuffer())
+  assert.deepEqual(bytes,source.bytes);assert.equal(hash(bytes),source.digest)
+  const pdf=await getDocument({data:bytes,useSystemFonts:true}).promise
+  for(const [page,text]of [[1,'Front draft '+label],[2,'Back draft '+label]])assert.equal((await (await pdf.getPage(page)).getTextContent()).items.map(item=>item.str).join(''),text)
+  await pdf.destroy()
+ }
+ for(const suffix of [id=>'/review?version='+id,id=>'/review?version='+two.versionId+'&compare='+id,id=>'/versions/'+id+'/material']){
+  const before=await retainedReviewState(f)
+  const hidden=await reader.get(api+suffix(three.versionId)),missing=await reader.get(api+suffix('synthetic-pegboard-nonexistent'))
+  assert.equal(hidden.status,404);assert.equal(missing.status,404)
+  assert.deepEqual(hidden.body,missing.body)
+  for(const name of ['content-type','cache-control'])assert.equal(hidden.headers.get(name),missing.headers.get(name))
+  assert.deepEqual(await retainedReviewState(f),before)
+ }
+ console.log('PROBE PEG-128 API points 1 and 2: member review with readable v1 and v2 and hidden current v3 -> 200, v2 selected, same permitted response as before replacement, no current-version hint')
+ console.log('PROBE PEG-128 API point 3: explicit v1 and v2 material -> 200, exact source bytes, independent SHA-256 and parsed page text')
+ console.log('PROBE PEG-128 API point 4: hidden and nonexistent selected, compared and material reads -> identical 404 refusals; independent nonempty proof, feedback, history and decision snapshots unchanged')
+}
 export async function pdfFeedbackScenario(w){
+ await retainedMemberReviewScenario(w)
  const f=await pdfFeedbackFixture(w),{owner,writer,reader,scoped,guest,api,one,two,proof}=f
  const view=await f.view(writer,two.versionId,one.versionId)
  assert.deepEqual(view.documents.map(d=>[d.id,d.attachment_id,d.digest,d.pages]),[two,one].map(v=>[v.versionId,v.file.id,v.digest,[{width:300,height:200},{width:300,height:200}]]))
@@ -76,12 +135,12 @@ export async function pdfFeedbackScenario(w){
  await pass(writer.post(api+'/feedback',{...first.input,key:'synthetic-pegboard-stale',token:stale.token}),409)
  const defaultRead=await pass(reader.get(api+'/review'))
  assert.deepEqual(defaultRead.documents.map(d=>d.id),[two.versionId],'default review selects a readable retained PDF when the current file is hidden')
- assert.equal(defaultRead.currentVersion,null);assert.ok(!JSON.stringify(defaultRead).includes(v3.versionId))
- const limited=await f.view(reader);assert.equal(limited.currentVersion,null);assert.deepEqual(limited.versions.map(v=>v.id),[two.versionId]);assert.ok(!JSON.stringify(limited).includes(v3.versionId))
- const retained=await pass(reader.get(api+'/review'));assert.equal(retained.currentVersion,null);assert.deepEqual(retained.documents.map(d=>d.id),[two.versionId]);assert.equal(retained.feedback[0].id,first.id);assert.equal(retained.history.length,3);assert.ok(!JSON.stringify(retained).includes(v3.versionId))
+ assert.ok(!('currentVersion' in defaultRead));assert.ok(!JSON.stringify(defaultRead).includes(v3.versionId))
+ const limited=await f.view(reader);assert.ok(!('currentVersion' in limited));assert.deepEqual(limited.versions.map(v=>v.id),[two.versionId]);assert.ok(!JSON.stringify(limited).includes(v3.versionId))
+ const retained=await pass(reader.get(api+'/review'));assert.ok(!('currentVersion' in retained));assert.deepEqual(retained.documents.map(d=>d.id),[two.versionId]);assert.equal(retained.feedback[0].id,first.id);assert.equal(retained.history.length,3);assert.ok(!JSON.stringify(retained).includes(v3.versionId))
  await pass(reader.get(api+'/review?version='+v3.versionId),404)
  await pass(reader.get(api+'/review?version='+two.versionId+'&compare='+v3.versionId),404)
- const latest=await pass(writer.get(api+'/review'));assert.equal(latest.currentVersion,v3.versionId);assert.deepEqual(latest.feedback,[])
+ const latest=await pass(writer.get(api+'/review'));assert.deepEqual(latest.documents.map(d=>d.id),[v3.versionId]);assert.deepEqual(latest.feedback,[])
  const old=await f.view();assert.equal(old.feedback[0].id,first.id);assert.equal(old.feedback[0].digest,two.digest);assert.equal(old.history.length,3)
  const custody=await pass(owner.get(api));assert.equal(custody.state,'pending');assert.deepEqual(custody.decisions.map(d=>[d.version_id,d.actor_id,d.action]),[[two.versionId,owner.id,'approve']])
  await w.restart();assert.deepEqual((await f.view()).feedback,old.feedback)

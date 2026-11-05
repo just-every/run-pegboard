@@ -46,6 +46,34 @@ function csvRecords(text) {
 }
 let campaign, launch, shared, mkt
 
+describe('Test worker lifecycle', {concurrency:false}, () => {
+ it('recovers from an occupied startup port without contacting its listener and keeps the new origin through restart', {timeout:120000}, async () => {
+  let foreignRequests = 0, worker
+  const occupied = createMailServer((request, response) => {
+   foreignRequests++
+   response.writeHead(200, {'content-type':'application/json'})
+   response.end('{"ok":true}')
+  })
+  await new Promise(resolve => occupied.listen(0, '127.0.0.1', resolve))
+  const preferredPort = occupied.address().port
+  try {
+   worker = await startWorker({preferredPort})
+   assert.ok(worker.output().includes(`Port ${preferredPort} is already in use`), 'exercise an actual failed Vite bind')
+   assert.notEqual(worker.origin, `http://127.0.0.1:${preferredPort}`)
+   assert.equal(foreignRequests, 0, 'never accept another listener as a ready Worker')
+   const origin = worker.origin, identity = await ok(worker.owner.get('/api/v1/me'))
+   assert.equal(identity.id, worker.owner.id)
+   await worker.restart()
+   assert.equal(worker.origin, origin)
+   assert.equal((await ok(worker.owner.get('/api/v1/me'))).id, identity.id)
+   assert.equal(occupied.listening, true, 'leave the competing listener running')
+  } finally {
+   await worker?.stop()
+   await new Promise(resolve => occupied.close(resolve))
+  }
+ })
+})
+
 describe('Retained PDF feedback',{concurrency:false},()=>{
  let worker
  before(async()=>{worker=await startWorker()},{timeout:120000})

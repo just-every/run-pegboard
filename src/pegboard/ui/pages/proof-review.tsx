@@ -22,7 +22,7 @@ export function ProofReviewPage({viewer,view,pdfModule,pdfWorker}:{viewer:Viewer
       {view.documents.map(document=>{
         const pins=view.feedback.filter(f=>f.version_id===document.id),token=view.tokens[document.id]
         return <section className="proof-version" key={document.id} aria-label={'Version '+document.version} data-proof-version={document.id} data-proof-digest={document.digest} data-material={api+'/versions/'+document.id+'/material'}>
-          <Card title={'Version '+document.version+(document.id===view.currentVersion?' · Current':' · Retained')}>
+          <Card title={'Version '+document.version}>
             <p>{document.name} · {document.pages.length} {document.pages.length===1?'page':'pages'}</p>
             <dl><div><dt>Version identity</dt><dd><code>{document.id}</code></dd></div><div><dt>SHA-256</dt><dd><code>{document.digest}</code></dd></div></dl>
             <a href={api+'/versions/'+document.id+'/material'}>Download retained PDF</a>

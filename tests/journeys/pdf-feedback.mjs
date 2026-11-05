@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict'
 import { expect } from '@playwright/test'
+import { createHash } from 'node:crypto'
 import { mkdir } from 'node:fs/promises'
 import { join } from 'node:path'
-import { pdfFeedbackFixture,pass } from '../scenarios/pdf-feedback.mjs'
+import { pdfFeedbackFixture,retainedMemberReviewFixture,retainedReviewState,pass } from '../scenarios/pdf-feedback.mjs'
 
 export async function pdfFeedbackJourney({w,browser}){
  const f=await pdfFeedbackFixture(w),{owner,writer,one,two,proof,api}=f
@@ -71,7 +72,7 @@ export async function pdfFeedbackJourney({w,browser}){
    await readerPage.getByRole('link',{name:'Proof reviews',exact:true}).click()
    await readerPage.getByRole('link',{name:'Review PDF versions'}).click()
    await expect(readerPage.getByRole('region',{name:'Version 2',exact:true}).getByRole('status')).toHaveText('Verified PDF · 2 pages')
-   await expect(readerPage.getByRole('heading',{name:'Version 2 · Retained',exact:true})).toBeVisible()
+   await expect(readerPage.getByRole('heading',{name:'Version 2',exact:true})).toBeVisible()
    await expect(readerPage.locator('[data-proof-version]')).toHaveCount(1)
    await expect(readerPage.getByLabel('Review version',{exact:true}).locator('option')).toHaveText(['Version 2 · synthetic-pegboard-v2.pdf'])
    await expect(readerPage.getByRole('form',{name:'Add feedback to version 2'})).toHaveCount(0)
@@ -118,4 +119,99 @@ export async function pdfFeedbackJourney({w,browser}){
   console.log('PROBE PEG-011 retained entry: reader follows task and proof list after hidden v3 replacement -> readable v2 opens with retained feedback, no hidden version identity or annotation controls')
   console.log('PROBE PEG-011 unavailable source: revoke selected v1 access before material read -> 404, no v1 pixels or text, permitted v2 still renders; refreshed hidden comparison refuses')
  }finally{await context.close()}
+}
+
+// Each viewport starts at the task with a fresh member context and records the real network.
+export async function retainedMemberReviewJourney({w,browser}){
+ const f=await retainedMemberReviewFixture(w),{reader,one,two,three,api,proof}=f
+ const hidden=[three.versionId,three.file.id,three.file.name,three.digest,f.hiddenReplacement.id,f.hiddenReplacement.name]
+ const here=w.origin+'/app/proof-viewer/'+proof.id
+ const screenshot=async(page,name,width)=>{
+  if(process.env.PEGBOARD_PROOF_DIR){await mkdir(process.env.PEGBOARD_PROOF_DIR,{recursive:true});await page.screenshot({path:join(process.env.PEGBOARD_PROOF_DIR,'member-pdf-'+name+'-'+width+'.png'),fullPage:true})}
+ }
+ const receipt=[]
+ for(const width of [1440,390]){
+  const context=await browser.newContext({viewport:{width,height:1000}})
+  try{
+   await context.addCookies(reader.cookie.split('; ').map(pair=>({name:pair.slice(0,pair.indexOf('=')),value:pair.slice(pair.indexOf('=')+1),url:w.origin})))
+   const page=await context.newPage(),requests=[],responses=[],pending=[],errors=[]
+   page.on('pageerror',error=>errors.push(error.message))
+   page.on('request',request=>requests.push({url:request.url(),method:request.method()}))
+   const observe=response=>{
+    const item={url:response.url(),status:response.status()};responses.push(item)
+    pending.push((async()=>{
+     const type=response.headers()['content-type']??''
+     if(type.includes(['application','pdf'].join('/'))){
+      const bytes=await response.body()
+      item.digest=createHash('sha256').update(bytes).digest('hex')
+      item.version=response.headers()['x-proof-version'];item.headerDigest=response.headers()['x-proof-digest']
+     }else if(/text|json|javascript/.test(type))item.text=await response.text()
+    })())
+   }
+   page.on('response',observe)
+   const read=async(source,label)=>{
+    const region=page.getByRole('region',{name:'Version '+label,exact:true})
+    await expect(region.getByRole('status')).toHaveText('Verified PDF · 2 pages',{timeout:45000})
+    await expect(region.getByRole('heading',{name:'Version '+label,exact:true})).toBeVisible()
+    await expect(page.locator('[data-proof-version]')).toHaveCount(1)
+    await expect(region).toHaveAttribute('data-proof-version',source.versionId)
+    await expect(region).toHaveAttribute('data-proof-digest',source.digest)
+    for(const [number,text]of [[1,'Front draft v'+label],[2,'Back draft v'+label]]){
+     await expect(region.getByRole('img',{name:'PDF page '+number})).toBeVisible()
+     await region.getByText('Page '+number+' text',{exact:true}).click()
+     await expect(region.getByText(text,{exact:true})).toBeVisible()
+    }
+    const ink=await region.getByRole('img',{name:'PDF page 1'}).evaluate(canvas=>{
+     const data=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data
+     let count=0;for(let i=0;i<data.length;i+=4)if(data[i]<100&&data[i+1]<100&&data[i+2]<100&&data[i+3])count++
+     return count
+    })
+    assert.ok(ink>50,'the selected source paints real PDF text')
+    await expect(region.locator('[data-feedback-id]')).toContainText('Keep this exact paragraph')
+    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth))
+    await page.waitForLoadState('networkidle')
+    await Promise.all(pending)
+    const material=responses.filter(r=>r.url===w.origin+api+'/versions/'+source.versionId+'/material').at(-1)
+    assert.deepEqual([material?.status,material?.version,material?.digest,material?.headerDigest],[200,source.versionId,source.digest,source.digest])
+   }
+   assert.equal((await page.goto(w.origin+'/app/tasks/'+f.task.id)).status(),200)
+   await page.getByRole('link',{name:'Proof reviews',exact:true}).click()
+   await page.getByRole('link',{name:'Review PDF versions',exact:true}).click()
+   await read(two,2)
+   await expect(page.getByLabel('Review version',{exact:true})).toHaveValue(two.versionId)
+   assert.deepEqual(await page.getByLabel('Review version',{exact:true}).locator('option').evaluateAll(options=>options.map(option=>option.value)),[one.versionId,two.versionId])
+   await screenshot(page,'newest-readable',width)
+   await page.getByLabel('Review version',{exact:true}).focus()
+   await page.getByLabel('Review version',{exact:true}).selectOption(one.versionId)
+   await page.getByRole('button',{name:'Show selected versions'}).focus();await page.keyboard.press('Enter')
+   await read(one,1)
+   await screenshot(page,'explicit-older',width)
+   // Stop permitted-flow observation before intentionally requesting refused identifiers.
+   page.off('response',observe)
+   assert.deepEqual(errors,[])
+   assert.ok(responses.some(r=>r.url===here&&r.status===200),'ordinary viewer navigation returns HTTP 200')
+   assert.ok(responses.some(r=>r.url.startsWith(here+'?version='+one.versionId)&&r.status===200),'explicit older navigation returns HTTP 200')
+   assert.ok(responses.every(r=>r.status<400),'no refused request in the permitted flow')
+   for(const request of requests)for(const value of hidden)assert.ok(!request.url.includes(value),'no hidden source requested')
+   for(const response of responses)for(const value of hidden)assert.ok(!(response.text??'').includes(value),'no hidden identity in a permitted response')
+   assert.ok(!/currentVersion|Version 3|newer version|hidden version|· Current|· Retained/.test(await page.locator('main').innerText()),'no hidden-current hint')
+   receipt.push({width,defaultStatus:200,defaultVersion:two.versionId,olderStatus:200,olderVersion:one.versionId,statuses:[...new Set(responses.map(r=>r.status))],hiddenRequests:0,digests:[two.digest,one.digest]})
+   for(const query of [id=>'?version='+id,id=>'?version='+two.versionId+'&compare='+id]){
+    const before=await retainedReviewState(f)
+    const refused=await page.goto(here+query(three.versionId)),hiddenPage=await page.locator('body').innerText()
+    assert.equal(refused.status(),404)
+    await expect(page.locator('[data-proof-review]')).toHaveCount(0)
+    const missing=await page.goto(here+query('synthetic-pegboard-nonexistent'))
+    assert.equal(missing.status(),404)
+    assert.equal(await page.locator('body').innerText(),hiddenPage)
+    for(const value of hidden)assert.ok(!hiddenPage.includes(value))
+    assert.deepEqual(await retainedReviewState(f),before)
+   }
+  }finally{await context.close()}
+ }
+ console.log('PROBE PEG-128 point 1: independent member task -> Proof reviews -> Review PDF versions at 1440 and 390 -> HTTP 200, newest readable v2 with real PDF pages')
+ console.log('PROBE PEG-128 point 2: observed permitted browser requests and response bodies -> no hidden v3 request, identity, current-version hint or HTTP 404')
+ console.log('PROBE PEG-128 point 3: keyboard chooses readable v1 at both widths -> HTTP 200, rendered v1 text and observed response byte digest match the selected source')
+ console.log('PROBE PEG-128 point 4: explicit hidden selected and comparison requests versus nonexistent IDs -> identical generic refusals; independent proof, feedback, history and decision state unchanged')
+ console.log('PEG-128 browser receipt '+JSON.stringify(receipt))
 }
