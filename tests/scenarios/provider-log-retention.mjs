@@ -123,6 +123,8 @@ export async function providerLogRetentionScenario(){
   assert.deepEqual(await query(w,'SELECT * FROM peg_time_delivery_history ORDER BY id'),remaining)
   assert.deepEqual(await query(w,'SELECT * FROM peg_time_diagnostic_expiry'),[])
   for(const row of remaining)await assert.rejects(()=>w.sql(`DELETE FROM peg_time_delivery_history WHERE id=${row.id}`),immutableRefusal)
+  // A refused Wrangler write can restart the local Worker; the normal successful store probe waits for readiness.
+  assert.deepEqual(await query(w,'SELECT * FROM peg_time_delivery_history ORDER BY id'),remaining,'ordinary write refusals preserve every retained witness')
   restored=await restoreCanvasInstallation(owner,{earlierArchive})
   assert.deepEqual(await query(restored.worker,'SELECT * FROM peg_time_delivery_history ORDER BY id'),remaining)
   assert.deepEqual(await baseline(restored.worker),original)

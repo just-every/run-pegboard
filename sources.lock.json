@@ -4499,7 +4499,7 @@
       "executable": false
     },
     "tests/scenarios/provider-log-retention.mjs": {
-      "sha256": "08e5866273c3721da85efb25a70ca203b17dd1c68c7c66d38ebb26180af28534",
+      "sha256": "2bf23e0ea54bd7cbd7fc4d2e54b76c5ed0ec3aee99196ff6677e1b1c5bbe7b3d",
       "executable": false
     },
     "tests/scenarios/public-api.mjs": {
