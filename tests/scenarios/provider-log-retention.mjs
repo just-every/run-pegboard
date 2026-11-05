@@ -56,7 +56,7 @@ export async function providerLogFixture(w,services){
  const preview=await pass(owner.post('/api/v1/data/retention-preview',{class:'provider_logs',days:1}))
  await pass(owner.post('/api/v1/data/retention',{class:'provider_logs',days:1,token:preview.token,confirm:true}))
  const rows=await query(w,'SELECT * FROM peg_time_delivery_history ORDER BY id')
- return {w,owner,member,admin,project,tasks,sheet,entries,rows,input,adjustment,cutoff:Date.UTC(2026,0,2)}
+ return {w,owner,member,admin,project,tasks,sheet,entries,rows,input,adjustment,correction,cutoff:Date.UTC(2026,0,2)}
 }
 export const previewLogs=f=>pass(f.owner.post('/api/v1/data/expiry-preview',{class:'provider_logs',cutoff:f.cutoff}))
 export const expireLogs=(f,p,client=f.owner)=>client.post('/api/v1/data/expire',{class:'provider_logs',cutoff:p.cutoff,token:p.token,confirm:true})
@@ -67,6 +67,16 @@ export async function providerLogRetentionScenario(){
   w=await startWorker({settings:{PEGBOARD_LOCAL_TIME_SERVICE_ORIGINS:services.origins}})
   const f=await providerLogFixture(w,services),{owner,member,admin}=f
   const original=await baseline(w),audit=await query(w,'SELECT * FROM peg_permanent_audit ORDER BY id'),history=f.rows,unresolved=history.filter(row=>row.entry_id===f.entries[0].id)
+  const approvedTotal=async()=>{
+   let total=0
+   for(const id of [f.sheet.id,f.correction.id]){
+    const view=await pass(owner.get(`/api/v1/timesheets/${id}`))
+    assert.equal(view.sheet.status,'approved');total+=view.totalSeconds
+   }
+   return total
+  }
+  assert.equal(await approvedTotal(),17640,'five hours less the independently reviewed six-minute correction')
+  const publicLedger=(await pass(owner.get(`/api/v1/timesheets/${f.sheet.id}/provider-deliveries`))).rows
   const expected=history.filter(row=>row.state==='sending'&&[f.entries[1].id,f.entries[2].id].includes(row.entry_id)).map(row=>row.id)
   assert.ok(expected.length>0);assert.equal((await pass(owner.get(`/api/v1/timesheets/${f.sheet.id}`))).totalSeconds,18000)
   for(const sql of [`DELETE FROM peg_time_delivery_history WHERE id=${expected[0]}`,`UPDATE peg_time_delivery_history SET reason='synthetic-pegboard-1340' WHERE id=${expected[0]}`,`DELETE FROM peg_time_deliveries`])await assert.rejects(()=>w.sql(sql),immutableRefusal)
@@ -101,6 +111,9 @@ export async function providerLogRetentionScenario(){
   const remaining=history.filter(row=>!expected.includes(row.id))
   assert.deepEqual(await query(w,'SELECT * FROM peg_time_delivery_history ORDER BY id'),remaining)
   assert.deepEqual(await baseline(w),original,'ledger, entries, signed sheets and time history are byte-identical')
+  assert.equal(await approvedTotal(),17640)
+  assert.deepEqual((await pass(owner.get(`/api/v1/timesheets/${f.sheet.id}/provider-deliveries`))).rows,publicLedger)
+  assert.equal((await pass(owner.get('/api/v1/data'))).receipts.filter(row=>row.id===done.id).length,1)
   assert.deepEqual(await query(w,`SELECT * FROM peg_permanent_audit WHERE id<=${audit.at(-1).id} ORDER BY id`),audit,'existing permanent audit remains unchanged')
   const receipt=await pass(owner.get('/api/v1/data/receipts/'+done.id))
   assert.equal(receipt.outcome,'partial');assert.equal(receipt.providerDiagnostics.cutoff,f.cutoff)
@@ -123,6 +136,6 @@ export async function providerLogRetentionScenario(){
   assert.deepEqual(await query(w,'SELECT * FROM peg_time_delivery_history ORDER BY id'),remaining)
   console.log('PROBE PEG-065 exact expiry: schema-fake time-delivery door -> real persisted sending rows, exact expired IDs '+expected.join(',')+' and retained IDs '+remaining.map(r=>r.id).join(','))
   console.log('PROBE PEG-065 authority and holds: owner review, administrator and member refusal, active hold, stale and concurrent confirmation -> one receipt, unchanged held history and no provider calls')
-  console.log('PROBE PEG-065 durable custody: expiry, restart, replay and native archive with later journal -> no resurrection; ledger, approved total 18000 seconds, signed sheets and time history unchanged')
+  console.log('PROBE PEG-065 durable custody: expiry, restart, replay and native archive with later journal -> no resurrection; ledger, approved original 18000 seconds and corrected total 17640 seconds, signed sheets and time history unchanged')
  }finally{await restored?.stop();await w?.stop();await services.stop()}
 }
