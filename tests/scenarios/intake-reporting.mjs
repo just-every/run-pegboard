@@ -91,6 +91,23 @@ export async function intakeReportingScenario(w) {
  assert.deepEqual((await ok(guest.post(guestBase+'/capture',{}))).widgets,safe.widgets,'membership access requests cannot enter work intake')
  await ok(owner.delete(`/api/v1/grants/${grants[0].id}`))
  for(const format of ['','?format=csv','?format=xlsx','?format=pdf'])await ok(guest.get(guestBase+'/snapshots/'+safe.id+format),404)
+ // Keeping task access through another placement cannot replace origin export authority.
+ const readOnly=await ok(owner.post('/api/v1/grants',{objectType:'project',objectId:projects[0].id,granteeId:guest.id,level:'viewer',scopes:['read']}))
+ await ok(guest.get(`/api/v1/projects/${projects[0].id}`))
+ await ok(guest.get(`/api/v1/tasks/${b.taskId}`))
+ for(const format of ['','?format=csv','?format=xlsx','?format=pdf'])await ok(guest.get(guestBase+'/snapshots/'+safe.id+format),403)
+ await ok(guest.post(guestBase+'/capture',{}),403)
+ await ok(guest.post('/api/v1/reports',input),403)
+ await ok(owner.delete(`/api/v1/grants/${readOnly.id}`))
+ await ok(owner.post('/api/v1/grants',{objectType:'project',objectId:projects[0].id,granteeId:guest.id,level:'viewer'}))
+ assert.deepEqual((await ok(guest.get(guestBase+'/snapshots/'+safe.id))).metrics,safe.metrics,'renewed export authority serves only the original frozen receipt values')
+ // A stricter workspace export floor applies to saved reports as well as new captures.
+ await ok(owner.patch('/api/v1/workspaces/ws_main/settings',{exportMinLevel:'editor'}))
+ await ok(guest.get(`/api/v1/tasks/${b.taskId}`))
+ for(const format of ['','?format=csv','?format=xlsx','?format=pdf'])await ok(guest.get(guestBase+'/snapshots/'+safe.id+format),403)
+ await ok(guest.post(guestBase+'/capture',{}),403)
+ await ok(owner.patch('/api/v1/workspaces/ws_main/settings',{exportMinLevel:'viewer'}))
+ assert.deepEqual((await ok(guest.get(guestBase+'/snapshots/'+safe.id))).metrics,safe.metrics)
  // Project remains exportable but loss of task readability also fences a saved snapshot.
  const taskScope=await ok(guest.post('/api/v1/reports',{...input,projects:[projects[1].id]})),taskBase=`/api/v1/reports/${taskScope.id}`
  const readable=await ok(guest.post(taskBase+'/capture',{}))
@@ -133,6 +150,7 @@ export async function intakeReportingScenario(w) {
  console.log('PROBE PEG-018 receipt inclusion: public and internal submissions -> exact receipt and task IDs, replay once, legacy rows retained, six requests widgets reconcile')
  console.log('PROBE PEG-018 window and status: persisted instants -> 23-hour and 25-hour local DST days, alternate timezone and current status filter; frozen values unchanged')
  console.log('PROBE PEG-018 authority and privacy: selected-origin and task export doors -> hidden, moved and unselected origins excluded; revoked saved reads and downloads refused')
+ console.log('PROBE PEG-018 export authority: readable origin and alternate task placement, then stricter workspace export floor -> saved JSON and all downloads 403, capture and new dashboard refused; restored authority retains frozen values')
  console.log('PROBE PEG-018 concurrency and restart: capture with submission and concurrent replay -> coherent capture or 409, one receipt, frozen restart read')
  console.log('PROBE PEG-018 erasure: erase mapped task then replay and download -> 410; fresh capture excludes receipt and task')
  return {files,report}
