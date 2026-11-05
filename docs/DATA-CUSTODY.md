@@ -92,6 +92,9 @@ Ordinary history updates and deletions still refuse. A forward migration grants
 one-use exact-row permits only within the reviewed expiry transaction; permits
 never travel in archives. Expired diagnostics have native erasure tombstones,
 and an older archive supplied with the later journal cannot restore them.
+Expiry advances that checkpoint independently of any later erasure and invalidates
+pending archive transfers. Review and export again after expiry; an earlier
+in-progress archive cannot deliver its retained diagnostic snapshot.
 Retained delivery witnesses and immutable exact-scope receipts survive restore. A proof expires as a coherent group after every version is
 eligible and unheld. Otherwise the preview discloses retained dependencies.
 Trash/import-original and agent-prompt stores are not built; no cleanup of those

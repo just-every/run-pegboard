@@ -60,13 +60,17 @@ export async function providerLogFixture(w,services){
 }
 export const previewLogs=f=>pass(f.owner.post('/api/v1/data/expiry-preview',{class:'provider_logs',cutoff:f.cutoff}))
 export const expireLogs=(f,p,client=f.owner)=>client.post('/api/v1/data/expire',{class:'provider_logs',cutoff:p.cutoff,token:p.token,confirm:true})
-const baseline=async(w)=>JSON.parse(await w.sql('SELECT * FROM peg_time_deliveries ORDER BY service,account,entry_id; SELECT * FROM peg_time_entries ORDER BY id; SELECT * FROM peg_timesheets ORDER BY id; SELECT * FROM peg_time_history ORDER BY id;')).map(result=>result.results)
+// Read each reconciliation checkpoint together; separate Wrangler invocations add no evidence.
+const custodySnapshot=async(w)=>{
+ const rows=JSON.parse(await w.sql('SELECT * FROM peg_time_delivery_history ORDER BY id; SELECT * FROM peg_time_deliveries ORDER BY service,account,entry_id; SELECT * FROM peg_time_entries ORDER BY id; SELECT * FROM peg_timesheets ORDER BY id; SELECT * FROM peg_time_history ORDER BY id; SELECT * FROM peg_permanent_audit ORDER BY id; SELECT * FROM peg_time_diagnostic_expiry;')).map(result=>result.results)
+ return {history:rows[0],ledger:rows.slice(1,5),audit:rows[5],permits:rows[6]}
+}
 export async function providerLogRetentionScenario(){
  const services=await startTimeServices();let w,restored
  try{
   w=await startWorker({settings:{PEGBOARD_LOCAL_TIME_SERVICE_ORIGINS:services.origins}})
   const f=await providerLogFixture(w,services),{owner,member,admin}=f
-  const retentionCalls=services.requests.length,original=await baseline(w),audit=await query(w,'SELECT * FROM peg_permanent_audit ORDER BY id'),history=f.rows,unresolved=history.filter(row=>row.entry_id===f.entries[0].id)
+  const retentionCalls=services.requests.length,before=await custodySnapshot(w),original=before.ledger,audit=before.audit,history=f.rows,unresolved=history.filter(row=>row.entry_id===f.entries[0].id)
   const approvedTotal=async()=>{
    let total=0
    for(const id of [f.sheet.id,f.correction.id]){
@@ -123,7 +127,9 @@ export async function providerLogRetentionScenario(){
   await pass(expireLogs(f,boundReview,successor),409)
   const erasedProject=await pass(owner.post('/api/v1/projects',{name:'Later independently erased scope'}))
   const erasedTask=await pass(owner.post('/api/v1/tasks',{projectId:erasedProject.id,title:'Later erasure must not restore diagnostics'}))
-  const earlierArchive=await exportCanvasInstallation(owner),review=await previewLogs(f)
+  const earlierArchive=await exportCanvasInstallation(owner)
+  const beforeExpiryJournal=await pass(owner.get('/api/v1/data/journal'))
+  const pendingExport=await pass(owner.post('/api/portability/exports',{}),201),review=await previewLogs(f)
   await w.restart()
   const calls=services.requests.length
   const results=await Promise.all([expireLogs(f,review),expireLogs(f,review)])
@@ -132,12 +138,13 @@ export async function providerLogRetentionScenario(){
   assert.deepEqual(done.expiredDiagnostics.map(r=>r.id),expected)
   assert.equal(services.requests.length,calls,'expiry and refusals never contact the provider')
   const remaining=history.filter(row=>!expected.includes(row.id))
-  assert.deepEqual(await query(w,'SELECT * FROM peg_time_delivery_history ORDER BY id'),remaining)
-  assert.deepEqual(await baseline(w),original,'ledger, entries, signed sheets and time history are byte-identical')
+  const expiredState=await custodySnapshot(w)
+  assert.deepEqual(expiredState.history,remaining)
+  assert.deepEqual(expiredState.ledger,original,'ledger, entries, signed sheets and time history are byte-identical')
   assert.equal(await approvedTotal(),17640)
   assert.deepEqual((await pass(owner.get(`/api/v1/timesheets/${f.sheet.id}/provider-deliveries`))).rows,publicLedger)
   assert.equal((await pass(owner.get('/api/v1/data'))).receipts.filter(row=>row.id===done.id).length,1)
-  assert.deepEqual(await query(w,`SELECT * FROM peg_permanent_audit WHERE id<=${audit.at(-1).id} ORDER BY id`),audit,'existing permanent audit remains unchanged')
+  assert.deepEqual(expiredState.audit.filter(row=>row.id<=audit.at(-1).id),audit,'existing permanent audit remains unchanged')
   const receipt=await pass(owner.get('/api/v1/data/receipts/'+done.id))
   assert.equal(receipt.outcome,'partial');assert.equal(receipt.providerDiagnostics.cutoff,f.cutoff)
   assert.deepEqual(receipt.providerDiagnostics.expired,done.expiredDiagnostics)
@@ -150,9 +157,25 @@ export async function providerLogRetentionScenario(){
    assert.ok(remaining.some(item=>item.id===acknowledgment.id),'each expired diagnostic retains its attributable acknowledgment')
   }
   assert.deepEqual(receipt.providerDiagnostics.retained.map(r=>r.id),remaining.map(r=>r.id))
+  // Prove expiry's own checkpoint before another destructive action could supply a missing journal.
+  const expiryJournal=await pass(owner.get('/api/v1/data/journal'))
+  assert.equal(expiryJournal.sourceIdentity,beforeExpiryJournal.sourceIdentity)
+  assert.ok(expiryJournal.epoch>beforeExpiryJournal.epoch,'diagnostic expiry advances the native archive fence')
+  assert.ok(expiryJournal.journal.length>beforeExpiryJournal.journal.length)
+  await pass(owner.post(`/api/portability/exports/${pendingExport.id}/advance`,{maxParts:16}),404)
+  await pass(owner.get(`/api/portability/exports/${pendingExport.id}/download`),404)
+  restored=await restoreCanvasInstallation(owner,{earlierArchive})
+  const expiryRestore=await custodySnapshot(restored.worker)
+  assert.deepEqual(expiryRestore.history,remaining,'expiry alone prevents diagnostic resurrection and preserves every retained witness')
+  assert.deepEqual(expiryRestore.ledger,original)
+  assert.deepEqual((await pass(restored.worker.owner.get('/api/v1/data/receipts/'+done.id))).providerDiagnostics,receipt.providerDiagnostics)
+  await pass(restored.worker.owner.get('/api/v1/projects/'+erasedProject.id))
+  await pass(restored.worker.owner.get('/api/v1/tasks/'+erasedTask.id))
+  await restored.stop();restored=undefined
   await w.restart();await pass(expireLogs(f,review),409)
-  assert.deepEqual(await query(w,'SELECT * FROM peg_time_delivery_history ORDER BY id'),remaining)
-  assert.deepEqual(await query(w,'SELECT * FROM peg_time_diagnostic_expiry'),[])
+  const replayState=await custodySnapshot(w)
+  assert.deepEqual(replayState.history,remaining)
+  assert.deepEqual(replayState.permits,[])
   for(const row of remaining)await assert.rejects(()=>w.sql(`DELETE FROM peg_time_delivery_history WHERE id=${row.id}`),immutableRefusal)
   // A refused Wrangler write can restart the local Worker; the normal successful store probe waits for readiness.
   assert.deepEqual(await query(w,'SELECT * FROM peg_time_delivery_history ORDER BY id'),remaining,'ordinary write refusals preserve every retained witness')
@@ -162,11 +185,13 @@ export async function providerLogRetentionScenario(){
   assert.equal(erased.outcome,'complete')
   await pass(owner.get('/api/v1/projects/'+erasedProject.id),404)
   await pass(owner.get('/api/v1/tasks/'+erasedTask.id),404)
-  assert.deepEqual(await query(w,'SELECT * FROM peg_time_delivery_history ORDER BY id'),remaining,'later erasure preserves every delivery witness')
-  assert.deepEqual(await baseline(w),original)
+  const erasedState=await custodySnapshot(w)
+  assert.deepEqual(erasedState.history,remaining,'later erasure preserves every delivery witness')
+  assert.deepEqual(erasedState.ledger,original)
   restored=await restoreCanvasInstallation(owner,{earlierArchive})
-  assert.deepEqual(await query(restored.worker,'SELECT * FROM peg_time_delivery_history ORDER BY id'),remaining)
-  assert.deepEqual(await baseline(restored.worker),original)
+  const erasureRestore=await custodySnapshot(restored.worker)
+  assert.deepEqual(erasureRestore.history,remaining)
+  assert.deepEqual(erasureRestore.ledger,original)
   assert.deepEqual((await pass(restored.worker.owner.get('/api/v1/data/receipts/'+done.id))).providerDiagnostics,receipt.providerDiagnostics)
   await pass(restored.worker.owner.get('/api/v1/projects/'+erasedProject.id),404)
   await pass(restored.worker.owner.get('/api/v1/tasks/'+erasedTask.id),404)
@@ -180,6 +205,7 @@ export async function providerLogRetentionScenario(){
   console.log('PROBE PEG-065 policy and cutoff: keep-until-erasure refuses expiry; restored policy refuses old review; recent settled diagnostic stays newer than the frozen cutoff')
   console.log('PROBE PEG-065 exact expiry: schema-fake time-delivery door -> real persisted sending rows, exact expired IDs '+expected.join(',')+' and retained IDs '+remaining.map(r=>r.id).join(','))
   console.log('PROBE PEG-065 authority and holds: owner review, administrator and member refusal, active hold, stale and concurrent confirmation -> one receipt, unchanged held history and no provider calls')
+  console.log('PROBE PEG-065 expiry-only archive: diagnostic expiry before later erasure -> checkpoint advanced, pending archive refused, older archive plus expiry journal refused; current archive restores exact witnesses and receipt')
   console.log('PROBE PEG-065 durable custody: expiry, later independent erasure, restart, replay and native archive with later journal -> no resurrection; ledger, approved original 18000 seconds and corrected total 17640 seconds, signed sheets and time history unchanged')
  }finally{await restored?.stop();await w?.stop();await services.stop()}
 }

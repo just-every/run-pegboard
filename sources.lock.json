@@ -215,7 +215,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "10b9d07f7db2d558b8987f6a9a135dc49235a756714101cbfa3537a1e74874a7",
+      "sha256": "c000cdf68bae3eb4559815ce6ce39230f2307e9f06d60bf6b00f5bc6aa848d32",
       "executable": false
     },
     "DEMO.md": {
@@ -251,7 +251,7 @@
       "executable": false
     },
     "docs/DATA-CUSTODY.md": {
-      "sha256": "6e1e7ae40d37563ef2cb04b7ae049d1da039c74f3ef2dfc78de0fdca8b025534",
+      "sha256": "70eff2bd6e4018e124d9f0ec00b2cc8c413a32355f89818c20b138b740301a3d",
       "executable": false
     },
     "docs/DATA-RECORD-API.md": {
@@ -4395,7 +4395,7 @@
       "executable": false
     },
     "tests/journeys/provider-log-retention.mjs": {
-      "sha256": "e8d4e1b6770a3bc8016ab6cad88c1bb193679842cbfdf34c405d34b47e2c0a8b",
+      "sha256": "3742b7a7b9576057d3c02fd3f82e43f793d9759842967fdb6c22afc0eb36d353",
       "executable": false
     },
     "tests/journeys/public-api.mjs": {
@@ -4499,7 +4499,7 @@
       "executable": false
     },
     "tests/scenarios/provider-log-retention.mjs": {
-      "sha256": "2f6b8073a7fcbcd534651e69c5094054214a8466448cd8529bc281d9b7d860d2",
+      "sha256": "5e3d3ba43928a1d7d98dec27bbf30601a31888d36f8a2042964084e305062526",
       "executable": false
     },
     "tests/scenarios/public-api.mjs": {
