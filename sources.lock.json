@@ -199,7 +199,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "3d668e6aacf591f72ed6deb3ab84a1e92869a6b90a93e828cb0c0f0eadb5852b",
+      "sha256": "e811d0216957553e0111b0fd30f13a61d096986818458e7d4f01f594ac35f918",
       "executable": false
     },
     "AGENTS.md": {
@@ -243,7 +243,7 @@
       "executable": false
     },
     "docs/CLAIMS.md": {
-      "sha256": "9c6b95e5ab1089594cc142e31097f71d8c73aeb7e7526f3f9624dddb73798ef5",
+      "sha256": "8fc0c91710b45d65032d9c04f67e684d7f5110437a136d77f7494bee97035e98",
       "executable": false
     },
     "docs/contract/PEG-128-rubric.md": {
