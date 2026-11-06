@@ -58,3 +58,7 @@ ul.plain{margin:6px 0 0;padding-left:18px}
 .report-values a { overflow-wrap: anywhere; }
 .report-widgets code, [data-report-snapshot] { overflow-wrap: anywhere; }
 @media (max-width: 1023px) { .report-widgets { grid-template-columns: minmax(0, 1fr); } }
+
+/* Human-authored text keeps line breaks without overflowing its existing card. */
+.message-text{white-space:pre-wrap;overflow-wrap:anywhere}
+[data-message-notice-id],[data-comment-id],[data-publication-id]{overflow-wrap:anywhere}

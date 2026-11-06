@@ -1,0 +1,13 @@
+# Project announcements
+
+Project Messages contains human-authored text announcements, rather than chat channels. Open a project, choose Messages, and compose an announcement. A current internal human with project settings authority can save a draft, select active internal participants and readable project work, then review the exact subject, body, work links and named audience before publication. Administrative custody alone does not publish a directory identity. Guests, agents and analysts are excluded from this native slice.
+
+A publication is immutable. A correction is a separately reviewed publication in the same thread with the same selected audience, attributed to its publisher. Original text remains visible in history. No announcement creates membership, task editing or approval authority. Text mentions never expand its audience.
+
+Current Commenters can reply in-thread. A reply's author can edit or delete it only against the current thread and reply revision. Earlier revisions and attribution remain in history until an owner reviews erasure. Concurrent submissions, replayed operation identities, stale drafts, changed linked work and stale reviewed audiences refuse without duplicate effects or overwriting later edits.
+
+Each publication and reply creates durable, unique notices inside its exact reviewed recipient set. Inbox renders the actual announcement or current reply, with the publication, event and recipient identities. Follow and mute control ordinary thread notices. Every Inbox and thread read rechecks the current internal participant, project capability and linked work. Revoked or inactive recipients cannot read the thread; cancelled notices do not return when a grant is renewed. This implements native Inbox delivery only. No mail or provider receipt is claimed.
+
+An exact owner erasure preview includes every affected conversation, its drafts, copied text, replies, revision history, notices and preferences. Because copied text can contain attribution and work context, erasing a participant or linked work removes the whole affected conversation after that exact review. All related people, work and projects participate in active-hold checks. Permanent audit keeps opaque identities and revision numbers, without message content. Native archives preserve conversation identities but restore publications and drafts inactive and notices cancelled. Erasure journals fence older archives. Status snapshots and rights-request restrictions are unchanged.
+
+Team announcements, guest delivery, email and authenticated email replies, provider embeds, Slate continuity, rich collaboration, uploads and fixed-device performance qualification remain outstanding under PEG-010 and its existing dependencies.

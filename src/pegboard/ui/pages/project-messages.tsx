@@ -17,7 +17,7 @@ export function MessageCompose({viewer,projectId,projectName,draft,people,work,r
   <Card title={review?'Exact content and audience':'Announcement draft'}>
    <p><a href={'/app/projects/'+projectId+'/messages'}>Project Messages</a></p>
    {review?<>
-    <h3>{review.subject}</h3><p style={{whiteSpace:'pre-wrap'}}>{review.body}</p>
+    <h3>{review.subject}</h3><p className="message-text">{review.body}</p>
     <h3>Reviewed recipients</h3><ul className="rows">{review.audience.map(p=><li key={p.id} data-recipient-id={p.id}>{p.name}</li>)}</ul>
     <h3>Linked work</h3><ul className="rows">{review.links.map((s:any)=><li key={s.id}><a href={'/app/tasks/'+s.id}>{s.title}</a></li>)}</ul>
     {corrects&&<p>Attributable correction to <a href={'/app/messages/'+corrects}>the previous publication</a>. It remains in history.</p>}
@@ -38,13 +38,13 @@ export function MessageThread({viewer,view,replyKey}:{viewer:Viewer;view:Thread;
  const latest=view.publications.find(p=>p.id===view.latestId)!,path='/app/messages/'+view.id
  return <Shell viewer={viewer} current="/app/projects" title={latest.subject} facts={[view.projectName,'Immutable announcement history']}>
   <Card title="Announcement"><p><a href={'/app/projects/'+view.projectId+'/messages'}>Project Messages</a></p>
-   {view.publications.map(p=><section key={p.id} data-publication-id={p.id}><h3>{p.corrects_id?'Correction: ':''}{p.subject}</h3><p style={{whiteSpace:'pre-wrap'}}>{p.body}</p><p>Published by {p.author_id} · {when(p.published_at)}</p><ul className="rows">{p.links.map((s:any)=><li key={s.id}><a href={s.href}>{s.title}</a></li>)}</ul></section>)}
+   {view.publications.map(p=><section key={p.id} data-publication-id={p.id}><h3>{p.corrects_id?'Correction: ':''}{p.subject}</h3><p className="message-text">{p.body}</p><p>Published by {p.authorName} · {when(p.published_at)}</p><ul className="rows">{p.links.map((s:any)=><li key={s.id}><a href={s.href}>{s.title}</a></li>)}</ul></section>)}
    {view.canPublish&&<p><a href={'/app/projects/'+view.projectId+'/messages/new?corrects='+view.latestId}>Write a correction</a></p>}
   </Card>
   <Card title="Thread preferences"><Form action={'/api/v1/messages/'+view.id+'/preferences'} next={path} label="Thread preferences"><input type="hidden" name="token" value={view.token}/><Pick label="Follow thread" name="following" value={String(view.preferences.following)} options={[{value:'true',label:'Following'},{value:'false',label:'Not following'}]}/><Pick label="Thread notices" name="muted" value={String(view.preferences.muted)} options={[{value:'false',label:'Inbox notices on'},{value:'true',label:'Muted'}]}/><Submit quiet>Save thread preferences</Submit></Form><p>Mentions never add recipients. Muting hides this thread’s Inbox notices.</p></Card>
   <Card title="Replies">
-   {view.comments.map(c=><section key={c.id} id={c.id} data-comment-id={c.id}><p>{c.parent_id?'Reply to '+c.parent_id+' · ':''}{c.author_id} · {when(c.updated_at)} · Revision {c.revision}</p><p style={{whiteSpace:'pre-wrap'}}>{c.deleted_at?'Reply deleted':c.body}</p>
-    <details><summary>Revision history</summary>{view.history.filter(h=>h.comment_id===c.id).map(h=><p key={h.revision}>Revision {h.revision} · {when(h.at)} · {h.author_id}: {h.deleted_at?'Deleted':h.body}</p>)}</details>
+   {view.comments.map(c=><section key={c.id} id={c.id} data-comment-id={c.id}><p>{c.parent_id?'Reply to '+c.parent_id+' · ':''}{c.authorName} · {when(c.updated_at)} · Revision {c.revision}</p><p className="message-text">{c.deleted_at?'Reply deleted':c.body}</p>
+    <details><summary>Revision history</summary>{view.history.filter(h=>h.comment_id===c.id).map(h=><p key={h.revision}>Revision {h.revision} · {when(h.at)} · {h.authorName}: {h.deleted_at?'Deleted':h.body}</p>)}</details>
     {view.canReply&&c.editable&&<Form action={'/api/v1/messages/'+view.id+'/replies/'+c.id} next={path+'#'+c.id} label={'Revise reply '+c.id}><input type="hidden" name="token" value={view.token}/><input type="hidden" name="revision" value={c.revision}/><Area label="Revised reply" name="body" value={c.body}/><Pick label="Change" name="action" options={[{value:'edit',label:'Edit reply'},{value:'delete',label:'Delete reply'}]}/><Submit quiet>Save reply revision</Submit></Form>}
    </section>)}
    {view.canReply?<Form action={'/api/v1/messages/'+view.latestId+'/replies'} next={path} label="Reply to announcement"><input type="hidden" name="token" value={view.token}/><input type="hidden" name="key" value={replyKey}/><Pick label="Reply to" name="parentId" blank="Announcement" options={view.comments.filter(c=>!c.deleted_at).map(c=>({value:c.id,label:c.body.slice(0,90)}))}/><Area label="Reply body" name="body"/><Submit>Post reply</Submit></Form>:<p>Your current access is read-only.</p>}
