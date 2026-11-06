@@ -49,20 +49,46 @@
     "RunSiteConclusion": "success"
   },
   "candidateCI": {
-    "conclusion": null,
+    "conclusion": "cancelled",
     "head_sha": "177c6538d45a9e290f53c04f647cb17b0926a945",
     "html_url": "https://github.com/just-every/run-pegboard/actions/runs/42252802997",
-    "status": "in_progress",
+    "status": "completed",
     "id": 42252802997,
     "event": "push",
-    "observedAt": "2026-11-06T16:40:42Z"
+    "observedAt": "2026-11-06T16:45:54Z"
   },
-  "githubCallsUsed": 6,
+  "githubCallsUsed": 10,
   "priorPublishedCandidate": {
     "head": "9a4a0663365296010c0ad626c220ff326d640300",
     "run": 42251057743,
     "lastObservedStatus": "in_progress",
     "lastObservedConclusion": null,
     "superseded": true
+  },
+  "terminalStatus": "BLOCKED",
+  "blocker": "Exact-SHA core cancellation did not reproduce: exact shard passed 20 tests with exit 0; brief forbids speculative repair.",
+  "mainComparison": {
+    "head": "672a7a6fa8c98ed804e629dcf7fb4868b75d4f61",
+    "command": "CI=true WRANGLER_SEND_METRICS=false PLAYWRIGHT_SKIP_BROWSER_GC=1 SHARD=work-graph-core node scripts/verify-ci.mjs work-graph-core",
+    "exit": 0,
+    "tests": 18,
+    "passed": 18,
+    "failed": 0,
+    "durationMs": 358247.490523
+  },
+  "reproduction": {
+    "head": "177c6538d45a9e290f53c04f647cb17b0926a945",
+    "run": 42252802997,
+    "job": 128012377100,
+    "command": "CI=true WRANGLER_SEND_METRICS=false PLAYWRIGHT_SKIP_BROWSER_GC=1 SHARD=work-graph-core node scripts/verify-ci.mjs work-graph-core",
+    "timeoutSeconds": 720,
+    "exit": 0,
+    "rawProcessExitStatus": 0,
+    "tests": 20,
+    "passed": 20,
+    "failed": 0,
+    "durationMs": 691963.909892,
+    "reproduced": false,
+    "observedCIFailure": "The operation was canceled."
   }
 }

@@ -61,7 +61,7 @@ The test registrations are `tests/work-graph.test.mjs:2539` and `tests/work-grap
 | --- | --- |
 | 1 | PASS for native rubric R1–R12 (both exact-head scenarios and browser journey exit 0); FAIL for whole-clause completion, so no DONE claim |
 | 2 | PASS native: real seeded publications and replies, nonempty Inbox, dangerous allowed and refused paths, exact erasure and holds |
-| 3 | Candidate push Verify `42252802997` is the exact-SHA recorded workflow; its final result is recorded in `CI.json` |
+| 3 | CI NOT ESTABLISHED: exact-SHA push Verify `42252802997` ended cancelled. Seventeen product shards succeeded, core was cancelled near the job limit and the aggregate coverage gate failed. No DONE promotion. |
 | 4 | Exact-head local scenarios and browser proof are recorded in `RESULTS.json`; no subsequent product edit is allowed |
 | 5 | Existing clause duties for permissions, history and PEG-082 are retained; receiving custody uses existing PEG-059, PEG-065 and PEG-057 services without adding an exemption |
 | 6 | Contract generator write and check pass; generated views restored and not committed; source Status and counts unchanged |
@@ -89,3 +89,18 @@ PROBE PEG-010 browser: project entry, keyboard compose, review, publication, rec
 Final local result at `177c6538d45a9e290f53c04f647cb17b0926a945`: 2 scenario registrations passed, 0 failed, 0 skipped; browser journey exit 0 with 22 screenshots; Node 22.20.0 build, typecheck, first-party check, source lock, contract generator and migration ledger checks exit 0. Candidate CI remains a separate recorded gate in CI.json.
 
 CI observation 2026-11-06T16:40:42Z: Verify 42252802997 is still in progress on the exact final SHA. No success from another SHA is substituted. GitHub REST calls used: 6 of 10.
+
+Evidence transport was independently fetched at its published report head and all 41 selected files matched their manifest bytes and SHA-256 hashes. The product head and worktree remained unchanged.
+
+
+## Terminal CI disposition
+
+BLOCKED branch=cloud/sx-pegboard-c-f119 head=177c6538d45a9e290f53c04f647cb17b0926a945: Verify core cancellation did not reproduce locally. The brief’s Verify repair rule says, “If it does not reproduce, stop BLOCKED with that output; do not guess a fix.” No speculative repair, test weakening, workflow edit, CI dispatch or rerun was made.
+
+Exact-SHA Verify `42252802997` ended cancelled. Seventeen product shards succeeded, including the source and every browser shard. Core job `128012377100` ran from 16:29:48 to 16:42:03 UTC and its command output ended with “The operation was canceled.” The new announcement lifecycle had passed at 16:38:15; its archive scenario was still running when the job was cancelled. The aggregate `verify` job `128019068799` consequently failed “Require the selected coverage and its proof.” The failed-step-only log command returned no failed assertions; the complete cancelled-job archive was read once, then only the runtime excerpt was selected for evidence, with automatic environment sections excluded.
+
+The exact local command, with Node 22.20.0, the same shard and CI environment, completed in 691,963.909892 ms with 20 tests passed, zero failed, and real exit 0. `VERIFY-REPRODUCTION.json` and `verify-reproduction.log` record the result. It did not reproduce the cancellation, so no VERIFY_REPRODUCED claim or invented nonzero exit is made. The required comparison on main also completed successfully: 18 tests, exit 0, in 358,247.490523 ms on 672a7a6fa8c98ed804e629dcf7fb4868b75d4f61. Its actual receipt and log are included.
+
+All 10 permitted GitHub calls have been used. The candidate stays pushed and unlanded. Its local native product proofs remain valid, but neither a green candidate Verify nor main landing is claimed. The lane needs to resolve the CI execution budget under its existing rules; moving the archive proof to a lighter existing push shard is a possible follow-up, rather than a change made without the required reproduced failure.
+
+Final disposition: BLOCKED by the brief’s non-reproduction rule, rather than a claimed native product assertion failure. Product head 177c6538d45a9e290f53c04f647cb17b0926a945 remains pushed; no product edit followed the cancelled CI run. Counts remain 22 DONE, 19 PARTIAL, 51 MISSING.

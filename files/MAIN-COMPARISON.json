@@ -1,0 +1,9 @@
+{
+  "head": "672a7a6fa8c98ed804e629dcf7fb4868b75d4f61",
+  "command": "CI=true WRANGLER_SEND_METRICS=false PLAYWRIGHT_SKIP_BROWSER_GC=1 SHARD=work-graph-core node scripts/verify-ci.mjs work-graph-core",
+  "exit": 0,
+  "tests": 18,
+  "passed": 18,
+  "failed": 0,
+  "durationMs": 358247.490523
+}

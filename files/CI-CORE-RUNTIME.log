@@ -1,0 +1,184 @@
+shards (work-graph-core)	Run this shard	2026-11-06T16:30:12.8801014Z > pnpm run verify:app
+shards (work-graph-core)	Run this shard	2026-11-06T16:30:13.1546387Z 
+shards (work-graph-core)	Run this shard	2026-11-06T16:30:13.1547319Z > @just-every/pegboard@0.1.0 verify:app /home/runner/work/run-pegboard/run-pegboard
+shards (work-graph-core)	Run this shard	2026-11-06T16:30:13.1548185Z > node scripts/verify-app.mjs
+shards (work-graph-core)	Run this shard	2026-11-06T16:30:13.1548480Z 
+shards (work-graph-core)	Run this shard	2026-11-06T16:30:13.1849867Z > pnpm exec rer queue test:work-graph-core -- sh -c "node --test --test-skip-pattern='^(?:Local rule audit|Data custody|PEG-064 retained graph recovery|Native reporting|Goal visibility and accountability|Engineering handoff|Meeting review|Analyst exports|Project planning canvas|Work planning time, recurrence and decisions|Approval routing custody|Calendar work blocks through provider schema edges|Native approval follow-up|Direct project duplication through reviewed public doors|Public API and MCP|Work conversions through reviewed public doors)(?: |$)' tests/work-graph.test.mjs"
+shards (work-graph-core)	Run this shard	2026-11-06T16:30:13.5557041Z test:work-graph-core
+shards (work-graph-core)	Run this shard	2026-11-06T16:30:13.6013010Z TAP version 13
+shards (work-graph-core)	Run this shard	2026-11-06T16:31:19.3456232Z # Subtest: Test worker lifecycle
+shards (work-graph-core)	Run this shard	2026-11-06T16:31:19.3464635Z     # Subtest: recovers from an occupied startup port with colored logs, leaves its listener alone and keeps the new origin through restart
+shards (work-graph-core)	Run this shard	2026-11-06T16:31:19.3466589Z     ok 1 - recovers from an occupied startup port with colored logs, leaves its listener alone and keeps the new origin through restart
+shards (work-graph-core)	Run this shard	2026-11-06T16:31:19.3467869Z       ---
+shards (work-graph-core)	Run this shard	2026-11-06T16:31:19.3468493Z       duration_ms: 65397.73684
+shards (work-graph-core)	Run this shard	2026-11-06T16:31:19.3469136Z       type: 'test'
+shards (work-graph-core)	Run this shard	2026-11-06T16:31:19.3469662Z       ...
+shards (work-graph-core)	Run this shard	2026-11-06T16:31:19.3470195Z     1..1
+shards (work-graph-core)	Run this shard	2026-11-06T16:31:19.3470547Z ok 1 - Test worker lifecycle
+shards (work-graph-core)	Run this shard	2026-11-06T16:31:19.3471293Z   ---
+shards (work-graph-core)	Run this shard	2026-11-06T16:31:19.3471689Z   duration_ms: 65398.825721
+shards (work-graph-core)	Run this shard	2026-11-06T16:31:19.3472025Z   type: 'suite'
+shards (work-graph-core)	Run this shard	2026-11-06T16:31:19.3472423Z   ...
+shards (work-graph-core)	Run this shard	2026-11-06T16:32:09.6424178Z # PROBE PEG-128 API points 1 and 2: member review with readable v1 and v2 and hidden current v3 -> 200, v2 selected, same permitted response as before replacement, no current-version hint
+shards (work-graph-core)	Run this shard	2026-11-06T16:32:09.6433411Z # PROBE PEG-128 API point 3: explicit v1 and v2 material -> 200, exact source bytes, independent SHA-256 and parsed page text
+shards (work-graph-core)	Run this shard	2026-11-06T16:32:09.6437463Z # PROBE PEG-128 API point 4: hidden and nonexistent selected, compared and material reads -> identical 404 refusals; independent nonempty proof, feedback, history and decision snapshots unchanged
+shards (work-graph-core)	Run this shard	2026-11-06T16:32:48.7963985Z # PROBE PEG-011 comment authority: author loses comment grant but retains Viewer access -> retained pages and feedback readable, old create replay and resolution refused without changes
+shards (work-graph-core)	Run this shard	2026-11-06T16:32:48.7971931Z # PROBE PEG-011 render and identity: retained v1 and v2 material routes -> two real PDF pages, independent byte digests and exact version-specific pin identities
+shards (work-graph-core)	Run this shard	2026-11-06T16:32:48.7973305Z # PROBE PEG-011 authority and concurrency: guest, hidden version, Viewer, nonauthor, revoked reader, stale and simultaneous writes -> refused without duplicate or changed feedback
+shards (work-graph-core)	Run this shard	2026-11-06T16:32:48.7974604Z # PROBE PEG-011 version history: replace approved v2 with v3, restart and replay -> v2 feedback and approval retained, v3 pending with no inherited pins
+shards (work-graph-core)	Run this shard	2026-11-06T16:32:48.7983403Z # Subtest: Retained PDF feedback
+shards (work-graph-core)	Run this shard	2026-11-06T16:32:48.7984392Z     # Subtest: renders retained PDF contents, pins exact identities and refuses stale, hidden and unauthorized feedback
+shards (work-graph-core)	Run this shard	2026-11-06T16:32:48.7985906Z     ok 1 - renders retained PDF contents, pins exact identities and refuses stale, hidden and unauthorized feedback
+shards (work-graph-core)	Run this shard	2026-11-06T16:32:48.7987293Z       ---
+shards (work-graph-core)	Run this shard	2026-11-06T16:32:48.7987696Z       duration_ms: 48812.25076
+shards (work-graph-core)	Run this shard	2026-11-06T16:32:48.7988126Z       type: 'test'
+shards (work-graph-core)	Run this shard	2026-11-06T16:32:48.7988476Z       ...
+shards (work-graph-core)	Run this shard	2026-11-06T16:32:48.9035911Z     1..1
+shards (work-graph-core)	Run this shard	2026-11-06T16:32:48.9042701Z ok 2 - Retained PDF feedback
+shards (work-graph-core)	Run this shard	2026-11-06T16:32:48.9043163Z   ---
+shards (work-graph-core)	Run this shard	2026-11-06T16:32:48.9043847Z   duration_ms: 89562.638989
+shards (work-graph-core)	Run this shard	2026-11-06T16:32:48.9044714Z   type: 'suite'
+shards (work-graph-core)	Run this shard	2026-11-06T16:32:48.9045297Z   ...
+shards (work-graph-core)	Run this shard	2026-11-06T16:33:50.6616193Z # PROBE PEG-007 branching validation: internal and public form routes -> mapped title, fixed owner and priority, hidden branch refused
+shards (work-graph-core)	Run this shard	2026-11-06T16:33:50.6618610Z # PROBE PEG-007 replay: concurrent and restarted submission routes -> one receipt and one exact task ID
+shards (work-graph-core)	Run this shard	2026-11-06T16:33:50.6621010Z # PROBE PEG-007 business hours: receipt deadlines -> exactly eight reviewed working hours, unchanged by later calendar edits
+shards (work-graph-core)	Run this shard	2026-11-06T16:33:50.6622899Z # PROBE PEG-007 triage: queue and triage routes -> waiting, visible overdue escalation, then triaged
+shards (work-graph-core)	Run this shard	2026-11-06T16:33:50.6624957Z # PROBE PEG-007 erasure and authority: replay of erased task and old publication after publisher role renewal -> refused without work creation
+shards (work-graph-core)	Run this shard	2026-11-06T16:33:50.6627859Z # PROBE PEG-007 privacy: anonymous routes -> prompts and receipt only; private work, identity claims, attachments, stale and revoked publication refused
+shards (work-graph-core)	Run this shard	2026-11-06T16:33:51.3404699Z # PROBE PEG-007 retained answers: public and internal submission routes -> oversized mappings refused with no task; fitting mappings preserve every answer exactly
+shards (work-graph-core)	Run this shard	2026-11-06T16:33:51.3416964Z # Subtest: Native text intake
+shards (work-graph-core)	Run this shard	2026-11-06T16:33:51.3418037Z     # Subtest: publishes branching intake, creates one attributable task after replay and restart, and refuses unsafe submissions
+shards (work-graph-core)	Run this shard	2026-11-06T16:33:51.3419320Z     ok 1 - publishes branching intake, creates one attributable task after replay and restart, and refuses unsafe submissions
+shards (work-graph-core)	Run this shard	2026-11-06T16:33:51.3420055Z       ---
+shards (work-graph-core)	Run this shard	2026-11-06T16:33:51.3420580Z       duration_ms: 21804.768366
+shards (work-graph-core)	Run this shard	2026-11-06T16:33:51.3421389Z       type: 'test'
+shards (work-graph-core)	Run this shard	2026-11-06T16:33:51.3421995Z       ...
+shards (work-graph-core)	Run this shard	2026-11-06T16:33:51.4447916Z     1..1
+shards (work-graph-core)	Run this shard	2026-11-06T16:33:51.4451768Z ok 3 - Native text intake
+shards (work-graph-core)	Run this shard	2026-11-06T16:33:51.4452549Z   ---
+shards (work-graph-core)	Run this shard	2026-11-06T16:33:51.4453010Z   duration_ms: 62540.733845
+shards (work-graph-core)	Run this shard	2026-11-06T16:33:51.4453455Z   type: 'suite'
+shards (work-graph-core)	Run this shard	2026-11-06T16:33:51.4453811Z   ...
+shards (work-graph-core)	Run this shard	2026-11-06T16:34:49.5701976Z # Subtest: Work views through the native graph
+shards (work-graph-core)	Run this shard	2026-11-06T16:34:49.5702756Z     # Subtest: keeps six work views on one dated graph and restores named configuration and defaults after restart and sign-in
+shards (work-graph-core)	Run this shard	2026-11-06T16:34:49.5703651Z     ok 1 - keeps six work views on one dated graph and restores named configuration and defaults after restart and sign-in
+shards (work-graph-core)	Run this shard	2026-11-06T16:34:49.5704170Z       ---
+shards (work-graph-core)	Run this shard	2026-11-06T16:34:49.5704401Z       duration_ms: 17459.878558
+shards (work-graph-core)	Run this shard	2026-11-06T16:34:49.5704656Z       type: 'test'
+shards (work-graph-core)	Run this shard	2026-11-06T16:34:49.5704866Z       ...
+shards (work-graph-core)	Run this shard	2026-11-06T16:34:52.4152500Z     # Subtest: shares only permitted work and columns and fences stale configuration, defaults and revoked authority
+shards (work-graph-core)	Run this shard	2026-11-06T16:34:52.4153501Z     ok 2 - shares only permitted work and columns and fences stale configuration, defaults and revoked authority
+shards (work-graph-core)	Run this shard	2026-11-06T16:34:52.4154022Z       ---
+shards (work-graph-core)	Run this shard	2026-11-06T16:34:52.4154263Z       duration_ms: 2844.825616
+shards (work-graph-core)	Run this shard	2026-11-06T16:34:52.4154520Z       type: 'test'
+shards (work-graph-core)	Run this shard	2026-11-06T16:34:52.4154726Z       ...
+shards (work-graph-core)	Run this shard	2026-11-06T16:34:52.4978330Z     1..2
+shards (work-graph-core)	Run this shard	2026-11-06T16:34:52.4980105Z ok 4 - Work views through the native graph
+shards (work-graph-core)	Run this shard	2026-11-06T16:34:52.4980461Z   ---
+shards (work-graph-core)	Run this shard	2026-11-06T16:34:52.4980682Z   duration_ms: 61053.229306
+shards (work-graph-core)	Run this shard	2026-11-06T16:34:52.4981242Z   type: 'suite'
+shards (work-graph-core)	Run this shard	2026-11-06T16:34:52.4981453Z   ...
+shards (work-graph-core)	Run this shard	2026-11-06T16:35:54.2394262Z # Subtest: Search and reviewed bulk selection
+shards (work-graph-core)	Run this shard	2026-11-06T16:35:54.2396283Z     # Subtest: finds authorized content, saves filters, reviews every mixed-permission row and preserves later work on undo
+shards (work-graph-core)	Run this shard	2026-11-06T16:35:54.2397912Z     ok 1 - finds authorized content, saves filters, reviews every mixed-permission row and preserves later work on undo
+shards (work-graph-core)	Run this shard	2026-11-06T16:35:54.2399248Z       ---
+shards (work-graph-core)	Run this shard	2026-11-06T16:35:54.2399633Z       duration_ms: 21046.505828
+shards (work-graph-core)	Run this shard	2026-11-06T16:35:54.2400064Z       type: 'test'
+shards (work-graph-core)	Run this shard	2026-11-06T16:35:54.2400407Z       ...
+shards (work-graph-core)	Run this shard	2026-11-06T16:35:54.3691155Z     1..1
+shards (work-graph-core)	Run this shard	2026-11-06T16:35:54.3697959Z ok 5 - Search and reviewed bulk selection
+shards (work-graph-core)	Run this shard	2026-11-06T16:35:54.3698309Z   ---
+shards (work-graph-core)	Run this shard	2026-11-06T16:35:54.3698529Z   duration_ms: 61871.083967
+shards (work-graph-core)	Run this shard	2026-11-06T16:35:54.3698787Z   type: 'suite'
+shards (work-graph-core)	Run this shard	2026-11-06T16:35:54.3698989Z   ...
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:36.0521137Z # Subtest: PEG-001 one work graph
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:36.0524428Z     # Subtest: builds a campaign and a launch project, multi-homes one task and keeps one history
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:36.0525655Z     ok 1 - builds a campaign and a launch project, multi-homes one task and keeps one history
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:36.0526437Z       ---
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:36.0526840Z       duration_ms: 1066.504863
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:36.0527569Z       type: 'test'
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:36.0527999Z       ...
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:37.1688279Z     # Subtest: shows a guest on one project nothing of the other, through the API, exports and files
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:37.1690482Z     ok 2 - shows a guest on one project nothing of the other, through the API, exports and files
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:37.1691472Z       ---
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:37.1691868Z       duration_ms: 1116.955655
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:37.1692303Z       type: 'test'
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:37.1692536Z       ...
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:38.7370605Z     # Subtest: keeps a personal task private and resolves every reference a task has had, to those allowed only
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:38.7372826Z     ok 3 - keeps a personal task private and resolves every reference a task has had, to those allowed only
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:38.7373782Z       ---
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:38.7374244Z       duration_ms: 1568.346249
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:38.7374609Z       type: 'test'
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:38.7374837Z       ...
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:39.4224550Z     # Subtest: runs the PEG-083 public-team join and private-link request journeys on this graph
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:39.4226042Z     ok 4 - runs the PEG-083 public-team join and private-link request journeys on this graph
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:39.4226996Z       ---
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:39.4227519Z       duration_ms: 684.835092
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:39.4227964Z       type: 'test'
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:39.4228319Z       ...
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:40.5042424Z     # Subtest: keeps personal work and sections owner-only through lists, ID search, reads and writes
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:40.5043893Z     ok 5 - keeps personal work and sections owner-only through lists, ID search, reads and writes
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:40.5044680Z       ---
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:40.5045170Z       duration_ms: 1081.961562
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:40.5045670Z       type: 'test'
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:40.5046128Z       ...
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:46.6783293Z     # Subtest: orders the local day by group, due instant, priority, creation time and immutable ID
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:46.6784598Z     ok 6 - orders the local day by group, due instant, priority, creation time and immutable ID
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:46.6785395Z       ---
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:46.6785780Z       duration_ms: 6173.829368
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:46.6786221Z       type: 'test'
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:46.6786458Z       ...
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:47.2151858Z     # Subtest: persists manual section/task ranks on reconnect and logs reversible deduplicated section rules
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:47.2153440Z     ok 7 - persists manual section/task ranks on reconnect and logs reversible deduplicated section rules
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:47.2154208Z       ---
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:47.2154454Z       duration_ms: 536.777516
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:47.2154724Z       type: 'test'
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:47.2154956Z       ...
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:48.1672675Z     # Subtest: shares personal work only against the reviewed current project audience and content
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:48.1674432Z     ok 8 - shares personal work only against the reviewed current project audience and content
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:48.1675568Z       ---
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:48.1676192Z       duration_ms: 951.124536
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:48.1677214Z       type: 'test'
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:48.1677712Z       ...
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:55.1505771Z     # Subtest: creates all typed fields, shared identities and consistent task/report/API calculations
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:55.1521945Z     ok 9 - creates all typed fields, shared identities and consistent task/report/API calculations
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:55.1522528Z       ---
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:55.1522955Z       duration_ms: 6982.848486
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:55.1523442Z       type: 'test'
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:55.1523827Z       ...
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:57.2958320Z     # Subtest: explains cycles, missing and hidden inputs and refuses lossy or stale type changes
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:57.2959920Z     ok 10 - explains cycles, missing and hidden inputs and refuses lossy or stale type changes
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:57.2961194Z       ---
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:57.2961801Z       duration_ms: 2146.270443
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:57.2962444Z       type: 'test'
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:57.2962972Z       ...
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:58.5212571Z     # Subtest: keeps free-form campaign tags distinct, renames once and filters three projects without hidden counts
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:58.5215998Z     ok 11 - keeps free-form campaign tags distinct, renames once and filters three projects without hidden counts
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:58.5217432Z       ---
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:58.5217763Z       duration_ms: 1226.130849
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:58.5218044Z       type: 'test'
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:58.5218257Z       ...
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:59.0287272Z     # Subtest: enforces Viewer values and tagging denial and Editor definition denial on every field/status door
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:59.0289212Z     ok 12 - enforces Viewer values and tagging denial and Editor definition denial on every field/status door
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:59.0290370Z       ---
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:59.0291177Z       duration_ms: 507.979995
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:59.0291557Z       type: 'test'
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:59.0291783Z       ...
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:59.1051973Z     1..12
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:59.1065795Z ok 6 - PEG-001 one work graph
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:59.1081959Z   ---
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:59.1082460Z   duration_ms: 64733.921736
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:59.1082938Z   type: 'suite'
+shards (work-graph-core)	Run this shard	2026-11-06T16:36:59.1083365Z   ...
+shards (work-graph-core)	Run this shard	2026-11-06T16:38:15.7892874Z # PROBE PEG-010 person custody: inactive participant, exact conversation identities and linked-task hold -> retained; renewed owner review after release -> message text removed, shared task survives, retained identity stores honestly partial
+shards (work-graph-core)	Run this shard	2026-11-06T16:38:15.7896401Z # PROBE PEG-010 publication: draft and exact content and audience review -> one immutable publication, exact recipient Inbox notice identities; concurrent and repeated confirmation -> 409 without duplicates
+shards (work-graph-core)	Run this shard	2026-11-06T16:38:15.7899542Z # PROBE PEG-010 discussion: current permission replies, nested identity, attributable edit and delete history, correction, follow and mute -> expected persisted content and unique notices; unsafe writes and stale revisions refused
+shards (work-graph-core)	Run this shard	2026-11-06T16:38:15.7902967Z # PROBE PEG-010 revocation: project grant revoked then renewed and Worker restarted -> old notices cancelled, current reader thread restored, old reply token refused, deactivated session rejected
+shards (work-graph-core)	Run this shard	2026-11-06T16:38:15.9322899Z # Subtest: Project announcements
+shards (work-graph-core)	Run this shard	2026-11-06T16:38:15.9326189Z     # Subtest: publishes exact human-reviewed project messages and permission-scoped threaded Inbox deliveries
+shards (work-graph-core)	Run this shard	2026-11-06T16:38:15.9327655Z     ok 1 - publishes exact human-reviewed project messages and permission-scoped threaded Inbox deliveries
+shards (work-graph-core)	Run this shard	2026-11-06T16:38:15.9328553Z       ---
+shards (work-graph-core)	Run this shard	2026-11-06T16:38:15.9328947Z       duration_ms: 76828.65973
+shards (work-graph-core)	Run this shard	2026-11-06T16:38:15.9329364Z       type: 'test'
+shards (work-graph-core)	Run this shard	2026-11-06T16:38:15.9329736Z       ...
+shards (work-graph-core)	Run this shard	2026-11-06T16:42:01.0884862Z ##[error]The operation was canceled.

@@ -1,0 +1,181 @@
+> pnpm run verify:app
+
+> @just-every/pegboard@0.1.0 verify:app /home/agent/rer-consolidation/work/sx-pegboard-c-f119/main-check
+> node scripts/verify-app.mjs
+
+> pnpm exec rer queue test:work-graph-core -- sh -c "node --test --test-skip-pattern='^(?:Local rule audit|Data custody|PEG-064 retained graph recovery|Native reporting|Goal visibility and accountability|Engineering handoff|Meeting review|Analyst exports|Project planning canvas|Work planning time, recurrence and decisions|Approval routing custody|Calendar work blocks through provider schema edges|Native approval follow-up|Direct project duplication through reviewed public doors|Public API and MCP|Work conversions through reviewed public doors)(?: |$)' tests/work-graph.test.mjs"
+test:work-graph-core
+TAP version 13
+# Subtest: Test worker lifecycle
+    # Subtest: recovers from an occupied startup port with colored logs, leaves its listener alone and keeps the new origin through restart
+    ok 1 - recovers from an occupied startup port with colored logs, leaves its listener alone and keeps the new origin through restart
+      ---
+      duration_ms: 57906.727199
+      type: 'test'
+      ...
+    1..1
+ok 1 - Test worker lifecycle
+  ---
+  duration_ms: 57907.760411
+  type: 'suite'
+  ...
+# PROBE PEG-128 API points 1 and 2: member review with readable v1 and v2 and hidden current v3 -> 200, v2 selected, same permitted response as before replacement, no current-version hint
+# PROBE PEG-128 API point 3: explicit v1 and v2 material -> 200, exact source bytes, independent SHA-256 and parsed page text
+# PROBE PEG-128 API point 4: hidden and nonexistent selected, compared and material reads -> identical 404 refusals; independent nonempty proof, feedback, history and decision snapshots unchanged
+# PROBE PEG-011 comment authority: author loses comment grant but retains Viewer access -> retained pages and feedback readable, old create replay and resolution refused without changes
+# PROBE PEG-011 render and identity: retained v1 and v2 material routes -> two real PDF pages, independent byte digests and exact version-specific pin identities
+# PROBE PEG-011 authority and concurrency: guest, hidden version, Viewer, nonauthor, revoked reader, stale and simultaneous writes -> refused without duplicate or changed feedback
+# PROBE PEG-011 version history: replace approved v2 with v3, restart and replay -> v2 feedback and approval retained, v3 pending with no inherited pins
+# Subtest: Retained PDF feedback
+    # Subtest: renders retained PDF contents, pins exact identities and refuses stale, hidden and unauthorized feedback
+    ok 1 - renders retained PDF contents, pins exact identities and refuses stale, hidden and unauthorized feedback
+      ---
+      duration_ms: 38228.584498
+      type: 'test'
+      ...
+    1..1
+ok 2 - Retained PDF feedback
+  ---
+  duration_ms: 74306.16923
+  type: 'suite'
+  ...
+# PROBE PEG-007 branching validation: internal and public form routes -> mapped title, fixed owner and priority, hidden branch refused
+# PROBE PEG-007 replay: concurrent and restarted submission routes -> one receipt and one exact task ID
+# PROBE PEG-007 business hours: receipt deadlines -> exactly eight reviewed working hours, unchanged by later calendar edits
+# PROBE PEG-007 triage: queue and triage routes -> waiting, visible overdue escalation, then triaged
+# PROBE PEG-007 erasure and authority: replay of erased task and old publication after publisher role renewal -> refused without work creation
+# PROBE PEG-007 privacy: anonymous routes -> prompts and receipt only; private work, identity claims, attachments, stale and revoked publication refused
+# PROBE PEG-007 retained answers: public and internal submission routes -> oversized mappings refused with no task; fitting mappings preserve every answer exactly
+# Subtest: Native text intake
+    # Subtest: publishes branching intake, creates one attributable task after replay and restart, and refuses unsafe submissions
+    ok 1 - publishes branching intake, creates one attributable task after replay and restart, and refuses unsafe submissions
+      ---
+      duration_ms: 20264.935152
+      type: 'test'
+      ...
+    1..1
+ok 3 - Native text intake
+  ---
+  duration_ms: 57193.439721
+  type: 'suite'
+  ...
+# Subtest: Work views through the native graph
+    # Subtest: keeps six work views on one dated graph and restores named configuration and defaults after restart and sign-in
+    ok 1 - keeps six work views on one dated graph and restores named configuration and defaults after restart and sign-in
+      ---
+      duration_ms: 14955.957572
+      type: 'test'
+      ...
+    # Subtest: shares only permitted work and columns and fences stale configuration, defaults and revoked authority
+    ok 2 - shares only permitted work and columns and fences stale configuration, defaults and revoked authority
+      ---
+      duration_ms: 2285.984414
+      type: 'test'
+      ...
+    1..2
+ok 4 - Work views through the native graph
+  ---
+  duration_ms: 54730.639393
+  type: 'suite'
+  ...
+# Subtest: Search and reviewed bulk selection
+    # Subtest: finds authorized content, saves filters, reviews every mixed-permission row and preserves later work on undo
+    ok 1 - finds authorized content, saves filters, reviews every mixed-permission row and preserves later work on undo
+      ---
+      duration_ms: 18476.451808
+      type: 'test'
+      ...
+    1..1
+ok 5 - Search and reviewed bulk selection
+  ---
+  duration_ms: 57614.025544
+  type: 'suite'
+  ...
+# Subtest: PEG-001 one work graph
+    # Subtest: builds a campaign and a launch project, multi-homes one task and keeps one history
+    ok 1 - builds a campaign and a launch project, multi-homes one task and keeps one history
+      ---
+      duration_ms: 841.613594
+      type: 'test'
+      ...
+    # Subtest: shows a guest on one project nothing of the other, through the API, exports and files
+    ok 2 - shows a guest on one project nothing of the other, through the API, exports and files
+      ---
+      duration_ms: 835.880078
+      type: 'test'
+      ...
+    # Subtest: keeps a personal task private and resolves every reference a task has had, to those allowed only
+    ok 3 - keeps a personal task private and resolves every reference a task has had, to those allowed only
+      ---
+      duration_ms: 1180.645064
+      type: 'test'
+      ...
+    # Subtest: runs the PEG-083 public-team join and private-link request journeys on this graph
+    ok 4 - runs the PEG-083 public-team join and private-link request journeys on this graph
+      ---
+      duration_ms: 547.428327
+      type: 'test'
+      ...
+    # Subtest: keeps personal work and sections owner-only through lists, ID search, reads and writes
+    ok 5 - keeps personal work and sections owner-only through lists, ID search, reads and writes
+      ---
+      duration_ms: 761.586162
+      type: 'test'
+      ...
+    # Subtest: orders the local day by group, due instant, priority, creation time and immutable ID
+    ok 6 - orders the local day by group, due instant, priority, creation time and immutable ID
+      ---
+      duration_ms: 6331.796903
+      type: 'test'
+      ...
+    # Subtest: persists manual section/task ranks on reconnect and logs reversible deduplicated section rules
+    ok 7 - persists manual section/task ranks on reconnect and logs reversible deduplicated section rules
+      ---
+      duration_ms: 434.93358
+      type: 'test'
+      ...
+    # Subtest: shares personal work only against the reviewed current project audience and content
+    ok 8 - shares personal work only against the reviewed current project audience and content
+      ---
+      duration_ms: 683.97823
+      type: 'test'
+      ...
+    # Subtest: creates all typed fields, shared identities and consistent task/report/API calculations
+    ok 9 - creates all typed fields, shared identities and consistent task/report/API calculations
+      ---
+      duration_ms: 4520.501713
+      type: 'test'
+      ...
+    # Subtest: explains cycles, missing and hidden inputs and refuses lossy or stale type changes
+    ok 10 - explains cycles, missing and hidden inputs and refuses lossy or stale type changes
+      ---
+      duration_ms: 1424.028751
+      type: 'test'
+      ...
+    # Subtest: keeps free-form campaign tags distinct, renames once and filters three projects without hidden counts
+    ok 11 - keeps free-form campaign tags distinct, renames once and filters three projects without hidden counts
+      ---
+      duration_ms: 917.125347
+      type: 'test'
+      ...
+    # Subtest: enforces Viewer values and tagging denial and Editor definition denial on every field/status door
+    ok 12 - enforces Viewer values and tagging denial and Editor definition denial on every field/status door
+      ---
+      duration_ms: 395.182469
+      type: 'test'
+      ...
+    1..12
+ok 6 - PEG-001 one work graph
+  ---
+  duration_ms: 55916.77156
+  type: 'suite'
+  ...
+1..6
+# tests 18
+# suites 6
+# pass 18
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 358247.490523

@@ -1,0 +1,15 @@
+{
+  "head": "177c6538d45a9e290f53c04f647cb17b0926a945",
+  "run": 42252802997,
+  "job": 128012377100,
+  "command": "CI=true WRANGLER_SEND_METRICS=false PLAYWRIGHT_SKIP_BROWSER_GC=1 SHARD=work-graph-core node scripts/verify-ci.mjs work-graph-core",
+  "timeoutSeconds": 720,
+  "exit": 0,
+  "rawProcessExitStatus": 0,
+  "tests": 20,
+  "passed": 20,
+  "failed": 0,
+  "durationMs": 691963.909892,
+  "reproduced": false,
+  "observedCIFailure": "The operation was canceled."
+}
