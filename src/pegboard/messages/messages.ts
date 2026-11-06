@@ -13,11 +13,12 @@ interface Comment { id:string; root_id:string; publication_id:string; parent_id:
 const text=(value:unknown,max:number)=>{if(typeof value!=='string'||!value.trim()||value.length>max)throw invalid('message_text');return value.trim()}
 const ids=(value:unknown,max:number)=>{if(!Array.isArray(value)||value.length>max||value.some(v=>typeof v!=='string'||!v||v.length>100)||new Set(value).size!==value.length)throw invalid('message_selection');return [...value].sort() as string[]}
 const denied=(e:unknown)=>e instanceof PegError&&[403,404].includes(e.status)
-async function human(db:D1Database,actor:Actor,workspace:string) {
- if(!['owner','admin','manager','member'].includes(await workspaceRole(db,actor.id,workspace)??''))throw forbidden('active_internal_human')
+async function human(db:D1Database,actor:Actor,workspace:string,publishing=false) {
+ const roles=publishing?['owner','admin','manager','member']:['owner','admin','manager','member','analyst']
+ if(!roles.includes(await workspaceRole(db,actor.id,workspace)??''))throw forbidden('active_internal_human')
 }
 async function publisher(db:D1Database,actor:Actor,projectId:string) {
- const opened=await openProject(db,actor,projectId);await human(db,actor,opened.project.workspace_id);need(opened.effective,'manage_settings');return opened
+ const opened=await openProject(db,actor,projectId);await human(db,actor,opened.project.workspace_id,true);need(opened.effective,'manage_settings');return opened
 }
 async function person(db:D1Database,id:string):Promise<Actor> {
  const row=await operatorRow(db,id);if(!row||row.status!=='active')throw notFound()
@@ -26,7 +27,7 @@ async function person(db:D1Database,id:string):Promise<Actor> {
 /** Administrative custody alone never adds a person to the announcement directory. */
 export async function messageParticipants(db:D1Database,actor:Actor,projectId:string) {
  const {project}=await publisher(db,actor,projectId), people=[]
- for(const option of await projectParticipants(db,actor,projectId))if(['owner','admin','manager','member'].includes(await workspaceRole(db,option.value,project.workspace_id)??''))people.push(option)
+ for(const option of await projectParticipants(db,actor,projectId))if(['owner','admin','manager','member','analyst'].includes(await workspaceRole(db,option.value,project.workspace_id)??''))people.push(option)
  return people
 }
 async function eligible(db:D1Database,actor:Actor,projectId:string) {
@@ -40,8 +41,9 @@ async function link(db:D1Database,actor:Actor,projectId:string,id:string) {
  const root=await rootOf(db,task)
  return {id:task.id,title:task.title,updatedAt:task.updated_at,internalOnly:task.internal_only,membership:await all(db,'SELECT project_id FROM peg_task_projects WHERE task_id=? ORDER BY project_id',root.id)}
 }
-async function readable(db:D1Database,actor:Actor,row:Pick<Publication,'project_id'|'links'>) {
- const opened=await eligible(db,actor,row.project_id)
+async function readable(db:D1Database,actor:Actor,row:Pick<Publication,'project_id'|'links'>,asAuthor=false) {
+ let opened
+ try{opened=await eligible(db,actor,row.project_id)}catch(e){if(!asAuthor||!denied(e))throw e;opened=await publisher(db,actor,row.project_id)}
  for(const saved of JSON.parse(row.links))await link(db,actor,row.project_id,saved.id)
  return opened
 }
@@ -78,7 +80,7 @@ export async function saveMessage(db:D1Database,actor:Actor,projectId:string,inp
  return readMessageDraft(db,actor,nextId)
 }
 export async function readMessageDraft(db:D1Database,actor:Actor,id:string) {
- const row=await draft(db,actor,id);await readable(db,actor,row)
+ const row=await draft(db,actor,id);await readable(db,actor,row,true)
  return publicDraft(row)
 }
 async function reviewed(db:D1Database,actor:Actor,id:string) {
@@ -123,11 +125,12 @@ async function preference(db:D1Database,root:string,operator:string) {
 export async function openMessage(db:D1Database,actor:Actor,id:string) {
  const row=await first<Publication>(db,'SELECT * FROM peg_message_publications WHERE id=?',id)
  if(!row||row.inactive)throw notFound()
- const {project,effective}=await readable(db,actor,row)
  const origin=await first<{author_id:string}>(db,'SELECT author_id FROM peg_message_publications WHERE id=?',row.root_id)
+ const asAuthor=row.author_id===actor.id||origin?.author_id===actor.id
+ const {project,effective}=await readable(db,actor,row,asAuthor)
  if(row.author_id!==actor.id&&origin?.author_id!==actor.id&&!(JSON.parse(row.recipients) as string[]).includes(actor.id))throw notFound()
  const publications=await all<Publication>(db,'SELECT * FROM peg_message_publications WHERE root_id=? ORDER BY published_at,id',row.root_id)
- for(const publication of publications){if(publication.inactive)throw notFound();await readable(db,actor,publication)}
+ for(const publication of publications){if(publication.inactive)throw notFound();await readable(db,actor,publication,asAuthor)}
  const latest=publications.find(p=>!publications.some(c=>c.corrects_id===p.id))!
  return {row,project,effective,publications,latest}
 }
@@ -179,7 +182,9 @@ export async function changeMessageReply(db:D1Database,actor:Actor,id:string,com
  return {id:c.id,revision:c.revision+1}
 }
 export async function listMessages(db:D1Database,actor:Actor,projectId:string) {
- const {project}=await eligible(db,actor,projectId), publications=[]
+ let opened
+ try{opened=await eligible(db,actor,projectId)}catch(e){if(!denied(e))throw e;opened=await publisher(db,actor,projectId)}
+ const {project}=opened, publications=[]
  for(const r of await all<{id:string}>(db,'SELECT id FROM peg_message_publications WHERE project_id=? AND id=root_id ORDER BY published_at DESC,id',projectId))try{const view=await readMessage(db,actor,r.id);publications.push({id:view.id,subject:view.publications.find(p=>p.id===view.latestId)!.subject})}catch(e){if(!denied(e))throw e}
  let canPublish=false
  try{await publisher(db,actor,projectId);canPublish=true}catch(e){if(!denied(e))throw e}
