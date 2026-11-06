@@ -1,0 +1,5 @@
+ WARN  Unsupported engine: wanted: {"node":"22.20.0"} (current: {"node":"v24.19.0","pnpm":"10.12.4"})
+
+> @just-every/pegboard@0.1.0 check /home/agent/rer-consolidation/work/sx-pegboard-ci-critical-path-3/repo
+> rer check --profile first-party
+

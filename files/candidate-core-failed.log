@@ -1,0 +1,340 @@
+shards (core-capacity)	Run this shard	﻿2026-11-06T23:05:49.5505582Z ##[group]Run node scripts/verify-ci.mjs "$SHARD"
+shards (core-capacity)	Run this shard	2026-11-06T23:05:49.5505896Z [36;1mnode scripts/verify-ci.mjs "$SHARD"[0m
+shards (core-capacity)	Run this shard	2026-11-06T23:05:49.5522123Z shell: /usr/bin/bash -e {0}
+shards (core-capacity)	Run this shard	2026-11-06T23:05:49.5522328Z env:
+shards (core-capacity)	Run this shard	2026-11-06T23:05:49.5522486Z   CI: true
+shards (core-capacity)	Run this shard	2026-11-06T23:05:49.5522649Z   WRANGLER_SEND_METRICS: false
+shards (core-capacity)	Run this shard	2026-11-06T23:05:49.5522857Z   PLAYWRIGHT_SKIP_BROWSER_GC: 1
+shards (core-capacity)	Run this shard	2026-11-06T23:05:49.5523130Z   PLAYWRIGHT_BROWSERS_PATH: /home/runner/work/_temp/ms-playwright
+shards (core-capacity)	Run this shard	2026-11-06T23:05:49.5523421Z   SHARD: core-capacity
+shards (core-capacity)	Run this shard	2026-11-06T23:05:49.5523603Z ##[endgroup]
+shards (core-capacity)	Run this shard	2026-11-06T23:05:49.5797364Z > pnpm run verify:app
+shards (core-capacity)	Run this shard	2026-11-06T23:05:49.7836450Z 
+shards (core-capacity)	Run this shard	2026-11-06T23:05:49.7837158Z > @just-every/pegboard@0.1.0 verify:app /home/runner/work/run-pegboard/run-pegboard
+shards (core-capacity)	Run this shard	2026-11-06T23:05:49.7837605Z > node scripts/verify-app.mjs
+shards (core-capacity)	Run this shard	2026-11-06T23:05:49.7837770Z 
+shards (core-capacity)	Run this shard	2026-11-06T23:06:25.1621349Z > [work-graph-core] pnpm exec rer queue test:work-graph-core -- sh -c "node --test --test-skip-pattern='^(?:Local rule audit|Data custody|PEG-064 retained graph recovery|Native reporting|Goal visibility and accountability|Engineering handoff|Meeting review|Analyst exports|Project planning canvas|Work planning time, recurrence and decisions|Approval routing custody|Calendar work blocks through provider schema edges|Native approval follow-up|Direct project duplication through reviewed public doors|Public API and MCP|Work conversions through reviewed public doors)(?: |$)' --test-name-pattern='^(?:Test worker lifecycle|PEG-001 one work graph|Work views through the native graph|Native text intake)(?: |$)' tests/work-graph.test.mjs"
+shards (core-capacity)	Run this shard	2026-11-06T23:06:25.1641702Z > [work-graph-custody-recovery] pnpm exec rer queue test:work-graph-custody-recovery -- sh -c "node --test --test-name-pattern='^(?:Data custody)(?: |$)' --test-skip-pattern='^(?:Data custody intake erasure|Data custody PDF feedback|Data custody provider diagnostics)(?: |$)' tests/work-graph.test.mjs"
+shards (core-capacity)	Run this shard	2026-11-06T23:06:25.1657674Z > [journeys-planning-capacity] pnpm exec rer queue test:journeys-planning-capacity -- sh -c "PEGBOARD_JOURNEY=portfolio-capacity,capacity,work-views,pdf-feedback node tests/journeys/work-graph.journey.mjs"
+shards (core-capacity)	Run this shard	2026-11-06T23:06:25.1698048Z > [intake-decisions] pnpm exec rer queue test:work-graph-core -- sh -c "node --test --test-skip-pattern='^(?:Local rule audit|Data custody|PEG-064 retained graph recovery|Native reporting|Goal visibility and accountability|Engineering handoff|Meeting review|Analyst exports|Project planning canvas|Work planning time, recurrence and decisions|Approval routing custody|Calendar work blocks through provider schema edges|Native approval follow-up|Direct project duplication through reviewed public doors|Public API and MCP|Work conversions through reviewed public doors)(?: |$)' --test-name-pattern='^(?:Native intake decisions)(?: |$)' tests/work-graph.test.mjs"
+shards (core-capacity)	Run this shard	2026-11-06T23:06:25.5847519Z test:journeys-planning-capacity
+shards (core-capacity)	Run this shard	2026-11-06T23:06:25.5877472Z test:work-graph-core
+shards (core-capacity)	Run this shard	2026-11-06T23:06:25.5972453Z test:work-graph-core
+shards (core-capacity)	Run this shard	2026-11-06T23:06:25.6290361Z test:work-graph-custody-recovery
+shards (core-capacity)	Run this shard	2026-11-06T23:06:25.6411361Z TAP version 13
+shards (core-capacity)	Run this shard	2026-11-06T23:06:25.6483777Z TAP version 13
+shards (core-capacity)	Run this shard	2026-11-06T23:06:25.6967830Z TAP version 13
+shards (core-capacity)	Run this shard	2026-11-06T23:07:36.1783431Z # Subtest: Data custody
+shards (core-capacity)	Run this shard	2026-11-06T23:07:36.1784418Z     # Subtest: keeps permanent audit redacted and append-only across public changes, searches and exports
+shards (core-capacity)	Run this shard	2026-11-06T23:07:36.1789819Z     ok 1 - keeps permanent audit redacted and append-only across public changes, searches and exports
+shards (core-capacity)	Run this shard	2026-11-06T23:07:36.1790473Z       ---
+shards (core-capacity)	Run this shard	2026-11-06T23:07:36.1791000Z       duration_ms: 2370.738104
+shards (core-capacity)	Run this shard	2026-11-06T23:07:36.1791327Z       type: 'test'
+shards (core-capacity)	Run this shard	2026-11-06T23:07:36.1791565Z       ...
+shards (core-capacity)	Run this shard	2026-11-06T23:08:16.4077013Z PROBE PEG-011 UI: keyboard selects retained PDF comparison, adds a page-coordinate pin and resolves it -> real page pixels and text, exact author and retained v2 history after v3; screens inspected at 1440 and 390
+shards (core-capacity)	Run this shard	2026-11-06T23:08:16.4101615Z PROBE PEG-011 retained entry: reader follows task and proof list after hidden v3 replacement -> readable v2 opens with retained feedback, no hidden version identity or annotation controls
+shards (core-capacity)	Run this shard	2026-11-06T23:08:16.4123379Z PROBE PEG-011 unavailable source: revoke selected v1 access before material read -> 404, no v1 pixels or text, permitted v2 still renders; refreshed hidden comparison refuses
+shards (core-capacity)	Run this shard	2026-11-06T23:08:17.0531767Z     # Subtest: reviews graph erasure, honors holds and stale previews, and retains only disclosed shared work
+shards (core-capacity)	Run this shard	2026-11-06T23:08:17.0533299Z     ok 2 - reviews graph erasure, honors holds and stale previews, and retains only disclosed shared work
+shards (core-capacity)	Run this shard	2026-11-06T23:08:17.0534091Z       ---
+shards (core-capacity)	Run this shard	2026-11-06T23:08:17.0534522Z       duration_ms: 40878.20486
+shards (core-capacity)	Run this shard	2026-11-06T23:08:17.0535125Z       type: 'test'
+shards (core-capacity)	Run this shard	2026-11-06T23:08:17.0535401Z       ...
+shards (core-capacity)	Run this shard	2026-11-06T23:08:17.2646542Z # PROBE PEG-066 policy and preview: native Settings and decision routes -> owner consent required; exact source, task, priority, disposition and reviewer; preview writes nothing
+shards (core-capacity)	Run this shard	2026-11-06T23:08:17.2648452Z # PROBE PEG-066 stale and authority: task edit, triage, demotion, deactivation, public, guest, Viewer and agent attempts -> refused with no decision or priority change
+shards (core-capacity)	Run this shard	2026-11-06T23:08:17.2661882Z # PROBE PEG-066 once-only history: concurrent accept and process restart -> one decision, exact actor and permanent audit; replay preserves later human edits
+shards (core-capacity)	Run this shard	2026-11-06T23:08:17.2663566Z # PROBE PEG-066 decline and inert content: decline route -> source and task retained; malicious instruction changes no owner, dates or access
+shards (core-capacity)	Run this shard	2026-11-06T23:08:20.0059614Z # Subtest: Test worker lifecycle
+shards (core-capacity)	Run this shard	2026-11-06T23:08:20.0075577Z     # Subtest: recovers from an occupied startup port with colored logs, leaves its listener alone and keeps the new origin through restart
+shards (core-capacity)	Run this shard	2026-11-06T23:08:20.0076925Z     ok 1 - recovers from an occupied startup port with colored logs, leaves its listener alone and keeps the new origin through restart
+shards (core-capacity)	Run this shard	2026-11-06T23:08:20.0077634Z       ---
+shards (core-capacity)	Run this shard	2026-11-06T23:08:20.0077901Z       duration_ms: 114024.220934
+shards (core-capacity)	Run this shard	2026-11-06T23:08:20.0078221Z       type: 'test'
+shards (core-capacity)	Run this shard	2026-11-06T23:08:20.0078459Z       ...
+shards (core-capacity)	Run this shard	2026-11-06T23:08:20.0078672Z     1..1
+shards (core-capacity)	Run this shard	2026-11-06T23:08:20.0078937Z ok 1 - Test worker lifecycle
+shards (core-capacity)	Run this shard	2026-11-06T23:08:20.0079216Z   ---
+shards (core-capacity)	Run this shard	2026-11-06T23:08:20.0079464Z   duration_ms: 114025.353005
+shards (core-capacity)	Run this shard	2026-11-06T23:08:20.0079744Z   type: 'suite'
+shards (core-capacity)	Run this shard	2026-11-06T23:08:20.0079978Z   ...
+shards (core-capacity)	Run this shard	2026-11-06T23:08:20.7973125Z # PROBE PEG-066 B: person hold on reviewer, then reviewed task and project erasure -> retained; decision, source and task unchanged
+shards (core-capacity)	Run this shard	2026-11-06T23:08:26.7837821Z     # Subtest: expires only reviewed eligible stores while keeping held content and independent class policies
+shards (core-capacity)	Run this shard	2026-11-06T23:08:26.7842674Z     ok 3 - expires only reviewed eligible stores while keeping held content and independent class policies
+shards (core-capacity)	Run this shard	2026-11-06T23:08:26.7843423Z       ---
+shards (core-capacity)	Run this shard	2026-11-06T23:08:26.7843957Z       duration_ms: 9731.931517
+shards (core-capacity)	Run this shard	2026-11-06T23:08:26.7844926Z       type: 'test'
+shards (core-capacity)	Run this shard	2026-11-06T23:08:26.7845374Z       ...
+shards (core-capacity)	Run this shard	2026-11-06T23:08:31.0337740Z     # Subtest: pins actual proof bytes and accepts only a current independent human decision
+shards (core-capacity)	Run this shard	2026-11-06T23:08:31.0357746Z     ok 4 - pins actual proof bytes and accepts only a current independent human decision
+shards (core-capacity)	Run this shard	2026-11-06T23:08:31.0358703Z       ---
+shards (core-capacity)	Run this shard	2026-11-06T23:08:31.0359160Z       duration_ms: 4248.814917
+shards (core-capacity)	Run this shard	2026-11-06T23:08:31.0359616Z       type: 'test'
+shards (core-capacity)	Run this shard	2026-11-06T23:08:31.0367402Z       ...
+shards (core-capacity)	Run this shard	2026-11-06T23:08:42.6653994Z     # Subtest: expires proof versions together only after every version is eligible and no proof hold remains
+shards (core-capacity)	Run this shard	2026-11-06T23:08:42.6655609Z     ok 5 - expires proof versions together only after every version is eligible and no proof hold remains
+shards (core-capacity)	Run this shard	2026-11-06T23:08:42.6656742Z       ---
+shards (core-capacity)	Run this shard	2026-11-06T23:08:42.6657206Z       duration_ms: 11632.36741
+shards (core-capacity)	Run this shard	2026-11-06T23:08:42.6657667Z       type: 'test'
+shards (core-capacity)	Run this shard	2026-11-06T23:08:42.6658064Z       ...
+shards (core-capacity)	Run this shard	2026-11-06T23:08:52.5699115Z     # Subtest: fences scoped agent output custody on processor revocation, retention holds and replay after expiry
+shards (core-capacity)	Run this shard	2026-11-06T23:08:52.5700615Z     ok 6 - fences scoped agent output custody on processor revocation, retention holds and replay after expiry
+shards (core-capacity)	Run this shard	2026-11-06T23:08:52.5701933Z       ---
+shards (core-capacity)	Run this shard	2026-11-06T23:08:52.5702355Z       duration_ms: 9905.394708
+shards (core-capacity)	Run this shard	2026-11-06T23:08:52.5702792Z       type: 'test'
+shards (core-capacity)	Run this shard	2026-11-06T23:08:52.5703184Z       ...
+shards (core-capacity)	Run this shard	2026-11-06T23:09:00.4784838Z     # Subtest: cleans expired local authentication separately from held work retention
+shards (core-capacity)	Run this shard	2026-11-06T23:09:00.4785810Z     ok 7 - cleans expired local authentication separately from held work retention
+shards (core-capacity)	Run this shard	2026-11-06T23:09:00.4791206Z       ---
+shards (core-capacity)	Run this shard	2026-11-06T23:09:00.4815011Z       duration_ms: 7904.118304
+shards (core-capacity)	Run this shard	2026-11-06T23:09:00.4818579Z       type: 'test'
+shards (core-capacity)	Run this shard	2026-11-06T23:09:00.4823584Z       ...
+shards (core-capacity)	Run this shard	2026-11-06T23:09:03.2489813Z     # Subtest: anonymizes an erased inactive actor without losing the permanent audit chain
+shards (core-capacity)	Run this shard	2026-11-06T23:09:03.2497984Z     ok 8 - anonymizes an erased inactive actor without losing the permanent audit chain
+shards (core-capacity)	Run this shard	2026-11-06T23:09:03.2499160Z       ---
+shards (core-capacity)	Run this shard	2026-11-06T23:09:03.2501334Z       duration_ms: 2773.592523
+shards (core-capacity)	Run this shard	2026-11-06T23:09:03.2501911Z       type: 'test'
+shards (core-capacity)	Run this shard	2026-11-06T23:09:03.2502643Z       ...
+shards (core-capacity)	Run this shard	2026-11-06T23:10:02.9462006Z # PROBE PEG-007 branching validation: internal and public form routes -> mapped title, fixed owner and priority, hidden branch refused
+shards (core-capacity)	Run this shard	2026-11-06T23:10:02.9496718Z # PROBE PEG-007 replay: concurrent and restarted submission routes -> one receipt and one exact task ID
+shards (core-capacity)	Run this shard	2026-11-06T23:10:02.9507671Z # PROBE PEG-007 business hours: receipt deadlines -> exactly eight reviewed working hours, unchanged by later calendar edits
+shards (core-capacity)	Run this shard	2026-11-06T23:10:02.9510475Z # PROBE PEG-007 triage: queue and triage routes -> waiting, visible overdue escalation, then triaged
+shards (core-capacity)	Run this shard	2026-11-06T23:10:02.9513844Z # PROBE PEG-007 erasure and authority: replay of erased task and old publication after publisher role renewal -> refused without work creation
+shards (core-capacity)	Run this shard	2026-11-06T23:10:02.9515587Z # PROBE PEG-007 privacy: anonymous routes -> prompts and receipt only; private work, identity claims, attachments, stale and revoked publication refused
+shards (core-capacity)	Run this shard	2026-11-06T23:10:04.5417496Z # PROBE PEG-007 retained answers: public and internal submission routes -> oversized mappings refused with no task; fitting mappings preserve every answer exactly
+shards (core-capacity)	Run this shard	2026-11-06T23:10:04.5418697Z # Subtest: Native text intake
+shards (core-capacity)	Run this shard	2026-11-06T23:10:04.5419681Z     # Subtest: publishes branching intake, creates one attributable task after replay and restart, and refuses unsafe submissions
+shards (core-capacity)	Run this shard	2026-11-06T23:10:04.5420970Z     ok 1 - publishes branching intake, creates one attributable task after replay and restart, and refuses unsafe submissions
+shards (core-capacity)	Run this shard	2026-11-06T23:10:04.5430026Z       ---
+shards (core-capacity)	Run this shard	2026-11-06T23:10:04.5430557Z       duration_ms: 42874.782044
+shards (core-capacity)	Run this shard	2026-11-06T23:10:04.5431044Z       type: 'test'
+shards (core-capacity)	Run this shard	2026-11-06T23:10:04.5431421Z       ...
+shards (core-capacity)	Run this shard	2026-11-06T23:10:04.6717497Z     1..1
+shards (core-capacity)	Run this shard	2026-11-06T23:10:04.6744065Z ok 2 - Native text intake
+shards (core-capacity)	Run this shard	2026-11-06T23:10:04.6766964Z   ---
+shards (core-capacity)	Run this shard	2026-11-06T23:10:04.6817283Z   duration_ms: 104668.809938
+shards (core-capacity)	Run this shard	2026-11-06T23:10:04.6817803Z   type: 'suite'
+shards (core-capacity)	Run this shard	2026-11-06T23:10:04.6828894Z   ...
+shards (core-capacity)	Run this shard	2026-11-06T23:11:16.1469695Z node:internal/modules/run_main:123
+shards (core-capacity)	Run this shard	2026-11-06T23:11:16.1483848Z     triggerUncaughtException(
+shards (core-capacity)	Run this shard	2026-11-06T23:11:16.1493348Z     ^
+shards (core-capacity)	Run this shard	2026-11-06T23:11:16.1493968Z 
+shards (core-capacity)	Run this shard	2026-11-06T23:11:16.1494430Z ExpectError: expect(locator).toHaveCount(expected) failed
+shards (core-capacity)	Run this shard	2026-11-06T23:11:16.1494905Z 
+shards (core-capacity)	Run this shard	2026-11-06T23:11:16.1503686Z Locator:  locator('[data-work-row="tsk_ac7a58ef0c8242239136"]')
+shards (core-capacity)	Run this shard	2026-11-06T23:11:16.1504434Z Expected: 0
+shards (core-capacity)	Run this shard	2026-11-06T23:11:16.1504800Z Received: 1
+shards (core-capacity)	Run this shard	2026-11-06T23:11:16.1505135Z Timeout:  5000ms
+shards (core-capacity)	Run this shard	2026-11-06T23:11:16.1505399Z 
+shards (core-capacity)	Run this shard	2026-11-06T23:11:16.1505621Z Call log:
+shards (core-capacity)	Run this shard	2026-11-06T23:11:16.1506766Z   - Expect "toHaveCount" locator('[data-work-row="tsk_ac7a58ef0c8242239136"]') with timeout 5000ms
+shards (core-capacity)	Run this shard	2026-11-06T23:11:16.1515446Z   - waiting for locator('[data-work-row="tsk_ac7a58ef0c8242239136"]')
+shards (core-capacity)	Run this shard	2026-11-06T23:11:16.1516824Z     14 × locator resolved to 1 element
+shards (core-capacity)	Run this shard	2026-11-06T23:11:16.1517450Z        - unexpected value "1"
+shards (core-capacity)	Run this shard	2026-11-06T23:11:16.1524728Z 
+shards (core-capacity)	Run this shard	2026-11-06T23:11:16.1525759Z     at captureRawStack ([REDACTED]/node_modules/.pnpm/playwright-core@1.63.0/node_modules/playwright-core/lib/coreBundle.js:8588:17)
+shards (core-capacity)	Run this shard	2026-11-06T23:11:16.1527754Z     at callMatcherAsStep ([REDACTED]/node_modules/.pnpm/playwright@1.63.0/node_modules/playwright/lib/matchers/expect.js:13310:57)
+shards (core-capacity)	Run this shard	2026-11-06T23:11:16.1536132Z     at Object.toHaveCount ([REDACTED]/node_modules/.pnpm/playwright@1.63.0/node_modules/playwright/lib/matchers/expect.js:13302:23)
+shards (core-capacity)	Run this shard	2026-11-06T23:11:16.1537500Z     at workViewsJourney ([REDACTED]/tests/journeys/work-views.mjs:120:42)
+shards (core-capacity)	Run this shard	2026-11-06T23:11:16.1538368Z     at async file://[REDACTED]/tests/journeys/work-graph.journey.mjs:78:33 {
+shards (core-capacity)	Run this shard	2026-11-06T23:11:16.1538991Z   matcherResult: {
+shards (core-capacity)	Run this shard	2026-11-06T23:11:16.1539389Z     actual: 1,
+shards (core-capacity)	Run this shard	2026-11-06T23:11:16.1539776Z     expected: 0,
+shards (core-capacity)	Run this shard	2026-11-06T23:11:16.1540307Z     message: 'expect(locator).toHaveCount(expected) failed\n' +
+shards (core-capacity)	Run this shard	2026-11-06T23:11:16.1549855Z       '\n' +
+shards (core-capacity)	Run this shard	2026-11-06T23:11:16.1550636Z       `Locator:  locator('[data-work-row="tsk_ac7a58ef0c8242239136"]')\n` +
+shards (core-capacity)	Run this shard	2026-11-06T23:11:16.1551259Z       'Expected: 0\n' +
+shards (core-capacity)	Run this shard	2026-11-06T23:11:16.1551652Z       'Received: 1\n' +
+shards (core-capacity)	Run this shard	2026-11-06T23:11:16.1552031Z       'Timeout:  5000ms\n' +
+shards (core-capacity)	Run this shard	2026-11-06T23:11:16.1552418Z       '\n' +
+shards (core-capacity)	Run this shard	2026-11-06T23:11:16.1552756Z       'Call log:\n' +
+shards (core-capacity)	Run this shard	2026-11-06T23:11:16.1553502Z       `  - Expect "toHaveCount" locator('[data-work-row="tsk_ac7a58ef0c8242239136"]') with timeout 5000ms\n` +
+shards (core-capacity)	Run this shard	2026-11-06T23:11:16.1559802Z       `  - waiting for locator('[data-work-row="tsk_ac7a58ef0c8242239136"]')\n` +
+shards (core-capacity)	Run this shard	2026-11-06T23:11:16.1561011Z       '    14 × locator resolved to 1 element\n' +
+shards (core-capacity)	Run this shard	2026-11-06T23:11:16.1561535Z       '       - unexpected value "1"\n',
+shards (core-capacity)	Run this shard	2026-11-06T23:11:16.1561998Z     name: 'toHaveCount',
+shards (core-capacity)	Run this shard	2026-11-06T23:11:16.1562399Z     pass: false,
+shards (core-capacity)	Run this shard	2026-11-06T23:11:16.1562751Z     log: [
+shards (core-capacity)	Run this shard	2026-11-06T23:11:16.1563426Z       `  - Expect "toHaveCount" locator('[data-work-row="tsk_ac7a58ef0c8242239136"]') with timeout 5000ms`,
+shards (core-capacity)	Run this shard	2026-11-06T23:11:16.1572827Z       `  - waiting for locator('[data-work-row="tsk_ac7a58ef0c8242239136"]')`,
+shards (core-capacity)	Run this shard	2026-11-06T23:11:16.1573800Z       '    14 × locator resolved to 1 element',
+shards (core-capacity)	Run this shard	2026-11-06T23:11:16.1574328Z       '       - unexpected value "1"'
+shards (core-capacity)	Run this shard	2026-11-06T23:11:16.1574736Z     ],
+shards (core-capacity)	Run this shard	2026-11-06T23:11:16.1575049Z     timeout: 5000,
+shards (core-capacity)	Run this shard	2026-11-06T23:11:16.1575388Z     ariaSnapshot: undefined
+shards (core-capacity)	Run this shard	2026-11-06T23:11:16.1575754Z   }
+shards (core-capacity)	Run this shard	2026-11-06T23:11:16.1583377Z }
+shards (core-capacity)	Run this shard	2026-11-06T23:11:16.1583891Z 
+shards (core-capacity)	Run this shard	2026-11-06T23:11:16.1584106Z Node.js v22.20.0
+shards (core-capacity)	Run this shard	2026-11-06T23:11:16.2887681Z LANE journeys-planning-capacity duration_ms=291123
+shards (core-capacity)	Run this shard	2026-11-06T23:11:33.4987536Z # Subtest: Work views through the native graph
+shards (core-capacity)	Run this shard	2026-11-06T23:11:33.5001840Z     # Subtest: keeps six work views on one dated graph and restores named configuration and defaults after restart and sign-in
+shards (core-capacity)	Run this shard	2026-11-06T23:11:33.5006775Z     ok 1 - keeps six work views on one dated graph and restores named configuration and defaults after restart and sign-in
+shards (core-capacity)	Run this shard	2026-11-06T23:11:33.5015964Z       ---
+shards (core-capacity)	Run this shard	2026-11-06T23:11:33.5016567Z       duration_ms: 28417.501262
+shards (core-capacity)	Run this shard	2026-11-06T23:11:33.5017244Z       type: 'test'
+shards (core-capacity)	Run this shard	2026-11-06T23:11:33.5017619Z       ...
+shards (core-capacity)	Run this shard	2026-11-06T23:11:39.0243771Z     # Subtest: shares only permitted work and columns and fences stale configuration, defaults and revoked authority
+shards (core-capacity)	Run this shard	2026-11-06T23:11:39.0245174Z     ok 2 - shares only permitted work and columns and fences stale configuration, defaults and revoked authority
+shards (core-capacity)	Run this shard	2026-11-06T23:11:39.0245951Z       ---
+shards (core-capacity)	Run this shard	2026-11-06T23:11:39.0246640Z       duration_ms: 5539.569045
+shards (core-capacity)	Run this shard	2026-11-06T23:11:39.0246983Z       type: 'test'
+shards (core-capacity)	Run this shard	2026-11-06T23:11:39.0247238Z       ...
+shards (core-capacity)	Run this shard	2026-11-06T23:11:39.2007432Z     1..2
+shards (core-capacity)	Run this shard	2026-11-06T23:11:39.2027373Z ok 3 - Work views through the native graph
+shards (core-capacity)	Run this shard	2026-11-06T23:11:39.2028606Z   ---
+shards (core-capacity)	Run this shard	2026-11-06T23:11:39.2039617Z   duration_ms: 94528.88416
+shards (core-capacity)	Run this shard	2026-11-06T23:11:39.2040238Z   type: 'suite'
+shards (core-capacity)	Run this shard	2026-11-06T23:11:39.2040684Z   ...
+shards (core-capacity)	Run this shard	2026-11-06T23:11:59.7658668Z # PROBE PEG-066 custody: owner Data review -> exact decision redaction, hold and stale-review refusal; archive restores decisions as history with policy disabled and older erasure epoch refused
+shards (core-capacity)	Run this shard	2026-11-06T23:11:59.7727501Z # Subtest: Native intake decisions
+shards (core-capacity)	Run this shard	2026-11-06T23:11:59.7747861Z     # Subtest: records reviewed human priority and disposition once, refuses unsafe authority and preserves exact custody
+shards (core-capacity)	Run this shard	2026-11-06T23:11:59.7758508Z     ok 1 - records reviewed human priority and disposition once, refuses unsafe authority and preserves exact custody
+shards (core-capacity)	Run this shard	2026-11-06T23:11:59.7759437Z       ---
+shards (core-capacity)	Run this shard	2026-11-06T23:11:59.7759828Z       duration_ms: 266676.59953
+shards (core-capacity)	Run this shard	2026-11-06T23:11:59.7760192Z       type: 'test'
+shards (core-capacity)	Run this shard	2026-11-06T23:11:59.7760526Z       ...
+shards (core-capacity)	Run this shard	2026-11-06T23:11:59.8995456Z     1..1
+shards (core-capacity)	Run this shard	2026-11-06T23:11:59.8996439Z ok 1 - Native intake decisions
+shards (core-capacity)	Run this shard	2026-11-06T23:11:59.8997028Z   ---
+shards (core-capacity)	Run this shard	2026-11-06T23:11:59.8997328Z   duration_ms: 333898.764381
+shards (core-capacity)	Run this shard	2026-11-06T23:11:59.8997658Z   type: 'suite'
+shards (core-capacity)	Run this shard	2026-11-06T23:11:59.8997909Z   ...
+shards (core-capacity)	Run this shard	2026-11-06T23:11:59.9177519Z 1..1
+shards (core-capacity)	Run this shard	2026-11-06T23:11:59.9177883Z # tests 1
+shards (core-capacity)	Run this shard	2026-11-06T23:11:59.9178124Z # suites 1
+shards (core-capacity)	Run this shard	2026-11-06T23:11:59.9178408Z # pass 1
+shards (core-capacity)	Run this shard	2026-11-06T23:11:59.9178629Z # fail 0
+shards (core-capacity)	Run this shard	2026-11-06T23:11:59.9178926Z # cancelled 0
+shards (core-capacity)	Run this shard	2026-11-06T23:11:59.9179220Z # skipped 0
+shards (core-capacity)	Run this shard	2026-11-06T23:11:59.9179508Z # todo 0
+shards (core-capacity)	Run this shard	2026-11-06T23:11:59.9179810Z # duration_ms 334281.67256
+shards (core-capacity)	Run this shard	2026-11-06T23:12:00.0138156Z LANE intake-decisions duration_ms=334846
+shards (core-capacity)	Run this shard	2026-11-06T23:12:27.2057974Z # Subtest: PEG-001 one work graph
+shards (core-capacity)	Run this shard	2026-11-06T23:12:27.2059642Z     # Subtest: builds a campaign and a launch project, multi-homes one task and keeps one history
+shards (core-capacity)	Run this shard	2026-11-06T23:12:27.2060653Z     ok 1 - builds a campaign and a launch project, multi-homes one task and keeps one history
+shards (core-capacity)	Run this shard	2026-11-06T23:12:27.2061370Z       ---
+shards (core-capacity)	Run this shard	2026-11-06T23:12:27.2061834Z       duration_ms: 1789.359451
+shards (core-capacity)	Run this shard	2026-11-06T23:12:27.2062274Z       type: 'test'
+shards (core-capacity)	Run this shard	2026-11-06T23:12:27.2062628Z       ...
+shards (core-capacity)	Run this shard	2026-11-06T23:12:30.0387424Z     # Subtest: shows a guest on one project nothing of the other, through the API, exports and files
+shards (core-capacity)	Run this shard	2026-11-06T23:12:30.0388858Z     ok 2 - shows a guest on one project nothing of the other, through the API, exports and files
+shards (core-capacity)	Run this shard	2026-11-06T23:12:30.0389552Z       ---
+shards (core-capacity)	Run this shard	2026-11-06T23:12:30.0390041Z       duration_ms: 2832.512189
+shards (core-capacity)	Run this shard	2026-11-06T23:12:30.0390582Z       type: 'test'
+shards (core-capacity)	Run this shard	2026-11-06T23:12:30.0390887Z       ...
+shards (core-capacity)	Run this shard	2026-11-06T23:12:31.8512378Z     # Subtest: keeps a personal task private and resolves every reference a task has had, to those allowed only
+shards (core-capacity)	Run this shard	2026-11-06T23:12:31.8513962Z     ok 3 - keeps a personal task private and resolves every reference a task has had, to those allowed only
+shards (core-capacity)	Run this shard	2026-11-06T23:12:31.8514737Z       ---
+shards (core-capacity)	Run this shard	2026-11-06T23:12:31.8515132Z       duration_ms: 1812.670727
+shards (core-capacity)	Run this shard	2026-11-06T23:12:31.8515550Z       type: 'test'
+shards (core-capacity)	Run this shard	2026-11-06T23:12:31.8515913Z       ...
+shards (core-capacity)	Run this shard	2026-11-06T23:12:32.4734902Z     # Subtest: runs the PEG-083 public-team join and private-link request journeys on this graph
+shards (core-capacity)	Run this shard	2026-11-06T23:12:32.4735656Z     ok 4 - runs the PEG-083 public-team join and private-link request journeys on this graph
+shards (core-capacity)	Run this shard	2026-11-06T23:12:32.4738395Z       ---
+shards (core-capacity)	Run this shard	2026-11-06T23:12:32.4738629Z       duration_ms: 622.193055
+shards (core-capacity)	Run this shard	2026-11-06T23:12:32.4738904Z       type: 'test'
+shards (core-capacity)	Run this shard	2026-11-06T23:12:32.4739152Z       ...
+shards (core-capacity)	Run this shard	2026-11-06T23:12:33.4435871Z     # Subtest: keeps personal work and sections owner-only through lists, ID search, reads and writes
+shards (core-capacity)	Run this shard	2026-11-06T23:12:33.4437584Z     ok 5 - keeps personal work and sections owner-only through lists, ID search, reads and writes
+shards (core-capacity)	Run this shard	2026-11-06T23:12:33.4438183Z       ---
+shards (core-capacity)	Run this shard	2026-11-06T23:12:33.4438431Z       duration_ms: 970.411295
+shards (core-capacity)	Run this shard	2026-11-06T23:12:33.4438662Z       type: 'test'
+shards (core-capacity)	Run this shard	2026-11-06T23:12:33.4438832Z       ...
+shards (core-capacity)	Run this shard	2026-11-06T23:12:39.8428970Z     # Subtest: orders the local day by group, due instant, priority, creation time and immutable ID
+shards (core-capacity)	Run this shard	2026-11-06T23:12:39.8430539Z     ok 6 - orders the local day by group, due instant, priority, creation time and immutable ID
+shards (core-capacity)	Run this shard	2026-11-06T23:12:39.8430919Z       ---
+shards (core-capacity)	Run this shard	2026-11-06T23:12:39.8431116Z       duration_ms: 6399.418617
+shards (core-capacity)	Run this shard	2026-11-06T23:12:39.8431359Z       type: 'test'
+shards (core-capacity)	Run this shard	2026-11-06T23:12:39.8431527Z       ...
+shards (core-capacity)	Run this shard	2026-11-06T23:12:40.9672759Z     # Subtest: persists manual section/task ranks on reconnect and logs reversible deduplicated section rules
+shards (core-capacity)	Run this shard	2026-11-06T23:12:40.9675676Z     ok 7 - persists manual section/task ranks on reconnect and logs reversible deduplicated section rules
+shards (core-capacity)	Run this shard	2026-11-06T23:12:40.9676486Z       ---
+shards (core-capacity)	Run this shard	2026-11-06T23:12:40.9676764Z       duration_ms: 1124.074715
+shards (core-capacity)	Run this shard	2026-11-06T23:12:40.9677059Z       type: 'test'
+shards (core-capacity)	Run this shard	2026-11-06T23:12:40.9677306Z       ...
+shards (core-capacity)	Run this shard	2026-11-06T23:12:42.9008468Z     # Subtest: shares personal work only against the reviewed current project audience and content
+shards (core-capacity)	Run this shard	2026-11-06T23:12:42.9009887Z     ok 8 - shares personal work only against the reviewed current project audience and content
+shards (core-capacity)	Run this shard	2026-11-06T23:12:42.9010722Z       ---
+shards (core-capacity)	Run this shard	2026-11-06T23:12:42.9011154Z       duration_ms: 1931.553644
+shards (core-capacity)	Run this shard	2026-11-06T23:12:42.9011614Z       type: 'test'
+shards (core-capacity)	Run this shard	2026-11-06T23:12:42.9012015Z       ...
+shards (core-capacity)	Run this shard	2026-11-06T23:12:51.2687171Z     # Subtest: creates all typed fields, shared identities and consistent task/report/API calculations
+shards (core-capacity)	Run this shard	2026-11-06T23:12:51.2688116Z     ok 9 - creates all typed fields, shared identities and consistent task/report/API calculations
+shards (core-capacity)	Run this shard	2026-11-06T23:12:51.2688494Z       ---
+shards (core-capacity)	Run this shard	2026-11-06T23:12:51.2688740Z       duration_ms: 8368.19
+shards (core-capacity)	Run this shard	2026-11-06T23:12:51.2689026Z       type: 'test'
+shards (core-capacity)	Run this shard	2026-11-06T23:12:51.2689239Z       ...
+shards (core-capacity)	Run this shard	2026-11-06T23:12:54.4007928Z     # Subtest: explains cycles, missing and hidden inputs and refuses lossy or stale type changes
+shards (core-capacity)	Run this shard	2026-11-06T23:12:54.4041039Z     ok 10 - explains cycles, missing and hidden inputs and refuses lossy or stale type changes
+shards (core-capacity)	Run this shard	2026-11-06T23:12:54.4047301Z       ---
+shards (core-capacity)	Run this shard	2026-11-06T23:12:54.4047915Z       duration_ms: 3132.178933
+shards (core-capacity)	Run this shard	2026-11-06T23:12:54.4048270Z       type: 'test'
+shards (core-capacity)	Run this shard	2026-11-06T23:12:54.4048535Z       ...
+shards (core-capacity)	Run this shard	2026-11-06T23:12:57.3704383Z     # Subtest: keeps free-form campaign tags distinct, renames once and filters three projects without hidden counts
+shards (core-capacity)	Run this shard	2026-11-06T23:12:57.3705932Z     ok 11 - keeps free-form campaign tags distinct, renames once and filters three projects without hidden counts
+shards (core-capacity)	Run this shard	2026-11-06T23:12:57.3707247Z       ---
+shards (core-capacity)	Run this shard	2026-11-06T23:12:57.3707540Z       duration_ms: 2971.057652
+shards (core-capacity)	Run this shard	2026-11-06T23:12:57.3707855Z       type: 'test'
+shards (core-capacity)	Run this shard	2026-11-06T23:12:57.3708073Z       ...
+shards (core-capacity)	Run this shard	2026-11-06T23:12:57.9158150Z     # Subtest: enforces Viewer values and tagging denial and Editor definition denial on every field/status door
+shards (core-capacity)	Run this shard	2026-11-06T23:12:57.9159696Z     ok 12 - enforces Viewer values and tagging denial and Editor definition denial on every field/status door
+shards (core-capacity)	Run this shard	2026-11-06T23:12:57.9160567Z       ---
+shards (core-capacity)	Run this shard	2026-11-06T23:12:57.9161044Z       duration_ms: 545.179755
+shards (core-capacity)	Run this shard	2026-11-06T23:12:57.9161385Z       type: 'test'
+shards (core-capacity)	Run this shard	2026-11-06T23:12:57.9161635Z       ...
+shards (core-capacity)	Run this shard	2026-11-06T23:12:58.0302966Z     1..12
+shards (core-capacity)	Run this shard	2026-11-06T23:12:58.0304456Z ok 4 - PEG-001 one work graph
+shards (core-capacity)	Run this shard	2026-11-06T23:12:58.0305032Z   ---
+shards (core-capacity)	Run this shard	2026-11-06T23:12:58.0305376Z   duration_ms: 78830.164187
+shards (core-capacity)	Run this shard	2026-11-06T23:12:58.0305757Z   type: 'suite'
+shards (core-capacity)	Run this shard	2026-11-06T23:12:58.0306125Z   ...
+shards (core-capacity)	Run this shard	2026-11-06T23:12:58.0495932Z 1..4
+shards (core-capacity)	Run this shard	2026-11-06T23:12:58.0505918Z # tests 16
+shards (core-capacity)	Run this shard	2026-11-06T23:12:58.0506554Z # suites 4
+shards (core-capacity)	Run this shard	2026-11-06T23:12:58.0506819Z # pass 16
+shards (core-capacity)	Run this shard	2026-11-06T23:12:58.0507054Z # fail 0
+shards (core-capacity)	Run this shard	2026-11-06T23:12:58.0507340Z # cancelled 0
+shards (core-capacity)	Run this shard	2026-11-06T23:12:58.0507641Z # skipped 0
+shards (core-capacity)	Run this shard	2026-11-06T23:12:58.0507922Z # todo 0
+shards (core-capacity)	Run this shard	2026-11-06T23:12:58.0508225Z # duration_ms 392428.481522
+shards (core-capacity)	Run this shard	2026-11-06T23:12:58.1309391Z LANE work-graph-core duration_ms=392970
+shards (core-capacity)	Run this shard	2026-11-06T23:13:15.5635426Z     # Subtest: preserves permanent audit through native archive restore and refuses an old archive with the later erasure journal
+shards (core-capacity)	Run this shard	2026-11-06T23:13:15.5641698Z     ok 9 - preserves permanent audit through native archive restore and refuses an old archive with the later erasure journal
+shards (core-capacity)	Run this shard	2026-11-06T23:13:15.5642209Z       ---
+shards (core-capacity)	Run this shard	2026-11-06T23:13:15.5642406Z       duration_ms: 252317.532556
+shards (core-capacity)	Run this shard	2026-11-06T23:13:15.5642622Z       type: 'test'
+shards (core-capacity)	Run this shard	2026-11-06T23:13:15.5642801Z       ...
+shards (core-capacity)	Run this shard	2026-11-06T23:13:15.6514279Z     1..9
+shards (core-capacity)	Run this shard	2026-11-06T23:13:15.6514894Z ok 1 - Data custody
+shards (core-capacity)	Run this shard	2026-11-06T23:13:15.6515204Z   ---
+shards (core-capacity)	Run this shard	2026-11-06T23:13:15.6515458Z   duration_ms: 409606.634123
+shards (core-capacity)	Run this shard	2026-11-06T23:13:15.6515818Z   type: 'suite'
+shards (core-capacity)	Run this shard	2026-11-06T23:13:15.6516390Z   ...
+shards (core-capacity)	Run this shard	2026-11-06T23:13:15.6645301Z 1..1
+shards (core-capacity)	Run this shard	2026-11-06T23:13:15.6648720Z # tests 9
+shards (core-capacity)	Run this shard	2026-11-06T23:13:15.6649108Z # suites 1
+shards (core-capacity)	Run this shard	2026-11-06T23:13:15.6649443Z # pass 9
+shards (core-capacity)	Run this shard	2026-11-06T23:13:15.6649756Z # fail 0
+shards (core-capacity)	Run this shard	2026-11-06T23:13:15.6650057Z # cancelled 0
+shards (core-capacity)	Run this shard	2026-11-06T23:13:15.6650376Z # skipped 0
+shards (core-capacity)	Run this shard	2026-11-06T23:13:15.6650675Z # todo 0
+shards (core-capacity)	Run this shard	2026-11-06T23:13:15.6651004Z # duration_ms 409990.63624
+shards (core-capacity)	Run this shard	2026-11-06T23:13:15.7322619Z LANE work-graph-custody-recovery duration_ms=410569
+shards (core-capacity)	Run this shard	2026-11-06T23:13:15.7325430Z Error: journeys-planning-capacity failed: 1
+shards (core-capacity)	Run this shard	2026-11-06T23:13:15.7326062Z     at ChildProcess.<anonymous> (file:///home/runner/work/run-pegboard/run-pegboard/scripts/verify-app.mjs:190:72)
+shards (core-capacity)	Run this shard	2026-11-06T23:13:15.7326772Z     at Object.onceWrapper (node:events:634:26)
+shards (core-capacity)	Run this shard	2026-11-06T23:13:15.7327060Z     at ChildProcess.emit (node:events:519:28)
+shards (core-capacity)	Run this shard	2026-11-06T23:13:15.7327398Z     at ChildProcess._handle.onexit (node:internal/child_process:293:12)
+shards (core-capacity)	Run this shard	2026-11-06T23:13:19.9479572Z SHARD core-capacity duration_ms=450135
+shards (core-capacity)	Run this shard	2026-11-06T23:13:19.9484375Z file:///home/runner/work/run-pegboard/run-pegboard/scripts/verify-app.mjs:224
+shards (core-capacity)	Run this shard	2026-11-06T23:13:19.9485329Z   if (results.some(result => result.status === 'rejected')) throw Error(`Verification shard failed: ${shard.name}`);
+shards (core-capacity)	Run this shard	2026-11-06T23:13:19.9486023Z                                                                   ^
+shards (core-capacity)	Run this shard	2026-11-06T23:13:19.9486452Z 
+shards (core-capacity)	Run this shard	2026-11-06T23:13:19.9486706Z Error: Verification shard failed: core-capacity
+shards (core-capacity)	Run this shard	2026-11-06T23:13:19.9487351Z     at runLanes (file:///home/runner/work/run-pegboard/run-pegboard/scripts/verify-app.mjs:224:67)
+shards (core-capacity)	Run this shard	2026-11-06T23:13:19.9487887Z     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+shards (core-capacity)	Run this shard	2026-11-06T23:13:19.9488476Z     at async file:///home/runner/work/run-pegboard/run-pegboard/scripts/verify-app.mjs:238:20
+shards (core-capacity)	Run this shard	2026-11-06T23:13:19.9488780Z 
+shards (core-capacity)	Run this shard	2026-11-06T23:13:19.9488856Z Node.js v22.20.0
+shards (core-capacity)	Run this shard	2026-11-06T23:13:19.9717940Z  ELIFECYCLE  Command failed with exit code 1.
+shards (core-capacity)	Run this shard	2026-11-06T23:13:19.9918667Z ##[error]Process completed with exit code 1.

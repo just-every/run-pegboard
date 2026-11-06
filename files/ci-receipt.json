@@ -1,0 +1,139 @@
+{
+  "head": "80d572830e8400e2183f520aafd5efaf7fb0bd0a",
+  "run": 42309430502,
+  "url": "https://github.com/just-every/run-pegboard/actions/runs/42309430502",
+  "last_run_status_read": "in_progress",
+  "last_run_status_read_at": "2026-11-06T23:15:24Z",
+  "all_jobs_completed": true,
+  "verify_job_conclusion": "failure",
+  "exact_sha": true,
+  "jobs": [
+    {
+      "job": 128206903700,
+      "name": "plan",
+      "status": "completed",
+      "conclusion": "success",
+      "seconds": 8.0,
+      "url": "https://github.com/just-every/run-pegboard/actions/runs/42309430502/job/128206903700"
+    },
+    {
+      "job": 128206975763,
+      "name": "shards (runtime-source)",
+      "status": "completed",
+      "conclusion": "success",
+      "seconds": 429.0,
+      "url": "https://github.com/just-every/run-pegboard/actions/runs/42309430502/job/128206975763"
+    },
+    {
+      "job": 128206975764,
+      "name": "shards (core-capacity)",
+      "status": "completed",
+      "conclusion": "failure",
+      "seconds": 480.0,
+      "url": "https://github.com/just-every/run-pegboard/actions/runs/42309430502/job/128206975764"
+    },
+    {
+      "job": 128206975808,
+      "name": "shards (planning-services)",
+      "status": "completed",
+      "conclusion": "success",
+      "seconds": 544.0,
+      "url": "https://github.com/just-every/run-pegboard/actions/runs/42309430502/job/128206975808"
+    },
+    {
+      "job": 128206975833,
+      "name": "shards (custody-access)",
+      "status": "completed",
+      "conclusion": "success",
+      "seconds": 583.0,
+      "url": "https://github.com/just-every/run-pegboard/actions/runs/42309430502/job/128206975833"
+    },
+    {
+      "job": 128206975843,
+      "name": "shards (reporting-work)",
+      "status": "completed",
+      "conclusion": "success",
+      "seconds": 535.0,
+      "url": "https://github.com/just-every/run-pegboard/actions/runs/42309430502/job/128206975843"
+    },
+    {
+      "job": 128206975881,
+      "name": "shards (extensions-services)",
+      "status": "completed",
+      "conclusion": "success",
+      "seconds": 671.0,
+      "url": "https://github.com/just-every/run-pegboard/actions/runs/42309430502/job/128206975881"
+    },
+    {
+      "job": 128206975882,
+      "name": "shards (custody-recovery)",
+      "status": "completed",
+      "conclusion": "success",
+      "seconds": 608.0,
+      "url": "https://github.com/just-every/run-pegboard/actions/runs/42309430502/job/128206975882"
+    },
+    {
+      "job": 128206975933,
+      "name": "shards (time-planning)",
+      "status": "completed",
+      "conclusion": "success",
+      "seconds": 527.0,
+      "url": "https://github.com/just-every/run-pegboard/actions/runs/42309430502/job/128206975933"
+    },
+    {
+      "job": 128206977473,
+      "name": "light",
+      "status": "completed",
+      "conclusion": "skipped",
+      "seconds": 0.0,
+      "url": "https://github.com/just-every/run-pegboard/actions/runs/42309430502/job/128206977473"
+    },
+    {
+      "job": 128211368209,
+      "name": "verify",
+      "status": "completed",
+      "conclusion": "failure",
+      "seconds": 3.0,
+      "url": "https://github.com/just-every/run-pegboard/actions/runs/42309430502/job/128211368209"
+    },
+    {
+      "job": 128211369569,
+      "name": "full-push-proof",
+      "status": "completed",
+      "conclusion": "skipped",
+      "seconds": 0.0,
+      "url": "https://github.com/just-every/run-pegboard/actions/runs/42309430502/job/128211369569"
+    },
+    {
+      "job": 128211370628,
+      "name": "nightly-proof",
+      "status": "completed",
+      "conclusion": "skipped",
+      "seconds": -1.0,
+      "url": "https://github.com/just-every/run-pegboard/actions/runs/42309430502/job/128211370628"
+    }
+  ],
+  "eight_successful_shards": false,
+  "successful_shards": 7,
+  "failed_shards": 1,
+  "longest_seconds": 671.0,
+  "mean_seconds_including_failed_job": 547.125,
+  "max_mean_ratio_including_failed_job": 1.2264107836417637,
+  "ready": false,
+  "performance_target_met": false,
+  "reruns": 0,
+  "blocked": "Real work-views browser assertion at tests/journeys/work-views.mjs:120: after reviewed task erasure expected zero rows, received one after 5000ms; timing target also missed",
+  "failed_log_command": "gh run view 42309430502 --repo just-every/run-pegboard --job 128206975764 --log-failed",
+  "failed_log_transport": "success",
+  "github_calls_used": 10,
+  "failure_class": "assertion, not infrastructure; no rerun allowed",
+  "failing_file": "tests/journeys/work-views.mjs:120",
+  "failing_assertion": {
+    "file": "tests/journeys/work-views.mjs:120",
+    "action": "owner reviewed erasure of Withdrawn launch work task",
+    "expected_row_count": 0,
+    "actual_row_count": 1,
+    "assertion_timeout_ms": 5000,
+    "classification": "real assertion failure; underlying product or timing cause not established"
+  }
+}

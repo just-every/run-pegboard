@@ -1,0 +1,18 @@
+{
+  "branch": "cloud/sx-pegboard-ci-critical-path-3",
+  "head": "80d572830e8400e2183f520aafd5efaf7fb0bd0a",
+  "remote_head": "80d572830e8400e2183f520aafd5efaf7fb0bd0a",
+  "base": "f0386615142fdd50970be89ae671391def0a18fc",
+  "source_predecessor": "5c9580015024cf018316a34feeedb9dcf66216dc",
+  "published_product_pushes": 1,
+  "push_attempts": 1,
+  "clean_checkout": true,
+  "published_history_rewritten": false,
+  "main_ref_untouched": true,
+  "main_ref_after_fetch": "f0386615142fdd50970be89ae671391def0a18fc",
+  "pr": null,
+  "changed_in_this_pass": [
+    "scripts/verify-app.mjs",
+    "sources.lock.json"
+  ]
+}

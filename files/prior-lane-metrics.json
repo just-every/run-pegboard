@@ -1,0 +1,13 @@
+[
+  {
+    "file": "3_shards (custody-recovery).txt",
+    "metrics": [
+      "2026-11-06T22:28:43.7455562Z > [provider-diagnostics] pnpm exec rer queue test:work-graph-custody-recovery -- sh -c \"node --test --test-name-pattern='^(?:Data custody provider diagnostics)(?: |$)' --test-skip-pattern='^(?:Data custody intake erasure|Data custody PDF feedback)(?: |$)' tests/work-graph.test.mjs\"",
+      "2026-11-06T22:33:37.7176800Z LANE provider-diagnostics duration_ms=293974",
+      "2026-11-06T22:33:37.7178657Z > [work-graph-rule-audit] pnpm exec rer queue test:work-graph-custody-erasure -- sh -c \"node --test --test-name-pattern='^(?:Local rule audit attributes background)(?: |$)' tests/work-graph.test.mjs\"",
+      "2026-11-06T22:33:37.7197194Z > [portfolio-capacity] pnpm run test:graph:capacity",
+      "2026-11-06T22:36:44.3639859Z > [portfolio-capacity] pnpm exec rer queue test:work-graph-core -- sh -c \"node --test --test-skip-pattern='^(?:Local rule audit|Data custody|PEG-064 retained graph recovery|Native reporting|Goal visibility and accountability|Engineering handoff|Meeting review|Analyst exports|Project planning canvas|Work planning time, recurrence and decisions|Approval routing custody|Calendar work blocks through provider schema edges|Native approval follow-up|Direct project duplication through reviewed public doors|Public API and MCP|Work conversions through reviewed public doors)(?: |$)' --test-name-pattern='^(?:Native intake decisions)(?: |$)' tests/work-graph.test.mjs\"",
+      "2026-11-06T22:39:30.9340166Z LANE work-graph-rule-audit duration_ms=353216"
+    ]
+  }
+]

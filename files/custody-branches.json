@@ -1,0 +1,1 @@
+{"data":{"repository":{"refs":null}},"errors":[{"type":"VALIDATION","path":["repository","refs"],"locations":[{"line":1,"column":53}],"message":"`refPrefix` must end with a `/`."}]}gh: `refPrefix` must end with a `/`.

@@ -1,0 +1,27 @@
+shards (custody-recovery)	Run this shard	2026-11-06T22:28:43.7455251Z > [provider-diagnostics] pnpm exec rer queue test:work-graph-custody-recovery -- sh -c "node --test --test-name-pattern='^(?:Data custody provider diagnostics)(?: |$)' --test-skip-pattern='^(?:Data custody intake erasure|Data custody PDF feedback)(?: |$)' tests/work-graph.test.mjs"
+shards (custody-recovery)	Run this shard	2026-11-06T22:33:37.6243118Z # Subtest: Data custody provider diagnostics
+shards (custody-recovery)	Run this shard	2026-11-06T22:33:37.6248962Z     # Subtest: expires exact reviewed superseded diagnostics while preserving delivery witnesses, authority and native recovery
+shards (custody-recovery)	Run this shard	2026-11-06T22:33:37.6277757Z       duration_ms: 293191.706085
+shards (custody-recovery)	Run this shard	2026-11-06T22:33:37.6279297Z   duration_ms: 293192.686753
+shards (custody-recovery)	Run this shard	2026-11-06T22:33:37.7176768Z LANE provider-diagnostics duration_ms=293974
+shards (custody-recovery)	Run this shard	2026-11-06T22:33:37.7178652Z > [work-graph-rule-audit] pnpm exec rer queue test:work-graph-custody-erasure -- sh -c "node --test --test-name-pattern='^(?:Local rule audit attributes background)(?: |$)' tests/work-graph.test.mjs"
+shards (custody-recovery)	Run this shard	2026-11-06T22:33:37.7197182Z > [portfolio-capacity] pnpm run test:graph:capacity
+shards (custody-recovery)	Run this shard	2026-11-06T22:35:42.6402325Z # Subtest: Human portfolio capacity
+shards (custody-recovery)	Run this shard	2026-11-06T22:35:42.6404006Z     # Subtest: compares sourced alternatives across thirty projects and fences attributable application, replay and selective undo
+shards (custody-recovery)	Run this shard	2026-11-06T22:35:42.6407855Z       duration_ms: 124415.098001
+shards (custody-recovery)	Run this shard	2026-11-06T22:35:42.6411838Z   duration_ms: 124416.144599
+shards (custody-recovery)	Run this shard	2026-11-06T22:36:33.2427687Z # Subtest: Capacity across committed work
+shards (custody-recovery)	Run this shard	2026-11-06T22:36:33.2429529Z     # Subtest: compares a staffing scenario across three projects, retains hidden hours without titles, and applies only an exact current human reassignment
+shards (custody-recovery)	Run this shard	2026-11-06T22:36:33.2432988Z       duration_ms: 1785.603285
+shards (custody-recovery)	Run this shard	2026-11-06T22:36:41.8908325Z     # Subtest: uses self-declared full and partial days, unions approved source leave, hides reasons, and refuses unavailable authority or stale feeds
+shards (custody-recovery)	Run this shard	2026-11-06T22:36:41.8913896Z       duration_ms: 8649.676375
+shards (custody-recovery)	Run this shard	2026-11-06T22:36:44.1283000Z     # Subtest: reviews Split, Sum and per-assignee source effort without changing the task estimate or duplicating multi-homed work, and holds missing semantics for repair
+shards (custody-recovery)	Run this shard	2026-11-06T22:36:44.1296290Z       duration_ms: 2238.931008
+shards (custody-recovery)	Run this shard	2026-11-06T22:36:44.2635652Z   duration_ms: 61630.970621
+shards (custody-recovery)	Run this shard	2026-11-06T22:36:44.3639811Z > [portfolio-capacity] pnpm exec rer queue test:work-graph-core -- sh -c "node --test --test-skip-pattern='^(?:Local rule audit|Data custody|PEG-064 retained graph recovery|Native reporting|Goal visibility and accountability|Engineering handoff|Meeting review|Analyst exports|Project planning canvas|Work planning time, recurrence and decisions|Approval routing custody|Calendar work blocks through provider schema edges|Native approval follow-up|Direct project duplication through reviewed public doors|Public API and MCP|Work conversions through reviewed public doors)(?: |$)' --test-name-pattern='^(?:Native intake decisions)(?: |$)' tests/work-graph.test.mjs"
+shards (custody-recovery)	Run this shard	2026-11-06T22:39:30.7156252Z # Subtest: Local rule audit
+shards (custody-recovery)	Run this shard	2026-11-06T22:39:30.7168322Z     # Subtest: attributes background refusal to the former activating administrator and retains anonymized rule audit through native archive restore
+shards (custody-recovery)	Run this shard	2026-11-06T22:39:30.7172829Z       duration_ms: 303406.438557
+shards (custody-recovery)	Run this shard	2026-11-06T22:39:30.8174096Z   duration_ms: 352398.483111
+shards (custody-recovery)	Run this shard	2026-11-06T22:39:30.9340125Z LANE work-graph-rule-audit duration_ms=353216
+shards (custody-recovery)	Run this shard	2026-11-06T22:40:16.7438742Z ##[error]The operation was canceled.

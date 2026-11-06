@@ -1,0 +1,30 @@
+{
+  "syntax": "passed",
+  "workflow_permissions": "passed",
+  "coverage_mapping": "148 leaf tests, 35 journeys and 7 standalone commands, once each before and after",
+  "matrix_jobs": 8,
+  "build_commands": 1,
+  "build": "passed",
+  "typecheck": "passed",
+  "first_party": "passed",
+  "scheduler_execution_probe": "passed including intentional failure aggregation",
+  "workflow_plan_reuse_concurrency_timeout_os": "unchanged",
+  "contract_and_views": "unchanged",
+  "initial_parallel_moved_suites": "owner bootstrap failed with invalid_host in setup checkout; both processes stopped",
+  "note": "The setup checkout private .dev.vars conflicts with fixture AUTH_ORIGIN. The real CI copy filter excludes it; local evidence uses that same filter. No secret values are reported.",
+  "pinned_node_root_retry": "stopped after identifying private .dev.vars in setup checkout; no product/test changes",
+  "isolated_moved_suites": {
+    "result": "passed",
+    "capacity_tests": 4,
+    "intake_tests": 1,
+    "failures": 0,
+    "skips": 0,
+    "node": "22.20.0",
+    "executor": "runLanes tracked-input copies; local queue serialized commands",
+    "lane_durations_ms": {
+      "portfolio-capacity": 132404,
+      "intake-decisions": 321929
+    }
+  },
+  "source_lock": "regenerated last and check passed"
+}

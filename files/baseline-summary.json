@@ -1,0 +1,18 @@
+{
+  "prior_run": 42303067464,
+  "prior_mean_seconds": 533.25,
+  "prior_longest_seconds": 734.0,
+  "prior_max_mean_ratio": 1.3764650726676042,
+  "prior_longest_conclusion": "cancelled",
+  "clauses_before": {
+    "done": 22,
+    "partial": 20,
+    "missing": 50
+  },
+  "clauses_after": {
+    "done": 22,
+    "partial": 20,
+    "missing": 50
+  },
+  "clause_status_changes": []
+}

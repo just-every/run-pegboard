@@ -1,0 +1,58 @@
+TAP version 13
+# Subtest: Native intake decisions
+    # Subtest: records reviewed human priority and disposition once, refuses unsafe authority and preserves exact custody
+    not ok 1 - records reviewed human priority and disposition once, refuses unsafe authority and preserves exact custody
+      ---
+      duration_ms: 0
+      type: 'test'
+      location: '/home/agent/rer-consolidation/work/sx-pegboard-ci-critical-path-3/repo/tests/work-graph.test.mjs:110:2'
+      failureType: 'cancelledByParent'
+      error: 'test did not finish before its parent and was cancelled'
+      code: 'ERR_TEST_FAILURE'
+      ...
+    1..1
+not ok 1 - Native intake decisions
+  ---
+  duration_ms: 36483.319837
+  type: 'suite'
+  location: '/home/agent/rer-consolidation/work/sx-pegboard-ci-critical-path-3/repo/tests/work-graph.test.mjs:106:1'
+  failureType: 'hookFailed'
+  error: |-
+    owner claim 500 
+            <!DOCTYPE html>
+            <html lang="en">
+              <head>
+                <meta charset="UTF-8" />
+                <title>Error</title>
+                <script type="module">
+                  const error = {"message":"invalid_host","stack":"    at deny (/home/agent/rer-consolidation/work/sx-pegboard-ci-critical-path-3/repo/src/modules/operator-auth/errors.mjs:9:64)\n    at requireOrigin (/home/agent/rer-consolidation/work/sx-pegboard-ci-critical-path-3/repo/src/modules/operator-auth/http.mjs:21:96)\n    at authenticate (/home/agent/rer-consolidation/work/sx-pegboard-ci-critical-path-3/repo/src/modules/operator-auth/accounts/oa.mjs:23:5)\n    at Object.getSession (/home/agent/rer-consolidation/work/sx-pegboard-ci-critical-path-3/repo/src/modules/operator-auth/service.mjs:113:27)\n    at authResponse (/home/agent/rer-consolidation/work/sx-pegboard-ci-critical-path-3/repo/src/auth.server.ts:127:70)\n    at Object.fetch (/home/agent/rer-consolidation/work/sx-pegboard-ci-critical-path-3/repo/src/server.ts:49:24)\n    at Object.fetch (/home/agent/rer-consolidation/work/sx-pegboard-ci-critical-path-3/repo/src/modules/operator-auth/dev/index.mjs:83:24)\n    at Object.fetch (/home/agent/rer-consolidation/work/sx-pegboard-ci-critical-path-3/repo/src/server.dev.ts:21:22)\n    at maybeCaptureError (workers/runner-worker/index.js:51:10)","frame":""}
+                  try {
+                    const { ErrorOverlay } = await import("/@vite/client")
+                    document.body.appendChild(new ErrorOverlay(error))
+                  } catch {
+                    const h = (tag, text) => {
+                      const el = document.createElement(tag)
+                      el.textContent = text
+                      return el
+                    }
+                    document.body.appendChild(h('h1', 'Internal Server Error'))
+                    document.body.appendChild(h('h2', error.message))
+                    document.body.appendChild(h('pre', error.stack))
+                    document.body.appendChild(h('p', '(Error overlay failed to load)'))
+                  }
+                </script>
+              </head>
+              <body>
+              </body>
+            </html>
+          
+  code: 'ERR_TEST_FAILURE'
+  stack: |-
+    startWorker (file:///home/agent/rer-consolidation/work/sx-pegboard-ci-critical-path-3/repo/tests/support/worker.mjs:78:35)
+    process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    async before.timeout (file:///home/agent/rer-consolidation/work/sx-pegboard-ci-critical-path-3/repo/tests/work-graph.test.mjs:108:26)
+    async TestHook.run (node:internal/test_runner/test:1054:7)
+    async Suite.runHook (node:internal/test_runner/test:965:9)
+    async Suite.run (node:internal/test_runner/test:1436:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...

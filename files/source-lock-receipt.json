@@ -1,0 +1,11 @@
+{
+  "command": "node scripts/edition-authoring/cli.mjs lock; node scripts/edition-authoring/cli.mjs check",
+  "result": "passed",
+  "script_sha256": "43c081d04cecec8e53df64ef41ca1458388bc86c3e77db8372155839a11264a1",
+  "source_lock_sha256": "5208520b4ab1f8f9e894b92e252b1898bf7a0ad55c432e98055e5f08085689c2",
+  "script_lock_entry": {
+    "sha256": "43c081d04cecec8e53df64ef41ca1458388bc86c3e77db8372155839a11264a1",
+    "executable": false
+  },
+  "generated_last": true
+}

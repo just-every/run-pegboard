@@ -1,0 +1,115 @@
+▶ Human portfolio capacity
+  ✖ compares sourced alternatives across thirty projects and fences attributable application, replay and selective undo (41891.584087ms)
+✖ Human portfolio capacity (41893.186361ms)
+▶ Capacity across committed work
+  ✖ compares a staffing scenario across three projects, retains hidden hours without titles, and applies only an exact current human reassignment
+  ✖ uses self-declared full and partial days, unions approved source leave, hides reasons, and refuses unavailable authority or stale feeds
+  ✖ reviews Split, Sum and per-assignee source effort without changing the task estimate or duplicating multi-homed work, and holds missing semantics for repair
+✖ Capacity across committed work (38874.762584ms)
+
+Interrupted while running:
+
+⚠ tests/portfolios.test.mjs (tests/portfolios.test.mjs:1:1)
+✖ tests/portfolios.test.mjs (132248.269213ms)
+ℹ tests 5
+ℹ suites 2
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 4
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 132253.052681
+
+✖ failing tests:
+
+test at tests/scenarios/portfolio-capacity.mjs:35:3
+✖ compares sourced alternatives across thirty projects and fences attributable application, replay and selective undo (41891.584087ms)
+  Error: owner claim 500 
+          <!DOCTYPE html>
+          <html lang="en">
+            <head>
+              <meta charset="UTF-8" />
+              <title>Error</title>
+              <script type="module">
+                const error = {"message":"invalid_host","stack":"    at deny (/home/agent/rer-consolidation/work/sx-pegboard-ci-critical-path-3/repo/src/modules/operator-auth/errors.mjs:9:64)\n    at requireOrigin (/home/agent/rer-consolidation/work/sx-pegboard-ci-critical-path-3/repo/src/modules/operator-auth/http.mjs:21:96)\n    at authenticate (/home/agent/rer-consolidation/work/sx-pegboard-ci-critical-path-3/repo/src/modules/operator-auth/accounts/oa.mjs:23:5)\n    at Object.getSession (/home/agent/rer-consolidation/work/sx-pegboard-ci-critical-path-3/repo/src/modules/operator-auth/service.mjs:113:27)\n    at authResponse (/home/agent/rer-consolidation/work/sx-pegboard-ci-critical-path-3/repo/src/auth.server.ts:127:70)\n    at Object.fetch (/home/agent/rer-consolidation/work/sx-pegboard-ci-critical-path-3/repo/src/server.ts:49:24)\n    at Object.fetch (/home/agent/rer-consolidation/work/sx-pegboard-ci-critical-path-3/repo/src/modules/operator-auth/dev/index.mjs:83:24)\n    at Object.fetch (/home/agent/rer-consolidation/work/sx-pegboard-ci-critical-path-3/repo/src/server.dev.ts:21:22)\n    at maybeCaptureError (workers/runner-worker/index.js:51:10)","frame":""}
+                try {
+                  const { ErrorOverlay } = await import("/@vite/client")
+                  document.body.appendChild(new ErrorOverlay(error))
+                } catch {
+                  const h = (tag, text) => {
+                    const el = document.createElement(tag)
+                    el.textContent = text
+                    return el
+                  }
+                  document.body.appendChild(h('h1', 'Internal Server Error'))
+                  document.body.appendChild(h('h2', error.message))
+                  document.body.appendChild(h('pre', error.stack))
+                  document.body.appendChild(h('p', '(Error overlay failed to load)'))
+                }
+              </script>
+            </head>
+            <body>
+            </body>
+          </html>
+        
+      at startWorker (file:///home/agent/rer-consolidation/work/sx-pegboard-ci-critical-path-3/repo/tests/support/worker.mjs:78:35)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestContext.<anonymous> (file:///home/agent/rer-consolidation/work/sx-pegboard-ci-critical-path-3/repo/tests/scenarios/portfolio-capacity.mjs:36:12)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Promise.all (index 0)
+      at async Suite.run (node:internal/test_runner/test:1869:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3)
+
+test at tests/portfolios.test.mjs:970:3
+✖ compares a staffing scenario across three projects, retains hidden hours without titles, and applies only an exact current human reassignment
+  'test did not finish before its parent and was cancelled'
+
+test at tests/portfolios.test.mjs:1004:3
+✖ uses self-declared full and partial days, unions approved source leave, hides reasons, and refuses unavailable authority or stale feeds
+  'test did not finish before its parent and was cancelled'
+
+test at tests/portfolios.test.mjs:1085:3
+✖ reviews Split, Sum and per-assignee source effort without changing the task estimate or duplicating multi-homed work, and holds missing semantics for repair
+  'test did not finish before its parent and was cancelled'
+
+test at tests/portfolios.test.mjs:951:1
+✖ Capacity across committed work (38874.762584ms)
+  Error: owner claim 500 
+          <!DOCTYPE html>
+          <html lang="en">
+            <head>
+              <meta charset="UTF-8" />
+              <title>Error</title>
+              <script type="module">
+                const error = {"message":"invalid_host","stack":"    at deny (/home/agent/rer-consolidation/work/sx-pegboard-ci-critical-path-3/repo/src/modules/operator-auth/errors.mjs:9:64)\n    at requireOrigin (/home/agent/rer-consolidation/work/sx-pegboard-ci-critical-path-3/repo/src/modules/operator-auth/http.mjs:21:96)\n    at authenticate (/home/agent/rer-consolidation/work/sx-pegboard-ci-critical-path-3/repo/src/modules/operator-auth/accounts/oa.mjs:23:5)\n    at Object.getSession (/home/agent/rer-consolidation/work/sx-pegboard-ci-critical-path-3/repo/src/modules/operator-auth/service.mjs:113:27)\n    at authResponse (/home/agent/rer-consolidation/work/sx-pegboard-ci-critical-path-3/repo/src/auth.server.ts:127:70)\n    at Object.fetch (/home/agent/rer-consolidation/work/sx-pegboard-ci-critical-path-3/repo/src/server.ts:49:24)\n    at Object.fetch (/home/agent/rer-consolidation/work/sx-pegboard-ci-critical-path-3/repo/src/modules/operator-auth/dev/index.mjs:83:24)\n    at Object.fetch (/home/agent/rer-consolidation/work/sx-pegboard-ci-critical-path-3/repo/src/server.dev.ts:21:22)\n    at maybeCaptureError (workers/runner-worker/index.js:51:10)","frame":""}
+                try {
+                  const { ErrorOverlay } = await import("/@vite/client")
+                  document.body.appendChild(new ErrorOverlay(error))
+                } catch {
+                  const h = (tag, text) => {
+                    const el = document.createElement(tag)
+                    el.textContent = text
+                    return el
+                  }
+                  document.body.appendChild(h('h1', 'Internal Server Error'))
+                  document.body.appendChild(h('h2', error.message))
+                  document.body.appendChild(h('pre', error.stack))
+                  document.body.appendChild(h('p', '(Error overlay failed to load)'))
+                }
+              </script>
+            </head>
+            <body>
+            </body>
+          </html>
+        
+      at startWorker (file:///home/agent/rer-consolidation/work/sx-pegboard-ci-critical-path-3/repo/tests/support/worker.mjs:78:35)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async before.timeout (file:///home/agent/rer-consolidation/work/sx-pegboard-ci-critical-path-3/repo/tests/portfolios.test.mjs:955:15)
+      at async TestHook.run (node:internal/test_runner/test:1389:7)
+      at async Suite.runHook (node:internal/test_runner/test:1269:9)
+      at async Suite.run (node:internal/test_runner/test:1863:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+
+test at tests/portfolios.test.mjs:1:1
+✖ tests/portfolios.test.mjs (132248.269213ms)
+  'Promise resolution is still pending but the event loop has already resolved'
