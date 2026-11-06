@@ -1,0 +1,2 @@
+contract-docs write: PEG-010; counts 22 done, 19 partial, 51 missing
+contract-docs check: PEG-010; counts 22 done, 19 partial, 51 missing

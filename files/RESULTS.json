@@ -1,0 +1,89 @@
+{
+  "tag": "sx-pegboard-c-f119",
+  "repository": "just-every/run-pegboard",
+  "branch": "cloud/sx-pegboard-c-f119",
+  "head": "177c6538d45a9e290f53c04f647cb17b0926a945",
+  "node": "22.20.0",
+  "checks": [
+    {
+      "name": "public-door scenarios",
+      "command": "node --test --test-name-pattern='^Project announcements' tests/work-graph.test.mjs",
+      "exit": 0,
+      "tests": 2,
+      "passed": 2,
+      "failed": 0,
+      "head": "177c6538d45a9e290f53c04f647cb17b0926a945",
+      "log": "public-door-tests.log"
+    },
+    {
+      "name": "browser journey",
+      "command": "PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium PEGBOARD_JOURNEY=project-messages node tests/journeys/work-graph.journey.mjs",
+      "exit": 0,
+      "head": "177c6538d45a9e290f53c04f647cb17b0926a945",
+      "functionalWidth": 1440,
+      "proofWidths": [
+        1440,
+        390
+      ],
+      "screens": 22,
+      "log": "browser-journey.log"
+    },
+    {
+      "name": "typecheck",
+      "command": "pnpm run typecheck",
+      "exit": 0,
+      "head": "177c6538d45a9e290f53c04f647cb17b0926a945",
+      "log": "typecheck.log"
+    },
+    {
+      "name": "production build",
+      "command": "npx -y @runeditrun/rer build",
+      "exit": 0,
+      "head": "177c6538d45a9e290f53c04f647cb17b0926a945",
+      "log": "build.log"
+    },
+    {
+      "name": "first-party command check",
+      "command": "pnpm exec rer check --profile first-party",
+      "exit": 0,
+      "head": "177c6538d45a9e290f53c04f647cb17b0926a945",
+      "log": "first-party.log"
+    },
+    {
+      "name": "source lock",
+      "command": "node scripts/edition-authoring/cli.mjs check",
+      "exit": 0,
+      "head": "177c6538d45a9e290f53c04f647cb17b0926a945",
+      "log": "source-lock-check.log"
+    },
+    {
+      "name": "contract generation",
+      "command": "node scripts/contract-docs.mjs write PEG-010 then check PEG-010",
+      "exit": 0,
+      "sourceContractUnchangedAtHead": "177c6538d45a9e290f53c04f647cb17b0926a945",
+      "generatedViewsRestored": true,
+      "log": "contract-generation.log"
+    },
+    {
+      "name": "forward migration ledger",
+      "command": "node /tmp/pegboard-ledger-check.mjs",
+      "exit": 0,
+      "head": "177c6538d45a9e290f53c04f647cb17b0926a945",
+      "preservedMigrations": 93,
+      "newMigrations": 1,
+      "log": "migration-ledger.log"
+    }
+  ],
+  "assertionsRemoved": 0,
+  "contractStatusChanges": 0,
+  "publicationScan": "fleet gate; not run in cloud",
+  "ci": {
+    "conclusion": null,
+    "head_sha": "177c6538d45a9e290f53c04f647cb17b0926a945",
+    "html_url": "https://github.com/just-every/run-pegboard/actions/runs/42252802997",
+    "status": "in_progress",
+    "id": 42252802997,
+    "event": "push",
+    "observedAt": "2026-11-06T16:40:42Z"
+  }
+}

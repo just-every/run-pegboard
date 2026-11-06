@@ -1,0 +1,122 @@
+{
+  "head": "177c6538d45a9e290f53c04f647cb17b0926a945",
+  "widths": [
+    1440,
+    390
+  ],
+  "states": 11,
+  "files": [
+    {
+      "path": "screens/project-messages-compose-1440.png",
+      "bytes": 290817,
+      "sha256": "f912100f8dce8a9ee56b6bfb59bb62bd5a32649c0581964ecf6a47b7e639105a"
+    },
+    {
+      "path": "screens/project-messages-compose-390.png",
+      "bytes": 122943,
+      "sha256": "a853872235715236ec7f0356aa2b75afb06d3436a26f0b3ea940e4fe8f18e5ab"
+    },
+    {
+      "path": "screens/project-messages-correction-1440.png",
+      "bytes": 431254,
+      "sha256": "96cc73e6372e81efde29e4341e85697d3d57ff6fb6f0e2138705a1184e5a3e37"
+    },
+    {
+      "path": "screens/project-messages-correction-390.png",
+      "bytes": 186295,
+      "sha256": "d6c44eaa1aa16317506e8cff82da0d760293a0c785d27a7d0b57d1cb2247479c"
+    },
+    {
+      "path": "screens/project-messages-entry-1440.png",
+      "bytes": 314839,
+      "sha256": "da23ce1a19135a31d7a04182e4be1f5c174e8992790c387624d5aed66afbd4eb"
+    },
+    {
+      "path": "screens/project-messages-entry-390.png",
+      "bytes": 118244,
+      "sha256": "3d5bb1266bae9f918997a4e45830adebe7ba8c0e6fc0f96e113c2856ed83905a"
+    },
+    {
+      "path": "screens/project-messages-muted-inbox-1440.png",
+      "bytes": 342567,
+      "sha256": "19cf1f66e94a267114402a6867aee493759547a1e602b66dd4ffbb48f56fffd0"
+    },
+    {
+      "path": "screens/project-messages-muted-inbox-390.png",
+      "bytes": 134120,
+      "sha256": "b5016e57a00ecf710fa417b30af4062b905298d418a634c94299109221610808"
+    },
+    {
+      "path": "screens/project-messages-muted-thread-1440.png",
+      "bytes": 387184,
+      "sha256": "e33b7c7f9114437803516d9740038c2fcccf14786ea545562b460dabd0212fa5"
+    },
+    {
+      "path": "screens/project-messages-muted-thread-390.png",
+      "bytes": 171237,
+      "sha256": "67c968871ef132d94c30c85f4ba2d8f330506fb7e07d838b07ff94f29e1d3861"
+    },
+    {
+      "path": "screens/project-messages-published-1440.png",
+      "bytes": 373324,
+      "sha256": "2da320564f70e81b491bb9b496aa5a01ead4efba8b40b3c56461e4b459a242d8"
+    },
+    {
+      "path": "screens/project-messages-published-390.png",
+      "bytes": 152225,
+      "sha256": "9f0fe7502bf4361ce197f8c7c31190747d9f68267c6f88e4b26bd0ec263a0549"
+    },
+    {
+      "path": "screens/project-messages-recipient-inbox-1440.png",
+      "bytes": 331269,
+      "sha256": "1458e96dc9e6a9d91d6ed42782e3cd80b1c665ef670e21354faf8918d85f69f4"
+    },
+    {
+      "path": "screens/project-messages-recipient-inbox-390.png",
+      "bytes": 128414,
+      "sha256": "17c398f93721b06556921ce92a2f35a230dab761808aa5bdd9714869bf128257"
+    },
+    {
+      "path": "screens/project-messages-review-1440.png",
+      "bytes": 282591,
+      "sha256": "bd634e3f54d391922660f4660c503e183179d33946a94b01172b70f80d8dc9d9"
+    },
+    {
+      "path": "screens/project-messages-review-390.png",
+      "bytes": 123641,
+      "sha256": "e6cbce850acf477c00bdda658bd9816cf8e1285cabc7e8275f400bd3c77f0b5e"
+    },
+    {
+      "path": "screens/project-messages-revoked-thread-1440.png",
+      "bytes": 365116,
+      "sha256": "f5c2dc7926e2792b4cb62453b2edeca1ba4ed09ec928d26a039f87bd57ab75be"
+    },
+    {
+      "path": "screens/project-messages-revoked-thread-390.png",
+      "bytes": 138838,
+      "sha256": "3a39a9b50895ef221b1e625f8496b63e11fdb2207691cf4cec8faddf4ab61e0a"
+    },
+    {
+      "path": "screens/project-messages-stale-refused-1440.png",
+      "bytes": 334429,
+      "sha256": "8aac9905797e2aa9f4aeb7242e142f95bf9fa39a8757647d0bf0913476420534"
+    },
+    {
+      "path": "screens/project-messages-stale-refused-390.png",
+      "bytes": 121226,
+      "sha256": "c4f2ed2313c1be24baeb72bee858d8777a276241259c3851f18073ad0b6214b9"
+    },
+    {
+      "path": "screens/project-messages-thread-revision-1440.png",
+      "bytes": 436033,
+      "sha256": "8662ce9f5f00182dfff4ed52f443d96c544a5656dfd58d03d9b46621c665a156"
+    },
+    {
+      "path": "screens/project-messages-thread-revision-390.png",
+      "bytes": 176666,
+      "sha256": "e261bcfb8797d3b0aaf8f17971bbf0c62652d8d6c372d5c45aea323d782a03a6"
+    }
+  ],
+  "layoutInspected": true,
+  "functionalAssertionWidth": 1440
+}

@@ -1,0 +1,60 @@
+Waiting to start (queue position 1/1): all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard import:workflow [2b7399635488] in /tmp/pegboard-canvas-restore-anPHQB
+Memory: 14.9 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 1/1): all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard import:workflow [2b7399635488] in /tmp/pegboard-canvas-restore-anPHQB
+Memory: 14.9 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 1/1): all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard import:workflow [2b7399635488] in /tmp/pegboard-canvas-restore-anPHQB
+Memory: 14.7 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Heavy job admitted: Pegboard build:workflow [ff18a8c7543b]
+Checking pinned pnpm
+10.12.4
+Building your application
+build:app
+▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+
+
+vite v8.2.2 building client environment for production...
+transforming...
+✓ 141 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/client/.assetsignore                 0.02 kB
+dist/client/proof/pdf.mjs               798.75 kB
+dist/client/proof/pdf.worker.mjs      1,978.10 kB
+dist/client/assets/index-DNvrL6lz.js    313.47 kB │ gzip: 101.61 kB
+
+✓ built in 598ms
+vite v8.2.2 building ssr environment for production...
+transforming...
+✓ 877 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/server/wrangler.json                                      1.61 kB │ gzip:   0.81 kB
+dist/server/.vite/manifest.json                                3.32 kB │ gzip:   0.67 kB
+dist/server/assets/branding-B8X0nmM5.js                        0.11 kB │ gzip:   0.12 kB
+dist/server/assets/empty-plugin-adapters-D_0twvAa.js           0.28 kB │ gzip:   0.18 kB
+dist/server/assets/start-873VjJhM.js                           0.28 kB │ gzip:   0.20 kB
+dist/server/assets/_tanstack-start-manifest_v-DN-yBBfq.js      0.38 kB │ gzip:   0.28 kB
+dist/server/assets/rolldown-runtime-DC62tzP2.js                1.44 kB │ gzip:   0.67 kB
+dist/server/assets/hash-CZCDazbo.js                            4.70 kB │ gzip:   2.16 kB
+dist/server/assets/storage-Dyr_tRJN.js                         4.92 kB │ gzip:   1.96 kB
+dist/server/assets/router-BqFwkHLU.js                         37.00 kB │ gzip:   9.82 kB
+dist/server/assets/rule-execution-CUuG4Wsk.js                102.86 kB │ gzip:  26.57 kB
+dist/server/assets/Match-DrxLvzdf.js                         166.70 kB │ gzip:  41.96 kB
+dist/server/index.js                                       4,071.27 kB │ gzip: 945.94 kB
+
+[INEFFECTIVE_DYNAMIC_IMPORT] src/pegboard/data/expiry.ts is dynamically imported by src/pegboard/data/settings.ts but also statically imported by src/pegboard/api/data-routes.ts, src/pegboard/ui/routes.ts, dynamic import will not move module into another chunk.
+
+[INEFFECTIVE_DYNAMIC_IMPORT] src/pegboard/templates/rule-execution.ts is dynamically imported by src/pegboard/templates/instantiation.ts but also statically imported by src/pegboard/api/template-rule-routes.ts, src/pegboard/public-api/operations.ts, src/pegboard/rules/requests.ts, src/pegboard/tasks/tasks.ts, dynamic import will not move module into another chunk.
+
+✓ built in 1.79s
+Your application is built
+build: complete (exit 0)

@@ -1,0 +1,34 @@
+TAP version 13
+# PROBE PEG-010 person custody: inactive participant, exact conversation identities and linked-task hold -> retained; renewed owner review after release -> message text removed, shared task survives, retained identity stores honestly partial
+# PROBE PEG-010 publication: draft and exact content and audience review -> one immutable publication, exact recipient Inbox notice identities; concurrent and repeated confirmation -> 409 without duplicates
+# PROBE PEG-010 discussion: current permission replies, nested identity, attributable edit and delete history, correction, follow and mute -> expected persisted content and unique notices; unsafe writes and stale revisions refused
+# PROBE PEG-010 revocation: project grant revoked then renewed and Worker restarted -> old notices cancelled, current reader thread restored, old reply token refused, deactivated session rejected
+# Subtest: Project announcements
+    # Subtest: publishes exact human-reviewed project messages and permission-scoped threaded Inbox deliveries
+    ok 1 - publishes exact human-reviewed project messages and permission-scoped threaded Inbox deliveries
+      ---
+      duration_ms: 88728.391316
+      type: 'test'
+      ...
+# PROBE PEG-010 custody: active linked-task hold -> retained; stale exact erasure -> 409; owner-reviewed project erasure -> exact conversation keys removed; native archives inactive and older archive blocked by journal
+    # Subtest: preserves holds, exact erasure review and inactive archive journal custody
+    ok 2 - preserves holds, exact erasure review and inactive archive journal custody
+      ---
+      duration_ms: 281622.434156
+      type: 'test'
+      ...
+    1..2
+ok 1 - Project announcements
+  ---
+  duration_ms: 370351.96911
+  type: 'suite'
+  ...
+1..1
+# tests 2
+# suites 1
+# pass 2
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 370887.122694

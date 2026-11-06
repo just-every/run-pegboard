@@ -1,0 +1,68 @@
+{
+  "tag": "sx-pegboard-c-f119",
+  "repository": "just-every/run-pegboard",
+  "branch": "cloud/sx-pegboard-c-f119",
+  "head": "177c6538d45a9e290f53c04f647cb17b0926a945",
+  "base": "672a7a6fa8c98ed804e629dcf7fb4868b75d4f61",
+  "productPush": {
+    "exit": 0,
+    "guard": "cloud-push.py",
+    "remote": "origin",
+    "attempt": 1
+  },
+  "pr": null,
+  "sourceContractUnchanged": true,
+  "countsBefore": {
+    "done": 22,
+    "partial": 19,
+    "missing": 51,
+    "total": 92
+  },
+  "countsAfter": {
+    "done": 22,
+    "partial": 19,
+    "missing": 51,
+    "total": 92
+  },
+  "sourceStatusBefore": "missing",
+  "sourceStatusAfter": "missing",
+  "builderClaim": "PARTIAL",
+  "fullAcceptancePointsClosed": [],
+  "publicationScan": {
+    "commit": "177c6538d45a9e290f53c04f647cb17b0926a945",
+    "complete": false,
+    "historyScanned": null,
+    "findings": null,
+    "status": "not run in cloud; required fleet landing gate"
+  },
+  "mainEquality": {
+    "equal": false,
+    "main": "672a7a6fa8c98ed804e629dcf7fb4868b75d4f61",
+    "candidate": "177c6538d45a9e290f53c04f647cb17b0926a945",
+    "landed": false
+  },
+  "baselineCI": {
+    "head": "672a7a6fa8c98ed804e629dcf7fb4868b75d4f61",
+    "Verify": 42236954438,
+    "VerifyConclusion": "success",
+    "RunSite": 42236954685,
+    "RunSiteConclusion": "success"
+  },
+  "candidateCI": {
+    "conclusion": null,
+    "head_sha": "177c6538d45a9e290f53c04f647cb17b0926a945",
+    "html_url": "https://github.com/just-every/run-pegboard/actions/runs/42252802997",
+    "status": "in_progress",
+    "id": 42252802997,
+    "event": "push",
+    "observedAt": "2026-11-06T16:40:42Z"
+  },
+  "githubCallsUsed": 6,
+  "priorPublishedCandidate": {
+    "head": "9a4a0663365296010c0ad626c220ff326d640300",
+    "run": 42251057743,
+    "lastObservedStatus": "in_progress",
+    "lastObservedConclusion": null,
+    "superseded": true
+  }
+}
