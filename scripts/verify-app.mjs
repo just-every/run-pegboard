@@ -18,7 +18,7 @@ function packPush(shards) {
  };
  const core = lanes.get('work-graph-core');
  const coreCommand = core.commands[0];
- const coreSuites = 'Test worker lifecycle|PEG-001 one work graph|Work views through the native graph|Native text intake|Native intake decisions';
+ const coreSuites = 'Test worker lifecycle|PEG-001 one work graph|Work views through the native graph|Native text intake';
  if (core.commands.length !== 1) throw Error('Review core lane packing');
  core.commands = [replace(coreCommand, ' tests/work-graph.test.mjs', ` --test-name-pattern='^(?:${coreSuites})(?: |$)' tests/work-graph.test.mjs`)];
  lanes.set('work-graph-intake', { ...core, name: 'work-graph-intake', commands: [replace(coreCommand, "--test-skip-pattern='^(?:", `--test-skip-pattern='^(?:${coreSuites}|`)] });
@@ -83,7 +83,11 @@ function packPush(shards) {
  // retained PDF API suite to the shorter analyst selection, without another
  // Worker or a second pass through any assertion.
  const intake = lanes.get('work-graph-intake');
- intake.commands[0] = replace(intake.commands[0], `--test-skip-pattern='^(?:`, `--test-skip-pattern='^(?:Retained PDF feedback|`);
+ intake.commands[0] = replace(intake.commands[0], `--test-skip-pattern='^(?:`, `--test-skip-pattern='^(?:Native intake decisions|Retained PDF feedback|`);
+ // The capacity tail ended after 143s, while its rule-audit sibling ran for
+ // 241s. Run intake decisions there, after capacity, rather than extending
+ // the already 618s core lane. Diagnostics still gets the runner alone.
+ lanes.get('portfolio-capacity').commands.push(replace(coreCommand, ' tests/work-graph.test.mjs', ` --test-name-pattern='^(?:Native intake decisions)(?: |$)' tests/work-graph.test.mjs`));
  const analyst = lanes.get('work-graph-analyst');
  analyst.commands[0] = replace(analyst.commands[0], 'Analyst exports', 'Analyst exports|Retained PDF feedback');
  // Journey selection already gives each journey a fresh Worker. Moving names
@@ -100,9 +104,23 @@ function packPush(shards) {
    lane.commands[0] = command.replace(match[0], `PEGBOARD_JOURNEY=${selected.join(',')}`);
   }
  };
- moveJourney('retained-pdf-review', 'journeys-core-work', 'journeys-planning-capacity');
+ // Use the idle end of an API lane instead of growing a browser lane that
+ // already determines its job's finish. Each journey still owns one Worker;
+ // the separate command adds only another browser launch and service fixture.
+ const moveJourneyToTail = (name, from, to) => {
+  const source = lanes.get(from), destination = lanes.get(to);
+  if (source.commands.length !== 1 || !destination) throw Error('Review journey tail packing');
+  const command = source.commands[0], match = /PEGBOARD_JOURNEY=([a-z0-9,-]+)/.exec(command);
+  if (!match) throw Error('Review journey tail selection');
+  const names = match[1].split(',');
+  if (names.filter(value => value === name).length !== 1 || names.length < 2) throw Error(`Missing or repeated journey: ${name}`);
+  source.commands[0] = command.replace(match[0], `PEGBOARD_JOURNEY=${names.filter(value => value !== name).join(',')}`);
+  destination.commands.push(command.replace(match[0], `PEGBOARD_JOURNEY=${name}`));
+  destination.browser = true;
+ };
+ moveJourneyToTail('retained-pdf-review', 'journeys-core-work', 'work-graph-reporting');
  moveJourney('pdf-feedback', 'journeys-core-work', 'journeys-planning-capacity');
- moveJourney('canvas', 'journeys-planning-capacity', 'journeys-planning-work');
+ moveJourneyToTail('canvas', 'journeys-planning-capacity', 'work-graph-extensions');
  const groups = [
   ['runtime-source', ['runtime', 'source', 'access-control']],
   ['core-capacity', ['work-graph-core', 'work-graph-custody-recovery', 'journeys-planning-capacity']],
