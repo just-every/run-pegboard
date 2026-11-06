@@ -199,7 +199,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "bf33e884bfa8fd301034b6dee610e459a6b58b0df8391527ea5f5dde1ff90b90",
+      "sha256": "c0a0b314e717f1b59ee203a1dfab6204175a33516b5f6657d788ce571ee43678",
       "executable": false
     },
     "AGENTS.md": {
@@ -243,7 +243,7 @@
       "executable": false
     },
     "docs/CLAIMS.md": {
-      "sha256": "5f5707568b69890ad239209375a4a03f2d0c8470681b63bbed3284345e11a40d",
+      "sha256": "310f230507902c633636c22210c0705d62725f85e79f472a67aeb03dd0ceb1fb",
       "executable": false
     },
     "docs/contract/PEG-128-rubric.md": {
@@ -291,7 +291,7 @@
       "executable": false
     },
     "docs/REPORTING.md": {
-      "sha256": "e215a676f92ffb949a40134d70fd85a449d4d27d5b7957728e1db81f5e2ec890",
+      "sha256": "f3417dce4a36a6baa85cc623a6e82faa328ea5d2f369f247a2da7e47a6e4e3d4",
       "executable": false
     },
     "docs/STATUS-API.md": {
@@ -3651,7 +3651,7 @@
       "executable": false
     },
     "src/pegboard/reporting/metrics.ts": {
-      "sha256": "095639a2c1495ad4cd5e1ff6dc61037fb14431092e17099ea70dac648783e601",
+      "sha256": "4e8d682a6ff6c20c1e18eef119f17b1edd746b10eb7c5d5343279d4baceb5e08",
       "executable": false
     },
     "src/pegboard/revisions/briefs.ts": {
@@ -4007,7 +4007,7 @@
       "executable": false
     },
     "src/pegboard/ui/pages/reports.tsx": {
-      "sha256": "c5048f39442d265d6525762c338ae9f6c20935a546f8be6c3e232a65dd2a0750",
+      "sha256": "b280c830e21321ec0a67dc20399070fadcb70830a825dac9e1c391b4b3fc6895",
       "executable": false
     },
     "src/pegboard/ui/pages/rule-request.tsx": {
@@ -4407,7 +4407,7 @@
       "executable": false
     },
     "tests/journeys/reporting.mjs": {
-      "sha256": "258e4f839954229da65cf6b6af24b547b5ed435e78866181399809490db2ea56",
+      "sha256": "a3663ab0c00edbda72f0e838e02d266bab802c24ca416d14764fb21daab5c9ab",
       "executable": false
     },
     "tests/journeys/rule-audit.mjs": {
@@ -4484,6 +4484,10 @@
     },
     "tests/scenarios/intake-erasure.mjs": {
       "sha256": "27a6b08c90083dcbb830acc427da22f912ee3d532767174d7052b6b15feeae20",
+      "executable": false
+    },
+    "tests/scenarios/intake-reporting.mjs": {
+      "sha256": "949d860629f4feb74815f3def2c64cd756fdec710f2011ba3578879a6c78aef4",
       "executable": false
     },
     "tests/scenarios/intake.mjs": {
@@ -4571,7 +4575,7 @@
       "executable": false
     },
     "tests/work-graph.test.mjs": {
-      "sha256": "1fac15a074e53a2ed94b55cd0b4d7c39e7dc520e44d5e5ef4089f7dd929ef656",
+      "sha256": "7201621c6f2ea6f5b424b2e46e38b12aad31320b2eadbb4ee142dfaa10e48c98",
       "executable": false
     },
     "tsconfig.json": {
