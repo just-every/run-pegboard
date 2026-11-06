@@ -10,7 +10,7 @@ import { join } from 'node:path';
 // does not accumulate beside the already long core and PDF browser journeys.
 // Separate working directories are essential: Vite and Wrangler write caches
 // beside their configs even when each test has a private database and port.
-function packPush(shards) {
+function packPush(shards, scripts) {
  const lanes = new Map(shards.map(shard => [shard.name, { ...shard, commands: [...shard.commands] }]));
  const replace = (command, from, to) => {
   if (command.split(from).length !== 2) throw Error('Verification selector changed; review its packing');
@@ -47,8 +47,8 @@ function packPush(shards) {
  lanes.set('work-graph-pdf-custody', { ...extensions, name: 'work-graph-pdf-custody', commands: extensions.commands.splice(1) });
  // The diagnostics scenario has its own six-minute assertion deadline. A
  // three-way CPU share took 396s and cancelled it, although its native restore
- // completed afterward. Give it the runner alone, then run the retained audit
- // selection. Move the other custody work into existing lanes with room.
+ // completed afterward. Give it the runner alone; the browser tail starts
+ // only after diagnostics has finished.
  const retained = lanes.get('work-graph-recovery');
  const retainedCommand = retained.commands[0];
  retained.commands = [replace(retainedCommand, 'Data custody provider diagnostics|PEG-064 retained graph recovery', 'PEG-064 retained graph recovery')];
@@ -89,7 +89,7 @@ function packPush(shards) {
  // capacity before even starting intake decisions; rule audit took 353s
  // alongside that tail. Move both complete selections to the two shortest
  // jobs as independent lanes. Neither waits behind diagnostics or another
- // suite, and diagnostics retains the runner alone before rule audit.
+ // suite, and diagnostics retains the runner alone before its browser tail.
  lanes.get('intake-decisions').commands.push(replace(coreCommand, ' tests/work-graph.test.mjs', ` --test-name-pattern='^(?:Native intake decisions)(?: |$)' tests/work-graph.test.mjs`));
  const analyst = lanes.get('work-graph-analyst');
  analyst.commands[0] = replace(analyst.commands[0], 'Analyst exports', 'Analyst exports|Retained PDF feedback');
@@ -123,13 +123,33 @@ function packPush(shards) {
  };
  moveJourneyToTail('retained-pdf-review', 'journeys-core-work', 'work-graph-reporting');
  moveJourney('pdf-feedback', 'journeys-core-work', 'journeys-planning-capacity');
- moveJourneyToTail('canvas', 'journeys-planning-capacity', 'work-graph-extensions');
+ // Run 42309430502's work-views refresh failed while three API lanes were
+ // active. It passes alone in 57s including typecheck and installation. Each
+ // journey already owns a fresh database; put work-views and canvas after
+ // exclusive diagnostics so their browser polling has the runner to itself.
+ lanes.set('recovery-journeys', { name: 'recovery-journeys', browser: true, hosted: false, commands: [] });
+ moveJourneyToTail('work-views', 'journeys-planning-capacity', 'recovery-journeys');
+ moveJourney('canvas', 'journeys-planning-capacity', 'recovery-journeys');
+ moveJourney('analytics', 'journeys-services-work', 'journeys-planning-capacity');
+ moveJourney('guests', 'journeys-core-access', 'journeys-planning-work');
+ // The retained audit took 282s after 291s of diagnostics. Capacity finishes
+ // early (209s) in runtime-source, leaving room for that complete audit suite.
+ appendLane('portfolio-capacity', 'work-graph-rule-audit');
+ // Portfolios took 616s. Its template suite owns a separate Worker and takes
+ // 77s; run the complete suite after intake decisions (335s) in core-capacity.
+ const portfolios = lanes.get('portfolios');
+ if (portfolios.commands.length !== 1 || portfolios.commands[0] !== 'pnpm run test:graph:portfolios:core') throw Error('Review portfolio lane packing');
+ const portfolioCommand = scripts['test:graph:portfolios:core'];
+ const skip = /--test-skip-pattern='[^']+'/.exec(portfolioCommand)?.[0];
+ if (!skip) throw Error('Review portfolio suite selection');
+ portfolios.commands[0] = replace(portfolioCommand, "--test-skip-pattern='^(?:", "--test-skip-pattern='^(?:Reusable templates through reviewed public doors|");
+ lanes.get('intake-decisions').commands.push(replace(portfolioCommand, skip, "--test-name-pattern='^Reusable templates through reviewed public doors(?: |$)'"));
  const groups = [
   ['runtime-source', ['runtime', 'source', 'access-control', 'portfolio-capacity']],
   ['core-capacity', ['work-graph-core', 'work-graph-custody-recovery', 'journeys-planning-capacity', 'intake-decisions']],
   ['extensions-services', ['work-graph-extensions', 'portfolios', 'journeys-services-work']],
   ['time-planning', ['work-graph-time', 'work-graph-decisions', 'journeys-planning-work']],
-  ['custody-recovery', ['provider-diagnostics', 'work-graph-rule-audit']],
+  ['custody-recovery', ['provider-diagnostics', 'recovery-journeys']],
   ['custody-access', ['work-graph-custody-erasure', 'journeys-services', 'journeys-core-access']],
   ['reporting-work', ['work-graph-reporting', 'work-graph-analyst', 'journeys-core-work']],
   ['planning-services', ['work-graph-intake', 'work-graph-pdf-custody', 'workflow-rules']],
@@ -160,7 +180,8 @@ export async function verificationPlan() {
   }
  }
  if (!plan.push.length || plan.push.filter(shard => shard.hosted).length !== 1) throw Error('Push verification must include the hosted production build');
- plan.push = packPush(plan.push);
+ const { scripts } = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
+ plan.push = packPush(plan.push, scripts);
  return plan;
 }
 
@@ -212,8 +233,8 @@ export async function runLanes(shard) {
    finally { console.log(`LANE ${lane.name} duration_ms=${Date.now() - start}`); }
   };
   const results = [];
-  // Diagnostics keeps the runner to itself, then rule audit uses it alone.
-  // Capacity and intake decisions run in the two shorter jobs instead.
+  // Diagnostics and its browser tail each keep the runner to themselves.
+  // All other groups run their isolated lanes concurrently.
   const exclusive = shard.lanes.find(lane => lane.name === shard.exclusive);
   if (exclusive) {
    try { await execute(exclusive); results.push({ status: 'fulfilled' }); }
