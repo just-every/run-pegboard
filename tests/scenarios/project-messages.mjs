@@ -13,8 +13,9 @@ export async function messageFixture(w){
  await grant(owner,project,guest);await grant(owner,project,agent,'editor')
  const task=await pass(owner.post('/api/v1/tasks',{projectId:project.id,title:'Review launch materials',description:'Human-reviewed launch work'}))
  const secretProject=await pass(owner.post('/api/v1/projects',{name:'Private planning'})),secret=await pass(owner.post('/api/v1/tasks',{projectId:secretProject.id,title:'Restricted work link'}))
+ const analyst=await w.person(address(1407),'Internal analyst','analyst');await grant(owner,project,analyst,'viewer')
  const currentAdmin=await w.signIn(admin.email,admin.name,admin.id)
- return {w,owner,reader,viewer,outside,guest,agent,admin:currentAdmin,project,task,secret,secretProject,readGrant,viewGrant}
+ return {w,owner,reader,viewer,outside,guest,agent,admin:currentAdmin,project,task,secret,secretProject,readGrant,viewGrant,analyst}
 }
 export const content=f=>({subject:'Autumn launch handoff',body:'Please review the launch materials before our next planning session.',recipients:[f.reader.id,f.viewer.id],linkIds:[f.task.id]})
 export const draftMessage=(f,input={})=>pass(f.owner.post(`/api/v1/projects/${f.project.id}/messages`,{...content(f),...input}))
@@ -26,10 +27,10 @@ export const notices=client=>pass(client.get('/api/v1/message-notices'))
 export async function projectMessagesScenario(){
  let w
  try{
-  w=await startWorker();const f=await messageFixture(w),{owner,reader,viewer,outside,guest,agent,admin,project,task}=f
+  w=await startWorker();const f=await messageFixture(w),{owner,reader,viewer,outside,guest,agent,admin,project,task,analyst}=f
   const choices=await pass(owner.get(`/api/v1/projects/${project.id}/messages/participants`))
-  assert.deepEqual(choices.map(p=>p.value).sort(),[owner.id,reader.id,viewer.id].sort(),'exclude guests, agents, unrelated people and role-only administration')
-  for(const person of [reader,viewer,guest,agent])await pass(person.post(`/api/v1/projects/${project.id}/messages`,content(f)),403)
+  assert.deepEqual(choices.map(p=>p.value).sort(),[owner.id,reader.id,viewer.id,analyst.id].sort(),'exclude guests, agents, unrelated people and role-only administration')
+  for(const person of [reader,viewer,guest,agent,analyst])await pass(person.post(`/api/v1/projects/${project.id}/messages`,content(f)),403)
   await pass(owner.post(`/api/v1/projects/${project.id}/messages`,{...content(f),recipients:[admin.id]}),403)
   await pass(owner.post(`/api/v1/projects/${project.id}/messages`,{...content(f),recipients:[guest.id]}),403)
   await pass(owner.post(`/api/v1/projects/${project.id}/messages`,{...content(f),linkIds:[f.secret.id]}),404)
@@ -128,6 +129,18 @@ export async function projectMessagesScenario(){
   await pass(owner.post(`/api/v1/workspaces/ws_main/people/${viewer.id}/account`,{status:'inactive'}))
   await pass(viewer.get(messagePath(publication.id)),401)
   assert.equal((await notices(reader)).notices.some(n=>n.recipientId===viewer.id),false)
+  // Current settings authority permits an internal administrator to publish without adding them to the audience directory.
+  const adminDraft=await pass(admin.post(`/api/v1/projects/${project.id}/messages`,{...content(f),subject:'Administrator-authored announcement',recipients:[reader.id,analyst.id]}))
+  const adminReview=await pass(admin.post('/api/v1/message-drafts/'+adminDraft.id+'/review',{}))
+  const adminPublication=await pass(admin.post('/api/v1/message-drafts/'+adminDraft.id+'/publish',{token:adminReview.token,confirm:true}))
+  assert.equal((await thread(admin,adminPublication.id)).publications[0].author_id,admin.id)
+  const administrativeList=await pass(admin.get(`/api/v1/projects/${project.id}/messages`))
+  assert.deepEqual(administrativeList.publications.map(p=>p.id),[adminPublication.id],'administrative custody alone reveals no other announcement')
+  assert.ok(!(await pass(owner.get(`/api/v1/projects/${project.id}/messages/participants`))).some(p=>p.value===admin.id),'publication adds no participant grant')
+  assert.equal((await notices(reader)).notices.filter(n=>n.publicationId===adminPublication.id).length,1)
+  const analystThread=await thread(analyst,adminPublication.id)
+  assert.equal(analystThread.canReply,false);assert.equal((await notices(analyst)).notices.length,1)
+  await pass(analyst.post(messagePath(adminPublication.id)+'/replies',{body:'Analyst is read only',key:'synthetic-pegboard-1419',token:analystThread.token}),403)
   const personalProject=await pass(owner.post('/api/v1/projects',{name:'Participant custody review'}))
   await grant(owner,personalProject,reader)
   const personalTask=await pass(owner.post('/api/v1/tasks',{projectId:personalProject.id,title:'Keep other project work intact'}))
