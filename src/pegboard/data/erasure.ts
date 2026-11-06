@@ -1,4 +1,5 @@
 import { decisionErasureScope, decisionErasureStatements } from '../intake/decisions'
+import { messageErasureScope } from '../messages/custody'
 import { formErasureScope, formErasureStatements } from '../intake/forms'
 import { submissionErasureScope, submissionErasureStatements } from '../intake/submissions'
 import {capacityErasureSources,capacityErasureStatements} from '../capacity/custody'
@@ -136,9 +137,22 @@ export async function erasurePlan(db:D1Database,actor:Actor,workspace:string,typ
     await take('peg_projects',projectScoped('id'),projects)
   }
   if(proofFiles.length)await take('peg_attachments',`id IN (${placeholders(proofFiles)})`,proofFiles)
+  const messages=await messageErasureScope(db,type,id,tasks,projects)
+  // Include copied announcement bodies and revision history in the exact owner-reviewed deletion set.
+  // Place child rows before publications and projects; the native journal records each removed key.
+  const messageSelections:Selection[]=[]
+  for(const [table,where,args] of [
+    ['peg_message_comment_history',`comment_id IN(SELECT id FROM peg_message_comments WHERE root_id IN (${placeholders(messages.roots)}))`,messages.roots],
+    ['peg_message_comments',`root_id IN (${placeholders(messages.roots)})`,messages.roots],
+    ['peg_message_notices',`root_id IN (${placeholders(messages.roots)})`,messages.roots],
+    ['peg_message_preferences',`root_id IN (${placeholders(messages.roots)})`,messages.roots],
+    ['peg_message_publications',`root_id IN (${placeholders(messages.roots)})`,messages.roots],
+    ['peg_message_drafts',`id IN (${placeholders(messages.drafts)})`,messages.drafts],
+  ] as [string,string,string[]][]){const selected=await selectKeys(db,table,where,args);if(selected.keys.length)messageSelections.push(selected)}
+  selections.unshift(...messageSelections)
   const decisionActors=type==='person'?await decisionErasureScope(db,id):[]
   const intake=type==='person'?{...(decisionActors.length?{decisions:decisionActors}:{}),forms:await formErasureScope(db,id),submissions:await submissionErasureScope(db,id)}:null
-  const affectedTasks=new Set(tasks)
+  const affectedTasks=new Set([...tasks,...messages.tasks])
   const feedbackKeys=selections.find(s=>s.table==='peg_proof_feedback')?.keys.map(k=>k.id)??[]
   const feedbackScope=await all<{task_id:string;proof_id:string;attachment_id:string;author_id:string}>(db,`SELECT p.task_id,f.proof_id,f.attachment_id,f.author_id FROM peg_proof_feedback f JOIN peg_proofs p ON p.id=f.proof_id WHERE f.id IN (${placeholders(feedbackKeys)})`,...feedbackKeys)
   for(const pin of feedbackScope)affectedTasks.add(pin.task_id)
@@ -151,7 +165,7 @@ export async function erasurePlan(db:D1Database,actor:Actor,workspace:string,typ
   if(type==='person'){
     for(const t of await all<{task_id:string}>(db,'SELECT task_id FROM peg_comments WHERE author_id=? UNION SELECT task_id FROM peg_attachments WHERE created_by=? UNION SELECT task_id FROM peg_agent_outputs WHERE actor_id=?',id,id,id))affectedTasks.add(t.task_id)
   }
-  const affected=[...affectedTasks], relatedProjects=new Set([...projects,...(intake?.forms.map(f=>f.projectId)??[]),...(intake?.submissions.map(s=>s.projectId)??[]),...decisionActors.map(s=>s.projectId)]), relatedPeople=new Set<string>()
+  const affected=[...affectedTasks], relatedProjects=new Set([...messages.projects,...projects,...(intake?.forms.map(f=>f.projectId)??[]),...(intake?.submissions.map(s=>s.projectId)??[]),...decisionActors.map(s=>s.projectId)]), relatedPeople=new Set<string>(messages.people)
   for(const pin of feedbackScope)relatedPeople.add(pin.author_id)
   for(const r of await all<{project_id:string}>(db,`SELECT project_id FROM peg_task_projects WHERE task_id IN (${placeholders(affected)})`,...affected))relatedProjects.add(r.project_id)
   for(const r of await all<{person:string}>(db,`SELECT owner_id person FROM peg_tasks WHERE id IN (${placeholders(affected)}) UNION SELECT creator_id person FROM peg_tasks WHERE id IN (${placeholders(affected)}) UNION SELECT author_id person FROM peg_comments WHERE task_id IN (${placeholders(affected)}) UNION SELECT created_by person FROM peg_attachments WHERE task_id IN (${placeholders(affected)})`,...affected,...affected,...affected,...affected))relatedPeople.add(r.person)
@@ -188,7 +202,7 @@ export async function erasurePlan(db:D1Database,actor:Actor,workspace:string,typ
   const processorRequests=await processorFollowups(db,selections)
   const capacitySources=type==='person'?await capacityErasureSources(db,id):[]
   if(capacitySources.length)counts.capacity_source_mappings=capacitySources.length
-  const plan={type,id,name,intake,capacitySources,tasks,projects,proofs,processorRequests,reopenTasks,selections,counts,blockers:[...new Set(blockers)],holds:holds.map(h=>({id:h.id,authority:h.authority,expiresAt:h.expires_at})),retained,externalLimits}
+  const plan={type,id,name,messages,intake,capacitySources,tasks,projects,proofs,processorRequests,reopenTasks,selections,counts,blockers:[...new Set(blockers)],holds:holds.map(h=>({id:h.id,authority:h.authority,expiresAt:h.expires_at})),retained,externalLimits}
   return {...plan,revision,token:await digest([workspace,actor.id,revision,plan])}
 }
 export async function erase(db:D1Database,actor:Actor,workspace:string,input:Record<string,any>) {
