@@ -1,0 +1,46 @@
+{
+  "setup": 0,
+  "build": 0,
+  "typecheck": 0,
+  "firstParty": 0,
+  "contractCheck": 0,
+  "sourceLockCheck": 0,
+  "workflowPermissions": 0,
+  "mapping": 0,
+  "isolationFailureCleanup": 0,
+  "node": "22.20.0",
+  "pnpm": "10.12.4",
+  "applicationChecks": [
+    {
+      "file": "local-core-capacity.log",
+      "exit": 0,
+      "nodeTests": 19,
+      "passes": 19,
+      "failures": 0,
+      "lane_ms": {
+        "work-graph-core": 80393,
+        "journeys-planning-capacity": 483570,
+        "work-graph-intake": 738772
+      },
+      "shard_ms": {
+        "core-capacity": 748796
+      }
+    },
+    {
+      "file": "local-time-planning.log",
+      "exit": 0,
+      "nodeTests": 21,
+      "passes": 21,
+      "failures": 0,
+      "lane_ms": {
+        "work-graph-time": 258380,
+        "work-graph-decisions": 492353,
+        "journeys-planning-work": 494134
+      },
+      "shard_ms": {
+        "time-planning": 511480
+      }
+    }
+  ],
+  "coreSamplePartition": "initial; final repartition proven by mapping and tested in CI"
+}

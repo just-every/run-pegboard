@@ -1,0 +1,4 @@
+
+> @just-every/pegboard@0.1.0 typecheck /workspace/run-pegboard
+> tsc --build --incremental
+

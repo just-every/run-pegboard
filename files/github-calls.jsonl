@@ -1,0 +1,4 @@
+{"time": 1793991912.0306065, "args": ["api", "graphql", "-f", "query=query { repository(owner:\"just-every\",name:\"run-pegboard\") { refs(refPrefix:\"refs/heads/\",query:\"cloud/sx-pegboard-ci\",first:100) { nodes { name target { ... on Commit { oid committedDate } } associatedPullRequests(first:5,states:OPEN) { nodes { number url } } } } } }"]}
+{"time": 1793991932.9435844, "args": ["run", "view", "42268005252", "--repo", "just-every/run-pegboard", "--json", "jobs"]}
+{"time": 1793991937.2321708, "args": ["run", "view", "42252802997", "--repo", "just-every/run-pegboard", "--json", "jobs"]}
+{"time": 1793993311.8847811, "args": ["api", "repos/just-every/run-pegboard/actions/runs?head_sha=e2c3d762315888794377822119176ee31c412c4c&per_page=100"]}

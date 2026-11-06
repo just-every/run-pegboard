@@ -1,0 +1,18 @@
+{
+  "pushJobs": 8,
+  "lanes": 24,
+  "hosted": 1,
+  "builds": 1,
+  "maxConcurrentLanes": 3,
+  "nightly": 0,
+  "jobTimeoutMinutes": 12,
+  "workflowBytesUnchanged": true,
+  "plannerBytesUnchanged": true,
+  "concurrencyUnchanged": true,
+  "clauses": {
+    "done": 22,
+    "partial": 20,
+    "missing": 50,
+    "changed": 0
+  }
+}

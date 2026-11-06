@@ -1,0 +1,255 @@
+> pnpm run verify:app
+ WARN  Unsupported engine: wanted: {"node":"22.20.0"} (current: {"node":"v24.19.0","pnpm":"10.12.4"})
+
+> @just-every/pegboard@0.1.0 verify:app /workspace/run-pegboard
+> node scripts/verify-app.mjs
+
+> pnpm exec rer queue test:work-graph-core -- sh -c "node --test --test-skip-pattern='^(?:Local rule audit|Data custody|PEG-064 retained graph recovery|Native reporting|Goal visibility and accountability|Engineering handoff|Meeting review|Analyst exports|Project planning canvas|Work planning time, recurrence and decisions|Approval routing custody|Calendar work blocks through provider schema edges|Native approval follow-up|Direct project duplication through reviewed public doors|Public API and MCP|Work conversions through reviewed public doors)(?: |$)' tests/work-graph.test.mjs"
+test:work-graph-core
+Heavy job admitted: Pegboard test:work-graph-core:command [91fa996dd5ac]
+▶ Test worker lifecycle
+  ✖ recovers from an occupied startup port with colored logs, leaves its listener alone and keeps the new origin through restart (46848.410393ms)
+✖ Test worker lifecycle (46850.544404ms)
+▶ Retained PDF feedback
+  ✖ renders retained PDF contents, pins exact identities and refuses stale, hidden and unauthorized feedback
+✖ Retained PDF feedback (38979.567093ms)
+▶ Native intake decisions
+  ✖ records reviewed human priority and disposition once, refuses unsafe authority and preserves exact custody
+✖ Native intake decisions (42194.40036ms)
+▶ Native text intake
+  ✖ publishes branching intake, creates one attributable task after replay and restart, and refuses unsafe submissions
+✖ Native text intake (39259.371882ms)
+▶ Work views through the native graph
+  ✖ keeps six work views on one dated graph and restores named configuration and defaults after restart and sign-in
+  ✖ shares only permitted work and columns and fences stale configuration, defaults and revoked authority
+✖ Work views through the native graph (48758.87052ms)
+
+Interrupted while running:
+
+⚠ tests/work-graph.test.mjs (tests/work-graph.test.mjs:1:1)
+✖ tests/work-graph.test.mjs (242218.556648ms)
+ ELIFECYCLE  Command failed.
+ℹ tests 7
+ℹ suites 5
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 6
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 242225.900738
+
+✖ failing tests:
+
+test at tests/work-graph.test.mjs:53:2
+✖ recovers from an occupied startup port with colored logs, leaves its listener alone and keeps the new origin through restart (46848.410393ms)
+  Error: owner claim 500 
+          <!DOCTYPE html>
+          <html lang="en">
+            <head>
+              <meta charset="UTF-8" />
+              <title>Error</title>
+              <script type="module">
+                const error = {"message":"invalid_host","stack":"    at deny ([REDACTED]/src/modules/operator-auth/errors.mjs:9:64)\n    at requireOrigin ([REDACTED]/src/modules/operator-auth/http.mjs:21:96)\n    at authenticate ([REDACTED]/src/modules/operator-auth/accounts/oa.mjs:23:5)\n    at Object.getSession ([REDACTED]/src/modules/operator-auth/service.mjs:113:27)\n    at authResponse ([REDACTED]/src/auth.server.ts:127:70)\n    at Object.fetch ([REDACTED]/src/server.ts:49:24)\n    at Object.fetch ([REDACTED]/src/modules/operator-auth/dev/index.mjs:83:24)\n    at Object.fetch ([REDACTED]/src/server.dev.ts:21:22)\n    at maybeCaptureError (workers/runner-worker/index.js:51:10)","frame":""}
+                try {
+                  const { ErrorOverlay } = await import("/@vite/client")
+                  document.body.appendChild(new ErrorOverlay(error))
+                } catch {
+                  const h = (tag, text) => {
+                    const el = document.createElement(tag)
+                    el.textContent = text
+                    return el
+                  }
+                  document.body.appendChild(h('h1', 'Internal Server Error'))
+                  document.body.appendChild(h('h2', error.message))
+                  document.body.appendChild(h('pre', error.stack))
+                  document.body.appendChild(h('p', '(Error overlay failed to load)'))
+                }
+              </script>
+            </head>
+            <body>
+            </body>
+          </html>
+        
+      at startWorker (file://[REDACTED]/tests/support/worker.mjs:78:35)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestContext.<anonymous> (file://[REDACTED]/tests/work-graph.test.mjs:63:13)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Promise.all (index 0)
+      at async Suite.run (node:internal/test_runner/test:1869:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3)
+
+test at tests/work-graph.test.mjs:85:2
+✖ renders retained PDF contents, pins exact identities and refuses stale, hidden and unauthorized feedback
+  'test did not finish before its parent and was cancelled'
+
+test at tests/work-graph.test.mjs:81:1
+✖ Retained PDF feedback (38979.567093ms)
+  Error: owner claim 500 
+          <!DOCTYPE html>
+          <html lang="en">
+            <head>
+              <meta charset="UTF-8" />
+              <title>Error</title>
+              <script type="module">
+                const error = {"message":"invalid_host","stack":"    at deny ([REDACTED]/src/modules/operator-auth/errors.mjs:9:64)\n    at requireOrigin ([REDACTED]/src/modules/operator-auth/http.mjs:21:96)\n    at authenticate ([REDACTED]/src/modules/operator-auth/accounts/oa.mjs:23:5)\n    at Object.getSession ([REDACTED]/src/modules/operator-auth/service.mjs:113:27)\n    at authResponse ([REDACTED]/src/auth.server.ts:127:70)\n    at Object.fetch ([REDACTED]/src/server.ts:49:24)\n    at Object.fetch ([REDACTED]/src/modules/operator-auth/dev/index.mjs:83:24)\n    at Object.fetch ([REDACTED]/src/server.dev.ts:21:22)\n    at maybeCaptureError (workers/runner-worker/index.js:51:10)","frame":""}
+                try {
+                  const { ErrorOverlay } = await import("/@vite/client")
+                  document.body.appendChild(new ErrorOverlay(error))
+                } catch {
+                  const h = (tag, text) => {
+                    const el = document.createElement(tag)
+                    el.textContent = text
+                    return el
+                  }
+                  document.body.appendChild(h('h1', 'Internal Server Error'))
+                  document.body.appendChild(h('h2', error.message))
+                  document.body.appendChild(h('pre', error.stack))
+                  document.body.appendChild(h('p', '(Error overlay failed to load)'))
+                }
+              </script>
+            </head>
+            <body>
+            </body>
+          </html>
+        
+      at startWorker (file://[REDACTED]/tests/support/worker.mjs:78:35)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async before.timeout (file://[REDACTED]/tests/work-graph.test.mjs:83:26)
+      at async TestHook.run (node:internal/test_runner/test:1389:7)
+      at async Suite.runHook (node:internal/test_runner/test:1269:9)
+      at async Suite.run (node:internal/test_runner/test:1863:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+
+test at tests/work-graph.test.mjs:110:2
+✖ records reviewed human priority and disposition once, refuses unsafe authority and preserves exact custody
+  'test did not finish before its parent and was cancelled'
+
+test at tests/work-graph.test.mjs:106:1
+✖ Native intake decisions (42194.40036ms)
+  Error: owner claim 500 
+          <!DOCTYPE html>
+          <html lang="en">
+            <head>
+              <meta charset="UTF-8" />
+              <title>Error</title>
+              <script type="module">
+                const error = {"message":"invalid_host","stack":"    at deny ([REDACTED]/src/modules/operator-auth/errors.mjs:9:64)\n    at requireOrigin ([REDACTED]/src/modules/operator-auth/http.mjs:21:96)\n    at authenticate ([REDACTED]/src/modules/operator-auth/accounts/oa.mjs:23:5)\n    at Object.getSession ([REDACTED]/src/modules/operator-auth/service.mjs:113:27)\n    at authResponse ([REDACTED]/src/auth.server.ts:127:70)\n    at Object.fetch ([REDACTED]/src/server.ts:49:24)\n    at Object.fetch ([REDACTED]/src/modules/operator-auth/dev/index.mjs:83:24)\n    at Object.fetch ([REDACTED]/src/server.dev.ts:21:22)\n    at maybeCaptureError (workers/runner-worker/index.js:51:10)","frame":""}
+                try {
+                  const { ErrorOverlay } = await import("/@vite/client")
+                  document.body.appendChild(new ErrorOverlay(error))
+                } catch {
+                  const h = (tag, text) => {
+                    const el = document.createElement(tag)
+                    el.textContent = text
+                    return el
+                  }
+                  document.body.appendChild(h('h1', 'Internal Server Error'))
+                  document.body.appendChild(h('h2', error.message))
+                  document.body.appendChild(h('pre', error.stack))
+                  document.body.appendChild(h('p', '(Error overlay failed to load)'))
+                }
+              </script>
+            </head>
+            <body>
+            </body>
+          </html>
+        
+      at startWorker (file://[REDACTED]/tests/support/worker.mjs:78:35)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async before.timeout (file://[REDACTED]/tests/work-graph.test.mjs:108:26)
+      at async TestHook.run (node:internal/test_runner/test:1389:7)
+      at async Suite.runHook (node:internal/test_runner/test:1269:9)
+      at async Suite.run (node:internal/test_runner/test:1863:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+
+test at tests/work-graph.test.mjs:117:2
+✖ publishes branching intake, creates one attributable task after replay and restart, and refuses unsafe submissions
+  'test did not finish before its parent and was cancelled'
+
+test at tests/work-graph.test.mjs:113:1
+✖ Native text intake (39259.371882ms)
+  Error: owner claim 500 
+          <!DOCTYPE html>
+          <html lang="en">
+            <head>
+              <meta charset="UTF-8" />
+              <title>Error</title>
+              <script type="module">
+                const error = {"message":"invalid_host","stack":"    at deny ([REDACTED]/src/modules/operator-auth/errors.mjs:9:64)\n    at requireOrigin ([REDACTED]/src/modules/operator-auth/http.mjs:21:96)\n    at authenticate ([REDACTED]/src/modules/operator-auth/accounts/oa.mjs:23:5)\n    at Object.getSession ([REDACTED]/src/modules/operator-auth/service.mjs:113:27)\n    at authResponse ([REDACTED]/src/auth.server.ts:127:70)\n    at Object.fetch ([REDACTED]/src/server.ts:49:24)\n    at Object.fetch ([REDACTED]/src/modules/operator-auth/dev/index.mjs:83:24)\n    at Object.fetch ([REDACTED]/src/server.dev.ts:21:22)\n    at maybeCaptureError (workers/runner-worker/index.js:51:10)","frame":""}
+                try {
+                  const { ErrorOverlay } = await import("/@vite/client")
+                  document.body.appendChild(new ErrorOverlay(error))
+                } catch {
+                  const h = (tag, text) => {
+                    const el = document.createElement(tag)
+                    el.textContent = text
+                    return el
+                  }
+                  document.body.appendChild(h('h1', 'Internal Server Error'))
+                  document.body.appendChild(h('h2', error.message))
+                  document.body.appendChild(h('pre', error.stack))
+                  document.body.appendChild(h('p', '(Error overlay failed to load)'))
+                }
+              </script>
+            </head>
+            <body>
+            </body>
+          </html>
+        
+      at startWorker (file://[REDACTED]/tests/support/worker.mjs:78:35)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async before.timeout (file://[REDACTED]/tests/work-graph.test.mjs:115:26)
+      at async TestHook.run (node:internal/test_runner/test:1389:7)
+      at async Suite.runHook (node:internal/test_runner/test:1269:9)
+      at async Suite.run (node:internal/test_runner/test:1863:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+
+test at tests/scenarios/work-views.mjs:14:2
+✖ keeps six work views on one dated graph and restores named configuration and defaults after restart and sign-in
+  'test did not finish before its parent and was cancelled'
+
+test at tests/scenarios/work-views.mjs:72:2
+✖ shares only permitted work and columns and fences stale configuration, defaults and revoked authority
+  'test did not finish before its parent and was cancelled'
+
+test at tests/work-graph.test.mjs:120:1
+✖ Work views through the native graph (48758.87052ms)
+  Error: owner claim 500 
+          <!DOCTYPE html>
+          <html lang="en">
+            <head>
+              <meta charset="UTF-8" />
+              <title>Error</title>
+              <script type="module">
+                const error = {"message":"invalid_host","stack":"    at deny ([REDACTED]/src/modules/operator-auth/errors.mjs:9:64)\n    at requireOrigin ([REDACTED]/src/modules/operator-auth/http.mjs:21:96)\n    at authenticate ([REDACTED]/src/modules/operator-auth/accounts/oa.mjs:23:5)\n    at Object.getSession ([REDACTED]/src/modules/operator-auth/service.mjs:113:27)\n    at authResponse ([REDACTED]/src/auth.server.ts:127:70)\n    at Object.fetch ([REDACTED]/src/server.ts:49:24)\n    at Object.fetch ([REDACTED]/src/modules/operator-auth/dev/index.mjs:83:24)\n    at Object.fetch ([REDACTED]/src/server.dev.ts:21:22)\n    at maybeCaptureError (workers/runner-worker/index.js:51:10)","frame":""}
+                try {
+                  const { ErrorOverlay } = await import("/@vite/client")
+                  document.body.appendChild(new ErrorOverlay(error))
+                } catch {
+                  const h = (tag, text) => {
+                    const el = document.createElement(tag)
+                    el.textContent = text
+                    return el
+                  }
+                  document.body.appendChild(h('h1', 'Internal Server Error'))
+                  document.body.appendChild(h('h2', error.message))
+                  document.body.appendChild(h('pre', error.stack))
+                  document.body.appendChild(h('p', '(Error overlay failed to load)'))
+                }
+              </script>
+            </head>
+            <body>
+            </body>
+          </html>
+        
+      at startWorker (file://[REDACTED]/tests/support/worker.mjs:78:35)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async before.timeout (file://[REDACTED]/tests/work-graph.test.mjs:122:32)
+      at async TestHook.run (node:internal/test_runner/test:1389:7)
+      at async Suite.runHook (node:internal/test_runner/test:1269:9)
+      at async Suite.run (node:internal/test_runner/test:1863:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+
+test at tests/work-graph.test.mjs:1:1
+✖ tests/work-graph.test.mjs (242218.556648ms)
+  'Promise resolution is still pending but the event loop has already resolved'

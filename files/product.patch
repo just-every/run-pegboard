@@ -1,0 +1,168 @@
+diff --git a/scripts/verify-app.mjs b/scripts/verify-app.mjs
+index 87b1e16..83e8358 100644
+--- a/scripts/verify-app.mjs
++++ b/scripts/verify-app.mjs
+@@ -1,5 +1,76 @@
+-import { readFile } from 'node:fs/promises';
+-import { spawnSync } from 'node:child_process';
++import { cp, mkdir, mkdtemp, readFile, readdir, rm } from 'node:fs/promises';
++import { spawn, spawnSync } from 'node:child_process';
++import { tmpdir } from 'node:os';
++import { join } from 'node:path';
++
++// Keep the declared coverage in verification.json. Pack it into eight jobs,
++// each with at most three independent lanes. The November 6 runs spent up to
++// 12m16s in core and 8m35s in time; split those selectors at suite boundaries.
++// Separate working directories are essential: Vite and Wrangler write caches
++// beside their configs even when each test has a private database and port.
++function packPush(shards) {
++ const lanes = new Map(shards.map(shard => [shard.name, { ...shard, commands: [...shard.commands] }]));
++ const replace = (command, from, to) => {
++  if (command.split(from).length !== 2) throw Error('Verification selector changed; review its packing');
++  return command.replace(from, to);
++ };
++ const core = lanes.get('work-graph-core');
++ const coreCommand = core.commands[0];
++ const coreSuites = 'Test worker lifecycle|PEG-001 one work graph|Work views through the native graph|Native text intake';
++ if (core.commands.length !== 1) throw Error('Review core lane packing');
++ core.commands = [replace(coreCommand, ' tests/work-graph.test.mjs', ` --test-name-pattern='^(?:${coreSuites})(?: |$)' tests/work-graph.test.mjs`)];
++ lanes.set('work-graph-intake', { ...core, name: 'work-graph-intake', commands: [replace(coreCommand, "--test-skip-pattern='^(?:", `--test-skip-pattern='^(?:${coreSuites}|`)] });
++ const time = lanes.get('work-graph-time');
++ const timeCommand = time.commands[0];
++ if (time.commands.length !== 1) throw Error('Review time lane packing');
++ time.commands = [replace(timeCommand, 'Work planning time, recurrence and decisions|Approval routing custody|Calendar work blocks through provider schema edges|Native approval follow-up', 'Work planning time, recurrence and decisions')];
++ lanes.set('work-graph-decisions', { ...time, name: 'work-graph-decisions', commands: [replace(timeCommand, 'Work planning time, recurrence and decisions|', '')] });
++ const recovery = lanes.get('work-graph-custody-recovery');
++ const recoveryCommand = recovery.commands[0];
++ if (recovery.commands.length !== 1) throw Error('Review recovery lane packing');
++ recovery.commands = [replace(replace(recoveryCommand, 'Data custody|PEG-064 retained graph recovery', 'Data custody'), 'Data custody intake erasure|Data custody PDF feedback', 'Data custody intake erasure|Data custody PDF feedback|Data custody provider diagnostics')];
++ lanes.set('work-graph-recovery', { ...recovery, name: 'work-graph-recovery', commands: [replace(recoveryCommand, 'Data custody|PEG-064 retained graph recovery', 'Data custody provider diagnostics|PEG-064 retained graph recovery')] });
++ const erasure = lanes.get('work-graph-custody-erasure');
++ const erasureCommand = erasure.commands[0];
++ if (erasure.commands.length !== 1) throw Error('Review erasure lane packing');
++ erasure.commands = [replace(erasureCommand, 'Data custody intake erasure|Local rule audit attributes background', 'Data custody intake erasure')];
++ lanes.set('work-graph-rule-audit', { ...erasure, name: 'work-graph-rule-audit', commands: [replace(erasureCommand, 'Data custody intake erasure|Local rule audit attributes background', 'Local rule audit attributes background')] });
++ const reporting = lanes.get('work-graph-reporting');
++ const reportingCommand = reporting.commands[0];
++ if (reporting.commands.length !== 1) throw Error('Review reporting lane packing');
++ reporting.commands = [replace(reportingCommand, 'Native reporting|Analyst exports|Project planning canvas', 'Native reporting|Project planning canvas')];
++ lanes.set('work-graph-analyst', { ...reporting, name: 'work-graph-analyst', commands: [replace(reportingCommand, 'Native reporting|Analyst exports|Project planning canvas', 'Analyst exports')] });
++ const extensions = lanes.get('work-graph-extensions');
++ if (extensions.commands.length !== 2) throw Error('Review extension lane packing');
++ lanes.set('work-graph-pdf-custody', { ...extensions, name: 'work-graph-pdf-custody', commands: extensions.commands.splice(1) });
++ // Runtime needs the emitted Worker; hosted/hydration checks use that same
++ // build after all lanes finish. The second identical build adds no coverage.
++ const runtime = lanes.get('runtime');
++ if (runtime.commands[0] !== 'pnpm run build' || runtime.commands.filter(command => command === 'pnpm run build').length !== 2) throw Error('Review runtime build packing');
++ runtime.commands.splice(runtime.commands.indexOf('pnpm run build', 1), 1);
++ const groups = [
++  ['runtime-source', ['runtime', 'source', 'access-control']],
++  ['core-capacity', ['work-graph-core', 'work-graph-intake', 'journeys-planning-capacity']],
++  ['extensions-services', ['work-graph-extensions', 'work-graph-pdf-custody', 'journeys-services-work']],
++  ['time-planning', ['work-graph-time', 'work-graph-decisions', 'journeys-planning-work']],
++  ['custody-recovery', ['work-graph-custody-recovery', 'work-graph-recovery', 'journeys-services']],
++  ['custody-access', ['work-graph-custody-erasure', 'work-graph-rule-audit', 'journeys-core-access']],
++  ['reporting-work', ['work-graph-reporting', 'work-graph-analyst', 'journeys-core-work']],
++  ['planning-services', ['work-graph-services', 'portfolios', 'workflow-rules']],
++ ];
++ const used = new Set();
++ const packed = groups.map(([name, members]) => {
++  const selected = members.map(member => {
++   if (!lanes.has(member) || used.has(member)) throw Error(`Missing or repeated verification lane: ${member}`);
++   used.add(member);
++   return lanes.get(member);
++  });
++  return { name, browser: selected.some(lane => lane.browser), hosted: selected.some(lane => lane.hosted),
++   commands: selected.flatMap(lane => lane.commands), lanes: selected };
++ });
++ if (used.size !== lanes.size) throw Error('Unassigned verification lane');
++ return packed;
++}
+ 
+ export async function verificationPlan() {
+  const plan = JSON.parse(await readFile(new URL('../verification.json', import.meta.url), 'utf8'));
+@@ -13,6 +84,7 @@ export async function verificationPlan() {
+   }
+  }
+  if (!plan.push.length || plan.push.filter(shard => shard.hosted).length !== 1) throw Error('Push verification must include the hosted production build');
++ plan.push = packPush(plan.push);
+  return plan;
+ }
+ 
+@@ -23,11 +95,62 @@ export function run(command, env = process.env) {
+  if (result.status !== 0) process.exit(result.status ?? 1);
+ }
+ 
++export async function runLanes(shard) {
++ const root = process.cwd();
++ // Copy only repository inputs and the frozen dependencies, never local owner
++ // settings, stores, command locks, build output or browser proof artifacts.
++ const tracked = spawnSync('git', ['ls-files', '-z'], { encoding: 'utf8' });
++ if (tracked.error || tracked.status !== 0) throw Error('Cannot enumerate verification inputs');
++ const scratch = await mkdtemp(join(tmpdir(), 'pegboard-verify-'));
++ const entries = new Set(tracked.stdout.split('\0').filter(Boolean).map(path => path.split('/')[0]));
++ entries.add('node_modules');
++ entries.add('.git');
++ const command = (text, cwd, lane) => new Promise((resolve, reject) => {
++  console.log(`> [${lane}] ${text}`);
++  const env = { ...process.env };
++  if (cwd !== root) delete env.RER_LOCAL_OPERATION;
++  const child = spawn('/bin/bash', ['-euo', 'pipefail', '-c', text], { cwd, stdio: 'inherit', env });
++  child.once('error', reject);
++  child.once('exit', (code, signal) => code === 0 ? resolve() : reject(Error(`${lane} failed: ${signal ?? code}`)));
++ });
++ const started = Date.now();
++ try {
++  // Prepare copies serially before starting Workers: source reads cannot race
++  // with another lane writing a cache. The hosted lane alone owns root/dist.
++  const directories = new Map();
++  for (const lane of shard.lanes) {
++   const cwd = lane.hosted ? root : join(scratch, lane.name);
++   if (!lane.hosted) {
++    await mkdir(cwd, { recursive: true });
++    for (const entry of await readdir(root)) if (entries.has(entry)) {
++     await cp(join(root, entry), join(cwd, entry), { recursive: true, verbatimSymlinks: true });
++    }
++   }
++   directories.set(lane.name, cwd);
++  }
++  // Await every lane even after a failure. No sibling assertion is cancelled,
++  // and cleanup cannot remove a working directory while its Worker still runs.
++  const results = await Promise.allSettled(shard.lanes.map(async lane => {
++   const start = Date.now();
++   try { for (const text of lane.commands) await command(text, directories.get(lane.name), lane.name); }
++   finally { console.log(`LANE ${lane.name} duration_ms=${Date.now() - start}`); }
++  }));
++  for (const result of results) if (result.status === 'rejected') console.error(result.reason);
++  if (results.some(result => result.status === 'rejected')) throw Error(`Verification shard failed: ${shard.name}`);
++ } finally {
++  await rm(scratch, { recursive: true, force: true });
++  console.log(`SHARD ${shard.name} duration_ms=${Date.now() - started}`);
++ }
++}
++
+ if (process.argv[1] === import.meta.filename) {
+  const plan = await verificationPlan();
+  const all = [...plan.push, ...plan.nightly];
+  const selected = process.env.SEED_VERIFY_SHARD;
+  const shards = selected ? all.filter(shard => shard.name === selected) : all;
+  if (!shards.length) throw Error(`Unknown verification shard: ${selected}`);
+- for (const shard of shards) for (const command of shard.commands) run(command);
++ for (const shard of shards) {
++  if (shard.lanes) await runLanes(shard);
++  else for (const command of shard.commands) run(command);
++ }
+ }
+diff --git a/sources.lock.json b/sources.lock.json
+index ef5924f..732c215 100644
+--- a/sources.lock.json
++++ b/sources.lock.json
+@@ -1919,7 +1919,7 @@
+       "executable": false
+     },
+     "scripts/verify-app.mjs": {
+-      "sha256": "4c3a87c809e2b671a555dc36171b60675f87be96362de7d2269d9f5e1c3100b6",
++      "sha256": "5cffc1bb9fe0197fe92584e043c8f61f47d3822dae393516d4e840f3ecc0d1ce",
+       "executable": false
+     },
+     "scripts/verify-ci.mjs": {

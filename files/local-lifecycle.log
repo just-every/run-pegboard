@@ -1,0 +1,26 @@
+> [lifecycle] node --test --test-reporter=tap --test-name-pattern='^Test worker lifecycle' tests/work-graph.test.mjs
+TAP version 13
+# Subtest: Test worker lifecycle
+    # Subtest: recovers from an occupied startup port with colored logs, leaves its listener alone and keeps the new origin through restart
+    ok 1 - recovers from an occupied startup port with colored logs, leaves its listener alone and keeps the new origin through restart
+      ---
+      duration_ms: 70061.43918
+      type: 'test'
+      ...
+    1..1
+ok 1 - Test worker lifecycle
+  ---
+  duration_ms: 70062.380596
+  type: 'suite'
+  ...
+1..1
+# tests 1
+# suites 1
+# pass 1
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 70922.945124
+LANE lifecycle duration_ms=70964
+SHARD local-lifecycle duration_ms=75467

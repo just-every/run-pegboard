@@ -1,0 +1,4 @@
+
+> @just-every/pegboard@0.1.0 check /workspace/run-pegboard
+> rer check --profile first-party
+

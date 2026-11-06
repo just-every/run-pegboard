@@ -1,0 +1,207 @@
+> pnpm run verify:app
+
+> @just-every/pegboard@0.1.0 verify:app /workspace/run-pegboard
+> node scripts/verify-app.mjs
+
+> [work-graph-time] pnpm exec rer queue test:work-graph-time -- sh -c "node --test --test-name-pattern='^(?:Work planning time, recurrence and decisions)(?: |$)' tests/work-graph.test.mjs"
+> [work-graph-decisions] pnpm exec rer queue test:work-graph-time -- sh -c "node --test --test-name-pattern='^(?:Approval routing custody|Calendar work blocks through provider schema edges|Native approval follow-up)(?: |$)' tests/work-graph.test.mjs"
+> [journeys-planning-work] pnpm exec rer queue test:journeys-planning-work -- sh -c "PEGBOARD_JOURNEY=portfolio,timeline,register,bundles,goals node tests/journeys/work-graph.journey.mjs"
+test:work-graph-time
+test:work-graph-time
+TAP version 13
+TAP version 13
+test:journeys-planning-work
+# Subtest: Approval routing custody
+    # Subtest: refuses routing and sharing proof bytes from an unreadable project context
+    ok 1 - refuses routing and sharing proof bytes from an unreadable project context
+      ---
+      duration_ms: 2730.487282
+      type: 'test'
+      ...
+    # Subtest: routes ordered proof stages with independent named humans, delegates, and binds expiring revoked links to the exact replacement bytes
+    ok 2 - routes ordered proof stages with independent named humans, delegates, and binds expiring revoked links to the exact replacement bytes
+      ---
+      duration_ms: 12879.130032
+      type: 'test'
+      ...
+Goal visibility and accountable owners at 1440px passed
+    # Subtest: requires quorum on an approval task, refuses current and prior owners and agents, and never lets the old decision door bypass named capability checks
+    ok 3 - requires quorum on an approval task, refuses current and prior owners and agents, and never lets the old decision door bypass named capability checks
+      ---
+      duration_ms: 10871.481279
+      type: 'test'
+      ...
+# Subtest: Work planning time, recurrence and decisions
+    # Subtest: keeps one durable timer per person and reconnects without duplicate intent or entries
+    ok 1 - keeps one durable timer per person and reconnects without duplicate intent or entries
+      ---
+      duration_ms: 35742.39221
+      type: 'test'
+      ...
+    # Subtest: sends a reviewed PDF-v2 reminder once through the mail seam without comments or an implicit approval and respects muted preferences
+    ok 4 - sends a reviewed PDF-v2 reminder once through the mail seam without comments or an implicit approval and respects muted preferences
+      ---
+      duration_ms: 12276.01555
+      type: 'test'
+      ...
+    1..4
+ok 1 - Approval routing custody
+  ---
+  duration_ms: 125119.311076
+  type: 'suite'
+  ...
+    # Subtest: submits, returns, corrects and locks an exact timesheet, retaining attributed later adjustments and exact CSV
+    ok 2 - submits, returns, corrects and locks an exact timesheet, retaining attributed later adjustments and exact CSV
+      ---
+      duration_ms: 4019.336941
+      type: 'test'
+      ...
+    # Subtest: prepares approved time service packets and reconciles official-schema readbacks without sending
+    ok 3 - prepares approved time service packets and reconciles official-schema readbacks without sending
+      ---
+      duration_ms: 5025.164555
+      type: 'test'
+      ...
+Goal visibility and accountable owners at 390px passed
+    # Subtest: sends reviewed approved time once to each official-schema time service, repairs a rejected job code, reads back a lost response and corrects exactly
+    ok 4 - sends reviewed approved time once to each official-schema time service, repairs a rejected job code, reads back a lost response and corrects exactly
+      ---
+      duration_ms: 5715.701285
+      type: 'test'
+      ...
+    # Subtest: fences stale time review and keeps private no-project work out of ordinary administrator review
+    ok 5 - fences stale time review and keeps private no-project work out of ordinary administrator review
+      ---
+      duration_ms: 1408.184932
+      type: 'test'
+      ...
+    # Subtest: reviews whole sheets with delegated authority, refuses stale grants and withdraws unavailable returned entries without disclosure
+    ok 6 - reviews whole sheets with delegated authority, refuses stale grants and withdraws unavailable returned entries without disclosure
+      ---
+      duration_ms: 21160.27213
+      type: 'test'
+      ...
+    # Subtest: attributes every existing sign-off reopening door to its writer without inventing a reopen for a no-op
+    ok 7 - attributes every existing sign-off reopening door to its writer without inventing a reopen for a no-op
+      ---
+      duration_ms: 5467.798454
+      type: 'test'
+      ...
+Portfolio journey at 1440px passed
+    # Subtest: pins recurring work templates and generates one occurrence across restart, DST, exceptions and concurrent runners
+    ok 8 - pins recurring work templates and generates one occurrence across restart, DST, exceptions and concurrent runners
+      ---
+      duration_ms: 49959.599076
+      type: 'test'
+      ...
+Portfolio journey at 390px passed
+    # Subtest: reviews one standing internal recurring audience, names unreachable assignees and applies it once across restart and replay
+    ok 9 - reviews one standing internal recurring audience, names unreachable assignees and applies it once across restart and replay
+      ---
+      duration_ms: 23012.087926
+      type: 'test'
+      ...
+    # Subtest: holds changed recurring audiences and lost authority without sharing, retains oversight and requires a fresh reviewed audience
+    ok 10 - holds changed recurring audiences and lost authority without sharing, retains oversight and requires a fresh reviewed audience
+      ---
+      duration_ms: 2145.60579
+      type: 'test'
+      ...
+    # Subtest: attributes approval-task decisions to the reviewed revision and refuses copied, stale, self and agent sign-off
+    ok 11 - attributes approval-task decisions to the reviewed revision and refuses copied, stale, self and agent sign-off
+      ---
+      duration_ms: 1473.512359
+      type: 'test'
+      ...
+# Subtest: Calendar work blocks through provider schema edges
+    # Subtest: reserves free time on both provider schemas, reconciles DST moves, deletion, replay, reconnect and restart without changing deadlines
+    ok 1 - reserves free time on both provider schemas, reconciles DST moves, deletion, replay, reconnect and restart without changing deadlines
+      ---
+      duration_ms: 55109.600054
+      type: 'test'
+      ...
+    # Subtest: refuses unsafe calendar authority and stale reviews, exposes simultaneous task and provider conflicts and leaves deadlines untouched
+    ok 2 - refuses unsafe calendar authority and stale reviews, exposes simultaneous task and provider conflicts and leaves deadlines untouched
+      ---
+      duration_ms: 3315.070919
+      type: 'test'
+      ...
+    1..2
+ok 2 - Calendar work blocks through provider schema edges
+  ---
+  duration_ms: 123094.47698
+  type: 'suite'
+  ...
+    # Subtest: never lets an approval task's owner, former owner or an approve-only grant decide it, says why it waits and notifies no one
+    ok 12 - never lets an approval task's owner, former owner or an approve-only grant decide it, says why it waits and notifies no one
+      ---
+      duration_ms: 11040.312705
+      type: 'test'
+      ...
+    # Subtest: writes a recurring task only into projects where its activator still holds authority
+    ok 13 - writes a recurring task only into projects where its activator still holds authority
+      ---
+      duration_ms: 1882.023483
+      type: 'test'
+      ...
+    1..13
+ok 1 - Work planning time, recurrence and decisions
+  ---
+  duration_ms: 256088.51007
+  type: 'suite'
+  ...
+1..1
+# tests 13
+# suites 1
+# pass 13
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 257412.975177
+LANE work-graph-time duration_ms=258380
+Timeline journey at 1440px passed
+# PROBE PEG-037 routing and timing: native policy + scheduled handler + Inbox -> queued, working-hours and DND deferral, delegated recipient and event IDs, one visible delivery, finite escalation, actual decision stops follow-up; dates unchanged
+# Subtest: Native approval follow-up
+    # Subtest: routes finite internal follow-up through working hours, DND, queued delegation, restart and a real decision
+    ok 1 - routes finite internal follow-up through working hours, DND, queued delegation, restart and a real decision
+      ---
+      duration_ms: 23585.096598
+      type: 'test'
+      ...
+Timeline journey at 390px passed
+Delivery register journey at 1440px passed
+Delivery register journey at 390px passed
+Workflow bundle journey at 1440px passed
+Workflow bundle journey at 390px passed
+Rule recovery at 1440px passed
+Rule recovery at 390px passed
+Revision recovery at 1440px passed
+# PROBE PEG-037 queued identity: delegate before first dispatch, deactivate or revoke, renew authority, restart -> old episode blocked; explicit fresh route delivers one new event
+# PROBE PEG-037 terminal outcomes: final visible reminder then changed material, withdrawal, lost routing authority or policy replacement -> persisted cancellation and Inbox removal across restart
+# PROBE PEG-037 authority and lifecycle: native approvals + Inbox -> hidden, revoked, deactivated and muted readers refused; stale material and withdrawal cancelled; reopened route fresh; approve, request-changes and reject each stop escalation across restart
+    # Subtest: cancels obsolete follow-up and refuses hidden, revoked, deactivated and muted recipients without reviving old episodes
+    ok 2 - cancels obsolete follow-up and refuses hidden, revoked, deactivated and muted recipients without reviving old episodes
+      ---
+      duration_ms: 164859.811856
+      type: 'test'
+      ...
+    1..2
+ok 3 - Native approval follow-up
+  ---
+  duration_ms: 242334.199249
+  type: 'suite'
+  ...
+1..3
+# tests 8
+# suites 3
+# pass 8
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 491444.99666
+LANE work-graph-decisions duration_ms=492353
+Revision recovery at 390px passed
+LANE journeys-planning-work duration_ms=494134
+SHARD time-planning duration_ms=511480

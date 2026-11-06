@@ -1,0 +1,46 @@
+Using project Node 22.20.0 (current Node 24.19.0).
+Heavy job admitted: Pegboard build:workflow [91fa996dd5ac]
+Checking pinned pnpm
+10.12.4
+Building your application
+build:app
+▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+
+
+vite v8.2.2 building client environment for production...
+transforming...
+✓ 141 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/client/.assetsignore                 0.02 kB
+dist/client/proof/pdf.mjs               798.75 kB
+dist/client/proof/pdf.worker.mjs      1,978.10 kB
+dist/client/assets/index-DNvrL6lz.js    313.47 kB │ gzip: 101.61 kB
+
+✓ built in 353ms
+vite v8.2.2 building ssr environment for production...
+transforming...
+✓ 874 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/server/wrangler.json                                      1.54 kB │ gzip:   0.79 kB
+dist/server/.vite/manifest.json                                3.32 kB │ gzip:   0.67 kB
+dist/server/assets/branding-B8X0nmM5.js                        0.11 kB │ gzip:   0.12 kB
+dist/server/assets/empty-plugin-adapters-D_0twvAa.js           0.28 kB │ gzip:   0.18 kB
+dist/server/assets/start-873VjJhM.js                           0.28 kB │ gzip:   0.20 kB
+dist/server/assets/_tanstack-start-manifest_v-4sVLjINn.js      0.35 kB │ gzip:   0.26 kB
+dist/server/assets/rolldown-runtime-DC62tzP2.js                1.44 kB │ gzip:   0.67 kB
+dist/server/assets/hash-CZCDazbo.js                            4.70 kB │ gzip:   2.16 kB
+dist/server/assets/storage-Dyr_tRJN.js                         4.92 kB │ gzip:   1.96 kB
+dist/server/assets/router-BqFwkHLU.js                         37.00 kB │ gzip:   9.82 kB
+dist/server/assets/rule-execution-CUuG4Wsk.js                102.86 kB │ gzip:  26.57 kB
+dist/server/assets/Match-DrxLvzdf.js                         166.70 kB │ gzip:  41.96 kB
+dist/server/index.js                                       4,054.42 kB │ gzip: 942.94 kB
+
+[INEFFECTIVE_DYNAMIC_IMPORT] src/pegboard/data/expiry.ts is dynamically imported by src/pegboard/data/settings.ts but also statically imported by src/pegboard/api/data-routes.ts, src/pegboard/ui/routes.ts, dynamic import will not move module into another chunk.
+
+[INEFFECTIVE_DYNAMIC_IMPORT] src/pegboard/templates/rule-execution.ts is dynamically imported by src/pegboard/templates/instantiation.ts but also statically imported by src/pegboard/api/template-rule-routes.ts, src/pegboard/public-api/operations.ts, src/pegboard/rules/requests.ts, src/pegboard/tasks/tasks.ts, dynamic import will not move module into another chunk.
+
+✓ built in 916ms
+Your application is built
+build: complete (exit 0)
