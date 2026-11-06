@@ -1,3 +1,4 @@
+import type { messageInbox } from '../../messages/messages'
 import { ApprovalFollowupNotices } from './approval-followup'
 import type { approvalFollowupInbox } from '../../notices/approval-followup'
 import type {readinessNotices} from '../../notices'
@@ -38,11 +39,12 @@ export function DecisionCard({ request, next }: { request: Preview; next: string
   </Card>
 }
 
-export function InboxPage({ viewer, toDecide, mine,readiness,followup }: { followup: Awaited<ReturnType<typeof approvalFollowupInbox>> | null; viewer: Viewer; toDecide: Preview[]; mine: Mine[];readiness:Awaited<ReturnType<typeof readinessNotices>> }) {
+export function InboxPage({ viewer, toDecide, mine,readiness,followup,messages }: { messages:Awaited<ReturnType<typeof messageInbox>>; followup: Awaited<ReturnType<typeof approvalFollowupInbox>> | null; viewer: Viewer; toDecide: Preview[]; mine: Mine[];readiness:Awaited<ReturnType<typeof readinessNotices>> }) {
   return <Shell viewer={viewer} current="/app/inbox" title="Inbox" chip={toDecide.length ? `${toDecide.length} TO DECIDE` : followup?.notices.length ? `${followup.notices.length} REVIEWS` : followup?.deferred.length ? `${followup.deferred.length} HELD` : readiness.notices.length ? `${readiness.notices.length} READY` : 'CLEAR'} facts={[`${toDecide.length} request${toDecide.length === 1 ? '' : 's'} waiting for you`, `${mine.length} you asked`]}>
+    {messages.notices.length>0&&<Card title="Project announcements"><ul className="rows">{messages.notices.map(n=><li key={n.id} data-message-notice-id={n.id} data-publication-id={n.publicationId} data-event-id={n.eventId} data-recipient-id={n.recipientId}><span className="grow"><a href={n.href}>{n.kind==='reply'?'Reply: ':''}{n.subject}</a><br/>{n.body}<br/>{when(n.createdAt)}</span></li>)}</ul></Card>}
     <ReadinessNotices readiness={readiness}/><ApprovalFollowupNotices inbox={followup}/>
     {toDecide.map(request => <DecisionCard key={request.id} request={request} next="/app/inbox" />)}
-    {toDecide.length === 0 && readiness.notices.length === 0 && !followup?.notices.length && !followup?.deferred.length && <Card title="Nothing waiting"><p className="muted">Access requests that need your decision arrive here, and by email.</p></Card>}
+    {messages.notices.length === 0 && toDecide.length === 0 && readiness.notices.length === 0 && !followup?.notices.length && !followup?.deferred.length && <Card title="Nothing waiting"><p className="muted">Access requests that need your decision arrive here, and by email.</p></Card>}
     <Card title="Requests you made">
       <ul className="rows">{mine.map(request => <li key={request.id}><span className="grow">{levelLabel(request.level)} access to <code>{request.targetId}</code><br /><small>Asked {when(request.createdAt)}{request.reason ? ` · ${request.reason}` : ''}</small></span><span className={request.status === 'approved' ? 'tagline on' : 'tagline'}>{state[request.status]}{request.grantedLevel ? `: ${levelLabel(request.grantedLevel)}` : ''}</span></li>)}
         {mine.length === 0 && <li>You have not asked for anything.</li>}</ul>
