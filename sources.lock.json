@@ -1919,7 +1919,7 @@
       "executable": false
     },
     "scripts/verify-app.mjs": {
-      "sha256": "5cffc1bb9fe0197fe92584e043c8f61f47d3822dae393516d4e840f3ecc0d1ce",
+      "sha256": "9fc37385c650792a9db9e0b41f3ade0226e6b4dcf321ddcb516d457cec071188",
       "executable": false
     },
     "scripts/verify-ci.mjs": {

@@ -43,20 +43,48 @@ function packPush(shards) {
  const extensions = lanes.get('work-graph-extensions');
  if (extensions.commands.length !== 2) throw Error('Review extension lane packing');
  lanes.set('work-graph-pdf-custody', { ...extensions, name: 'work-graph-pdf-custody', commands: extensions.commands.splice(1) });
+ // The diagnostics scenario has its own six-minute assertion deadline. A
+ // three-way CPU share took 396s and cancelled it, although its native restore
+ // completed afterward. Give it the runner alone, then run the retained audit
+ // selection. Move the other custody work into existing lanes with room.
+ const retained = lanes.get('work-graph-recovery');
+ const retainedCommand = retained.commands[0];
+ retained.commands = [replace(retainedCommand, 'Data custody provider diagnostics|PEG-064 retained graph recovery', 'PEG-064 retained graph recovery')];
+ lanes.set('provider-diagnostics', { ...retained, name: 'provider-diagnostics', commands: [replace(retainedCommand, 'Data custody provider diagnostics|PEG-064 retained graph recovery', 'Data custody provider diagnostics')] });
+ const appendLane = (target, source) => {
+  const destination = lanes.get(target), incoming = lanes.get(source);
+  if (!destination || !incoming || incoming.hosted) throw Error('Review sequential lane packing');
+  destination.commands.push(...incoming.commands);
+  destination.browser ||= incoming.browser;
+  lanes.delete(source);
+ };
+ appendLane('work-graph-reporting', 'work-graph-recovery');
+ const services = lanes.get('work-graph-services');
+ if (services.commands.length !== 1) throw Error('Review services lane packing');
+ lanes.get('work-graph-core').commands.push(replace(services.commands[0], 'Goal visibility and accountability|Engineering handoff|Meeting review', 'Goal visibility and accountability'));
+ lanes.get('work-graph-time').commands.push(replace(services.commands[0], 'Goal visibility and accountability|Engineering handoff|Meeting review', 'Engineering handoff|Meeting review'));
+ lanes.delete('work-graph-services');
  // Runtime needs the emitted Worker; hosted/hydration checks use that same
  // build after all lanes finish. The second identical build adds no coverage.
  const runtime = lanes.get('runtime');
  if (runtime.commands[0] !== 'pnpm run build' || runtime.commands.filter(command => command === 'pnpm run build').length !== 2) throw Error('Review runtime build packing');
  runtime.commands.splice(runtime.commands.indexOf('pnpm run build', 1), 1);
+ const moveCommand = (command, destination) => {
+  if (runtime.commands.filter(text => text === command).length !== 1) throw Error('Review runtime command packing');
+  runtime.commands.splice(runtime.commands.indexOf(command), 1);
+  lanes.get(destination).commands.push(command);
+ };
+ moveCommand('pnpm run test:graph:capacity', 'work-graph-analyst');
+ moveCommand('pnpm run typecheck', 'source');
  const groups = [
   ['runtime-source', ['runtime', 'source', 'access-control']],
   ['core-capacity', ['work-graph-core', 'work-graph-intake', 'journeys-planning-capacity']],
   ['extensions-services', ['work-graph-extensions', 'work-graph-pdf-custody', 'journeys-services-work']],
   ['time-planning', ['work-graph-time', 'work-graph-decisions', 'journeys-planning-work']],
-  ['custody-recovery', ['work-graph-custody-recovery', 'work-graph-recovery', 'journeys-services']],
-  ['custody-access', ['work-graph-custody-erasure', 'work-graph-rule-audit', 'journeys-core-access']],
+  ['custody-recovery', ['provider-diagnostics', 'work-graph-rule-audit']],
+  ['custody-access', ['work-graph-custody-erasure', 'journeys-services', 'journeys-core-access']],
   ['reporting-work', ['work-graph-reporting', 'work-graph-analyst', 'journeys-core-work']],
-  ['planning-services', ['work-graph-services', 'portfolios', 'workflow-rules']],
+  ['planning-services', ['work-graph-custody-recovery', 'portfolios', 'workflow-rules']],
  ];
  const used = new Set();
  const packed = groups.map(([name, members]) => {
@@ -66,7 +94,7 @@ function packPush(shards) {
    return lanes.get(member);
   });
   return { name, browser: selected.some(lane => lane.browser), hosted: selected.some(lane => lane.hosted),
-   commands: selected.flatMap(lane => lane.commands), lanes: selected };
+   commands: selected.flatMap(lane => lane.commands), lanes: selected, serial: name === 'custody-recovery' };
  });
  if (used.size !== lanes.size) throw Error('Unassigned verification lane');
  return packed;
@@ -130,11 +158,18 @@ export async function runLanes(shard) {
   }
   // Await every lane even after a failure. No sibling assertion is cancelled,
   // and cleanup cannot remove a working directory while its Worker still runs.
-  const results = await Promise.allSettled(shard.lanes.map(async lane => {
+  const execute = async lane => {
    const start = Date.now();
    try { for (const text of lane.commands) await command(text, directories.get(lane.name), lane.name); }
    finally { console.log(`LANE ${lane.name} duration_ms=${Date.now() - start}`); }
-  }));
+  };
+  const results = [];
+  if (shard.serial) {
+   for (const lane of shard.lanes) {
+    try { await execute(lane); results.push({ status: 'fulfilled' }); }
+    catch (reason) { results.push({ status: 'rejected', reason }); }
+   }
+  } else results.push(...await Promise.allSettled(shard.lanes.map(execute)));
   for (const result of results) if (result.status === 'rejected') console.error(result.reason);
   if (results.some(result => result.status === 'rejected')) throw Error(`Verification shard failed: ${shard.name}`);
  } finally {
