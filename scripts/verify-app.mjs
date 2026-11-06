@@ -4,8 +4,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 // Keep the declared coverage in verification.json. Pack it into eight jobs,
-// each with at most three independent lanes. Split at suite and journey
-// boundaries: the November 6 follow-up reached 12m16s in reporting-work.
+// using independent lanes split at suite and journey boundaries. The
+// November 6 follow-up reached 12m16s in reporting-work.
 // Keep the unknown-suite remainder in planning-services so new core coverage
 // does not accumulate beside the already long core and PDF browser journeys.
 // Separate working directories are essential: Vite and Wrangler write caches
@@ -77,6 +77,7 @@ function packPush(shards) {
   lanes.get(destination).commands.push(command);
  };
  lanes.set('portfolio-capacity', { name: 'portfolio-capacity', browser: false, hosted: false, commands: [] });
+ lanes.set('intake-decisions', { name: 'intake-decisions', browser: false, hosted: false, commands: [] });
  moveCommand('pnpm run test:graph:capacity', 'portfolio-capacity');
  moveCommand('pnpm run typecheck', 'source');
  // The fallback lane remains open to newly registered core suites. Move the
@@ -84,10 +85,12 @@ function packPush(shards) {
  // Worker or a second pass through any assertion.
  const intake = lanes.get('work-graph-intake');
  intake.commands[0] = replace(intake.commands[0], `--test-skip-pattern='^(?:`, `--test-skip-pattern='^(?:Native intake decisions|Retained PDF feedback|`);
- // The capacity tail ended after 143s, while its rule-audit sibling ran for
- // 241s. Run intake decisions there, after capacity, rather than extending
- // the already 618s core lane. Diagnostics still gets the runner alone.
- lanes.get('portfolio-capacity').commands.push(replace(coreCommand, ' tests/work-graph.test.mjs', ` --test-name-pattern='^(?:Native intake decisions)(?: |$)' tests/work-graph.test.mjs`));
+ // Run 42303067464 spent 294s in exclusive diagnostics, then 186s in
+ // capacity before even starting intake decisions; rule audit took 353s
+ // alongside that tail. Move both complete selections to the two shortest
+ // jobs as independent lanes. Neither waits behind diagnostics or another
+ // suite, and diagnostics retains the runner alone before rule audit.
+ lanes.get('intake-decisions').commands.push(replace(coreCommand, ' tests/work-graph.test.mjs', ` --test-name-pattern='^(?:Native intake decisions)(?: |$)' tests/work-graph.test.mjs`));
  const analyst = lanes.get('work-graph-analyst');
  analyst.commands[0] = replace(analyst.commands[0], 'Analyst exports', 'Analyst exports|Retained PDF feedback');
  // Journey selection already gives each journey a fresh Worker. Moving names
@@ -122,11 +125,11 @@ function packPush(shards) {
  moveJourney('pdf-feedback', 'journeys-core-work', 'journeys-planning-capacity');
  moveJourneyToTail('canvas', 'journeys-planning-capacity', 'work-graph-extensions');
  const groups = [
-  ['runtime-source', ['runtime', 'source', 'access-control']],
-  ['core-capacity', ['work-graph-core', 'work-graph-custody-recovery', 'journeys-planning-capacity']],
+  ['runtime-source', ['runtime', 'source', 'access-control', 'portfolio-capacity']],
+  ['core-capacity', ['work-graph-core', 'work-graph-custody-recovery', 'journeys-planning-capacity', 'intake-decisions']],
   ['extensions-services', ['work-graph-extensions', 'portfolios', 'journeys-services-work']],
   ['time-planning', ['work-graph-time', 'work-graph-decisions', 'journeys-planning-work']],
-  ['custody-recovery', ['provider-diagnostics', 'work-graph-rule-audit', 'portfolio-capacity']],
+  ['custody-recovery', ['provider-diagnostics', 'work-graph-rule-audit']],
   ['custody-access', ['work-graph-custody-erasure', 'journeys-services', 'journeys-core-access']],
   ['reporting-work', ['work-graph-reporting', 'work-graph-analyst', 'journeys-core-work']],
   ['planning-services', ['work-graph-intake', 'work-graph-pdf-custody', 'workflow-rules']],
@@ -209,8 +212,8 @@ export async function runLanes(shard) {
    finally { console.log(`LANE ${lane.name} duration_ms=${Date.now() - start}`); }
   };
   const results = [];
-  // Diagnostics keeps the runner to itself. The two shorter selections then
-  // share it, filling the otherwise idle capacity without delaying diagnostics.
+  // Diagnostics keeps the runner to itself, then rule audit uses it alone.
+  // Capacity and intake decisions run in the two shorter jobs instead.
   const exclusive = shard.lanes.find(lane => lane.name === shard.exclusive);
   if (exclusive) {
    try { await execute(exclusive); results.push({ status: 'fulfilled' }); }
