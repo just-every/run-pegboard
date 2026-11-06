@@ -1,0 +1,1148 @@
+[
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Test worker lifecycle",
+    "title": "Test worker lifecycle",
+    "type": "suite"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Test worker lifecycle recovers from an occupied startup port with colored logs, leaves its listener alone and keeps the new origin through restart",
+    "title": "recovers from an occupied startup port with colored logs, leaves its listener alone and keeps the new origin through restart",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Retained PDF feedback",
+    "title": "Retained PDF feedback",
+    "type": "suite"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Retained PDF feedback renders retained PDF contents, pins exact identities and refuses stale, hidden and unauthorized feedback",
+    "title": "renders retained PDF contents, pins exact identities and refuses stale, hidden and unauthorized feedback",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Data custody provider diagnostics",
+    "title": "Data custody provider diagnostics",
+    "type": "suite"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Data custody provider diagnostics expires exact reviewed superseded diagnostics while preserving delivery witnesses, authority and native recovery",
+    "title": "expires exact reviewed superseded diagnostics while preserving delivery witnesses, authority and native recovery",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Data custody PDF feedback",
+    "title": "Data custody PDF feedback",
+    "type": "suite"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Data custody PDF feedback reconciles native archive feedback, exact person erasure, holds and proof-group expiry",
+    "title": "reconciles native archive feedback, exact person erasure, holds and proof-group expiry",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Data custody intake erasure",
+    "title": "Data custody intake erasure",
+    "type": "suite"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Data custody intake erasure reviews exact intake redactions, retains replay witnesses and fences holds, concurrent changes and native archive restoration",
+    "title": "reviews exact intake redactions, retains replay witnesses and fences holds, concurrent changes and native archive restoration",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Native intake decisions",
+    "title": "Native intake decisions",
+    "type": "suite"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Native intake decisions records reviewed human priority and disposition once, refuses unsafe authority and preserves exact custody",
+    "title": "records reviewed human priority and disposition once, refuses unsafe authority and preserves exact custody",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Native text intake",
+    "title": "Native text intake",
+    "type": "suite"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Native text intake publishes branching intake, creates one attributable task after replay and restart, and refuses unsafe submissions",
+    "title": "publishes branching intake, creates one attributable task after replay and restart, and refuses unsafe submissions",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Work views through the native graph",
+    "title": "Work views through the native graph",
+    "type": "suite"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Work views through the native graph keeps six work views on one dated graph and restores named configuration and defaults after restart and sign-in",
+    "title": "keeps six work views on one dated graph and restores named configuration and defaults after restart and sign-in",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Work views through the native graph shares only permitted work and columns and fences stale configuration, defaults and revoked authority",
+    "title": "shares only permitted work and columns and fences stale configuration, defaults and revoked authority",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Search and reviewed bulk selection",
+    "title": "Search and reviewed bulk selection",
+    "type": "suite"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Search and reviewed bulk selection finds authorized content, saves filters, reviews every mixed-permission row and preserves later work on undo",
+    "title": "finds authorized content, saves filters, reviews every mixed-permission row and preserves later work on undo",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Work conversions through reviewed public doors",
+    "title": "Work conversions through reviewed public doors",
+    "type": "suite"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Work conversions through reviewed public doors converts a nested intake task to one linked project while conserving native evidence and scopes",
+    "title": "converts a nested intake task to one linked project while conserving native evidence and scopes",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Work conversions through reviewed public doors converts a populated project with chosen nested work and explicit retained links while preserving inert configuration",
+    "title": "converts a populated project with chosen nested work and explicit retained links while preserving inert configuration",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Work conversions through reviewed public doors promotes and demotes the same task identities and refuses cycles, disclosure, stale review and unauthorized targets",
+    "title": "promotes and demotes the same task identities and refuses cycles, disclosure, stale review and unauthorized targets",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Work conversions through reviewed public doors replays conversion once and selectively undoes structural effects without deleting later human edits or restoring sign-off",
+    "title": "replays conversion once and selectively undoes structural effects without deleting later human edits or restoring sign-off",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "PEG-001 one work graph",
+    "title": "PEG-001 one work graph",
+    "type": "suite"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "PEG-001 one work graph builds a campaign and a launch project, multi-homes one task and keeps one history",
+    "title": "builds a campaign and a launch project, multi-homes one task and keeps one history",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "PEG-001 one work graph shows a guest on one project nothing of the other, through the API, exports and files",
+    "title": "shows a guest on one project nothing of the other, through the API, exports and files",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "PEG-001 one work graph keeps a personal task private and resolves every reference a task has had, to those allowed only",
+    "title": "keeps a personal task private and resolves every reference a task has had, to those allowed only",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "PEG-001 one work graph runs the PEG-083 public-team join and private-link request journeys on this graph",
+    "title": "runs the PEG-083 public-team join and private-link request journeys on this graph",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "PEG-001 one work graph keeps personal work and sections owner-only through lists, ID search, reads and writes",
+    "title": "keeps personal work and sections owner-only through lists, ID search, reads and writes",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "PEG-001 one work graph orders the local day by group, due instant, priority, creation time and immutable ID",
+    "title": "orders the local day by group, due instant, priority, creation time and immutable ID",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "PEG-001 one work graph persists manual section/task ranks on reconnect and logs reversible deduplicated section rules",
+    "title": "persists manual section/task ranks on reconnect and logs reversible deduplicated section rules",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "PEG-001 one work graph shares personal work only against the reviewed current project audience and content",
+    "title": "shares personal work only against the reviewed current project audience and content",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "PEG-001 one work graph creates all typed fields, shared identities and consistent task/report/API calculations",
+    "title": "creates all typed fields, shared identities and consistent task/report/API calculations",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "PEG-001 one work graph explains cycles, missing and hidden inputs and refuses lossy or stale type changes",
+    "title": "explains cycles, missing and hidden inputs and refuses lossy or stale type changes",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "PEG-001 one work graph keeps free-form campaign tags distinct, renames once and filters three projects without hidden counts",
+    "title": "keeps free-form campaign tags distinct, renames once and filters three projects without hidden counts",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "PEG-001 one work graph enforces Viewer values and tagging denial and Editor definition denial on every field/status door",
+    "title": "enforces Viewer values and tagging denial and Editor definition denial on every field/status door",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Work planning time, recurrence and decisions",
+    "title": "Work planning time, recurrence and decisions",
+    "type": "suite"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Work planning time, recurrence and decisions keeps one durable timer per person and reconnects without duplicate intent or entries",
+    "title": "keeps one durable timer per person and reconnects without duplicate intent or entries",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Work planning time, recurrence and decisions submits, returns, corrects and locks an exact timesheet, retaining attributed later adjustments and exact CSV",
+    "title": "submits, returns, corrects and locks an exact timesheet, retaining attributed later adjustments and exact CSV",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Work planning time, recurrence and decisions prepares approved time service packets and reconciles official-schema readbacks without sending",
+    "title": "prepares approved time service packets and reconciles official-schema readbacks without sending",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Work planning time, recurrence and decisions sends reviewed approved time once to each official-schema time service, repairs a rejected job code, reads back a lost response and corrects exactly",
+    "title": "sends reviewed approved time once to each official-schema time service, repairs a rejected job code, reads back a lost response and corrects exactly",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Work planning time, recurrence and decisions fences stale time review and keeps private no-project work out of ordinary administrator review",
+    "title": "fences stale time review and keeps private no-project work out of ordinary administrator review",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Work planning time, recurrence and decisions reviews whole sheets with delegated authority, refuses stale grants and withdraws unavailable returned entries without disclosure",
+    "title": "reviews whole sheets with delegated authority, refuses stale grants and withdraws unavailable returned entries without disclosure",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Work planning time, recurrence and decisions attributes every existing sign-off reopening door to its writer without inventing a reopen for a no-op",
+    "title": "attributes every existing sign-off reopening door to its writer without inventing a reopen for a no-op",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Work planning time, recurrence and decisions pins recurring work templates and generates one occurrence across restart, DST, exceptions and concurrent runners",
+    "title": "pins recurring work templates and generates one occurrence across restart, DST, exceptions and concurrent runners",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Work planning time, recurrence and decisions reviews one standing internal recurring audience, names unreachable assignees and applies it once across restart and replay",
+    "title": "reviews one standing internal recurring audience, names unreachable assignees and applies it once across restart and replay",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Work planning time, recurrence and decisions holds changed recurring audiences and lost authority without sharing, retains oversight and requires a fresh reviewed audience",
+    "title": "holds changed recurring audiences and lost authority without sharing, retains oversight and requires a fresh reviewed audience",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Work planning time, recurrence and decisions attributes approval-task decisions to the reviewed revision and refuses copied, stale, self and agent sign-off",
+    "title": "attributes approval-task decisions to the reviewed revision and refuses copied, stale, self and agent sign-off",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Work planning time, recurrence and decisions never lets an approval task's owner, former owner or an approve-only grant decide it, says why it waits and notifies no one",
+    "title": "never lets an approval task's owner, former owner or an approve-only grant decide it, says why it waits and notifies no one",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Work planning time, recurrence and decisions writes a recurring task only into projects where its activator still holds authority",
+    "title": "writes a recurring task only into projects where its activator still holds authority",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Goal visibility and accountability",
+    "title": "Goal visibility and accountability",
+    "type": "suite"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Goal visibility and accountability tracks company, team and personal goals with weighted deduplicated execution, numeric freshness and attributed overrides",
+    "title": "tracks company, team and personal goals with weighted deduplicated execution, numeric freshness and attributed overrides",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Goal visibility and accountability lets a named company-goal owner check in and record observations, refuses agent, guest and analyst owners and never yields progress from an override over a flagged input",
+    "title": "lets a named company-goal owner check in and record observations, refuses agent, guest and analyst owners and never yields progress from an override over a flagged input",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Goal visibility and accountability reads company defaults and current team goals, restricts named audiences and gives team Admins and managers only their goal management authority",
+    "title": "reads company defaults and current team goals, restricts named audiences and gives team Admins and managers only their goal management authority",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Goal visibility and accountability reviews company goal ownership and editors, permits their observations and check-ins, and refuses invalid or stale authority",
+    "title": "reviews company goal ownership and editors, permits their observations and check-ins, and refuses invalid or stale authority",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Goal visibility and accountability previews personal goal notes and permitted titles before sharing, revokes ordinary manager access and fences check-ins without hidden source metadata",
+    "title": "previews personal goal notes and permitted titles before sharing, revokes ordinary manager access and fences check-ins without hidden source metadata",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Goal visibility and accountability authorizes a single-goal numeric integration without a session, fences its sponsor and revocation, and never grants a data read",
+    "title": "authorizes a single-goal numeric integration without a session, fences its sponsor and revocation, and never grants a data read",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Goal visibility and accountability reviews a documented numeric CSV atomically, reconciles keyed replays and changed rows, and preserves stale observation times",
+    "title": "reviews a documented numeric CSV atomically, reconciles keyed replays and changed rows, and preserves stale observation times",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Data custody",
+    "title": "Data custody",
+    "type": "suite"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Data custody keeps permanent audit redacted and append-only across public changes, searches and exports",
+    "title": "keeps permanent audit redacted and append-only across public changes, searches and exports",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Data custody reviews graph erasure, honors holds and stale previews, and retains only disclosed shared work",
+    "title": "reviews graph erasure, honors holds and stale previews, and retains only disclosed shared work",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Data custody expires only reviewed eligible stores while keeping held content and independent class policies",
+    "title": "expires only reviewed eligible stores while keeping held content and independent class policies",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Data custody pins actual proof bytes and accepts only a current independent human decision",
+    "title": "pins actual proof bytes and accepts only a current independent human decision",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Data custody expires proof versions together only after every version is eligible and no proof hold remains",
+    "title": "expires proof versions together only after every version is eligible and no proof hold remains",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Data custody fences scoped agent output custody on processor revocation, retention holds and replay after expiry",
+    "title": "fences scoped agent output custody on processor revocation, retention holds and replay after expiry",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Data custody cleans expired local authentication separately from held work retention",
+    "title": "cleans expired local authentication separately from held work retention",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Data custody anonymizes an erased inactive actor without losing the permanent audit chain",
+    "title": "anonymizes an erased inactive actor without losing the permanent audit chain",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Data custody preserves permanent audit through native archive restore and refuses an old archive with the later erasure journal",
+    "title": "preserves permanent audit through native archive restore and refuses an old archive with the later erasure journal",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Engineering handoff",
+    "title": "Engineering handoff",
+    "type": "suite"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Engineering handoff reconciles mapped issues at all three official boundaries without satisfying business acceptance",
+    "title": "reconciles mapped issues at all three official boundaries without satisfying business acceptance",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Engineering handoff denies unapproved source capture, foreign writes, private context and stale reviewed returns",
+    "title": "denies unapproved source capture, foreign writes, private context and stale reviewed returns",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Meeting review",
+    "title": "Meeting review",
+    "type": "suite"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Meeting review imports authorized provider transcript exports and adopts each resolved cited action once",
+    "title": "imports authorized provider transcript exports and adopts each resolved cited action once",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Meeting review reads all three official provider boundaries and clears revoked source context",
+    "title": "reads all three official provider boundaries and clears revoked source context",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Meeting review requires capture consent and source authority, fences changed exports and keeps context private after restart",
+    "title": "requires capture consent and source authority, fences changed exports and keeps context private after restart",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Analyst exports",
+    "title": "Analyst exports",
+    "type": "suite"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Analyst exports reconciles scoped analyst snapshots and incremental removals across three projects",
+    "title": "reconciles scoped analyst snapshots and incremental removals across three projects",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Analyst exports denies analyst scope escalation and fences cached work after movement or credential expiry",
+    "title": "denies analyst scope escalation and fences cached work after movement or credential expiry",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Analyst exports reconciles reviewed portfolio, goal, request and approval datasets with local scheduled reports",
+    "title": "reconciles reviewed portfolio, goal, request and approval datasets with local scheduled reports",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Analyst exports keeps analyst credentials and cached export payloads out of native archives",
+    "title": "keeps analyst credentials and cached export payloads out of native archives",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Project planning canvas",
+    "title": "Project planning canvas",
+    "type": "suite"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Project planning canvas collaborates on a planning canvas and promotes a reviewed note once into the native List task",
+    "title": "collaborates on a planning canvas and promotes a reviewed note once into the native List task",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Project planning canvas restores exported canvas relationships and native task identity through the installation archive",
+    "title": "restores exported canvas relationships and native task identity through the installation archive",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "PEG-064 retained graph recovery",
+    "title": "PEG-064 retained graph recovery",
+    "type": "suite"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "PEG-064 retained graph recovery restores retained project, task and proof graphs while fencing stale review and erased content",
+    "title": "restores retained project, task and proof graphs while fencing stale review and erased content",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "PEG-064 retained graph recovery undoes unchanged bulk effects while preserving later human fields and independent approvals",
+    "title": "undoes unchanged bulk effects while preserving later human fields and independent approvals",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "PEG-064 retained graph recovery restores standalone attachment bytes and scope while fencing stale review, proof reuse and erasure",
+    "title": "restores standalone attachment bytes and scope while fencing stale review, proof reuse and erasure",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "PEG-064 retained graph recovery restores a shared field revision as new history while retaining later values and refusing incompatible or stale restoration",
+    "title": "restores a shared field revision as new history while retaining later values and refusing incompatible or stale restoration",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "PEG-064 retained graph recovery repairs only reviewed dangling dependencies while preserving live links and refusing a stale repair",
+    "title": "repairs only reviewed dangling dependencies while preserving live links and refusing a stale repair",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Direct project duplication through reviewed public doors",
+    "title": "Direct project duplication through reviewed public doors",
+    "type": "suite"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Direct project duplication through reviewed public doors duplicates only selected work with fresh identities and provenance, concrete original or relative dates, and no copied approvals, private context or active authority",
+    "title": "duplicates only selected work with fresh identities and provenance, concrete original or relative dates, and no copied approvals, private context or active authority",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Direct project duplication through reviewed public doors preserves approve-only, restricted and assignee memberships when their staged grants are explicitly activated",
+    "title": "preserves approve-only, restricted and assignee memberships when their staged grants are explicitly activated",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Direct project duplication through reviewed public doors refuses detached children, stale previews and revoked source membership at copy and activation time",
+    "title": "refuses detached children, stale previews and revoked source membership at copy and activation time",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Public API and MCP",
+    "title": "Public API and MCP",
+    "type": "suite"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Public API and MCP creates and edits through the published REST and MCP doors with exact pages, reports and signed replay-safe events",
+    "title": "creates and edits through the published REST and MCP doors with exact pages, reports and signed replay-safe events",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Public API and MCP connects named clients using the MCP schema and refuses widened scope, expired keys and agent approval",
+    "title": "connects named clients using the MCP schema and refuses widened scope, expired keys and agent approval",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Public API and MCP preserves personal privacy and guest Editor and Viewer decisions across the UI API, REST and MCP",
+    "title": "preserves personal privacy and guest Editor and Viewer decisions across the UI API, REST and MCP",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Approval routing custody",
+    "title": "Approval routing custody",
+    "type": "suite"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Approval routing custody refuses routing and sharing proof bytes from an unreadable project context",
+    "title": "refuses routing and sharing proof bytes from an unreadable project context",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Approval routing custody routes ordered proof stages with independent named humans, delegates, and binds expiring revoked links to the exact replacement bytes",
+    "title": "routes ordered proof stages with independent named humans, delegates, and binds expiring revoked links to the exact replacement bytes",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Approval routing custody requires quorum on an approval task, refuses current and prior owners and agents, and never lets the old decision door bypass named capability checks",
+    "title": "requires quorum on an approval task, refuses current and prior owners and agents, and never lets the old decision door bypass named capability checks",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Approval routing custody sends a reviewed PDF-v2 reminder once through the mail seam without comments or an implicit approval and respects muted preferences",
+    "title": "sends a reviewed PDF-v2 reminder once through the mail seam without comments or an implicit approval and respects muted preferences",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Calendar work blocks through provider schema edges",
+    "title": "Calendar work blocks through provider schema edges",
+    "type": "suite"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Calendar work blocks through provider schema edges reserves free time on both provider schemas, reconciles DST moves, deletion, replay, reconnect and restart without changing deadlines",
+    "title": "reserves free time on both provider schemas, reconciles DST moves, deletion, replay, reconnect and restart without changing deadlines",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Calendar work blocks through provider schema edges refuses unsafe calendar authority and stale reviews, exposes simultaneous task and provider conflicts and leaves deadlines untouched",
+    "title": "refuses unsafe calendar authority and stale reviews, exposes simultaneous task and provider conflicts and leaves deadlines untouched",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Local rule audit",
+    "title": "Local rule audit",
+    "type": "suite"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Local rule audit records exact local rule lifecycle and outcomes once through restart and replay, with redacted scoped append-only audit",
+    "title": "records exact local rule lifecycle and outcomes once through restart and replay, with redacted scoped append-only audit",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Local rule audit attributes background refusal to the former activating administrator and retains anonymized rule audit through native archive restore",
+    "title": "attributes background refusal to the former activating administrator and retains anonymized rule audit through native archive restore",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Native reporting",
+    "title": "Native reporting",
+    "type": "suite"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Native reporting reconciles dashboard history, real downloads and revoked access across three projects",
+    "title": "reconciles dashboard history, real downloads and revoked access across three projects",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Native approval follow-up",
+    "title": "Native approval follow-up",
+    "type": "suite"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Native approval follow-up routes finite internal follow-up through working hours, DND, queued delegation, restart and a real decision",
+    "title": "routes finite internal follow-up through working hours, DND, queued delegation, restart and a real decision",
+    "type": "test"
+  },
+  {
+    "file": "tests/work-graph.test.mjs",
+    "name": "Native approval follow-up cancels obsolete follow-up and refuses hidden, revoked, deactivated and muted recipients without reviving old episodes",
+    "title": "cancels obsolete follow-up and refuses hidden, revoked, deactivated and muted recipients without reviving old episodes",
+    "type": "test"
+  },
+  {
+    "file": "tests/portfolios.test.mjs",
+    "name": "Human portfolio capacity",
+    "title": "Human portfolio capacity",
+    "type": "suite"
+  },
+  {
+    "file": "tests/portfolios.test.mjs",
+    "name": "Human portfolio capacity compares sourced alternatives across thirty projects and fences attributable application, replay and selective undo",
+    "title": "compares sourced alternatives across thirty projects and fences attributable application, replay and selective undo",
+    "type": "test"
+  },
+  {
+    "file": "tests/portfolios.test.mjs",
+    "name": "PEG-013 portfolios that roll up truthfully",
+    "title": "PEG-013 portfolios that roll up truthfully",
+    "type": "suite"
+  },
+  {
+    "file": "tests/portfolios.test.mjs",
+    "name": "PEG-013 portfolios that roll up truthfully treats inherited drill metrics like unknown names for a signed-in member",
+    "title": "treats inherited drill metrics like unknown names for a signed-in member",
+    "type": "test"
+  },
+  {
+    "file": "tests/portfolios.test.mjs",
+    "name": "PEG-013 portfolios that roll up truthfully rolls up a two-level portfolio of 20 projects, counts shared tasks once and hides a private project from a stakeholder",
+    "title": "rolls up a two-level portfolio of 20 projects, counts shared tasks once and hides a private project from a stakeholder",
+    "type": "test"
+  },
+  {
+    "file": "tests/portfolios.test.mjs",
+    "name": "PEG-013 portfolios that roll up truthfully moves rollups when a blocker or completion changes through Tasks, with source drill-down",
+    "title": "moves rollups when a blocker or completion changes through Tasks, with source drill-down",
+    "type": "test"
+  },
+  {
+    "file": "tests/portfolios.test.mjs",
+    "name": "PEG-013 portfolios that roll up truthfully flags each default threshold independently at a pinned clock, explains it with source rows and recalculates when resolved or the policy changes",
+    "title": "flags each default threshold independently at a pinned clock, explains it with source rows and recalculates when resolved or the policy changes",
+    "type": "test"
+  },
+  {
+    "file": "tests/portfolios.test.mjs",
+    "name": "PEG-013 portfolios that roll up truthfully shows timeline, workload and dashboard tabs for the nested portfolio with saved filters and no leakage",
+    "title": "shows timeline, workload and dashboard tabs for the nested portfolio with saved filters and no leakage",
+    "type": "test"
+  },
+  {
+    "file": "tests/portfolios.test.mjs",
+    "name": "Delivery register",
+    "title": "Delivery register",
+    "type": "suite"
+  },
+  {
+    "file": "tests/portfolios.test.mjs",
+    "name": "Delivery register carries an accountable dependency risk through rejected and accepted changes into linked work and the existing portfolio status",
+    "title": "carries an accountable dependency risk through rejected and accepted changes into linked work and the existing portfolio status",
+    "type": "test"
+  },
+  {
+    "file": "tests/portfolios.test.mjs",
+    "name": "Delivery register refuses stale changes and agents, and filters records against current linked-work access",
+    "title": "refuses stale changes and agents, and filters records against current linked-work access",
+    "type": "test"
+  },
+  {
+    "file": "tests/portfolios.test.mjs",
+    "name": "Reusable workflow bundles",
+    "title": "Reusable workflow bundles",
+    "type": "suite"
+  },
+  {
+    "file": "tests/portfolios.test.mjs",
+    "name": "Reusable workflow bundles applies all five bundle component types to three projects and runs their real fields, saved view, task template, rule and human approval stages",
+    "title": "applies all five bundle component types to three projects and runs their real fields, saved view, task template, rule and human approval stages",
+    "type": "test"
+  },
+  {
+    "file": "tests/portfolios.test.mjs",
+    "name": "Reusable workflow bundles previews upgrades, preserves local overrides and unchosen changes, refuses incompatible and stale adoption, and cancels obsolete queued actions on disable",
+    "title": "previews upgrades, preserves local overrides and unchosen changes, refuses incompatible and stale adoption, and cancels obsolete queued actions on disable",
+    "type": "test"
+  },
+  {
+    "file": "tests/portfolios.test.mjs",
+    "name": "Activated rule effect recovery",
+    "title": "Activated rule effect recovery",
+    "type": "suite"
+  },
+  {
+    "file": "tests/portfolios.test.mjs",
+    "name": "Activated rule effect recovery records activated date and assignment effects once and undoes only unchanged fields with current authority",
+    "title": "records activated date and assignment effects once and undoes only unchanged fields with current authority",
+    "type": "test"
+  },
+  {
+    "file": "tests/portfolios.test.mjs",
+    "name": "Owned rule work action recovery",
+    "title": "Owned rule work action recovery",
+    "type": "suite"
+  },
+  {
+    "file": "tests/portfolios.test.mjs",
+    "name": "Owned rule work action recovery runs all six owned actions once and preserves later work and reintroduced relationships during scoped undo",
+    "title": "runs all six owned actions once and preserves later work and reintroduced relationships during scoped undo",
+    "type": "test"
+  },
+  {
+    "file": "tests/portfolios.test.mjs",
+    "name": "Selective configuration revision recovery",
+    "title": "Selective configuration revision recovery",
+    "type": "suite"
+  },
+  {
+    "file": "tests/portfolios.test.mjs",
+    "name": "Selective configuration revision recovery compares and restores a retained component without replacing newer configuration, activated rules or dependent work",
+    "title": "compares and restores a retained component without replacing newer configuration, activated rules or dependent work",
+    "type": "test"
+  },
+  {
+    "file": "tests/portfolios.test.mjs",
+    "name": "Reusable templates through reviewed public doors",
+    "title": "Reusable templates through reviewed public doors",
+    "type": "suite"
+  },
+  {
+    "file": "tests/portfolios.test.mjs",
+    "name": "Reusable templates through reviewed public doors instantiates every gallery family with reviewed working dates, nested work, owners, fields, dependencies, pending approvals and inactive rules",
+    "title": "instantiates every gallery family with reviewed working dates, nested work, owners, fields, dependencies, pending approvals and inactive rules",
+    "type": "test"
+  },
+  {
+    "file": "tests/portfolios.test.mjs",
+    "name": "Reusable templates through reviewed public doors requires an explicit missing-role choice and applies a new template version only after review while retaining human edits",
+    "title": "requires an explicit missing-role choice and applies a new template version only after review while retaining human edits",
+    "type": "test"
+  },
+  {
+    "file": "tests/portfolios.test.mjs",
+    "name": "Reusable templates through reviewed public doors captures task and project structures as scoped reusable templates and separately activates retained rules",
+    "title": "captures task and project structures as scoped reusable templates and separately activates retained rules",
+    "type": "test"
+  },
+  {
+    "file": "tests/portfolios.test.mjs",
+    "name": "Reusable templates through reviewed public doors holds an agent-selected template and date for exact human review and refuses changed choices, replay after revocation and unauthorized settings",
+    "title": "holds an agent-selected template and date for exact human review and refuses changed choices, replay after revocation and unauthorized settings",
+    "type": "test"
+  },
+  {
+    "file": "tests/portfolios.test.mjs",
+    "name": "Pinned template rules through current Admin review",
+    "title": "Pinned template rules through current Admin review",
+    "type": "suite"
+  },
+  {
+    "file": "tests/portfolios.test.mjs",
+    "name": "Pinned template rules through current Admin review applies activated pinned template dates and assignments before responding, with durable once-only runs and no recursive generation",
+    "title": "applies activated pinned template dates and assignments before responding, with durable once-only runs and no recursive generation",
+    "type": "test"
+  },
+  {
+    "file": "tests/portfolios.test.mjs",
+    "name": "Pinned template rules through current Admin review holds a changed template or mapping until exact reactivation and rechecks the activating administrator before execution",
+    "title": "holds a changed template or mapping until exact reactivation and rechecks the activating administrator before execution",
+    "type": "test"
+  },
+  {
+    "file": "tests/portfolios.test.mjs",
+    "name": "Reviewed stakeholder status revisions",
+    "title": "Reviewed stakeholder status revisions",
+    "type": "suite"
+  },
+  {
+    "file": "tests/portfolios.test.mjs",
+    "name": "Reviewed stakeholder status revisions keeps three-project drafts separate, refuses stale sources and changed reviews, and publishes exact content once with honest channel outcomes",
+    "title": "keeps three-project drafts separate, refuses stale sources and changed reviews, and publishes exact content once with honest channel outcomes",
+    "type": "test"
+  },
+  {
+    "file": "tests/portfolios.test.mjs",
+    "name": "Reviewed stakeholder status revisions requires current human authority and exact client recipients, excludes private sources and keeps a separate client draft unpublished",
+    "title": "requires current human authority and exact client recipients, excludes private sources and keeps a separate client draft unpublished",
+    "type": "test"
+  },
+  {
+    "file": "tests/portfolios.test.mjs",
+    "name": "Reviewed stakeholder status revisions retains immutable corrections and revision-bound member and guest threads while hiding internal replies and refusing revoked access",
+    "title": "retains immutable corrections and revision-bound member and guest threads while hiding internal replies and refusing revoked access",
+    "type": "test"
+  },
+  {
+    "file": "tests/portfolios.test.mjs",
+    "name": "Status rights request custody",
+    "title": "Status rights request custody",
+    "type": "suite"
+  },
+  {
+    "file": "tests/portfolios.test.mjs",
+    "name": "Status rights request custody tracks the exact structured copies and finite delegated custody without granting browsing or false erasure",
+    "title": "tracks the exact structured copies and finite delegated custody without granting browsing or false erasure",
+    "type": "test"
+  },
+  {
+    "file": "tests/portfolios.test.mjs",
+    "name": "Status rights request custody escalates acknowledgment and disposition independently at a pinned clock and refuses indefinite or unsupported outcomes",
+    "title": "escalates acknowledgment and disposition independently at a pinned clock and refuses indefinite or unsupported outcomes",
+    "type": "test"
+  },
+  {
+    "file": "tests/portfolios.test.mjs",
+    "name": "Status rights request custody records justified finite retention separately, requires timely permitted extension and revokes a former handler",
+    "title": "records justified finite retention separately, requires timely permitted extension and revokes a former handler",
+    "type": "test"
+  },
+  {
+    "file": "tests/portfolios.test.mjs",
+    "name": "Status rights request custody accepts a departed attributed actor request without reactivating membership or exposing their snapshots",
+    "title": "accepts a departed attributed actor request without reactivating membership or exposing their snapshots",
+    "type": "test"
+  },
+  {
+    "file": "tests/portfolios.test.mjs",
+    "name": "Conditional local work rules",
+    "title": "Conditional local work rules",
+    "type": "suite"
+  },
+  {
+    "file": "tests/portfolios.test.mjs",
+    "name": "Conditional local work rules activates form and section date mappings once through restart and preserves a later edit during scoped undo",
+    "title": "activates form and section date mappings once through restart and preserves a later edit during scoped undo",
+    "type": "test"
+  },
+  {
+    "file": "tests/portfolios.test.mjs",
+    "name": "Conditional local work rules refuses editor configuration, stale activation, revoked Admins and agent provenance; holds dependency changes and records missing dates",
+    "title": "refuses editor configuration, stale activation, revoked Admins and agent provenance; holds dependency changes and records missing dates",
+    "type": "test"
+  },
+  {
+    "file": "tests/portfolios.test.mjs",
+    "name": "Conditional local work rules applies the complete work-action set once, undoes its own effects and refuses approval decisions or expanded audiences",
+    "title": "applies the complete work-action set once, undoes its own effects and refuses approval decisions or expanded audiences",
+    "type": "test"
+  },
+  {
+    "file": "tests/portfolios.test.mjs",
+    "name": "Conditional local work rules exports rules without active authority and erases source inputs and project suggestions through reviewed custody doors",
+    "title": "exports rules without active authority and erases source inputs and project suggestions through reviewed custody doors",
+    "type": "test"
+  },
+  {
+    "file": "tests/portfolios.test.mjs",
+    "name": "Conditional local work rules computes event-relative weeks, business days and clamped months across holiday and daylight-saving boundaries",
+    "title": "computes event-relative weeks, business days and clamped months across holiday and daylight-saving boundaries",
+    "type": "test"
+  },
+  {
+    "file": "tests/portfolios.test.mjs",
+    "name": "Capacity across committed work",
+    "title": "Capacity across committed work",
+    "type": "suite"
+  },
+  {
+    "file": "tests/portfolios.test.mjs",
+    "name": "Capacity across committed work compares a staffing scenario across three projects, retains hidden hours without titles, and applies only an exact current human reassignment",
+    "title": "compares a staffing scenario across three projects, retains hidden hours without titles, and applies only an exact current human reassignment",
+    "type": "test"
+  },
+  {
+    "file": "tests/portfolios.test.mjs",
+    "name": "Capacity across committed work uses self-declared full and partial days, unions approved source leave, hides reasons, and refuses unavailable authority or stale feeds",
+    "title": "uses self-declared full and partial days, unions approved source leave, hides reasons, and refuses unavailable authority or stale feeds",
+    "type": "test"
+  },
+  {
+    "file": "tests/portfolios.test.mjs",
+    "name": "Capacity across committed work reviews Split, Sum and per-assignee source effort without changing the task estimate or duplicating multi-homed work, and holds missing semantics for repair",
+    "title": "reviews Split, Sum and per-assignee source effort without changing the task estimate or duplicating multi-homed work, and holds missing semantics for repair",
+    "type": "test"
+  },
+  {
+    "file": "tests/schedule.test.mjs",
+    "name": "PEG-004 dependencies and believable schedules",
+    "title": "PEG-004 dependencies and believable schedules",
+    "type": "suite"
+  },
+  {
+    "file": "tests/schedule.test.mjs",
+    "name": "PEG-004 dependencies and believable schedules previews and applies all four dependency types over the July 4 holiday and a weekend, then a daylight-saving change, with the chain explained",
+    "title": "previews and applies all four dependency types over the July 4 holiday and a weekend, then a daylight-saving change, with the chain explained",
+    "type": "test"
+  },
+  {
+    "file": "tests/schedule.test.mjs",
+    "name": "PEG-004 dependencies and believable schedules refuses a cycle and a stale plan and leaves every downstream date untouched",
+    "title": "refuses a cycle and a stale plan and leaves every downstream date untouched",
+    "type": "test"
+  },
+  {
+    "file": "tests/schedule.test.mjs",
+    "name": "PEG-004 dependencies and believable schedules lets a project editor confirm a previewed set once, attributed to them, with undo and no second approval; a viewer and an agent cannot shift anything",
+    "title": "lets a project editor confirm a previewed set once, attributed to them, with undo and no second approval; a viewer and an agent cannot shift anything",
+    "type": "test"
+  },
+  {
+    "file": "tests/schedule.test.mjs",
+    "name": "PEG-004 dependencies and believable schedules holds a set that reaches work the editor cannot see for its approver, without disclosing it or applying part of it",
+    "title": "holds a set that reaches work the editor cannot see for its approver, without disclosing it or applying part of it",
+    "type": "test"
+  },
+  {
+    "file": "tests/schedule.test.mjs",
+    "name": "PEG-004 dependencies and believable schedules computes exact branching slack, negative lead and milestone dates and refuses an impossible completed-dependent cascade atomically",
+    "title": "computes exact branching slack, negative lead and milestone dates and refuses an impossible completed-dependent cascade atomically",
+    "type": "test"
+  },
+  {
+    "file": "tests/schedule.test.mjs",
+    "name": "PEG-004 dependencies and believable schedules uses persisted working hours and personal time off for requested timed edits and dependent shifts across DST",
+    "title": "uses persisted working hours and personal time off for requested timed edits and dependent shifts across DST",
+    "type": "test"
+  },
+  {
+    "file": "tests/schedule.test.mjs",
+    "name": "PEG-004 dependencies and believable schedules preserves timed duration through partial time off and refuses stale calendars and leave revisions without partial writes",
+    "title": "preserves timed duration through partial time off and refuses stale calendars and leave revisions without partial writes",
+    "type": "test"
+  },
+  {
+    "file": "tests/schedule.test.mjs",
+    "name": "PEG-004 dependencies and believable schedules limits calendar configuration to administrators and personal leave to its owner without exposing private reasons",
+    "title": "limits calendar configuration to administrators and personal leave to its owner without exposing private reasons",
+    "type": "test"
+  },
+  {
+    "file": "tests/schedule.test.mjs",
+    "name": "PEG-004 dependencies and believable schedules notifies the current assignee once after two blockers including concurrent and replayed completion on the schedule graph",
+    "title": "notifies the current assignee once after two blockers including concurrent and replayed completion on the schedule graph",
+    "type": "test"
+  },
+  {
+    "file": "tests/schedule.test.mjs",
+    "name": "PEG-004 dependencies and believable schedules reroutes queued readiness to the current assignee and honors mute, quiet hours, digest and revoked access",
+    "title": "reroutes queued readiness to the current assignee and honors mute, quiet hours, digest and revoked access",
+    "type": "test"
+  },
+  {
+    "file": "tests/schedule.test.mjs",
+    "name": "PEG-004 dependencies and believable schedules keeps a scoped guest and hidden predecessors private and cancels obsolete readiness before a fresh graph transition",
+    "title": "keeps a scoped guest and hidden predecessors private and cancels obsolete readiness before a fresh graph transition",
+    "type": "test"
+  },
+  {
+    "file": "tests/schedule.test.mjs",
+    "name": "PEG-004 dependencies and believable schedules applies a reviewed cross-project rule cascade once with assignment, work action, attribution and coherent undo",
+    "title": "applies a reviewed cross-project rule cascade once with assignment, work action, attribution and coherent undo",
+    "type": "test"
+  },
+  {
+    "file": "tests/schedule.test.mjs",
+    "name": "PEG-004 dependencies and believable schedules holds an inseparable hidden cascade without effects or disclosure and refuses a revoked activating Admin",
+    "title": "holds an inseparable hidden cascade without effects or disclosure and refuses a revoked activating Admin",
+    "type": "test"
+  },
+  {
+    "file": "tests/access-control.test.mjs",
+    "name": "PEG-020 roles, grants and the decision lifecycle",
+    "title": "PEG-020 roles, grants and the decision lifecycle",
+    "type": "suite"
+  },
+  {
+    "file": "tests/access-control.test.mjs",
+    "name": "PEG-020 roles, grants and the decision lifecycle enforces the role matrix at every door",
+    "title": "enforces the role matrix at every door",
+    "type": "test"
+  },
+  {
+    "file": "tests/access-control.test.mjs",
+    "name": "PEG-020 roles, grants and the decision lifecycle applies a change of permission to an open tab at once and records it",
+    "title": "applies a change of permission to an open tab at once and records it",
+    "type": "test"
+  },
+  {
+    "file": "tests/access-control.test.mjs",
+    "name": "PEG-020 roles, grants and the decision lifecycle refuses to remove the last owner and never leaks a private field through an aggregate",
+    "title": "refuses to remove the last owner and never leaks a private field through an aggregate",
+    "type": "test"
+  },
+  {
+    "file": "tests/access-control.test.mjs",
+    "name": "PEG-020 roles, grants and the decision lifecycle gives one person Viewer on A and Editor on B, and follows a team grant as it is granted and revoked",
+    "title": "gives one person Viewer on A and Editor on B, and follows a team grant as it is granted and revoked",
+    "type": "test"
+  },
+  {
+    "file": "tests/access-control.test.mjs",
+    "name": "PEG-020 roles, grants and the decision lifecycle walks every access-request path to a grant or to nothing, with exact audit rows",
+    "title": "walks every access-request path to a grant or to nothing, with exact audit rows",
+    "type": "test"
+  },
+  {
+    "file": "tests/access-control.test.mjs",
+    "name": "PEG-020 roles, grants and the decision lifecycle decides blind portfolio requests as viewer membership without project authority",
+    "title": "decides blind portfolio requests as viewer membership without project authority",
+    "type": "test"
+  },
+  {
+    "file": "tests/access-control.test.mjs",
+    "name": "PEG-020 roles, grants and the decision lifecycle holds workspace policy, scoped grants and file rights at the doors",
+    "title": "holds workspace policy, scoped grants and file rights at the doors",
+    "type": "test"
+  },
+  {
+    "file": "tests/access-control.test.mjs",
+    "name": "PEG-020 roles, grants and the decision lifecycle keeps one workspace invisible to another’s people",
+    "title": "keeps one workspace invisible to another’s people",
+    "type": "test"
+  },
+  {
+    "file": "tests/access-control.test.mjs",
+    "name": "PEG-032 reviewed departure preserves work and revokes authority",
+    "title": "PEG-032 reviewed departure preserves work and revokes authority",
+    "type": "suite"
+  },
+  {
+    "file": "tests/access-control.test.mjs",
+    "name": "PEG-032 reviewed departure preserves work and revokes authority requires a current complete review, transfers responsibilities, stops delegated work and preserves human authorship",
+    "title": "requires a current complete review, transfers responsibilities, stops delegated work and preserves human authorship",
+    "type": "test"
+  },
+  {
+    "file": "tests/access-control.test.mjs",
+    "name": "Scoped guest work",
+    "title": "Scoped guest work",
+    "type": "suite"
+  },
+  {
+    "file": "tests/access-control.test.mjs",
+    "name": "Scoped guest work reviews initial guest access without granting, commits exact roles once, and retains decisions after revocation",
+    "title": "reviews initial guest access without granting, commits exact roles once, and retains decisions after revocation",
+    "type": "test"
+  },
+  {
+    "file": "tests/access-control.test.mjs",
+    "name": "Scoped guest work requires fresh guest review after changed content, proposals, expiry or authority, including restart and concurrent confirmation",
+    "title": "requires fresh guest review after changed content, proposals, expiry or authority, including restart and concurrent confirmation",
+    "type": "test"
+  },
+  {
+    "file": "tests/access-control.test.mjs",
+    "name": "Scoped guest work lets a guest Editor assign only shared participants, complete work and submit assigned time",
+    "title": "lets a guest Editor assign only shared participants, complete work and submit assigned time",
+    "type": "test"
+  },
+  {
+    "file": "tests/access-control.test.mjs",
+    "name": "Scoped guest work keeps scoped comments private, exact guest roles limited and old file links revoked",
+    "title": "keeps scoped comments private, exact guest roles limited and old file links revoked",
+    "type": "test"
+  }
+]

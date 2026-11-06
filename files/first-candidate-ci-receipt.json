@@ -1,0 +1,114 @@
+{
+  "repository": "just-every/run-pegboard",
+  "branch": "cloud/sx-pegboard-ci-critical-path-2",
+  "head": "2ecb289f89c81ef79b0e45366c08f66de7804d5b",
+  "run_id": 42299250458,
+  "run_url": "https://github.com/just-every/run-pegboard/actions/runs/42299250458",
+  "status": "completed",
+  "conclusion": "success",
+  "builder_reruns": 0,
+  "shards": [
+    {
+      "id": 128172509120,
+      "name": "shards (extensions-services)",
+      "seconds": 561.0,
+      "started_at": "2026-11-06T21:45:09Z",
+      "completed_at": "2026-11-06T21:54:30Z",
+      "conclusion": "success",
+      "run_attempt": 1
+    },
+    {
+      "id": 128172509232,
+      "name": "shards (planning-services)",
+      "seconds": 534.0,
+      "started_at": "2026-11-06T21:45:09Z",
+      "completed_at": "2026-11-06T21:54:03Z",
+      "conclusion": "success",
+      "run_attempt": 1
+    },
+    {
+      "id": 128172509258,
+      "name": "shards (time-planning)",
+      "seconds": 705.0,
+      "started_at": "2026-11-06T21:45:09Z",
+      "completed_at": "2026-11-06T21:56:54Z",
+      "conclusion": "success",
+      "run_attempt": 1
+    },
+    {
+      "id": 128172509271,
+      "name": "shards (custody-recovery)",
+      "seconds": 516.0,
+      "started_at": "2026-11-06T21:45:09Z",
+      "completed_at": "2026-11-06T21:53:45Z",
+      "conclusion": "success",
+      "run_attempt": 1
+    },
+    {
+      "id": 128172509294,
+      "name": "shards (core-capacity)",
+      "seconds": 684.0,
+      "started_at": "2026-11-06T21:45:09Z",
+      "completed_at": "2026-11-06T21:56:33Z",
+      "conclusion": "success",
+      "run_attempt": 1
+    },
+    {
+      "id": 128172509362,
+      "name": "shards (runtime-source)",
+      "seconds": 564.0,
+      "started_at": "2026-11-06T21:45:09Z",
+      "completed_at": "2026-11-06T21:54:33Z",
+      "conclusion": "success",
+      "run_attempt": 1
+    },
+    {
+      "id": 128172509406,
+      "name": "shards (reporting-work)",
+      "seconds": 563.0,
+      "started_at": "2026-11-06T21:45:09Z",
+      "completed_at": "2026-11-06T21:54:32Z",
+      "conclusion": "success",
+      "run_attempt": 1
+    },
+    {
+      "id": 128172509429,
+      "name": "shards (custody-access)",
+      "seconds": 564.0,
+      "started_at": "2026-11-06T21:45:09Z",
+      "completed_at": "2026-11-06T21:54:33Z",
+      "conclusion": "success",
+      "run_attempt": 1
+    }
+  ],
+  "total_shard_seconds": 4691.0,
+  "mean_shard_seconds": 586.375,
+  "longest_shard": {
+    "id": 128172509258,
+    "name": "shards (time-planning)",
+    "seconds": 705.0,
+    "started_at": "2026-11-06T21:45:09Z",
+    "completed_at": "2026-11-06T21:56:54Z",
+    "conclusion": "success",
+    "run_attempt": 1
+  },
+  "maximum_to_mean_ratio": 1.2023022809635473,
+  "within_1_2_mean": false,
+  "timeout_minutes": 12,
+  "longest_margin_to_timeout_seconds": 15.0,
+  "coverage": {
+    "tests_before": 148,
+    "tests_after": 148,
+    "journeys_before": 35,
+    "journeys_after": 35,
+    "other_commands_before": 7,
+    "other_commands_after": 7,
+    "shards_before": 8,
+    "shards_after": 8,
+    "builds_before": 1,
+    "builds_after": 1,
+    "dropped": 0,
+    "duplicated": 0
+  },
+  "clause_status_changes": []
+}

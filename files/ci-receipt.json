@@ -1,0 +1,40 @@
+{
+  "repository": "just-every/run-pegboard",
+  "branch": "cloud/sx-pegboard-ci-critical-path-2",
+  "head": "5c9580015024cf018316a34feeedb9dcf66216dc",
+  "status": "unobserved",
+  "reason": "ten-call GitHub API budget exhausted",
+  "terminal_custody": "PUSHED",
+  "ready": false,
+  "previous_candidate": {
+    "head": "2ecb289f89c81ef79b0e45366c08f66de7804d5b",
+    "run_id": 42299250458,
+    "conclusion": "success",
+    "timing_target_met": false,
+    "longest_seconds": 705,
+    "maximum_to_mean_ratio": 1.2023022809635473
+  },
+  "final_coverage": {
+    "before_tests": 148,
+    "after_tests": 148,
+    "before_journeys": 35,
+    "after_journeys": 35,
+    "before_commands": 7,
+    "after_commands": 7,
+    "units": 190,
+    "duplicate_units": 0,
+    "dropped_units": 0,
+    "build_commands_before": 1,
+    "build_commands_after": 1,
+    "rows": "see coverage.json"
+  },
+  "final_touched_checks": [
+    "node syntax",
+    "workflow permissions",
+    "eight-shard matrix",
+    "complete mapping",
+    "git diff --check",
+    "source lock regeneration/check"
+  ],
+  "clause_status_changes": []
+}

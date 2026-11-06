@@ -1,0 +1,65 @@
+shards (extensions-services)	Run this shard	2026-11-06T21:46:02.8672300Z > [work-graph-extensions] pnpm exec rer queue test:work-graph-extensions -- sh -c "node --test --test-name-pattern='^(?:Direct project duplication through reviewed public doors|Public API and MCP|Work conversions through reviewed public doors)(?: |$)' tests/work-graph.test.mjs"
+shards (extensions-services)	Run this shard	2026-11-06T21:46:02.8692655Z > [portfolios] pnpm run test:graph:portfolios:core
+shards (extensions-services)	Run this shard	2026-11-06T21:46:02.8710001Z > [journeys-services-work] pnpm exec rer queue test:journeys-services-work -- sh -c "PEGBOARD_JOURNEY=search-bulk,analytics,engineering,meetings,custody,provider-log-retention,departure node tests/journeys/work-graph.journey.mjs"
+shards (extensions-services)	Run this shard	2026-11-06T21:50:43.2991031Z LANE work-graph-extensions duration_ms=280433
+shards (extensions-services)	Run this shard	2026-11-06T21:54:08.5145590Z LANE portfolios duration_ms=485645
+shards (extensions-services)	Run this shard	2026-11-06T21:54:16.3445598Z LANE journeys-services-work duration_ms=493474
+shards (extensions-services)	Run this shard	2026-11-06T21:54:20.8947186Z SHARD extensions-services duration_ms=525233
+shards (planning-services)	Run this shard	2026-11-06T21:45:45.1515702Z > [work-graph-intake] pnpm exec rer queue test:work-graph-core -- sh -c "node --test --test-skip-pattern='^(?:Retained PDF feedback|Test worker lifecycle|PEG-001 one work graph|Work views through the native graph|Native text intake|Native intake decisions|Local rule audit|Data custody|PEG-064 retained graph recovery|Native reporting|Goal visibility and accountability|Engineering handoff|Meeting review|Analyst exports|Project planning canvas|Work planning time, recurrence and decisions|Approval routing custody|Calendar work blocks through provider schema edges|Native approval follow-up|Direct project duplication through reviewed public doors|Public API and MCP|Work conversions through reviewed public doors)(?: |$)' tests/work-graph.test.mjs"
+shards (planning-services)	Run this shard	2026-11-06T21:45:45.1538621Z > [work-graph-pdf-custody] pnpm exec rer queue test:pdf-feedback -- sh -c "node --test --test-name-pattern='^Data custody PDF feedback(?: |$)' tests/work-graph.test.mjs"
+shards (planning-services)	Run this shard	2026-11-06T21:45:45.1557092Z > [workflow-rules] pnpm run test:graph:workflow-rules
+shards (planning-services)	Run this shard	2026-11-06T21:47:26.7723018Z LANE work-graph-intake duration_ms=101622
+shards (planning-services)	Run this shard	2026-11-06T21:51:42.0728257Z > [workflow-rules] pnpm exec rer queue test:work-graph-custody-recovery -- sh -c "node --test --test-name-pattern='^(?:PEG-064 retained graph recovery)(?: |$)' --test-skip-pattern='^(?:Data custody intake erasure|Data custody PDF feedback)(?: |$)' tests/work-graph.test.mjs"
+shards (planning-services)	Run this shard	2026-11-06T21:53:07.2866477Z LANE workflow-rules duration_ms=442131
+shards (planning-services)	Run this shard	2026-11-06T21:53:56.9385825Z LANE work-graph-pdf-custody duration_ms=491785
+shards (planning-services)	Run this shard	2026-11-06T21:53:58.6567327Z SHARD planning-services duration_ms=508876
+shards (time-planning)	Run this shard	2026-11-06T21:45:54.5790302Z > [work-graph-time] pnpm exec rer queue test:work-graph-time -- sh -c "node --test --test-name-pattern='^(?:Work planning time, recurrence and decisions)(?: |$)' tests/work-graph.test.mjs"
+shards (time-planning)	Run this shard	2026-11-06T21:45:54.5817397Z > [work-graph-decisions] pnpm exec rer queue test:work-graph-time -- sh -c "node --test --test-name-pattern='^(?:Approval routing custody|Calendar work blocks through provider schema edges|Native approval follow-up)(?: |$)' tests/work-graph.test.mjs"
+shards (time-planning)	Run this shard	2026-11-06T21:45:54.5837560Z > [journeys-planning-work] pnpm exec rer queue test:journeys-planning-work -- sh -c "PEGBOARD_JOURNEY=portfolio,timeline,register,bundles,goals,canvas node tests/journeys/work-graph.journey.mjs"
+shards (time-planning)	Run this shard	2026-11-06T21:49:41.2660955Z > [work-graph-time] pnpm exec rer queue test:work-graph-services -- sh -c "node --test --test-name-pattern='^(?:Engineering handoff|Meeting review)(?: |$)' tests/work-graph.test.mjs"
+shards (time-planning)	Run this shard	2026-11-06T21:53:04.3678392Z LANE work-graph-time duration_ms=429790
+shards (time-planning)	Run this shard	2026-11-06T21:54:19.6602609Z LANE work-graph-decisions duration_ms=505078
+shards (time-planning)	Run this shard	2026-11-06T21:56:46.4965376Z LANE journeys-planning-work duration_ms=651913
+shards (time-planning)	Run this shard	2026-11-06T21:56:48.3221442Z SHARD time-planning duration_ms=670886
+shards (custody-recovery)	Run this shard	2026-11-06T21:45:46.6720227Z > [provider-diagnostics] pnpm exec rer queue test:work-graph-custody-recovery -- sh -c "node --test --test-name-pattern='^(?:Data custody provider diagnostics)(?: |$)' --test-skip-pattern='^(?:Data custody intake erasure|Data custody PDF feedback)(?: |$)' tests/work-graph.test.mjs"
+shards (custody-recovery)	Run this shard	2026-11-06T21:49:36.2665436Z LANE provider-diagnostics duration_ms=229596
+shards (custody-recovery)	Run this shard	2026-11-06T21:49:36.2666631Z > [work-graph-rule-audit] pnpm exec rer queue test:work-graph-custody-erasure -- sh -c "node --test --test-name-pattern='^(?:Local rule audit attributes background)(?: |$)' tests/work-graph.test.mjs"
+shards (custody-recovery)	Run this shard	2026-11-06T21:49:36.2686287Z > [portfolio-capacity] pnpm run test:graph:capacity
+shards (custody-recovery)	Run this shard	2026-11-06T21:51:59.4683973Z LANE portfolio-capacity duration_ms=143200
+shards (custody-recovery)	Run this shard	2026-11-06T21:53:36.9890305Z LANE work-graph-rule-audit duration_ms=240721
+shards (custody-recovery)	Run this shard	2026-11-06T21:53:38.8224564Z SHARD custody-recovery duration_ms=492991
+shards (core-capacity)	Run this shard	2026-11-06T21:46:06.3850326Z > [work-graph-core] pnpm exec rer queue test:work-graph-core -- sh -c "node --test --test-skip-pattern='^(?:Local rule audit|Data custody|PEG-064 retained graph recovery|Native reporting|Goal visibility and accountability|Engineering handoff|Meeting review|Analyst exports|Project planning canvas|Work planning time, recurrence and decisions|Approval routing custody|Calendar work blocks through provider schema edges|Native approval follow-up|Direct project duplication through reviewed public doors|Public API and MCP|Work conversions through reviewed public doors)(?: |$)' --test-name-pattern='^(?:Test worker lifecycle|PEG-001 one work graph|Work views through the native graph|Native text intake|Native intake decisions)(?: |$)' tests/work-graph.test.mjs"
+shards (core-capacity)	Run this shard	2026-11-06T21:46:06.3875137Z > [work-graph-custody-recovery] pnpm exec rer queue test:work-graph-custody-recovery -- sh -c "node --test --test-name-pattern='^(?:Data custody)(?: |$)' --test-skip-pattern='^(?:Data custody intake erasure|Data custody PDF feedback|Data custody provider diagnostics)(?: |$)' tests/work-graph.test.mjs"
+shards (core-capacity)	Run this shard	2026-11-06T21:46:06.3893927Z > [journeys-planning-capacity] pnpm exec rer queue test:journeys-planning-capacity -- sh -c "PEGBOARD_JOURNEY=portfolio-capacity,capacity,work-views,retained-pdf-review,pdf-feedback node tests/journeys/work-graph.journey.mjs"
+shards (core-capacity)	Run this shard	2026-11-06T21:53:07.3905720Z LANE work-graph-custody-recovery duration_ms=421003
+shards (core-capacity)	Run this shard	2026-11-06T21:55:02.7948127Z LANE journeys-planning-capacity duration_ms=536405
+shards (core-capacity)	Run this shard	2026-11-06T21:56:24.4446724Z LANE work-graph-core duration_ms=618062
+shards (core-capacity)	Run this shard	2026-11-06T21:56:27.0158343Z SHARD core-capacity duration_ms=645556
+shards (runtime-source)	Run this shard	2026-11-06T21:45:50.2648035Z > [runtime] pnpm run build
+shards (runtime-source)	Run this shard	2026-11-06T21:45:50.2673954Z > [source] pnpm run test:graph:schedule
+shards (runtime-source)	Run this shard	2026-11-06T21:45:50.2695424Z > [access-control] pnpm run test:graph:access-control
+shards (runtime-source)	Run this shard	2026-11-06T21:45:58.4679126Z > [runtime] pnpm run test:runtime
+shards (runtime-source)	Run this shard	2026-11-06T21:47:47.7357258Z > [runtime] pnpm run test:templates
+shards (runtime-source)	Run this shard	2026-11-06T21:50:59.5742953Z > [runtime] pnpm run test:conversions
+shards (runtime-source)	Run this shard	2026-11-06T21:51:45.3686458Z > [access-control] pnpm exec rer queue test:work-graph-services -- sh -c "node --test --test-name-pattern='^(?:Goal visibility and accountability)(?: |$)' tests/work-graph.test.mjs"
+shards (runtime-source)	Run this shard	2026-11-06T21:53:14.8551683Z LANE access-control duration_ms=444586
+shards (runtime-source)	Run this shard	2026-11-06T21:53:24.3772316Z LANE runtime duration_ms=454114
+shards (runtime-source)	Run this shard	2026-11-06T21:53:54.7880882Z > [source] pnpm run check --profile first-party
+shards (runtime-source)	Run this shard	2026-11-06T21:53:55.3683999Z > [source] node scripts/contract-docs.mjs check PEG-128 PEG-011 PEG-059 PEG-057 PEG-007 PEG-078 PEG-003 PEG-018 PEG-031 PEG-027 PEG-015 PEG-036 PEG-012 PEG-016 PEG-044 PEG-025 PEG-127 PEG-037 PEG-066
+shards (runtime-source)	Run this shard	2026-11-06T21:53:55.4440850Z > [source] pnpm run typecheck
+shards (runtime-source)	Run this shard	2026-11-06T21:54:07.6521167Z LANE source duration_ms=497385
+shards (runtime-source)	Run this shard	2026-11-06T21:54:08.7745262Z SHARD runtime-source duration_ms=510550
+shards (reporting-work)	Run this shard	2026-11-06T21:45:55.2141587Z > [work-graph-reporting] pnpm exec rer queue test:work-graph-reporting -- sh -c "node --test --test-name-pattern='^(?:Native reporting|Project planning canvas)(?: |$)' tests/work-graph.test.mjs"
+shards (reporting-work)	Run this shard	2026-11-06T21:45:55.2168176Z > [work-graph-analyst] pnpm exec rer queue test:work-graph-reporting -- sh -c "node --test --test-name-pattern='^(?:Analyst exports|Retained PDF feedback)(?: |$)' tests/work-graph.test.mjs"
+shards (reporting-work)	Run this shard	2026-11-06T21:45:55.2187797Z > [journeys-core-work] pnpm exec rer queue test:journeys-core-work -- sh -c "PEGBOARD_JOURNEY=core,recurrence,approvals,time-packets node tests/journeys/work-graph.journey.mjs"
+shards (reporting-work)	Run this shard	2026-11-06T21:52:52.0998626Z LANE work-graph-analyst duration_ms=416883
+shards (reporting-work)	Run this shard	2026-11-06T21:53:07.4403134Z LANE work-graph-reporting duration_ms=432227
+shards (reporting-work)	Run this shard	2026-11-06T21:54:23.3676308Z LANE journeys-core-work duration_ms=508149
+shards (reporting-work)	Run this shard	2026-11-06T21:54:25.1013398Z SHARD reporting-work duration_ms=525579
+shards (custody-access)	Run this shard	2026-11-06T21:45:53.9127106Z > [work-graph-custody-erasure] pnpm exec rer queue test:work-graph-custody-erasure -- sh -c "node --test --test-name-pattern='^(?:Data custody intake erasure)(?: |$)' tests/work-graph.test.mjs"
+shards (custody-access)	Run this shard	2026-11-06T21:45:53.9155575Z > [journeys-services] pnpm exec rer queue test:journeys-services -- sh -c "PEGBOARD_JOURNEY=intake-erasure,rule-audit,reporting,calendar-blocks,recovery node tests/journeys/work-graph.journey.mjs"
+shards (custody-access)	Run this shard	2026-11-06T21:45:53.9190807Z > [journeys-core-access] pnpm exec rer queue test:journeys-core-access -- sh -c "PEGBOARD_JOURNEY=intake-decisions,approval-followup,intake,access-privacy,access-discovery,public-api,approval-routing,guests node tests/journeys/work-graph.journey.mjs"
+shards (custody-access)	Run this shard	2026-11-06T21:50:57.4202566Z LANE work-graph-custody-erasure duration_ms=303509
+shards (custody-access)	Run this shard	2026-11-06T21:53:41.0549147Z LANE journeys-services duration_ms=467139
+shards (custody-access)	Run this shard	2026-11-06T21:54:26.0101500Z LANE journeys-core-access duration_ms=512092
+shards (custody-access)	Run this shard	2026-11-06T21:54:27.4687012Z SHARD custody-access duration_ms=529681

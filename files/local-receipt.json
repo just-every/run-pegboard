@@ -1,0 +1,42 @@
+{
+  "repository": "just-every/run-pegboard",
+  "base": "f0386615142fdd50970be89ae671391def0a18fc",
+  "checks": [
+    {
+      "file": "build.log",
+      "sha256": "90482b980b8a842225b89754df3d8ddec801ba3324984796635f7bf3c69cf152"
+    },
+    {
+      "file": "typecheck.log",
+      "sha256": "f742224af6e24ded36423709926bfa270ab0e12b978556ef19e0f2fe7baac84e"
+    },
+    {
+      "file": "first-party.log",
+      "sha256": "c70124446dd92510bef8b6aec4157c4fb48f45c6a72c7a358a013d07b813468b"
+    },
+    {
+      "file": "source-changes.json",
+      "sha256": "67fa7180efa10c53cc67efff7b6f53d5387e72df35ad27e012d3d689290a3aa9"
+    }
+  ],
+  "results": {
+    "rer_setup": "exit 0, fleet owner; private setup output excluded",
+    "rer_build": "exit 0",
+    "typecheck": "exit 0",
+    "rer_check_first_party": "exit 0",
+    "node_syntax": "exit 0",
+    "workflow_permissions": "exit 0",
+    "coverage": "148 tests / 35 journeys / 7 other commands before and after; all once",
+    "scheduler": "exclusive diagnostics; concurrent tail; failure does not cancel siblings; separate cwd; scratch removed"
+  },
+  "policy": {
+    "shards_before": 8,
+    "shards_after": 8,
+    "max_concurrent_lanes": 3,
+    "builds_per_full_run": 1,
+    "timeout_before_minutes": 12,
+    "timeout_after_minutes": 12,
+    "workflow_file_unchanged": true,
+    "contract_status_changes": []
+  }
+}

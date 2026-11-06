@@ -1,0 +1,19 @@
+{
+  "source_lock_check": true,
+  "unchanged": {
+    ".github/workflows/verify.yml": "09fe6d2a0b274d4925950ef0ddde9c8c7099e15edb5333a601ead2bbcec73a86",
+    "scripts/verify-ci.mjs": "cf1ceb8773ed276f82245fb8fb4c4bdc95bff40ecc0e8ca8ac9e776978b17340",
+    "scripts/verify-plan.mjs": "45fe2ab9c5cbc72d0186bf77fab32c985605caae6ecee50676dd618612c3e78f",
+    "verification.json": "7496fc7e97c1523f27a31c2a92f8ff610e8da024dcd5208a1ffcbcdae3eebb53",
+    "CONTRACT.md": "127ee32964c88b06dd6bbad0be3a2f02466adee18bee5e8e0eb49c82253eef9d",
+    "ACCEPTANCE.md": "df2078bb61ff7349e83b1180274626f2b7a05f3b65a90e97b0fbab9dd5d67603",
+    "docs/CLAIMS.md": "bdb780026bccfefd019a7a31d5c7b8d4990148a71090caf140c89fb46d40553e",
+    "package.json": "4d4b750ccbbf28f0e94e03ccf69d5bed1393e138677b9bdc3f06b07e4ab988ee"
+  },
+  "product_files": [
+    "scripts/verify-app.mjs",
+    "sources.lock.json"
+  ],
+  "candidate_log": "2ecb289f89c81ef79b0e45366c08f66de7804d5b\nRun Edit Run fleet <fleet@runeditrun.com>\nRun Edit Run fleet <fleet@runeditrun.com>\n\n",
+  "working_tree": ""
+}

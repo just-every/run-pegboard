@@ -1,0 +1,12 @@
+{
+  "head": "2ecb289f89c81ef79b0e45366c08f66de7804d5b",
+  "ref": "refs/heads/cloud/sx-pegboard-ci-critical-path-2",
+  "remote_advertisement_verified": true,
+  "working_tree_clean": true,
+  "full_push_verify_run": 42299250458,
+  "status": "completed",
+  "conclusion": "success",
+  "reruns": 0,
+  "product_pushes": 1,
+  "clauses_changed": []
+}

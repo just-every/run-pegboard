@@ -1,0 +1,34 @@
+{
+  "command": "PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium cloud_run node scripts/verify-ci.mjs core-capacity",
+  "head": "2ecb289f89c81ef79b0e45366c08f66de7804d5b",
+  "exit_code": 0,
+  "bounded_core": {
+    "tests": 17,
+    "suites": 5,
+    "passed": 17,
+    "failed": 0,
+    "cancelled": 0,
+    "skipped": 0
+  },
+  "data_custody": {
+    "tests": 9,
+    "suites": 1,
+    "passed": 9,
+    "failed": 0,
+    "cancelled": 0,
+    "skipped": 0
+  },
+  "journeys": [
+    "portfolio-capacity",
+    "capacity",
+    "work-views",
+    "retained-pdf-review",
+    "pdf-feedback"
+  ],
+  "local_wall_ms": 962248,
+  "performance_caveat": "Local operator policy serialized the three commands through a single shared queue slot; per-lane durations include queue wait and are not CI performance measurements. No queue settings were changed.",
+  "retained_pdf_widths": [
+    1440,
+    390
+  ]
+}

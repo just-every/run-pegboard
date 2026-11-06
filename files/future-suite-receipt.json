@@ -1,0 +1,12 @@
+{
+  "kind": "synthetic selector guard only; no product/test additions",
+  "name": "Project announcements synthetic future registration",
+  "before": [
+    "core-capacity / work-graph-intake"
+  ],
+  "after": [
+    "planning-services / work-graph-intake"
+  ],
+  "multiplicity_before": 1,
+  "multiplicity_after": 1
+}

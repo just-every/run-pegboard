@@ -1,0 +1,19 @@
+{
+  "files": [
+    {
+      "path": "scripts/verify-app.mjs",
+      "change": "modified",
+      "before": {
+        "sha256": "343c0a0ad028fc6b092e201086dd421328955dc777d0164f4dcd607f333718b8",
+        "executable": false
+      },
+      "after": {
+        "sha256": "f24a6f7c33811a33d3cea36737b5b9ee0dbcf00a060f7614a9222f70bd533cc2",
+        "executable": false
+      }
+    }
+  ],
+  "metadata": [],
+  "meaning": "Origins are comparison baselines; changing an origin does not assert adoption or local byte equality."
+}
+

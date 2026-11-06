@@ -1,0 +1,20 @@
+> [diagnostics] node --input-type=module -e 'import {appendFile, readFile} from "node:fs/promises"; import {setTimeout} from "node:timers/promises"; const log = "/tmp/pegboard-scheduler-check-wahwMA/events"; await appendFile(log, JSON.stringify({name:"diagnostics",event:"start",cwd:process.cwd(),at:Date.now()})+"\n"); await setTimeout(150); await appendFile(log, JSON.stringify({name:"diagnostics",event:"end",at:Date.now()})+"\n"); process.exit(0);'
+LANE diagnostics duration_ms=229
+> [audit] node --input-type=module -e 'import {appendFile, readFile} from "node:fs/promises"; import {setTimeout} from "node:timers/promises"; const log = "/tmp/pegboard-scheduler-check-wahwMA/events"; await appendFile(log, JSON.stringify({name:"audit",event:"start",cwd:process.cwd(),at:Date.now()})+"\n"); await setTimeout(150); await appendFile(log, JSON.stringify({name:"audit",event:"end",at:Date.now()})+"\n"); process.exit(0);'
+> [capacity] node --input-type=module -e 'import {appendFile, readFile} from "node:fs/promises"; import {setTimeout} from "node:timers/promises"; const log = "/tmp/pegboard-scheduler-check-wahwMA/events"; await appendFile(log, JSON.stringify({name:"capacity",event:"start",cwd:process.cwd(),at:Date.now()})+"\n"); await setTimeout(150); await appendFile(log, JSON.stringify({name:"capacity",event:"end",at:Date.now()})+"\n"); process.exit(0);'
+LANE capacity duration_ms=216
+LANE audit duration_ms=231
+SHARD probe duration_ms=499
+> [diagnostics] node --input-type=module -e 'import {appendFile, readFile} from "node:fs/promises"; import {setTimeout} from "node:timers/promises"; const log = "/tmp/pegboard-scheduler-check-wahwMA/events"; await appendFile(log, JSON.stringify({name:"diagnostics",event:"start",cwd:process.cwd(),at:Date.now()})+"\n"); await setTimeout(150); await appendFile(log, JSON.stringify({name:"diagnostics",event:"end",at:Date.now()})+"\n"); process.exit(1);'
+LANE diagnostics duration_ms=200
+> [audit] node --input-type=module -e 'import {appendFile, readFile} from "node:fs/promises"; import {setTimeout} from "node:timers/promises"; const log = "/tmp/pegboard-scheduler-check-wahwMA/events"; await appendFile(log, JSON.stringify({name:"audit",event:"start",cwd:process.cwd(),at:Date.now()})+"\n"); await setTimeout(150); await appendFile(log, JSON.stringify({name:"audit",event:"end",at:Date.now()})+"\n"); process.exit(0);'
+> [capacity] node --input-type=module -e 'import {appendFile, readFile} from "node:fs/promises"; import {setTimeout} from "node:timers/promises"; const log = "/tmp/pegboard-scheduler-check-wahwMA/events"; await appendFile(log, JSON.stringify({name:"capacity",event:"start",cwd:process.cwd(),at:Date.now()})+"\n"); await setTimeout(150); await appendFile(log, JSON.stringify({name:"capacity",event:"end",at:Date.now()})+"\n"); process.exit(0);'
+LANE capacity duration_ms=202
+LANE audit duration_ms=204
+Error: diagnostics failed: 1
+    at ChildProcess.<anonymous> (file:///workspace/run-pegboard/scripts/verify-app.mjs:169:72)
+    at Object.onceWrapper (node:events:631:26)
+    at ChildProcess.emit (node:events:509:28)
+    at ChildProcess._handle.onexit (node:internal/child_process:295:12)
+SHARD probe duration_ms=428
+PASS: exclusive diagnostics, concurrent tail, failure preservation, isolated working directories, scratch cleanup

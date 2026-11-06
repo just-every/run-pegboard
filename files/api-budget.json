@@ -1,0 +1,52 @@
+{
+  "maximum": 10,
+  "calls": [
+    {
+      "number": 1,
+      "command": "gh api graphql (matching branch refs)"
+    },
+    {
+      "number": 2,
+      "command": "gh run view 42268005252 --repo just-every/run-pegboard --json jobs"
+    },
+    {
+      "number": 3,
+      "command": "gh run view 42252802997 --repo just-every/run-pegboard --json jobs"
+    },
+    {
+      "number": 4,
+      "command": "gh run view 42295381995 --repo just-every/run-pegboard --json jobs"
+    },
+    {
+      "number": 5,
+      "command": "gh run view 42295381995 --repo just-every/run-pegboard --log"
+    },
+    {
+      "number": 6,
+      "command": "gh api repos/just-every/run-pegboard/actions/runs?head_sha=2ecb289f89c81ef79b0e45366c08f66de7804d5b&per_page=100",
+      "at": "2026-11-06T21:45:23Z",
+      "run_id": 42299250458
+    },
+    {
+      "number": 7,
+      "command": "gh api repos/just-every/run-pegboard/actions/runs/42299250458 --jq {status,conclusion,head_sha,html_url}",
+      "at": "2026-11-06T21:55:43.902281+00:00"
+    },
+    {
+      "number": 8,
+      "command": "gh api repos/just-every/run-pegboard/actions/runs/42299250458 --jq {status,conclusion,head_sha,html_url}",
+      "at": "2026-11-06T22:00:53.315069+00:00"
+    },
+    {
+      "number": 9,
+      "command": "gh api repos/just-every/run-pegboard/actions/runs/42299250458/jobs?per_page=100",
+      "at": "2026-11-06T22:06:07.779085+00:00"
+    },
+    {
+      "number": 10,
+      "command": "gh run view 42299250458 --repo just-every/run-pegboard --log",
+      "at": "2026-11-06T22:11:27.021481+00:00",
+      "exit_code": 0
+    }
+  ]
+}

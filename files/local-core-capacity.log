@@ -1,0 +1,478 @@
+> pnpm run verify:app
+ WARN  Unsupported engine: wanted: {"node":"22.20.0"} (current: {"node":"v24.19.0","pnpm":"10.12.4"})
+
+> @just-every/pegboard@0.1.0 verify:app /workspace/run-pegboard
+> node scripts/verify-app.mjs
+
+> [work-graph-core] pnpm exec rer queue test:work-graph-core -- sh -c "node --test --test-skip-pattern='^(?:Local rule audit|Data custody|PEG-064 retained graph recovery|Native reporting|Goal visibility and accountability|Engineering handoff|Meeting review|Analyst exports|Project planning canvas|Work planning time, recurrence and decisions|Approval routing custody|Calendar work blocks through provider schema edges|Native approval follow-up|Direct project duplication through reviewed public doors|Public API and MCP|Work conversions through reviewed public doors)(?: |$)' --test-name-pattern='^(?:Test worker lifecycle|PEG-001 one work graph|Work views through the native graph|Native text intake|Native intake decisions)(?: |$)' tests/work-graph.test.mjs"
+> [work-graph-custody-recovery] pnpm exec rer queue test:work-graph-custody-recovery -- sh -c "node --test --test-name-pattern='^(?:Data custody)(?: |$)' --test-skip-pattern='^(?:Data custody intake erasure|Data custody PDF feedback|Data custody provider diagnostics)(?: |$)' tests/work-graph.test.mjs"
+> [journeys-planning-capacity] pnpm exec rer queue test:journeys-planning-capacity -- sh -c "PEGBOARD_JOURNEY=portfolio-capacity,capacity,work-views,retained-pdf-review,pdf-feedback node tests/journeys/work-graph.journey.mjs"
+test:work-graph-core
+Waiting to start (queue position 1/1): all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-core:command [0778045515c9] in /tmp/pegboard-verify-dgwB5K/work-graph-core
+Memory: 14.2 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 2/2): waiting behind 1 earlier queued job; all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-core:command [0778045515c9] in /tmp/pegboard-verify-dgwB5K/work-graph-core
+  queued: Pegboard test:work-graph-custody-recovery:command [65da45bc5bb8] in /tmp/pegboard-verify-dgwB5K/work-graph-custody-recovery
+Memory: 14.2 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Heavy job admitted: Pegboard test:work-graph-core:command [0778045515c9]
+Waiting to start (queue position 1/2): all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-core:command [0778045515c9] in /tmp/pegboard-verify-dgwB5K/work-graph-core
+Memory: 13.6 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 2/2): waiting behind 1 earlier queued job; all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-core:command [0778045515c9] in /tmp/pegboard-verify-dgwB5K/work-graph-core
+  queued: Pegboard test:work-graph-custody-recovery:command [65da45bc5bb8] in /tmp/pegboard-verify-dgwB5K/work-graph-custody-recovery
+Memory: 13.6 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 1/2): all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-core:command [0778045515c9] in /tmp/pegboard-verify-dgwB5K/work-graph-core
+Memory: 13.1 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 2/2): waiting behind 1 earlier queued job; all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-core:command [0778045515c9] in /tmp/pegboard-verify-dgwB5K/work-graph-core
+  queued: Pegboard test:work-graph-custody-recovery:command [65da45bc5bb8] in /tmp/pegboard-verify-dgwB5K/work-graph-custody-recovery
+Memory: 13.1 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 1/2): all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-core:command [0778045515c9] in /tmp/pegboard-verify-dgwB5K/work-graph-core
+Memory: 13.6 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 2/2): waiting behind 1 earlier queued job; all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-core:command [0778045515c9] in /tmp/pegboard-verify-dgwB5K/work-graph-core
+  queued: Pegboard test:work-graph-custody-recovery:command [65da45bc5bb8] in /tmp/pegboard-verify-dgwB5K/work-graph-custody-recovery
+Memory: 13.9 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+▶ Test worker lifecycle
+  ✔ recovers from an occupied startup port with colored logs, leaves its listener alone and keeps the new origin through restart (53762.098776ms)
+✔ Test worker lifecycle (53763.180666ms)
+Waiting to start (queue position 1/2): all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-core:command [0778045515c9] in /tmp/pegboard-verify-dgwB5K/work-graph-core
+Memory: 13.6 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 2/2): waiting behind 1 earlier queued job; all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-core:command [0778045515c9] in /tmp/pegboard-verify-dgwB5K/work-graph-core
+  queued: Pegboard test:work-graph-custody-recovery:command [65da45bc5bb8] in /tmp/pegboard-verify-dgwB5K/work-graph-custody-recovery
+Memory: 13.6 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 1/2): all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-core:command [0778045515c9] in /tmp/pegboard-verify-dgwB5K/work-graph-core
+Memory: 13.5 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 2/2): waiting behind 1 earlier queued job; all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-core:command [0778045515c9] in /tmp/pegboard-verify-dgwB5K/work-graph-core
+  queued: Pegboard test:work-graph-custody-recovery:command [65da45bc5bb8] in /tmp/pegboard-verify-dgwB5K/work-graph-custody-recovery
+Memory: 13.5 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 1/2): all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-core:command [0778045515c9] in /tmp/pegboard-verify-dgwB5K/work-graph-core
+Memory: 12.6 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 2/2): waiting behind 1 earlier queued job; all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-core:command [0778045515c9] in /tmp/pegboard-verify-dgwB5K/work-graph-core
+  queued: Pegboard test:work-graph-custody-recovery:command [65da45bc5bb8] in /tmp/pegboard-verify-dgwB5K/work-graph-custody-recovery
+Memory: 12.6 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+PROBE PEG-066 policy and preview: native Settings and decision routes -> owner consent required; exact source, task, priority, disposition and reviewer; preview writes nothing
+PROBE PEG-066 stale and authority: task edit, triage, demotion, deactivation, public, guest, Viewer and agent attempts -> refused with no decision or priority change
+PROBE PEG-066 once-only history: concurrent accept and process restart -> one decision, exact actor and permanent audit; replay preserves later human edits
+PROBE PEG-066 decline and inert content: decline route -> source and task retained; malicious instruction changes no owner, dates or access
+PROBE PEG-066 B: person hold on reviewer, then reviewed task and project erasure -> retained; decision, source and task unchanged
+Waiting to start (queue position 1/2): all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-core:command [0778045515c9] in /tmp/pegboard-verify-dgwB5K/work-graph-core
+Memory: 12.5 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 2/2): waiting behind 1 earlier queued job; all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-core:command [0778045515c9] in /tmp/pegboard-verify-dgwB5K/work-graph-core
+  queued: Pegboard test:work-graph-custody-recovery:command [65da45bc5bb8] in /tmp/pegboard-verify-dgwB5K/work-graph-custody-recovery
+Memory: 12.5 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 1/2): all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-core:command [0778045515c9] in /tmp/pegboard-verify-dgwB5K/work-graph-core
+Memory: 12.2 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 2/2): waiting behind 1 earlier queued job; all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-core:command [0778045515c9] in /tmp/pegboard-verify-dgwB5K/work-graph-core
+  queued: Pegboard test:work-graph-custody-recovery:command [65da45bc5bb8] in /tmp/pegboard-verify-dgwB5K/work-graph-custody-recovery
+Memory: 12.2 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 1/2): all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-core:command [0778045515c9] in /tmp/pegboard-verify-dgwB5K/work-graph-core
+Memory: 12.2 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 2/2): waiting behind 1 earlier queued job; all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-core:command [0778045515c9] in /tmp/pegboard-verify-dgwB5K/work-graph-core
+  queued: Pegboard test:work-graph-custody-recovery:command [65da45bc5bb8] in /tmp/pegboard-verify-dgwB5K/work-graph-custody-recovery
+Memory: 12.2 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 1/2): all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-core:command [0778045515c9] in /tmp/pegboard-verify-dgwB5K/work-graph-core
+Memory: 12.2 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 2/2): waiting behind 1 earlier queued job; all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-core:command [0778045515c9] in /tmp/pegboard-verify-dgwB5K/work-graph-core
+  queued: Pegboard test:work-graph-custody-recovery:command [65da45bc5bb8] in /tmp/pegboard-verify-dgwB5K/work-graph-custody-recovery
+Memory: 12.2 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 1/2): all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-core:command [0778045515c9] in /tmp/pegboard-verify-dgwB5K/work-graph-core
+Memory: 11.9 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 2/2): waiting behind 1 earlier queued job; all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-core:command [0778045515c9] in /tmp/pegboard-verify-dgwB5K/work-graph-core
+  queued: Pegboard test:work-graph-custody-recovery:command [65da45bc5bb8] in /tmp/pegboard-verify-dgwB5K/work-graph-custody-recovery
+Memory: 11.9 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 1/2): all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-core:command [0778045515c9] in /tmp/pegboard-verify-dgwB5K/work-graph-core
+Memory: 12.1 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 2/2): waiting behind 1 earlier queued job; all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-core:command [0778045515c9] in /tmp/pegboard-verify-dgwB5K/work-graph-core
+  queued: Pegboard test:work-graph-custody-recovery:command [65da45bc5bb8] in /tmp/pegboard-verify-dgwB5K/work-graph-custody-recovery
+Memory: 12.1 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 1/2): all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-core:command [0778045515c9] in /tmp/pegboard-verify-dgwB5K/work-graph-core
+Memory: 11.9 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 2/2): waiting behind 1 earlier queued job; all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-core:command [0778045515c9] in /tmp/pegboard-verify-dgwB5K/work-graph-core
+  queued: Pegboard test:work-graph-custody-recovery:command [65da45bc5bb8] in /tmp/pegboard-verify-dgwB5K/work-graph-custody-recovery
+Memory: 11.9 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 1/2): all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-core:command [0778045515c9] in /tmp/pegboard-verify-dgwB5K/work-graph-core
+Memory: 11.9 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 2/2): waiting behind 1 earlier queued job; all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-core:command [0778045515c9] in /tmp/pegboard-verify-dgwB5K/work-graph-core
+  queued: Pegboard test:work-graph-custody-recovery:command [65da45bc5bb8] in /tmp/pegboard-verify-dgwB5K/work-graph-custody-recovery
+Memory: 11.9 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 1/2): all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-core:command [0778045515c9] in /tmp/pegboard-verify-dgwB5K/work-graph-core
+Memory: 12.7 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 2/2): waiting behind 1 earlier queued job; all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-core:command [0778045515c9] in /tmp/pegboard-verify-dgwB5K/work-graph-core
+  queued: Pegboard test:work-graph-custody-recovery:command [65da45bc5bb8] in /tmp/pegboard-verify-dgwB5K/work-graph-custody-recovery
+Memory: 12.7 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+PROBE PEG-066 custody: owner Data review -> exact decision redaction, hold and stale-review refusal; archive restores decisions as history with policy disabled and older erasure epoch refused
+▶ Native intake decisions
+  ✔ records reviewed human priority and disposition once, refuses unsafe authority and preserves exact custody (141018.967128ms)
+✔ Native intake decisions (175628.301046ms)
+Waiting to start (queue position 1/2): all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-core:command [0778045515c9] in /tmp/pegboard-verify-dgwB5K/work-graph-core
+Memory: 13.6 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 2/2): waiting behind 1 earlier queued job; all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-core:command [0778045515c9] in /tmp/pegboard-verify-dgwB5K/work-graph-core
+  queued: Pegboard test:work-graph-custody-recovery:command [65da45bc5bb8] in /tmp/pegboard-verify-dgwB5K/work-graph-custody-recovery
+Memory: 13.7 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 1/2): all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-core:command [0778045515c9] in /tmp/pegboard-verify-dgwB5K/work-graph-core
+Memory: 13.6 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 2/2): waiting behind 1 earlier queued job; all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-core:command [0778045515c9] in /tmp/pegboard-verify-dgwB5K/work-graph-core
+  queued: Pegboard test:work-graph-custody-recovery:command [65da45bc5bb8] in /tmp/pegboard-verify-dgwB5K/work-graph-custody-recovery
+Memory: 13.6 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 1/2): all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-core:command [0778045515c9] in /tmp/pegboard-verify-dgwB5K/work-graph-core
+Memory: 13.6 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 2/2): waiting behind 1 earlier queued job; all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-core:command [0778045515c9] in /tmp/pegboard-verify-dgwB5K/work-graph-core
+  queued: Pegboard test:work-graph-custody-recovery:command [65da45bc5bb8] in /tmp/pegboard-verify-dgwB5K/work-graph-custody-recovery
+Memory: 13.6 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 1/2): all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-core:command [0778045515c9] in /tmp/pegboard-verify-dgwB5K/work-graph-core
+Memory: 12.4 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 2/2): waiting behind 1 earlier queued job; all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-core:command [0778045515c9] in /tmp/pegboard-verify-dgwB5K/work-graph-core
+  queued: Pegboard test:work-graph-custody-recovery:command [65da45bc5bb8] in /tmp/pegboard-verify-dgwB5K/work-graph-custody-recovery
+Memory: 12.4 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+PROBE PEG-007 branching validation: internal and public form routes -> mapped title, fixed owner and priority, hidden branch refused
+PROBE PEG-007 replay: concurrent and restarted submission routes -> one receipt and one exact task ID
+PROBE PEG-007 business hours: receipt deadlines -> exactly eight reviewed working hours, unchanged by later calendar edits
+PROBE PEG-007 triage: queue and triage routes -> waiting, visible overdue escalation, then triaged
+PROBE PEG-007 erasure and authority: replay of erased task and old publication after publisher role renewal -> refused without work creation
+PROBE PEG-007 privacy: anonymous routes -> prompts and receipt only; private work, identity claims, attachments, stale and revoked publication refused
+PROBE PEG-007 retained answers: public and internal submission routes -> oversized mappings refused with no task; fitting mappings preserve every answer exactly
+▶ Native text intake
+  ✔ publishes branching intake, creates one attributable task after replay and restart, and refuses unsafe submissions (20017.564351ms)
+✔ Native text intake (58249.304561ms)
+Waiting to start (queue position 1/2): all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-core:command [0778045515c9] in /tmp/pegboard-verify-dgwB5K/work-graph-core
+Memory: 13.6 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 2/2): waiting behind 1 earlier queued job; all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-core:command [0778045515c9] in /tmp/pegboard-verify-dgwB5K/work-graph-core
+  queued: Pegboard test:work-graph-custody-recovery:command [65da45bc5bb8] in /tmp/pegboard-verify-dgwB5K/work-graph-custody-recovery
+Memory: 13.6 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 1/2): all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-core:command [0778045515c9] in /tmp/pegboard-verify-dgwB5K/work-graph-core
+Memory: 13.6 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 2/2): waiting behind 1 earlier queued job; all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-core:command [0778045515c9] in /tmp/pegboard-verify-dgwB5K/work-graph-core
+  queued: Pegboard test:work-graph-custody-recovery:command [65da45bc5bb8] in /tmp/pegboard-verify-dgwB5K/work-graph-custody-recovery
+Memory: 13.6 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 1/2): all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-core:command [0778045515c9] in /tmp/pegboard-verify-dgwB5K/work-graph-core
+Memory: 13.4 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 2/2): waiting behind 1 earlier queued job; all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-core:command [0778045515c9] in /tmp/pegboard-verify-dgwB5K/work-graph-core
+  queued: Pegboard test:work-graph-custody-recovery:command [65da45bc5bb8] in /tmp/pegboard-verify-dgwB5K/work-graph-custody-recovery
+Memory: 13.4 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+▶ Work views through the native graph
+  ✔ keeps six work views on one dated graph and restores named configuration and defaults after restart and sign-in (14763.877944ms)
+  ✔ shares only permitted work and columns and fences stale configuration, defaults and revoked authority (2276.4538ms)
+✔ Work views through the native graph (53386.272512ms)
+Waiting to start (queue position 1/2): all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-core:command [0778045515c9] in /tmp/pegboard-verify-dgwB5K/work-graph-core
+Memory: 13.5 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 2/2): waiting behind 1 earlier queued job; all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-core:command [0778045515c9] in /tmp/pegboard-verify-dgwB5K/work-graph-core
+  queued: Pegboard test:work-graph-custody-recovery:command [65da45bc5bb8] in /tmp/pegboard-verify-dgwB5K/work-graph-custody-recovery
+Memory: 13.5 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 1/2): all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-core:command [0778045515c9] in /tmp/pegboard-verify-dgwB5K/work-graph-core
+Memory: 13.6 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 2/2): waiting behind 1 earlier queued job; all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-core:command [0778045515c9] in /tmp/pegboard-verify-dgwB5K/work-graph-core
+  queued: Pegboard test:work-graph-custody-recovery:command [65da45bc5bb8] in /tmp/pegboard-verify-dgwB5K/work-graph-custody-recovery
+Memory: 13.6 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 1/2): all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-core:command [0778045515c9] in /tmp/pegboard-verify-dgwB5K/work-graph-core
+Memory: 12.9 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 2/2): waiting behind 1 earlier queued job; all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-core:command [0778045515c9] in /tmp/pegboard-verify-dgwB5K/work-graph-core
+  queued: Pegboard test:work-graph-custody-recovery:command [65da45bc5bb8] in /tmp/pegboard-verify-dgwB5K/work-graph-custody-recovery
+Memory: 12.9 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+▶ PEG-001 one work graph
+  ✔ builds a campaign and a launch project, multi-homes one task and keeps one history (878.735387ms)
+  ✔ shows a guest on one project nothing of the other, through the API, exports and files (889.77392ms)
+  ✔ keeps a personal task private and resolves every reference a task has had, to those allowed only (1141.754489ms)
+  ✔ runs the PEG-083 public-team join and private-link request journeys on this graph (615.971299ms)
+  ✔ keeps personal work and sections owner-only through lists, ID search, reads and writes (785.941403ms)
+  ✔ orders the local day by group, due instant, priority, creation time and immutable ID (6142.155827ms)
+  ✔ persists manual section/task ranks on reconnect and logs reversible deduplicated section rules (445.942032ms)
+  ✔ shares personal work only against the reviewed current project audience and content (766.925058ms)
+Waiting to start (queue position 1/2): all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-core:command [0778045515c9] in /tmp/pegboard-verify-dgwB5K/work-graph-core
+Memory: 12.6 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 2/2): waiting behind 1 earlier queued job; all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-core:command [0778045515c9] in /tmp/pegboard-verify-dgwB5K/work-graph-core
+  queued: Pegboard test:work-graph-custody-recovery:command [65da45bc5bb8] in /tmp/pegboard-verify-dgwB5K/work-graph-custody-recovery
+Memory: 12.6 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+  ✔ creates all typed fields, shared identities and consistent task/report/API calculations (4373.546042ms)
+  ✔ explains cycles, missing and hidden inputs and refuses lossy or stale type changes (1503.052316ms)
+  ✔ keeps free-form campaign tags distinct, renames once and filters three projects without hidden counts (867.337244ms)
+  ✔ enforces Viewer values and tagging denial and Editor definition denial on every field/status door (434.509396ms)
+✔ PEG-001 one work graph (56063.677496ms)
+ℹ tests 17
+ℹ suites 5
+ℹ pass 17
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 397595.274808
+LANE work-graph-core duration_ms=399181
+test:work-graph-custody-recovery
+Waiting to start (queue position 1/1): all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-custody-recovery:command [65da45bc5bb8] in /tmp/pegboard-verify-dgwB5K/work-graph-custody-recovery
+Memory: 14.2 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Heavy job admitted: Pegboard test:work-graph-custody-recovery:command [65da45bc5bb8]
+Waiting to start (queue position 1/1): all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-custody-recovery:command [65da45bc5bb8] in /tmp/pegboard-verify-dgwB5K/work-graph-custody-recovery
+Memory: 13.6 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 1/1): all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-custody-recovery:command [65da45bc5bb8] in /tmp/pegboard-verify-dgwB5K/work-graph-custody-recovery
+Memory: 13.2 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+▶ Data custody
+  ✔ keeps permanent audit redacted and append-only across public changes, searches and exports (817.013906ms)
+Waiting to start (queue position 1/1): all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-custody-recovery:command [65da45bc5bb8] in /tmp/pegboard-verify-dgwB5K/work-graph-custody-recovery
+Memory: 13.3 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+  ✔ reviews graph erasure, honors holds and stale previews, and retains only disclosed shared work (13422.78662ms)
+  ✔ expires only reviewed eligible stores while keeping held content and independent class policies (6484.900991ms)
+  ✔ pins actual proof bytes and accepts only a current independent human decision (1620.732403ms)
+Waiting to start (queue position 1/1): all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-custody-recovery:command [65da45bc5bb8] in /tmp/pegboard-verify-dgwB5K/work-graph-custody-recovery
+Memory: 12.4 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+  ✔ expires proof versions together only after every version is eligible and no proof hold remains (9899.874729ms)
+Waiting to start (queue position 1/1): all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-custody-recovery:command [65da45bc5bb8] in /tmp/pegboard-verify-dgwB5K/work-graph-custody-recovery
+Memory: 12.8 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+  ✔ fences scoped agent output custody on processor revocation, retention holds and replay after expiry (5775.336366ms)
+  ✔ cleans expired local authentication separately from held work retention (5485.129528ms)
+  ✔ anonymizes an erased inactive actor without losing the permanent audit chain (951.208123ms)
+Waiting to start (queue position 1/1): all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-custody-recovery:command [65da45bc5bb8] in /tmp/pegboard-verify-dgwB5K/work-graph-custody-recovery
+Memory: 12.8 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 1/1): all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-custody-recovery:command [65da45bc5bb8] in /tmp/pegboard-verify-dgwB5K/work-graph-custody-recovery
+Memory: 12.2 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 1/1): all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-custody-recovery:command [65da45bc5bb8] in /tmp/pegboard-verify-dgwB5K/work-graph-custody-recovery
+Memory: 12.0 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 1/1): all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-custody-recovery:command [65da45bc5bb8] in /tmp/pegboard-verify-dgwB5K/work-graph-custody-recovery
+Memory: 12.1 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 1/1): all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-custody-recovery:command [65da45bc5bb8] in /tmp/pegboard-verify-dgwB5K/work-graph-custody-recovery
+Memory: 11.8 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 1/1): all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-custody-recovery:command [65da45bc5bb8] in /tmp/pegboard-verify-dgwB5K/work-graph-custody-recovery
+Memory: 12.5 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 1/1): all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-custody-recovery:command [65da45bc5bb8] in /tmp/pegboard-verify-dgwB5K/work-graph-custody-recovery
+Memory: 12.1 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 1/1): all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-custody-recovery:command [65da45bc5bb8] in /tmp/pegboard-verify-dgwB5K/work-graph-custody-recovery
+Memory: 11.7 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 1/1): all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-custody-recovery:command [65da45bc5bb8] in /tmp/pegboard-verify-dgwB5K/work-graph-custody-recovery
+Memory: 11.6 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 1/1): all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-custody-recovery:command [65da45bc5bb8] in /tmp/pegboard-verify-dgwB5K/work-graph-custody-recovery
+Memory: 11.8 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+Waiting to start (queue position 1/1): all job slots are in use (1 of 1; change slots in /home/agent/.rer/jobs/config.json).
+Ahead of this job:
+  running: Pegboard test:work-graph-custody-recovery:command [65da45bc5bb8] in /tmp/pegboard-verify-dgwB5K/work-graph-custody-recovery
+Memory: 12.1 GiB available, floor 2.0 GiB. Change the floor with RER_JOBS_MIN_FREE_MEMORY_BYTES (bytes; 0 for no floor).
+Run from the project root. Inspect the queue with: 'node' 'node_modules/.pnpm/@runeditrun+rer@0.2.85/node_modules/@runeditrun/rer/modules/job-queue/cli.mjs' 'status' '--json'
+  ✔ preserves permanent audit through native archive restore and refuses an old archive with the later erasure journal (165227.098781ms)
+✔ Data custody (246811.254626ms)
+ℹ tests 9
+ℹ suites 1
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 247350.921553
+LANE work-graph-custody-recovery duration_ms=649145
+test:journeys-planning-capacity
+Heavy job admitted: Pegboard test:journeys-planning-capacity:command [5ceb78963a29]
+PROBE PEG-128 point 1: independent member task -> Proof reviews -> Review PDF versions at 1440 and 390 -> HTTP 200, newest readable v2 with real PDF pages
+PROBE PEG-128 point 2: observed permitted browser requests and response bodies -> no hidden v3 request, identity, current-version hint or HTTP 404
+PROBE PEG-128 point 3: keyboard chooses readable v1 at both widths -> HTTP 200, rendered v1 text and observed response byte digest match the selected source
+PROBE PEG-128 point 4: explicit hidden selected and comparison requests versus nonexistent IDs -> identical generic refusals; independent proof, feedback, history and decision state unchanged
+PEG-128 browser receipt [{"width":1440,"defaultStatus":200,"defaultVersion":"version_949807eec567426f974f","olderStatus":200,"olderVersion":"version_fd1762c6793143709e7e","statuses":[200,304],"hiddenRequests":0,"digests":["12dd178a9866f6772de20f9ee7ddf00239ca8f440239926c485f6312998ff1b9","c3c1a43ac7e7460fcd797bd8ba4e9c54dee164e587aab146f09715c13ed8f91f"]},{"width":390,"defaultStatus":200,"defaultVersion":"version_949807eec567426f974f","olderStatus":200,"olderVersion":"version_fd1762c6793143709e7e","statuses":[200,304],"hiddenRequests":0,"digests":["12dd178a9866f6772de20f9ee7ddf00239ca8f440239926c485f6312998ff1b9","c3c1a43ac7e7460fcd797bd8ba4e9c54dee164e587aab146f09715c13ed8f91f"]}]
+PROBE PEG-011 UI: keyboard selects retained PDF comparison, adds a page-coordinate pin and resolves it -> real page pixels and text, exact author and retained v2 history after v3; screens inspected at 1440 and 390
+PROBE PEG-011 retained entry: reader follows task and proof list after hidden v3 replacement -> readable v2 opens with retained feedback, no hidden version identity or annotation controls
+PROBE PEG-011 unavailable source: revoke selected v1 access before material read -> 404, no v1 pixels or text, permitted v2 still renders; refreshed hidden comparison refuses
+Human portfolio-capacity sanity journey passed at 1440; release proof at 1440 and 390.
+Capacity sanity journey passed at 1440px; Willow and BambooHR are official-schema fakes.
+LANE journeys-planning-capacity duration_ms=949588
+SHARD core-capacity duration_ms=962248

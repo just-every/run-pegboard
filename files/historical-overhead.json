@@ -1,0 +1,57 @@
+[
+  {
+    "job": "shards (runtime-source)",
+    "job_duration_seconds": 529.0,
+    "setup_to_shard_step_seconds": 30.92,
+    "step_to_first_command_seconds": 12.013,
+    "last_lane_to_shard_exit_seconds": 1.124
+  },
+  {
+    "job": "shards (custody-access)",
+    "job_duration_seconds": 578.0,
+    "setup_to_shard_step_seconds": 32.245,
+    "step_to_first_command_seconds": 16.188,
+    "last_lane_to_shard_exit_seconds": 1.694
+  },
+  {
+    "job": "shards (custody-recovery)",
+    "job_duration_seconds": 553.0,
+    "setup_to_shard_step_seconds": 19.305,
+    "step_to_first_command_seconds": 15.198,
+    "last_lane_to_shard_exit_seconds": 2.027
+  },
+  {
+    "job": "shards (extensions-services)",
+    "job_duration_seconds": 650.0,
+    "setup_to_shard_step_seconds": 30.249,
+    "step_to_first_command_seconds": 18.451,
+    "last_lane_to_shard_exit_seconds": 1.729
+  },
+  {
+    "job": "shards (time-planning)",
+    "job_duration_seconds": 537.0,
+    "setup_to_shard_step_seconds": 28.856,
+    "step_to_first_command_seconds": 14.509,
+    "last_lane_to_shard_exit_seconds": 1.152
+  },
+  {
+    "job": "shards (core-capacity)",
+    "job_duration_seconds": 667.0,
+    "setup_to_shard_step_seconds": 24.251,
+    "step_to_first_command_seconds": 21.734,
+    "last_lane_to_shard_exit_seconds": 1.763
+  },
+  {
+    "job": "shards (planning-services)",
+    "job_duration_seconds": 419.0,
+    "setup_to_shard_step_seconds": 16.318,
+    "step_to_first_command_seconds": 18.278,
+    "last_lane_to_shard_exit_seconds": 1.753
+  },
+  {
+    "job": "shards (reporting-work)",
+    "job_duration_seconds": 736.0,
+    "setup_to_shard_step_seconds": 36.712,
+    "step_to_first_command_seconds": 26.702
+  }
+]

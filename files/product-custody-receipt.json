@@ -1,0 +1,16 @@
+{
+  "head": "5c9580015024cf018316a34feeedb9dcf66216dc",
+  "ref": "refs/heads/cloud/sx-pegboard-ci-critical-path-2",
+  "remote_advertisement_verified": true,
+  "working_tree_clean": true,
+  "product_pushes": 2,
+  "final_ci": "unobserved: API budget exhausted",
+  "previous_ci": {
+    "head": "2ecb289f89c81ef79b0e45366c08f66de7804d5b",
+    "run_id": 42299250458,
+    "conclusion": "success",
+    "timing_target_met": false
+  },
+  "ready": false,
+  "clauses_changed": []
+}
