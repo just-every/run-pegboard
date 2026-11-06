@@ -1,9 +1,9 @@
 import { all, bound, conflict, first, forbidden, invalid, newId, notFound, now, PegError } from '../db'
 import { digest, guarded, revision } from '../decisions/revision'
 import { openProject, need } from '../workspace/projects'
-import { operatorRow, workspaceRole, type Actor } from '../workspace/people'
+import { operatorRow, workspaceRole, displayNames, type Actor } from '../workspace/people'
 import { projectParticipants } from '../tasks/participants'
-import { projectEffective, rootOf } from '../authorization/effective'
+import { rootOf } from '../authorization/effective'
 import { openTask } from '../tasks/access'
 import { permanentEvent } from '../audit/search'
 
@@ -46,6 +46,8 @@ async function readable(db:D1Database,actor:Actor,row:Pick<Publication,'project_
  return opened
 }
 const decode=(row:Draft)=>({...row,links:JSON.parse(row.links),recipients:JSON.parse(row.recipients) as string[]})
+// Membership fingerprints fence review internally; a task link never reveals its other project homes.
+const publicDraft=(row:Draft)=>({...decode(row),links:(JSON.parse(row.links) as {id:string;title:string}[]).map(s=>({id:s.id,title:s.title,href:'/app/tasks/'+s.id}))})
 async function draft(db:D1Database,actor:Actor,id:string) {
  const row=await first<Draft>(db,'SELECT * FROM peg_message_drafts WHERE id=?',id)
  if(!row||row.inactive)throw notFound()
@@ -77,7 +79,7 @@ export async function saveMessage(db:D1Database,actor:Actor,projectId:string,inp
 }
 export async function readMessageDraft(db:D1Database,actor:Actor,id:string) {
  const row=await draft(db,actor,id);await readable(db,actor,row)
- return decode(row)
+ return publicDraft(row)
 }
 async function reviewed(db:D1Database,actor:Actor,id:string) {
  const rev=await revision(db), row=await draft(db,actor,id), view=decode(row)
@@ -96,7 +98,7 @@ async function reviewed(db:D1Database,actor:Actor,id:string) {
 }
 export async function reviewMessage(db:D1Database,actor:Actor,id:string) {
  const {row,names,token}=await reviewed(db,actor,id)
- return {...decode(row),audience:names,token}
+ return {...publicDraft(row),audience:names,token}
 }
 const event=(db:D1Database,workspace:string,actor:Actor,action:string,id:string,version?:number)=>permanentEvent(db,{workspace,actor:actor.id,action,type:'message',id,metadata:{version}})
 function notice(db:D1Database,root:string,publication:string,eventId:string,recipient:string,kind:string,at:number) {
@@ -122,7 +124,8 @@ export async function openMessage(db:D1Database,actor:Actor,id:string) {
  const row=await first<Publication>(db,'SELECT * FROM peg_message_publications WHERE id=?',id)
  if(!row||row.inactive)throw notFound()
  const {project,effective}=await readable(db,actor,row)
- if(row.author_id!==actor.id&&!(JSON.parse(row.recipients) as string[]).includes(actor.id))throw notFound()
+ const origin=await first<{author_id:string}>(db,'SELECT author_id FROM peg_message_publications WHERE id=?',row.root_id)
+ if(row.author_id!==actor.id&&origin?.author_id!==actor.id&&!(JSON.parse(row.recipients) as string[]).includes(actor.id))throw notFound()
  const publications=await all<Publication>(db,'SELECT * FROM peg_message_publications WHERE root_id=? ORDER BY published_at,id',row.root_id)
  for(const publication of publications){if(publication.inactive)throw notFound();await readable(db,actor,publication)}
  const latest=publications.find(p=>!publications.some(c=>c.corrects_id===p.id))!
@@ -132,9 +135,10 @@ export async function readMessage(db:D1Database,actor:Actor,id:string) {
  const rev=await revision(db), opened=await openMessage(db,actor,id),{row,publications,effective}=opened
  const comments=await all<Comment>(db,'SELECT * FROM peg_message_comments WHERE root_id=? ORDER BY created_at,id',row.root_id)
  const history=await all<{comment_id:string;revision:number;body:string;deleted_at:number|null;author_id:string;at:number}>(db,'SELECT h.* FROM peg_message_comment_history h JOIN peg_message_comments c ON c.id=h.comment_id WHERE c.root_id=? ORDER BY h.at,h.id',row.root_id)
+ const names=await displayNames(db,[...publications.map(p=>p.author_id),...comments.map(c=>c.author_id)])
  return {id:row.root_id,projectId:row.project_id,projectName:opened.project.name,latestId:opened.latest.id,
-  publications:publications.map(p=>({...p,links:JSON.parse(p.links).map((s:any)=>({id:s.id,title:s.title,href:'/app/tasks/'+s.id})),recipients:JSON.parse(p.recipients)})),
-  comments:comments.map(c=>({...c,body:c.deleted_at?'':c.body,editable:c.author_id===actor.id&&!c.deleted_at})),history,
+  publications:publications.map(p=>({...p,authorName:names.get(p.author_id)??'Former participant',links:JSON.parse(p.links).map((s:any)=>({id:s.id,title:s.title,href:'/app/tasks/'+s.id})),recipients:JSON.parse(p.recipients)})),
+  comments:comments.map(c=>({...c,authorName:names.get(c.author_id)??'Former participant',body:c.deleted_at?'':c.body,editable:c.author_id===actor.id&&!c.deleted_at})),history:history.map(h=>({...h,authorName:names.get(h.author_id)??'Former participant'})),
   preferences:await preference(db,row.root_id,actor.id),canReply:effective.capabilities.has('comment'),canPublish:effective.capabilities.has('manage_settings'),token:await digest([actor.id,row.root_id,rev])}
 }
 async function threadWrite(db:D1Database,actor:Actor,id:string,input:Record<string,any>) {
@@ -157,7 +161,7 @@ export async function replyMessage(db:D1Database,actor:Actor,id:string,input:Rec
  const parent=input.parentId||null
  if(parent&&!await first(db,'SELECT 1 FROM peg_message_comments WHERE id=? AND root_id=? AND deleted_at IS NULL',parent,row.root_id))throw invalid('message_parent')
  const comment=newId('reply'),at=now(),notices=[]
- for(const recipient of new Set([...audience,row.author_id]))if(recipient!==actor.id){
+ for(const recipient of audience)if(recipient!==actor.id){
   try{const target=await person(db,recipient);await openMessage(db,target,id);const pref=await preference(db,row.root_id,recipient);if(pref.following&&!pref.muted)notices.push(notice(db,row.root_id,id,comment,recipient,'reply',at))}catch(e){if(!denied(e))throw e}
  }
  await guarded(db,rev,[bound(db,'INSERT INTO peg_message_comments VALUES(?,?,?,?,?,?,1,NULL,?,?,?)',[comment,row.root_id,id,parent,actor.id,body,at,at,key]),bound(db,'INSERT INTO peg_message_comment_history VALUES(?,?,?,?,?,NULL,?)',[newId('revision'),comment,actor.id,1,body,at]),...notices,event(db,project.workspace_id,actor,'message.replied',comment,1)])

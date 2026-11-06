@@ -6,6 +6,7 @@ import { saveMessage, readMessageDraft, reviewMessage, publishMessage, readMessa
 // Browser forms and JSON use the same services, with explicit conversion at the form boundary.
 function formInput(input:Record<string,any>,form:boolean) {
  if(!form)return input
+ delete input._next
  const out={...input}
  for(const key of ['version','revision'])if(key in out){if(!/^[1-9][0-9]*$/.test(out[key])||!Number.isSafeInteger(Number(out[key])))throw invalid('message_version');out[key]=Number(out[key])}
  for(const key of ['confirm','following','muted'])if(key in out){if(!['true','false'].includes(out[key]))throw invalid('message_boolean');out[key]=out[key]==='true'}
