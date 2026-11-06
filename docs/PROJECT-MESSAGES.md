@@ -1,6 +1,6 @@
 # Project announcements
 
-Project Messages contains human-authored text announcements, rather than chat channels. Open a project, choose Messages, and compose an announcement. A current internal human with project settings authority can save a draft, select active internal participants and readable project work, then review the exact subject, body, work links and named audience before publication. Administrative custody alone does not publish a directory identity. Guests, agents and analysts are excluded from this native slice.
+Project Messages contains human-authored text announcements, rather than chat channels. Open a project, choose Messages, and compose an announcement. A current internal human with project settings authority can save a draft, select active internal participants and readable project work, then review the exact subject, body, work links and named audience before publication. Administrative custody alone does not publish a directory identity. Guests and agents are excluded from this native slice. Current internal analysts can receive and read an announcement under their existing Viewer ceiling; they cannot publish or reply.
 
 A publication is immutable. A correction is a separately reviewed publication in the same thread with the same selected audience, attributed to its publisher. Original text remains visible in history. No announcement creates membership, task editing or approval authority. Text mentions never expand its audience.
 
