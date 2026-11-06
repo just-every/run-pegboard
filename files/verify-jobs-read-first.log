@@ -1,0 +1,126 @@
+Wait 256s for per-run API spacing before the single job-duration read
+128105909758 plan completed success 2026-11-06T19:28:26Z 2026-11-06T19:28:32Z
+128105974345 shards (runtime-source) completed success 2026-11-06T19:28:34Z 2026-11-06T19:39:33Z
+128105974383 shards (custody-access) completed success 2026-11-06T19:28:34Z 2026-11-06T19:36:10Z
+128105974387 shards (custody-recovery) completed failure 2026-11-06T19:28:35Z 2026-11-06T19:37:45Z
+FAILED STEP 14 Run this shard failure
+128105974417 shards (planning-services) completed success 2026-11-06T19:28:35Z 2026-11-06T19:38:01Z
+128105974432 shards (core-capacity) completed success 2026-11-06T19:28:34Z 2026-11-06T19:36:55Z
+128105974450 shards (time-planning) completed success 2026-11-06T19:28:34Z 2026-11-06T19:37:06Z
+128105974697 shards (reporting-work) completed success 2026-11-06T19:28:35Z 2026-11-06T19:36:37Z
+128105974701 shards (extensions-services) completed success 2026-11-06T19:28:35Z 2026-11-06T19:38:55Z
+128105977037 light completed skipped 2026-11-06T19:28:33Z 2026-11-06T19:28:33Z
+128111545305 verify completed failure 2026-11-06T19:39:35Z 2026-11-06T19:39:37Z
+FAILED STEP 2 Require the selected coverage and its proof failure
+128111547402 nightly-proof completed skipped 2026-11-06T19:39:33Z 2026-11-06T19:39:33Z
+128111547649 full-push-proof completed skipped 2026-11-06T19:39:33Z 2026-11-06T19:39:33Z
+{
+  "repository": "just-every/run-pegboard",
+  "branch": "cloud/sx-pegboard-ci-critical-path-1",
+  "head": "e2c3d762315888794377822119176ee31c412c4c",
+  "run": 42279915600,
+  "url": "https://github.com/just-every/run-pegboard/actions/runs/42279915600",
+  "attempt": 1,
+  "status": "completed",
+  "conclusion": "failure",
+  "shardCount": 8,
+  "shards": [
+    {
+      "name": "runtime-source",
+      "id": 128105974345,
+      "status": "completed",
+      "conclusion": "success",
+      "started": "2026-11-06T19:28:34Z",
+      "completed": "2026-11-06T19:39:33Z",
+      "seconds": 659.0,
+      "url": "https://github.com/just-every/run-pegboard/actions/runs/42279915600/job/128105974345"
+    },
+    {
+      "name": "custody-access",
+      "id": 128105974383,
+      "status": "completed",
+      "conclusion": "success",
+      "started": "2026-11-06T19:28:34Z",
+      "completed": "2026-11-06T19:36:10Z",
+      "seconds": 456.0,
+      "url": "https://github.com/just-every/run-pegboard/actions/runs/42279915600/job/128105974383"
+    },
+    {
+      "name": "custody-recovery",
+      "id": 128105974387,
+      "status": "completed",
+      "conclusion": "failure",
+      "started": "2026-11-06T19:28:35Z",
+      "completed": "2026-11-06T19:37:45Z",
+      "seconds": 550.0,
+      "url": "https://github.com/just-every/run-pegboard/actions/runs/42279915600/job/128105974387"
+    },
+    {
+      "name": "planning-services",
+      "id": 128105974417,
+      "status": "completed",
+      "conclusion": "success",
+      "started": "2026-11-06T19:28:35Z",
+      "completed": "2026-11-06T19:38:01Z",
+      "seconds": 566.0,
+      "url": "https://github.com/just-every/run-pegboard/actions/runs/42279915600/job/128105974417"
+    },
+    {
+      "name": "core-capacity",
+      "id": 128105974432,
+      "status": "completed",
+      "conclusion": "success",
+      "started": "2026-11-06T19:28:34Z",
+      "completed": "2026-11-06T19:36:55Z",
+      "seconds": 501.0,
+      "url": "https://github.com/just-every/run-pegboard/actions/runs/42279915600/job/128105974432"
+    },
+    {
+      "name": "time-planning",
+      "id": 128105974450,
+      "status": "completed",
+      "conclusion": "success",
+      "started": "2026-11-06T19:28:34Z",
+      "completed": "2026-11-06T19:37:06Z",
+      "seconds": 512.0,
+      "url": "https://github.com/just-every/run-pegboard/actions/runs/42279915600/job/128105974450"
+    },
+    {
+      "name": "reporting-work",
+      "id": 128105974697,
+      "status": "completed",
+      "conclusion": "success",
+      "started": "2026-11-06T19:28:35Z",
+      "completed": "2026-11-06T19:36:37Z",
+      "seconds": 482.0,
+      "url": "https://github.com/just-every/run-pegboard/actions/runs/42279915600/job/128105974697"
+    },
+    {
+      "name": "extensions-services",
+      "id": 128105974701,
+      "status": "completed",
+      "conclusion": "success",
+      "started": "2026-11-06T19:28:35Z",
+      "completed": "2026-11-06T19:38:55Z",
+      "seconds": 620.0,
+      "url": "https://github.com/just-every/run-pegboard/actions/runs/42279915600/job/128105974701"
+    }
+  ],
+  "meanSeconds": 543.25,
+  "longest": {
+    "name": "runtime-source",
+    "id": 128105974345,
+    "status": "completed",
+    "conclusion": "success",
+    "started": "2026-11-06T19:28:34Z",
+    "completed": "2026-11-06T19:39:33Z",
+    "seconds": 659.0,
+    "url": "https://github.com/just-every/run-pegboard/actions/runs/42279915600/job/128105974345"
+  },
+  "longestToMean": 1.2130694891854579,
+  "within1point5": true,
+  "allShardsSuccessful": false,
+  "fullPushProof": "skipped",
+  "aggregate": "failure",
+  "ready": false
+}

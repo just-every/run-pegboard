@@ -1,0 +1,30 @@
+> [provider-diagnostics] pnpm exec rer queue test:work-graph-custody-recovery -- sh -c "node --test --test-name-pattern='^(?:Data custody provider diagnostics)(?: |$)' --test-skip-pattern='^(?:Data custody intake erasure|Data custody PDF feedback)(?: |$)' tests/work-graph.test.mjs"
+test:work-graph-custody-recovery
+TAP version 13
+# PROBE PEG-065 exact expiry: schema-fake time-delivery door -> real persisted sending rows, exact expired IDs 3,5 and retained IDs 1,2,4,6,7,8,9,10,11,12
+# PROBE PEG-065 authority and holds: owner review, administrator and member refusal, active hold, stale and concurrent confirmation -> one receipt, unchanged held history and no provider calls
+# PROBE PEG-065 durable custody: expiry, later independent erasure, restart, replay and native archive with later journal -> no resurrection; ledger, approved original 18000 seconds and corrected total 17640 seconds, signed sheets and time history unchanged
+# Subtest: Data custody provider diagnostics
+    # Subtest: expires exact reviewed superseded diagnostics while preserving delivery witnesses, authority and native recovery
+    ok 1 - expires exact reviewed superseded diagnostics while preserving delivery witnesses, authority and native recovery
+      ---
+      duration_ms: 324975.793876
+      type: 'test'
+      ...
+    1..1
+ok 1 - Data custody provider diagnostics
+  ---
+  duration_ms: 324976.68642
+  type: 'suite'
+  ...
+1..1
+# tests 1
+# suites 1
+# pass 1
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 325557.081903
+LANE provider-diagnostics duration_ms=326085
+SHARD cached-exclusive-diagnostics duration_ms=329644

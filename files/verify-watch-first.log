@@ -1,0 +1,2 @@
+WAIT run=42279915600 seconds=769
+{"conclusion": "failure", "head_sha": "e2c3d762315888794377822119176ee31c412c4c", "html_url": "https://github.com/just-every/run-pegboard/actions/runs/42279915600", "run_attempt": 1, "status": "completed"}

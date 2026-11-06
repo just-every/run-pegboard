@@ -1,0 +1,110 @@
+{
+  "repository": "just-every/run-pegboard",
+  "branch": "cloud/sx-pegboard-ci-critical-path-1",
+  "head": "f0386615142fdd50970be89ae671391def0a18fc",
+  "run": 42286041668,
+  "url": "https://github.com/just-every/run-pegboard/actions/runs/42286041668",
+  "attempt": 1,
+  "status": "completed",
+  "conclusion": "success",
+  "shardCount": 8,
+  "shards": [
+    {
+      "name": "time-planning",
+      "id": 128127106684,
+      "status": "completed",
+      "conclusion": "success",
+      "started": "2026-11-06T20:10:34Z",
+      "completed": "2026-11-06T20:19:24Z",
+      "seconds": 530.0,
+      "url": "https://github.com/just-every/run-pegboard/actions/runs/42286041668/job/128127106684"
+    },
+    {
+      "name": "custody-recovery",
+      "id": 128127106742,
+      "status": "completed",
+      "conclusion": "success",
+      "started": "2026-11-06T20:10:34Z",
+      "completed": "2026-11-06T20:19:39Z",
+      "seconds": 545.0,
+      "url": "https://github.com/just-every/run-pegboard/actions/runs/42286041668/job/128127106742"
+    },
+    {
+      "name": "runtime-source",
+      "id": 128127106765,
+      "status": "completed",
+      "conclusion": "success",
+      "started": "2026-11-06T20:10:34Z",
+      "completed": "2026-11-06T20:17:16Z",
+      "seconds": 402.0,
+      "url": "https://github.com/just-every/run-pegboard/actions/runs/42286041668/job/128127106765"
+    },
+    {
+      "name": "reporting-work",
+      "id": 128127106776,
+      "status": "completed",
+      "conclusion": "success",
+      "started": "2026-11-06T20:10:34Z",
+      "completed": "2026-11-06T20:21:02Z",
+      "seconds": 628.0,
+      "url": "https://github.com/just-every/run-pegboard/actions/runs/42286041668/job/128127106776"
+    },
+    {
+      "name": "extensions-services",
+      "id": 128127106801,
+      "status": "completed",
+      "conclusion": "success",
+      "started": "2026-11-06T20:10:34Z",
+      "completed": "2026-11-06T20:20:12Z",
+      "seconds": 578.0,
+      "url": "https://github.com/just-every/run-pegboard/actions/runs/42286041668/job/128127106801"
+    },
+    {
+      "name": "custody-access",
+      "id": 128127106817,
+      "status": "completed",
+      "conclusion": "success",
+      "started": "2026-11-06T20:10:35Z",
+      "completed": "2026-11-06T20:20:25Z",
+      "seconds": 590.0,
+      "url": "https://github.com/just-every/run-pegboard/actions/runs/42286041668/job/128127106817"
+    },
+    {
+      "name": "planning-services",
+      "id": 128127106862,
+      "status": "completed",
+      "conclusion": "success",
+      "started": "2026-11-06T20:10:36Z",
+      "completed": "2026-11-06T20:17:46Z",
+      "seconds": 430.0,
+      "url": "https://github.com/just-every/run-pegboard/actions/runs/42286041668/job/128127106862"
+    },
+    {
+      "name": "core-capacity",
+      "id": 128127106972,
+      "status": "completed",
+      "conclusion": "success",
+      "started": "2026-11-06T20:10:35Z",
+      "completed": "2026-11-06T20:18:23Z",
+      "seconds": 468.0,
+      "url": "https://github.com/just-every/run-pegboard/actions/runs/42286041668/job/128127106972"
+    }
+  ],
+  "meanSeconds": 521.375,
+  "longest": {
+    "name": "reporting-work",
+    "id": 128127106776,
+    "status": "completed",
+    "conclusion": "success",
+    "started": "2026-11-06T20:10:34Z",
+    "completed": "2026-11-06T20:21:02Z",
+    "seconds": 628.0,
+    "url": "https://github.com/just-every/run-pegboard/actions/runs/42286041668/job/128127106776"
+  },
+  "longestToMean": 1.204507312395109,
+  "within1point5": true,
+  "allShardsSuccessful": true,
+  "fullPushProof": "success",
+  "aggregate": "success",
+  "ready": true
+}

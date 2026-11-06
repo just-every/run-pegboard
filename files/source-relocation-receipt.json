@@ -1,0 +1,11 @@
+{
+  "exit": 0,
+  "nodeTests": 14,
+  "passes": 14,
+  "typecheck": 0,
+  "firstParty": 0,
+  "contractCheck": 0,
+  "cpuAffinityCount": 2,
+  "buildBeforeTypecheck": false,
+  "privateWorkingDirectory": true
+}

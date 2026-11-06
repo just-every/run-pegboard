@@ -1,0 +1,138 @@
+> [source] pnpm run test:graph:schedule
+
+> @just-every/pegboard@0.1.0 test:graph:schedule /tmp/pegboard-verify-lpDD1t/source
+> rer queue test:graph:schedule -- sh -c "node --test tests/schedule.test.mjs && node --test --test-name-pattern='^(?:Local rule audit records exact)(?: |$)' tests/work-graph.test.mjs"
+
+test:graph:schedule
+TAP version 13
+# Subtest: PEG-004 dependencies and believable schedules
+    # Subtest: previews and applies all four dependency types over the July 4 holiday and a weekend, then a daylight-saving change, with the chain explained
+    ok 1 - previews and applies all four dependency types over the July 4 holiday and a weekend, then a daylight-saving change, with the chain explained
+      ---
+      duration_ms: 1840.752207
+      type: 'test'
+      ...
+    # Subtest: refuses a cycle and a stale plan and leaves every downstream date untouched
+    ok 2 - refuses a cycle and a stale plan and leaves every downstream date untouched
+      ---
+      duration_ms: 478.191914
+      type: 'test'
+      ...
+    # Subtest: lets a project editor confirm a previewed set once, attributed to them, with undo and no second approval; a viewer and an agent cannot shift anything
+    ok 3 - lets a project editor confirm a previewed set once, attributed to them, with undo and no second approval; a viewer and an agent cannot shift anything
+      ---
+      duration_ms: 2658.132699
+      type: 'test'
+      ...
+    # Subtest: holds a set that reaches work the editor cannot see for its approver, without disclosing it or applying part of it
+    ok 4 - holds a set that reaches work the editor cannot see for its approver, without disclosing it or applying part of it
+      ---
+      duration_ms: 889.42349
+      type: 'test'
+      ...
+    # Subtest: computes exact branching slack, negative lead and milestone dates and refuses an impossible completed-dependent cascade atomically
+    ok 5 - computes exact branching slack, negative lead and milestone dates and refuses an impossible completed-dependent cascade atomically
+      ---
+      duration_ms: 1280.513531
+      type: 'test'
+      ...
+    # Subtest: uses persisted working hours and personal time off for requested timed edits and dependent shifts across DST
+    ok 6 - uses persisted working hours and personal time off for requested timed edits and dependent shifts across DST
+      ---
+      duration_ms: 15779.228025
+      type: 'test'
+      ...
+    # Subtest: preserves timed duration through partial time off and refuses stale calendars and leave revisions without partial writes
+    ok 7 - preserves timed duration through partial time off and refuses stale calendars and leave revisions without partial writes
+      ---
+      duration_ms: 1113.858752
+      type: 'test'
+      ...
+    # Subtest: limits calendar configuration to administrators and personal leave to its owner without exposing private reasons
+    ok 8 - limits calendar configuration to administrators and personal leave to its owner without exposing private reasons
+      ---
+      duration_ms: 496.478214
+      type: 'test'
+      ...
+    # Subtest: notifies the current assignee once after two blockers including concurrent and replayed completion on the schedule graph
+    ok 9 - notifies the current assignee once after two blockers including concurrent and replayed completion on the schedule graph
+      ---
+      duration_ms: 1543.12842
+      type: 'test'
+      ...
+    # Subtest: reroutes queued readiness to the current assignee and honors mute, quiet hours, digest and revoked access
+    ok 10 - reroutes queued readiness to the current assignee and honors mute, quiet hours, digest and revoked access
+      ---
+      duration_ms: 1202.075192
+      type: 'test'
+      ...
+    # Subtest: keeps a scoped guest and hidden predecessors private and cancels obsolete readiness before a fresh graph transition
+    ok 11 - keeps a scoped guest and hidden predecessors private and cancels obsolete readiness before a fresh graph transition
+      ---
+      duration_ms: 1536.60475
+      type: 'test'
+      ...
+    # Subtest: applies a reviewed cross-project rule cascade once with assignment, work action, attribution and coherent undo
+    ok 12 - applies a reviewed cross-project rule cascade once with assignment, work action, attribution and coherent undo
+      ---
+      duration_ms: 30018.965382
+      type: 'test'
+      ...
+    # Subtest: holds an inseparable hidden cascade without effects or disclosure and refuses a revoked activating Admin
+    ok 13 - holds an inseparable hidden cascade without effects or disclosure and refuses a revoked activating Admin
+      ---
+      duration_ms: 16765.900756
+      type: 'test'
+      ...
+    1..13
+ok 1 - PEG-004 dependencies and believable schedules
+  ---
+  duration_ms: 126890.492603
+  type: 'suite'
+  ...
+1..1
+# tests 13
+# suites 1
+# pass 13
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 127014.355538
+TAP version 13
+# Subtest: Local rule audit
+    # Subtest: records exact local rule lifecycle and outcomes once through restart and replay, with redacted scoped append-only audit
+    ok 1 - records exact local rule lifecycle and outcomes once through restart and replay, with redacted scoped append-only audit
+      ---
+      duration_ms: 191518.009937
+      type: 'test'
+      ...
+    1..1
+ok 1 - Local rule audit
+  ---
+  duration_ms: 236817.252709
+  type: 'suite'
+  ...
+1..1
+# tests 1
+# suites 1
+# pass 1
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 237375.989939
+> [source] pnpm run check --profile first-party
+
+> @just-every/pegboard@0.1.0 check /tmp/pegboard-verify-lpDD1t/source
+> rer check --profile first-party
+
+> [source] node scripts/contract-docs.mjs check PEG-128 PEG-011 PEG-059 PEG-057 PEG-007 PEG-078 PEG-003 PEG-018 PEG-031 PEG-027 PEG-015 PEG-036 PEG-012 PEG-016 PEG-044 PEG-025 PEG-127 PEG-037 PEG-066
+contract-docs check: PEG-128, PEG-011, PEG-059, PEG-057, PEG-007, PEG-078, PEG-003, PEG-018, PEG-031, PEG-027, PEG-015, PEG-036, PEG-012, PEG-016, PEG-044, PEG-025, PEG-127, PEG-037, PEG-066; counts 22 done, 20 partial, 50 missing
+> [source] pnpm run typecheck
+
+> @just-every/pegboard@0.1.0 typecheck /tmp/pegboard-verify-lpDD1t/source
+> tsc --build --incremental
+
+LANE source duration_ms=378991
+SHARD source-typecheck-relocation duration_ms=382994

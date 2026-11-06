@@ -1,0 +1,22 @@
+{
+  "repository": "just-every/run-pegboard",
+  "branch": "cloud/sx-pegboard-ci-critical-path-1",
+  "head": "e2c3d762315888794377822119176ee31c412c4c",
+  "mainAfterPush": "47f7e9b50fae330f8109d1e97e10a27783439820",
+  "updatedMainIncluded": true,
+  "push": "success",
+  "pushAttempt": 1,
+  "productFiles": [
+    "scripts/verify-app.mjs",
+    "sources.lock.json"
+  ],
+  "workingTree": "clean",
+  "pr": null,
+  "verifyRun": 42279915600,
+  "verifyUrl": "https://github.com/just-every/run-pegboard/actions/runs/42279915600",
+  "identity": {
+    "author": "Run Edit Run fleet <fleet@runeditrun.com>",
+    "committer": "Run Edit Run fleet <fleet@runeditrun.com>",
+    "trailers": []
+  }
+}

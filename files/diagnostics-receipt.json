@@ -1,0 +1,18 @@
+{
+  "cpuAffinityCount": 2,
+  "testTimeoutMs": 360000,
+  "uncachedDiagnosticsMs": 325934.524078,
+  "compileCacheDiagnosticsMs": 324975.793876,
+  "bothPassed": true,
+  "uncachedMarginMs": 34065.47592200001,
+  "compileCacheImprovementPercent": 0.29414809760090666,
+  "compileCacheRetained": false,
+  "decision": "0.3% difference is not material; retain the simpler exclusive scheduling fix",
+  "serialFixturePassed": true,
+  "sourceTypecheckRelocationPassed": true,
+  "originalTimeoutFailure": {
+    "run": 42279915600,
+    "job": 128105974387,
+    "ms": 396542.578006
+  }
+}

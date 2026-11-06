@@ -2,7 +2,7 @@
 
 Before: 18 push jobs. After: 8 push jobs, at most 3 concurrent isolated lanes per job.
 
-Selected test leaves: 126 before / 126 after. Browser journey selectors: 35 / 35. Additional executable test files: 3 / 3. Every row occurs exactly once in each full run.
+Selected test leaves: 147 before / 147 after. Browser journey selectors: 35 / 35. Additional executable test files: 3 / 3. Every row occurs exactly once in each full run.
 
 | Test / journey | Before | After |
 | --- | --- | --- |
@@ -13,7 +13,7 @@ Selected test leaves: 126 before / 126 after. Browser journey selectors: 35 / 35
 | journey :: approval-routing | journeys-core-access | custody-access/journeys-core-access |
 | journey :: approvals | journeys-core-work | reporting-work/journeys-core-work |
 | journey :: bundles | journeys-planning-work | time-planning/journeys-planning-work |
-| journey :: calendar-blocks | journeys-services | custody-recovery/journeys-services |
+| journey :: calendar-blocks | journeys-services | custody-access/journeys-services |
 | journey :: canvas | journeys-planning-capacity | core-capacity/journeys-planning-capacity |
 | journey :: capacity | journeys-planning-capacity | core-capacity/journeys-planning-capacity |
 | journey :: core | journeys-core-work | reporting-work/journeys-core-work |
@@ -24,19 +24,19 @@ Selected test leaves: 126 before / 126 after. Browser journey selectors: 35 / 35
 | journey :: guests | journeys-core-access | custody-access/journeys-core-access |
 | journey :: intake | journeys-core-access | custody-access/journeys-core-access |
 | journey :: intake-decisions | journeys-core-access | custody-access/journeys-core-access |
-| journey :: intake-erasure | journeys-services | custody-recovery/journeys-services |
+| journey :: intake-erasure | journeys-services | custody-access/journeys-services |
 | journey :: meetings | journeys-services-work | extensions-services/journeys-services-work |
 | journey :: pdf-feedback | journeys-core-work | reporting-work/journeys-core-work |
 | journey :: portfolio | journeys-planning-work | time-planning/journeys-planning-work |
 | journey :: portfolio-capacity | journeys-planning-capacity | core-capacity/journeys-planning-capacity |
 | journey :: provider-log-retention | journeys-services-work | extensions-services/journeys-services-work |
 | journey :: public-api | journeys-core-access | custody-access/journeys-core-access |
-| journey :: recovery | journeys-services | custody-recovery/journeys-services |
+| journey :: recovery | journeys-services | custody-access/journeys-services |
 | journey :: recurrence | journeys-core-work | reporting-work/journeys-core-work |
 | journey :: register | journeys-planning-work | time-planning/journeys-planning-work |
-| journey :: reporting | journeys-services | custody-recovery/journeys-services |
+| journey :: reporting | journeys-services | custody-access/journeys-services |
 | journey :: retained-pdf-review | journeys-core-work | reporting-work/journeys-core-work |
-| journey :: rule-audit | journeys-services | custody-recovery/journeys-services |
+| journey :: rule-audit | journeys-services | custody-access/journeys-services |
 | journey :: search-bulk | journeys-services-work | extensions-services/journeys-services-work |
 | journey :: time-packets | journeys-core-work | reporting-work/journeys-core-work |
 | journey :: timeline | journeys-planning-work | time-planning/journeys-planning-work |
@@ -57,9 +57,9 @@ Selected test leaves: 126 before / 126 after. Browser journey selectors: 35 / 35
 | tests/journeys/conversions.mjs | runtime | runtime-source/runtime |
 | tests/journeys/templates.mjs | runtime | runtime-source/runtime |
 | tests/portfolios.test.mjs :: Activated rule effect recovery records activated date and assignment effects once and undoes only unchanged fields with current authority | portfolios | planning-services/portfolios |
-| tests/portfolios.test.mjs :: Capacity across committed work compares a staffing scenario across three projects, retains hidden hours without titles, and applies only an exact current human reassignment | runtime | runtime-source/runtime |
-| tests/portfolios.test.mjs :: Capacity across committed work reviews Split, Sum and per-assignee source effort without changing the task estimate or duplicating multi-homed work, and holds missing semantics for repair | runtime | runtime-source/runtime |
-| tests/portfolios.test.mjs :: Capacity across committed work uses self-declared full and partial days, unions approved source leave, hides reasons, and refuses unavailable authority or stale feeds | runtime | runtime-source/runtime |
+| tests/portfolios.test.mjs :: Capacity across committed work compares a staffing scenario across three projects, retains hidden hours without titles, and applies only an exact current human reassignment | runtime | reporting-work/work-graph-analyst |
+| tests/portfolios.test.mjs :: Capacity across committed work reviews Split, Sum and per-assignee source effort without changing the task estimate or duplicating multi-homed work, and holds missing semantics for repair | runtime | reporting-work/work-graph-analyst |
+| tests/portfolios.test.mjs :: Capacity across committed work uses self-declared full and partial days, unions approved source leave, hides reasons, and refuses unavailable authority or stale feeds | runtime | reporting-work/work-graph-analyst |
 | tests/portfolios.test.mjs :: Conditional local work rules activates form and section date mappings once through restart and preserves a later edit during scoped undo | workflow-rules | planning-services/workflow-rules |
 | tests/portfolios.test.mjs :: Conditional local work rules applies the complete work-action set once, undoes its own effects and refuses approval decisions or expanded audiences | workflow-rules | planning-services/workflow-rules |
 | tests/portfolios.test.mjs :: Conditional local work rules computes event-relative weeks, business days and clamped months across holiday and daylight-saving boundaries | workflow-rules | planning-services/workflow-rules |
@@ -90,11 +90,19 @@ Selected test leaves: 126 before / 126 after. Browser journey selectors: 35 / 35
 | tests/portfolios.test.mjs :: Status rights request custody records justified finite retention separately, requires timely permitted extension and revokes a former handler | workflow-rules | planning-services/workflow-rules |
 | tests/portfolios.test.mjs :: Status rights request custody tracks the exact structured copies and finite delegated custody without granting browsing or false erasure | workflow-rules | planning-services/workflow-rules |
 | tests/runtime.mjs | runtime | runtime-source/runtime |
+| tests/schedule.test.mjs :: PEG-004 dependencies and believable schedules applies a reviewed cross-project rule cascade once with assignment, work action, attribution and coherent undo | source | runtime-source/source |
 | tests/schedule.test.mjs :: PEG-004 dependencies and believable schedules computes exact branching slack, negative lead and milestone dates and refuses an impossible completed-dependent cascade atomically | source | runtime-source/source |
 | tests/schedule.test.mjs :: PEG-004 dependencies and believable schedules holds a set that reaches work the editor cannot see for its approver, without disclosing it or applying part of it | source | runtime-source/source |
+| tests/schedule.test.mjs :: PEG-004 dependencies and believable schedules holds an inseparable hidden cascade without effects or disclosure and refuses a revoked activating Admin | source | runtime-source/source |
+| tests/schedule.test.mjs :: PEG-004 dependencies and believable schedules keeps a scoped guest and hidden predecessors private and cancels obsolete readiness before a fresh graph transition | source | runtime-source/source |
 | tests/schedule.test.mjs :: PEG-004 dependencies and believable schedules lets a project editor confirm a previewed set once, attributed to them, with undo and no second approval; a viewer and an agent cannot shift anything | source | runtime-source/source |
+| tests/schedule.test.mjs :: PEG-004 dependencies and believable schedules limits calendar configuration to administrators and personal leave to its owner without exposing private reasons | source | runtime-source/source |
+| tests/schedule.test.mjs :: PEG-004 dependencies and believable schedules notifies the current assignee once after two blockers including concurrent and replayed completion on the schedule graph | source | runtime-source/source |
+| tests/schedule.test.mjs :: PEG-004 dependencies and believable schedules preserves timed duration through partial time off and refuses stale calendars and leave revisions without partial writes | source | runtime-source/source |
 | tests/schedule.test.mjs :: PEG-004 dependencies and believable schedules previews and applies all four dependency types over the July 4 holiday and a weekend, then a daylight-saving change, with the chain explained | source | runtime-source/source |
 | tests/schedule.test.mjs :: PEG-004 dependencies and believable schedules refuses a cycle and a stale plan and leaves every downstream date untouched | source | runtime-source/source |
+| tests/schedule.test.mjs :: PEG-004 dependencies and believable schedules reroutes queued readiness to the current assignee and honors mute, quiet hours, digest and revoked access | source | runtime-source/source |
+| tests/schedule.test.mjs :: PEG-004 dependencies and believable schedules uses persisted working hours and personal time off for requested timed edits and dependent shifts across DST | source | runtime-source/source |
 | tests/work-graph.test.mjs :: Analyst exports denies analyst scope escalation and fences cached work after movement or credential expiry | work-graph-reporting | reporting-work/work-graph-analyst |
 | tests/work-graph.test.mjs :: Analyst exports keeps analyst credentials and cached export payloads out of native archives | work-graph-reporting | reporting-work/work-graph-analyst |
 | tests/work-graph.test.mjs :: Analyst exports reconciles reviewed portfolio, goal, request and approval datasets with local scheduled reports | work-graph-reporting | reporting-work/work-graph-analyst |
@@ -103,33 +111,37 @@ Selected test leaves: 126 before / 126 after. Browser journey selectors: 35 / 35
 | tests/work-graph.test.mjs :: Approval routing custody requires quorum on an approval task, refuses current and prior owners and agents, and never lets the old decision door bypass named capability checks | work-graph-time | time-planning/work-graph-decisions |
 | tests/work-graph.test.mjs :: Approval routing custody routes ordered proof stages with independent named humans, delegates, and binds expiring revoked links to the exact replacement bytes | work-graph-time | time-planning/work-graph-decisions |
 | tests/work-graph.test.mjs :: Approval routing custody sends a reviewed PDF-v2 reminder once through the mail seam without comments or an implicit approval and respects muted preferences | work-graph-time | time-planning/work-graph-decisions |
+| tests/work-graph.test.mjs :: Calendar work blocks through provider schema edges refuses unsafe calendar authority and stale reviews, exposes simultaneous task and provider conflicts and leaves deadlines untouched | work-graph-time | time-planning/work-graph-decisions |
+| tests/work-graph.test.mjs :: Calendar work blocks through provider schema edges reserves free time on both provider schemas, reconciles DST moves, deletion, replay, reconnect and restart without changing deadlines | work-graph-time | time-planning/work-graph-decisions |
 | tests/work-graph.test.mjs :: Data custody PDF feedback reconciles native archive feedback, exact person erasure, holds and proof-group expiry | work-graph-extensions | extensions-services/work-graph-pdf-custody |
-| tests/work-graph.test.mjs :: Data custody anonymizes an erased inactive actor without losing the permanent audit chain | work-graph-custody-recovery | custody-recovery/work-graph-custody-recovery |
-| tests/work-graph.test.mjs :: Data custody cleans expired local authentication separately from held work retention | work-graph-custody-recovery | custody-recovery/work-graph-custody-recovery |
-| tests/work-graph.test.mjs :: Data custody expires only reviewed eligible stores while keeping held content and independent class policies | work-graph-custody-recovery | custody-recovery/work-graph-custody-recovery |
-| tests/work-graph.test.mjs :: Data custody expires proof versions together only after every version is eligible and no proof hold remains | work-graph-custody-recovery | custody-recovery/work-graph-custody-recovery |
-| tests/work-graph.test.mjs :: Data custody fences scoped agent output custody on processor revocation, retention holds and replay after expiry | work-graph-custody-recovery | custody-recovery/work-graph-custody-recovery |
+| tests/work-graph.test.mjs :: Data custody anonymizes an erased inactive actor without losing the permanent audit chain | work-graph-custody-recovery | planning-services/work-graph-custody-recovery |
+| tests/work-graph.test.mjs :: Data custody cleans expired local authentication separately from held work retention | work-graph-custody-recovery | planning-services/work-graph-custody-recovery |
+| tests/work-graph.test.mjs :: Data custody expires only reviewed eligible stores while keeping held content and independent class policies | work-graph-custody-recovery | planning-services/work-graph-custody-recovery |
+| tests/work-graph.test.mjs :: Data custody expires proof versions together only after every version is eligible and no proof hold remains | work-graph-custody-recovery | planning-services/work-graph-custody-recovery |
+| tests/work-graph.test.mjs :: Data custody fences scoped agent output custody on processor revocation, retention holds and replay after expiry | work-graph-custody-recovery | planning-services/work-graph-custody-recovery |
 | tests/work-graph.test.mjs :: Data custody intake erasure reviews exact intake redactions, retains replay witnesses and fences holds, concurrent changes and native archive restoration | work-graph-custody-erasure | custody-access/work-graph-custody-erasure |
-| tests/work-graph.test.mjs :: Data custody keeps permanent audit redacted and append-only across public changes, searches and exports | work-graph-custody-recovery | custody-recovery/work-graph-custody-recovery |
-| tests/work-graph.test.mjs :: Data custody pins actual proof bytes and accepts only a current independent human decision | work-graph-custody-recovery | custody-recovery/work-graph-custody-recovery |
-| tests/work-graph.test.mjs :: Data custody preserves permanent audit through native archive restore and refuses an old archive with the later erasure journal | work-graph-custody-recovery | custody-recovery/work-graph-custody-recovery |
-| tests/work-graph.test.mjs :: Data custody provider diagnostics expires exact reviewed superseded diagnostics while preserving delivery witnesses, authority and native recovery | work-graph-custody-recovery | custody-recovery/work-graph-recovery |
-| tests/work-graph.test.mjs :: Data custody reviews graph erasure, honors holds and stale previews, and retains only disclosed shared work | work-graph-custody-recovery | custody-recovery/work-graph-custody-recovery |
+| tests/work-graph.test.mjs :: Data custody keeps permanent audit redacted and append-only across public changes, searches and exports | work-graph-custody-recovery | planning-services/work-graph-custody-recovery |
+| tests/work-graph.test.mjs :: Data custody pins actual proof bytes and accepts only a current independent human decision | work-graph-custody-recovery | planning-services/work-graph-custody-recovery |
+| tests/work-graph.test.mjs :: Data custody preserves permanent audit through native archive restore and refuses an old archive with the later erasure journal | work-graph-custody-recovery | planning-services/work-graph-custody-recovery |
+| tests/work-graph.test.mjs :: Data custody provider diagnostics expires exact reviewed superseded diagnostics while preserving delivery witnesses, authority and native recovery | work-graph-custody-recovery | custody-recovery/provider-diagnostics |
+| tests/work-graph.test.mjs :: Data custody reviews graph erasure, honors holds and stale previews, and retains only disclosed shared work | work-graph-custody-recovery | planning-services/work-graph-custody-recovery |
 | tests/work-graph.test.mjs :: Direct project duplication through reviewed public doors duplicates only selected work with fresh identities and provenance, concrete original or relative dates, and no copied approvals, private context or active authority | work-graph-extensions | extensions-services/work-graph-extensions |
 | tests/work-graph.test.mjs :: Direct project duplication through reviewed public doors preserves approve-only, restricted and assignee memberships when their staged grants are explicitly activated | work-graph-extensions | extensions-services/work-graph-extensions |
 | tests/work-graph.test.mjs :: Direct project duplication through reviewed public doors refuses detached children, stale previews and revoked source membership at copy and activation time | work-graph-extensions | extensions-services/work-graph-extensions |
-| tests/work-graph.test.mjs :: Engineering handoff denies unapproved source capture, foreign writes, private context and stale reviewed returns | work-graph-services | planning-services/work-graph-services |
-| tests/work-graph.test.mjs :: Engineering handoff reconciles mapped issues at all three official boundaries without satisfying business acceptance | work-graph-services | planning-services/work-graph-services |
-| tests/work-graph.test.mjs :: Goal visibility and accountability authorizes a single-goal numeric integration without a session, fences its sponsor and revocation, and never grants a data read | work-graph-services | planning-services/work-graph-services |
-| tests/work-graph.test.mjs :: Goal visibility and accountability lets a named company-goal owner check in and record observations, refuses agent, guest and analyst owners and never yields progress from an override over a flagged input | work-graph-services | planning-services/work-graph-services |
-| tests/work-graph.test.mjs :: Goal visibility and accountability previews personal goal notes and permitted titles before sharing, revokes ordinary manager access and fences check-ins without hidden source metadata | work-graph-services | planning-services/work-graph-services |
-| tests/work-graph.test.mjs :: Goal visibility and accountability reads company defaults and current team goals, restricts named audiences and gives team Admins and managers only their goal management authority | work-graph-services | planning-services/work-graph-services |
-| tests/work-graph.test.mjs :: Goal visibility and accountability reviews a documented numeric CSV atomically, reconciles keyed replays and changed rows, and preserves stale observation times | work-graph-services | planning-services/work-graph-services |
-| tests/work-graph.test.mjs :: Goal visibility and accountability reviews company goal ownership and editors, permits their observations and check-ins, and refuses invalid or stale authority | work-graph-services | planning-services/work-graph-services |
-| tests/work-graph.test.mjs :: Goal visibility and accountability tracks company, team and personal goals with weighted deduplicated execution, numeric freshness and attributed overrides | work-graph-services | planning-services/work-graph-services |
-| tests/work-graph.test.mjs :: Meeting review imports authorized provider transcript exports and adopts each resolved cited action once | work-graph-services | planning-services/work-graph-services |
-| tests/work-graph.test.mjs :: Meeting review reads all three official provider boundaries and clears revoked source context | work-graph-services | planning-services/work-graph-services |
-| tests/work-graph.test.mjs :: Meeting review requires capture consent and source authority, fences changed exports and keeps context private after restart | work-graph-services | planning-services/work-graph-services |
+| tests/work-graph.test.mjs :: Engineering handoff denies unapproved source capture, foreign writes, private context and stale reviewed returns | work-graph-services | time-planning/work-graph-time |
+| tests/work-graph.test.mjs :: Engineering handoff reconciles mapped issues at all three official boundaries without satisfying business acceptance | work-graph-services | time-planning/work-graph-time |
+| tests/work-graph.test.mjs :: Goal visibility and accountability authorizes a single-goal numeric integration without a session, fences its sponsor and revocation, and never grants a data read | work-graph-services | core-capacity/work-graph-core |
+| tests/work-graph.test.mjs :: Goal visibility and accountability lets a named company-goal owner check in and record observations, refuses agent, guest and analyst owners and never yields progress from an override over a flagged input | work-graph-services | core-capacity/work-graph-core |
+| tests/work-graph.test.mjs :: Goal visibility and accountability previews personal goal notes and permitted titles before sharing, revokes ordinary manager access and fences check-ins without hidden source metadata | work-graph-services | core-capacity/work-graph-core |
+| tests/work-graph.test.mjs :: Goal visibility and accountability reads company defaults and current team goals, restricts named audiences and gives team Admins and managers only their goal management authority | work-graph-services | core-capacity/work-graph-core |
+| tests/work-graph.test.mjs :: Goal visibility and accountability reviews a documented numeric CSV atomically, reconciles keyed replays and changed rows, and preserves stale observation times | work-graph-services | core-capacity/work-graph-core |
+| tests/work-graph.test.mjs :: Goal visibility and accountability reviews company goal ownership and editors, permits their observations and check-ins, and refuses invalid or stale authority | work-graph-services | core-capacity/work-graph-core |
+| tests/work-graph.test.mjs :: Goal visibility and accountability tracks company, team and personal goals with weighted deduplicated execution, numeric freshness and attributed overrides | work-graph-services | core-capacity/work-graph-core |
+| tests/work-graph.test.mjs :: Local rule audit attributes background refusal to the former activating administrator and retains anonymized rule audit through native archive restore | work-graph-custody-erasure | custody-recovery/work-graph-rule-audit |
+| tests/work-graph.test.mjs :: Local rule audit records exact local rule lifecycle and outcomes once through restart and replay, with redacted scoped append-only audit | source | runtime-source/source |
+| tests/work-graph.test.mjs :: Meeting review imports authorized provider transcript exports and adopts each resolved cited action once | work-graph-services | time-planning/work-graph-time |
+| tests/work-graph.test.mjs :: Meeting review reads all three official provider boundaries and clears revoked source context | work-graph-services | time-planning/work-graph-time |
+| tests/work-graph.test.mjs :: Meeting review requires capture consent and source authority, fences changed exports and keeps context private after restart | work-graph-services | time-planning/work-graph-time |
 | tests/work-graph.test.mjs :: Native approval follow-up cancels obsolete follow-up and refuses hidden, revoked, deactivated and muted recipients without reviving old episodes | work-graph-time | time-planning/work-graph-decisions |
 | tests/work-graph.test.mjs :: Native approval follow-up routes finite internal follow-up through working hours, DND, queued delegation, restart and a real decision | work-graph-time | time-planning/work-graph-decisions |
 | tests/work-graph.test.mjs :: Native intake decisions records reviewed human priority and disposition once, refuses unsafe authority and preserves exact custody | work-graph-core | core-capacity/work-graph-intake |
@@ -147,16 +159,23 @@ Selected test leaves: 126 before / 126 after. Browser journey selectors: 35 / 35
 | tests/work-graph.test.mjs :: PEG-001 one work graph runs the PEG-083 public-team join and private-link request journeys on this graph | work-graph-core | core-capacity/work-graph-core |
 | tests/work-graph.test.mjs :: PEG-001 one work graph shares personal work only against the reviewed current project audience and content | work-graph-core | core-capacity/work-graph-core |
 | tests/work-graph.test.mjs :: PEG-001 one work graph shows a guest on one project nothing of the other, through the API, exports and files | work-graph-core | core-capacity/work-graph-core |
-| tests/work-graph.test.mjs :: PEG-064 retained graph recovery repairs only reviewed dangling dependencies while preserving live links and refusing a stale repair | work-graph-custody-recovery | custody-recovery/work-graph-recovery |
-| tests/work-graph.test.mjs :: PEG-064 retained graph recovery restores a shared field revision as new history while retaining later values and refusing incompatible or stale restoration | work-graph-custody-recovery | custody-recovery/work-graph-recovery |
-| tests/work-graph.test.mjs :: PEG-064 retained graph recovery restores retained project, task and proof graphs while fencing stale review and erased content | work-graph-custody-recovery | custody-recovery/work-graph-recovery |
-| tests/work-graph.test.mjs :: PEG-064 retained graph recovery restores standalone attachment bytes and scope while fencing stale review, proof reuse and erasure | work-graph-custody-recovery | custody-recovery/work-graph-recovery |
-| tests/work-graph.test.mjs :: PEG-064 retained graph recovery undoes unchanged bulk effects while preserving later human fields and independent approvals | work-graph-custody-recovery | custody-recovery/work-graph-recovery |
+| tests/work-graph.test.mjs :: PEG-064 retained graph recovery repairs only reviewed dangling dependencies while preserving live links and refusing a stale repair | work-graph-custody-recovery | reporting-work/work-graph-reporting |
+| tests/work-graph.test.mjs :: PEG-064 retained graph recovery restores a shared field revision as new history while retaining later values and refusing incompatible or stale restoration | work-graph-custody-recovery | reporting-work/work-graph-reporting |
+| tests/work-graph.test.mjs :: PEG-064 retained graph recovery restores retained project, task and proof graphs while fencing stale review and erased content | work-graph-custody-recovery | reporting-work/work-graph-reporting |
+| tests/work-graph.test.mjs :: PEG-064 retained graph recovery restores standalone attachment bytes and scope while fencing stale review, proof reuse and erasure | work-graph-custody-recovery | reporting-work/work-graph-reporting |
+| tests/work-graph.test.mjs :: PEG-064 retained graph recovery undoes unchanged bulk effects while preserving later human fields and independent approvals | work-graph-custody-recovery | reporting-work/work-graph-reporting |
 | tests/work-graph.test.mjs :: Project planning canvas collaborates on a planning canvas and promotes a reviewed note once into the native List task | work-graph-reporting | reporting-work/work-graph-reporting |
 | tests/work-graph.test.mjs :: Project planning canvas restores exported canvas relationships and native task identity through the installation archive | work-graph-reporting | reporting-work/work-graph-reporting |
+| tests/work-graph.test.mjs :: Public API and MCP connects named clients using the MCP schema and refuses widened scope, expired keys and agent approval | work-graph-extensions | extensions-services/work-graph-extensions |
+| tests/work-graph.test.mjs :: Public API and MCP creates and edits through the published REST and MCP doors with exact pages, reports and signed replay-safe events | work-graph-extensions | extensions-services/work-graph-extensions |
+| tests/work-graph.test.mjs :: Public API and MCP preserves personal privacy and guest Editor and Viewer decisions across the UI API, REST and MCP | work-graph-extensions | extensions-services/work-graph-extensions |
 | tests/work-graph.test.mjs :: Retained PDF feedback renders retained PDF contents, pins exact identities and refuses stale, hidden and unauthorized feedback | work-graph-core | core-capacity/work-graph-intake |
 | tests/work-graph.test.mjs :: Search and reviewed bulk selection finds authorized content, saves filters, reviews every mixed-permission row and preserves later work on undo | work-graph-core | core-capacity/work-graph-intake |
 | tests/work-graph.test.mjs :: Test worker lifecycle recovers from an occupied startup port with colored logs, leaves its listener alone and keeps the new origin through restart | work-graph-core | core-capacity/work-graph-core |
+| tests/work-graph.test.mjs :: Work conversions through reviewed public doors converts a nested intake task to one linked project while conserving native evidence and scopes | work-graph-extensions | extensions-services/work-graph-extensions |
+| tests/work-graph.test.mjs :: Work conversions through reviewed public doors converts a populated project with chosen nested work and explicit retained links while preserving inert configuration | work-graph-extensions | extensions-services/work-graph-extensions |
+| tests/work-graph.test.mjs :: Work conversions through reviewed public doors promotes and demotes the same task identities and refuses cycles, disclosure, stale review and unauthorized targets | work-graph-extensions | extensions-services/work-graph-extensions |
+| tests/work-graph.test.mjs :: Work conversions through reviewed public doors replays conversion once and selectively undoes structural effects without deleting later human edits or restoring sign-off | work-graph-extensions | extensions-services/work-graph-extensions |
 | tests/work-graph.test.mjs :: Work planning time, recurrence and decisions attributes approval-task decisions to the reviewed revision and refuses copied, stale, self and agent sign-off | work-graph-time | time-planning/work-graph-time |
 | tests/work-graph.test.mjs :: Work planning time, recurrence and decisions attributes every existing sign-off reopening door to its writer without inventing a reopen for a no-op | work-graph-time | time-planning/work-graph-time |
 | tests/work-graph.test.mjs :: Work planning time, recurrence and decisions fences stale time review and keeps private no-project work out of ordinary administrator review | work-graph-time | time-planning/work-graph-time |
@@ -170,6 +189,8 @@ Selected test leaves: 126 before / 126 after. Browser journey selectors: 35 / 35
 | tests/work-graph.test.mjs :: Work planning time, recurrence and decisions sends reviewed approved time once to each official-schema time service, repairs a rejected job code, reads back a lost response and corrects exactly | work-graph-time | time-planning/work-graph-time |
 | tests/work-graph.test.mjs :: Work planning time, recurrence and decisions submits, returns, corrects and locks an exact timesheet, retaining attributed later adjustments and exact CSV | work-graph-time | time-planning/work-graph-time |
 | tests/work-graph.test.mjs :: Work planning time, recurrence and decisions writes a recurring task only into projects where its activator still holds authority | work-graph-time | time-planning/work-graph-time |
+| tests/work-graph.test.mjs :: Work views through the native graph keeps six work views on one dated graph and restores named configuration and defaults after restart and sign-in | work-graph-core | core-capacity/work-graph-core |
+| tests/work-graph.test.mjs :: Work views through the native graph shares only permitted work and columns and fences stale configuration, defaults and revoked authority | work-graph-core | core-capacity/work-graph-core |
 
 ## Commands and non-test checks
 
@@ -188,7 +209,7 @@ Selected test leaves: 126 before / 126 after. Browser journey selectors: 35 / 35
 | `pnpm exec rer queue test:pdf-feedback -- sh -c "node --test --test-name-pattern='^Data custody PDF feedback(?: \|$)' tests/work-graph.test.mjs"` | 1 | 1 |
 | `pnpm exec rer queue test:work-graph-custody-recovery -- sh -c "node --test --test-name-pattern='^(?:Data custody\|PEG-064 retained graph recovery)(?: \|$)' --test-skip-pattern='^(?:Data custody intake erasure\|Data custody PDF feedback)(?: \|$)' tests/work-graph.test.mjs"` | 1 | 0 |
 | `pnpm exec rer queue test:work-graph-custody-erasure -- sh -c "node --test --test-name-pattern='^(?:Data custody intake erasure\|Local rule audit attributes background)(?: \|$)' tests/work-graph.test.mjs"` | 1 | 0 |
-| `pnpm exec rer queue test:work-graph-services -- sh -c "node --test --test-name-pattern='^(?:Goal visibility and accountability\|Engineering handoff\|Meeting review)(?: \|$)' tests/work-graph.test.mjs"` | 1 | 1 |
+| `pnpm exec rer queue test:work-graph-services -- sh -c "node --test --test-name-pattern='^(?:Goal visibility and accountability\|Engineering handoff\|Meeting review)(?: \|$)' tests/work-graph.test.mjs"` | 1 | 0 |
 | `pnpm exec rer queue test:work-graph-reporting -- sh -c "node --test --test-name-pattern='^(?:Native reporting\|Analyst exports\|Project planning canvas)(?: \|$)' tests/work-graph.test.mjs"` | 1 | 0 |
 | `pnpm run test:graph:access-control` | 1 | 1 |
 | `pnpm run test:graph:portfolios:core` | 1 | 1 |
@@ -201,3 +222,19 @@ Selected test leaves: 126 before / 126 after. Browser journey selectors: 35 / 35
 | `pnpm exec rer queue test:journeys-planning-work -- sh -c "PEGBOARD_JOURNEY=portfolio,timeline,register,bundles,goals node tests/journeys/work-graph.journey.mjs"` | 1 | 1 |
 
 Core: Test worker lifecycle, PEG-001, Work views and Native text intake suites vs the original selector with those four excluded. Time: Work planning suite vs the other three original suite prefixes. Recovery is split into Data custody versus diagnostics and retained graph recovery; intake erasure versus background rule audit; reporting/canvas versus Analyst exports; and the separate PDF-custody command moves intact into its own lane. All selector splits are disjoint complements of the prior selectors. No assertion or test file changed. The only removed non-test command is the second identical production build. Hosted output/hydration remain once in runtime-source; typecheck, first-party check and generated contract check remain unchanged. Nightly remains empty.
+
+Provider diagnostics now runs alone before background rule audit. Goal suites join core; engineering and meeting suites join time; retained recovery joins reporting; capacity joins analyst exports; typecheck joins source. Their exact leaf selections remain disjoint and complete.
+
+## Component journeys in unchanged standalone browser files
+
+| Component | Before / after job | Calls before / after |
+| --- | --- | --- |
+| templateGalleryJourney | runtime / runtime-source | 2 / 2 (1440, 390) |
+| projectDuplicateJourney | runtime / runtime-source | 2 / 2 (1440, 390) |
+| templateRuleJourney | runtime / runtime-source | 2 / 2 (1440, 390) |
+| workRulesJourney | runtime / runtime-source | 1 / 1 (1440) |
+| projectConversionJourney | runtime / runtime-source | 2 / 2 (1440, 390) |
+| hierarchyConversionJourney | runtime / runtime-source | 2 / 2 (1440, 390) |
+
+The complete runtime executable likewise retains both original withWorker modes, 2 / 2. All three executable files and every underlying assertion remain byte-identical.
+

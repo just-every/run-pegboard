@@ -1,11 +1,16 @@
 {
   "pushJobs": 8,
-  "lanes": 24,
+  "lanes": 23,
+  "serialJobs": [
+    "custody-recovery"
+  ],
+  "maxConcurrentLanes": 3,
   "hosted": 1,
   "builds": 1,
-  "maxConcurrentLanes": 3,
   "nightly": 0,
   "jobTimeoutMinutes": 12,
+  "diagnosticsTestTimeoutMilliseconds": 360000,
+  "thresholdsUnchanged": true,
   "workflowBytesUnchanged": true,
   "plannerBytesUnchanged": true,
   "concurrencyUnchanged": true,

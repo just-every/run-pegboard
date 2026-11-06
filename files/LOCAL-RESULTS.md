@@ -11,3 +11,5 @@
 - The core/capacity local sample began with the first complementary partition. Its suite measurements informed the final repartition of core (lifecycle / graph / views / text versus PDF / decisions / search). The mapping proves the same selected leaves; exact final composition is tested by candidate CI. Time/planning uses the final selectors.
 
 Core/capacity and time/planning completion receipts will be recorded in REPORT.md and local-receipt.json. Historical GitHub durations and final exact-SHA timings remain separate from local samples; the local core/capacity and time/planning runs briefly overlap on the four-CPU VM.
+
+The final scheduling fix retains eight jobs and uses 23 isolated lanes, with exclusive provider-diagnostics/background-audit phases. Six browser-capable jobs retain all 35 selectors and complete templates/conversion journeys. No compile-cache setting remains: the measured 0.3% difference was not material. Scope and workflow proof rules remain unchanged.

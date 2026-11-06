@@ -1,0 +1,186 @@
+shards (custody-recovery)	Run this shard	﻿2026-11-06T19:29:06.1427577Z ##[group]Run node scripts/verify-ci.mjs "$SHARD"
+shards (custody-recovery)	Run this shard	2026-11-06T19:29:06.1427977Z [36;1mnode scripts/verify-ci.mjs "$SHARD"[0m
+shards (custody-recovery)	Run this shard	2026-11-06T19:29:06.1447740Z shell: /usr/bin/bash -e {0}
+[GitHub step environment header omitted; failure output retained.]
+shards (custody-recovery)	Run this shard	2026-11-06T19:29:06.1449622Z ##[endgroup]
+shards (custody-recovery)	Run this shard	2026-11-06T19:29:06.1787841Z > pnpm run verify:app
+shards (custody-recovery)	Run this shard	2026-11-06T19:29:06.4720191Z 
+shards (custody-recovery)	Run this shard	2026-11-06T19:29:06.4721421Z > @just-every/pegboard@0.1.0 verify:app /home/runner/work/run-pegboard/run-pegboard
+shards (custody-recovery)	Run this shard	2026-11-06T19:29:06.4722158Z > node scripts/verify-app.mjs
+shards (custody-recovery)	Run this shard	2026-11-06T19:29:06.4722809Z 
+shards (custody-recovery)	Run this shard	2026-11-06T19:29:24.5570185Z > [work-graph-custody-recovery] pnpm exec rer queue test:work-graph-custody-recovery -- sh -c "node --test --test-name-pattern='^(?:Data custody)(?: |$)' --test-skip-pattern='^(?:Data custody intake erasure|Data custody PDF feedback|Data custody provider diagnostics)(?: |$)' tests/work-graph.test.mjs"
+shards (custody-recovery)	Run this shard	2026-11-06T19:29:24.5597026Z > [work-graph-recovery] pnpm exec rer queue test:work-graph-custody-recovery -- sh -c "node --test --test-name-pattern='^(?:Data custody provider diagnostics|PEG-064 retained graph recovery)(?: |$)' --test-skip-pattern='^(?:Data custody intake erasure|Data custody PDF feedback)(?: |$)' tests/work-graph.test.mjs"
+shards (custody-recovery)	Run this shard	2026-11-06T19:29:24.5614437Z > [journeys-services] pnpm exec rer queue test:journeys-services -- sh -c "PEGBOARD_JOURNEY=intake-erasure,rule-audit,reporting,calendar-blocks,recovery node tests/journeys/work-graph.journey.mjs"
+shards (custody-recovery)	Run this shard	2026-11-06T19:29:24.9835965Z test:work-graph-custody-recovery
+shards (custody-recovery)	Run this shard	2026-11-06T19:29:25.0443073Z TAP version 13
+shards (custody-recovery)	Run this shard	2026-11-06T19:29:25.0874371Z test:journeys-services
+shards (custody-recovery)	Run this shard	2026-11-06T19:29:25.1300266Z test:work-graph-custody-recovery
+shards (custody-recovery)	Run this shard	2026-11-06T19:29:25.2088548Z TAP version 13
+shards (custody-recovery)	Run this shard	2026-11-06T19:30:34.5386746Z # Subtest: Data custody
+shards (custody-recovery)	Run this shard	2026-11-06T19:30:34.5400084Z     # Subtest: keeps permanent audit redacted and append-only across public changes, searches and exports
+shards (custody-recovery)	Run this shard	2026-11-06T19:30:34.5401785Z     ok 1 - keeps permanent audit redacted and append-only across public changes, searches and exports
+shards (custody-recovery)	Run this shard	2026-11-06T19:30:34.5405883Z       ---
+shards (custody-recovery)	Run this shard	2026-11-06T19:30:34.5406353Z       duration_ms: 1541.333326
+shards (custody-recovery)	Run this shard	2026-11-06T19:30:34.5406800Z       type: 'test'
+shards (custody-recovery)	Run this shard	2026-11-06T19:30:34.5407172Z       ...
+shards (custody-recovery)	Run this shard	2026-11-06T19:30:39.7344589Z PROBE PEG-059 rendered custody: keyboard owner review and confirmation -> exact intake IDs and redacted and retained receipt counts; surviving work and inactive forms at 1440 and 390
+shards (custody-recovery)	Run this shard	2026-11-06T19:30:58.6934031Z     # Subtest: reviews graph erasure, honors holds and stale previews, and retains only disclosed shared work
+shards (custody-recovery)	Run this shard	2026-11-06T19:30:58.6935914Z     ok 2 - reviews graph erasure, honors holds and stale previews, and retains only disclosed shared work
+shards (custody-recovery)	Run this shard	2026-11-06T19:30:58.6936738Z       ---
+shards (custody-recovery)	Run this shard	2026-11-06T19:30:58.6937125Z       duration_ms: 24163.131458
+shards (custody-recovery)	Run this shard	2026-11-06T19:30:58.6937548Z       type: 'test'
+shards (custody-recovery)	Run this shard	2026-11-06T19:30:58.6937889Z       ...
+shards (custody-recovery)	Run this shard	2026-11-06T19:31:06.8024023Z     # Subtest: expires only reviewed eligible stores while keeping held content and independent class policies
+shards (custody-recovery)	Run this shard	2026-11-06T19:31:06.8033736Z     ok 3 - expires only reviewed eligible stores while keeping held content and independent class policies
+shards (custody-recovery)	Run this shard	2026-11-06T19:31:06.8035524Z       ---
+shards (custody-recovery)	Run this shard	2026-11-06T19:31:06.8060807Z       duration_ms: 8106.626539
+shards (custody-recovery)	Run this shard	2026-11-06T19:31:06.8094480Z       type: 'test'
+shards (custody-recovery)	Run this shard	2026-11-06T19:31:06.8134477Z       ...
+shards (custody-recovery)	Run this shard	2026-11-06T19:31:10.5834381Z     # Subtest: pins actual proof bytes and accepts only a current independent human decision
+shards (custody-recovery)	Run this shard	2026-11-06T19:31:10.5853639Z     ok 4 - pins actual proof bytes and accepts only a current independent human decision
+shards (custody-recovery)	Run this shard	2026-11-06T19:31:10.5859904Z       ---
+shards (custody-recovery)	Run this shard	2026-11-06T19:31:10.5860723Z       duration_ms: 3785.293158
+shards (custody-recovery)	Run this shard	2026-11-06T19:31:10.5861429Z       type: 'test'
+shards (custody-recovery)	Run this shard	2026-11-06T19:31:10.5862012Z       ...
+shards (custody-recovery)	Run this shard	2026-11-06T19:31:22.3353343Z     # Subtest: expires proof versions together only after every version is eligible and no proof hold remains
+shards (custody-recovery)	Run this shard	2026-11-06T19:31:22.3390868Z     ok 5 - expires proof versions together only after every version is eligible and no proof hold remains
+shards (custody-recovery)	Run this shard	2026-11-06T19:31:22.3415085Z       ---
+shards (custody-recovery)	Run this shard	2026-11-06T19:31:22.3433411Z       duration_ms: 11752.359518
+shards (custody-recovery)	Run this shard	2026-11-06T19:31:22.3434106Z       type: 'test'
+shards (custody-recovery)	Run this shard	2026-11-06T19:31:22.3434602Z       ...
+shards (custody-recovery)	Run this shard	2026-11-06T19:31:30.1041351Z     # Subtest: fences scoped agent output custody on processor revocation, retention holds and replay after expiry
+shards (custody-recovery)	Run this shard	2026-11-06T19:31:30.1054737Z     ok 6 - fences scoped agent output custody on processor revocation, retention holds and replay after expiry
+shards (custody-recovery)	Run this shard	2026-11-06T19:31:30.1056060Z       ---
+shards (custody-recovery)	Run this shard	2026-11-06T19:31:30.1056689Z       duration_ms: 7768.214297
+shards (custody-recovery)	Run this shard	2026-11-06T19:31:30.1057387Z       type: 'test'
+shards (custody-recovery)	Run this shard	2026-11-06T19:31:30.1057929Z       ...
+shards (custody-recovery)	Run this shard	2026-11-06T19:31:37.2011556Z     # Subtest: cleans expired local authentication separately from held work retention
+shards (custody-recovery)	Run this shard	2026-11-06T19:31:37.2053816Z     ok 7 - cleans expired local authentication separately from held work retention
+shards (custody-recovery)	Run this shard	2026-11-06T19:31:37.2063616Z       ---
+shards (custody-recovery)	Run this shard	2026-11-06T19:31:37.2064586Z       duration_ms: 7094.403432
+shards (custody-recovery)	Run this shard	2026-11-06T19:31:37.2065795Z       type: 'test'
+shards (custody-recovery)	Run this shard	2026-11-06T19:31:37.2066435Z       ...
+shards (custody-recovery)	Run this shard	2026-11-06T19:31:39.4738891Z     # Subtest: anonymizes an erased inactive actor without losing the permanent audit chain
+shards (custody-recovery)	Run this shard	2026-11-06T19:31:39.4740339Z     ok 8 - anonymizes an erased inactive actor without losing the permanent audit chain
+shards (custody-recovery)	Run this shard	2026-11-06T19:31:39.4740966Z       ---
+shards (custody-recovery)	Run this shard	2026-11-06T19:31:39.4741215Z       duration_ms: 2272.304233
+shards (custody-recovery)	Run this shard	2026-11-06T19:31:39.4741471Z       type: 'test'
+shards (custody-recovery)	Run this shard	2026-11-06T19:31:39.4741677Z       ...
+shards (custody-recovery)	Run this shard	2026-11-06T19:35:44.1275492Z Calendar schema-fake native flow passed: google
+shards (custody-recovery)	Run this shard	2026-11-06T19:35:49.5371037Z Calendar schema-fake native flow passed: microsoft
+shards (custody-recovery)	Run this shard	2026-11-06T19:36:02.0123957Z # Subtest: Data custody provider diagnostics
+shards (custody-recovery)	Run this shard	2026-11-06T19:36:02.0134144Z     # Subtest: expires exact reviewed superseded diagnostics while preserving delivery witnesses, authority and native recovery
+shards (custody-recovery)	Run this shard	2026-11-06T19:36:02.0136148Z     not ok 1 - expires exact reviewed superseded diagnostics while preserving delivery witnesses, authority and native recovery
+shards (custody-recovery)	Run this shard	2026-11-06T19:36:02.0137315Z       ---
+shards (custody-recovery)	Run this shard	2026-11-06T19:36:02.0137847Z       duration_ms: 396542.578006
+shards (custody-recovery)	Run this shard	2026-11-06T19:36:02.0138432Z       type: 'test'
+shards (custody-recovery)	Run this shard	2026-11-06T19:36:02.0139125Z       location: '[REDACTED]/tests/work-graph.test.mjs:89:2'
+shards (custody-recovery)	Run this shard	2026-11-06T19:36:02.0139928Z       failureType: 'testTimeoutFailure'
+shards (custody-recovery)	Run this shard	2026-11-06T19:36:02.0140642Z       error: 'test timed out after 360000ms'
+shards (custody-recovery)	Run this shard	2026-11-06T19:36:02.0141327Z       code: 'ERR_TEST_FAILURE'
+shards (custody-recovery)	Run this shard	2026-11-06T19:36:02.0141915Z       stack: |-
+shards (custody-recovery)	Run this shard	2026-11-06T19:36:02.0142692Z         async Promise.all (index 0)
+shards (custody-recovery)	Run this shard	2026-11-06T19:36:02.0143306Z       ...
+shards (custody-recovery)	Run this shard	2026-11-06T19:36:02.0144182Z     1..1
+shards (custody-recovery)	Run this shard	2026-11-06T19:36:02.0144811Z not ok 1 - Data custody provider diagnostics
+shards (custody-recovery)	Run this shard	2026-11-06T19:36:02.0145458Z   ---
+shards (custody-recovery)	Run this shard	2026-11-06T19:36:02.0145939Z   duration_ms: 396544.685328
+shards (custody-recovery)	Run this shard	2026-11-06T19:36:02.0146503Z   type: 'suite'
+shards (custody-recovery)	Run this shard	2026-11-06T19:36:02.0147158Z   location: '[REDACTED]/tests/work-graph.test.mjs:88:1'
+shards (custody-recovery)	Run this shard	2026-11-06T19:36:02.0147921Z   failureType: 'subtestsFailed'
+shards (custody-recovery)	Run this shard	2026-11-06T19:36:02.0148504Z   error: '1 subtest failed'
+shards (custody-recovery)	Run this shard	2026-11-06T19:36:02.0149067Z   code: 'ERR_TEST_FAILURE'
+shards (custody-recovery)	Run this shard	2026-11-06T19:36:02.0149643Z   ...
+shards (custody-recovery)	Run this shard	2026-11-06T19:36:22.1804353Z     # Subtest: preserves permanent audit through native archive restore and refuses an old archive with the later erasure journal
+shards (custody-recovery)	Run this shard	2026-11-06T19:36:22.1807069Z     ok 9 - preserves permanent audit through native archive restore and refuses an old archive with the later erasure journal
+shards (custody-recovery)	Run this shard	2026-11-06T19:36:22.1807652Z       ---
+shards (custody-recovery)	Run this shard	2026-11-06T19:36:22.1807886Z       duration_ms: 282708.489426
+shards (custody-recovery)	Run this shard	2026-11-06T19:36:22.1808142Z       type: 'test'
+shards (custody-recovery)	Run this shard	2026-11-06T19:36:22.1808592Z       ...
+shards (custody-recovery)	Run this shard	2026-11-06T19:36:22.3135195Z     1..9
+shards (custody-recovery)	Run this shard	2026-11-06T19:36:22.3135762Z ok 1 - Data custody
+shards (custody-recovery)	Run this shard	2026-11-06T19:36:22.3136234Z   ---
+shards (custody-recovery)	Run this shard	2026-11-06T19:36:22.3136700Z   duration_ms: 416706.636981
+shards (custody-recovery)	Run this shard	2026-11-06T19:36:22.3137519Z   type: 'suite'
+shards (custody-recovery)	Run this shard	2026-11-06T19:36:22.3138013Z   ...
+shards (custody-recovery)	Run this shard	2026-11-06T19:36:22.3358081Z 1..1
+shards (custody-recovery)	Run this shard	2026-11-06T19:36:22.3383365Z # tests 9
+shards (custody-recovery)	Run this shard	2026-11-06T19:36:22.3386905Z # suites 1
+shards (custody-recovery)	Run this shard	2026-11-06T19:36:22.3451233Z # pass 9
+shards (custody-recovery)	Run this shard	2026-11-06T19:36:22.3466098Z # fail 0
+shards (custody-recovery)	Run this shard	2026-11-06T19:36:22.3466756Z # cancelled 0
+shards (custody-recovery)	Run this shard	2026-11-06T19:36:22.3467773Z # skipped 0
+shards (custody-recovery)	Run this shard	2026-11-06T19:36:22.3468899Z # todo 0
+shards (custody-recovery)	Run this shard	2026-11-06T19:36:22.3469710Z # duration_ms 417153.670714
+shards (custody-recovery)	Run this shard	2026-11-06T19:36:22.4494568Z LANE work-graph-custody-recovery duration_ms=417893
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:07.8940963Z Recovery at 1440px passed
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:15.4485937Z # PROBE PEG-065 exact expiry: schema-fake time-delivery door -> real persisted sending rows, exact expired IDs 3,5 and retained IDs 1,2,4,6,7,8,9,10,11,12
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:15.4503760Z # PROBE PEG-065 authority and holds: owner review, administrator and member refusal, active hold, stale and concurrent confirmation -> one receipt, unchanged held history and no provider calls
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:15.4506537Z # PROBE PEG-065 durable custody: expiry, later independent erasure, restart, replay and native archive with later journal -> no resurrection; ledger, approved original 18000 seconds and corrected total 17640 seconds, signed sheets and time history unchanged
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:20.1147203Z # Subtest: PEG-064 retained graph recovery
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:20.1156787Z     # Subtest: restores retained project, task and proof graphs while fencing stale review and erased content
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:20.1158288Z     ok 1 - restores retained project, task and proof graphs while fencing stale review and erased content
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:20.1158979Z       ---
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:20.1159484Z       duration_ms: 16960.742576
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:20.1160250Z       type: 'test'
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:20.1160726Z       ...
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:23.7534156Z     # Subtest: undoes unchanged bulk effects while preserving later human fields and independent approvals
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:23.7553956Z     ok 2 - undoes unchanged bulk effects while preserving later human fields and independent approvals
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:23.7558447Z       ---
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:23.7559440Z       duration_ms: 3635.62334
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:23.7567446Z       type: 'test'
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:23.7568013Z       ...
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:30.4120033Z Recovery at 390px passed
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:30.6755924Z LANE journeys-services duration_ms=486114
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:37.2726693Z     # Subtest: restores standalone attachment bytes and scope while fencing stale review, proof reuse and erasure
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:37.2731880Z     ok 3 - restores standalone attachment bytes and scope while fencing stale review, proof reuse and erasure
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:37.2733054Z       ---
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:37.2733451Z       duration_ms: 13521.368384
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:37.2733918Z       type: 'test'
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:37.2734253Z       ...
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:38.5814353Z     # Subtest: restores a shared field revision as new history while retaining later values and refusing incompatible or stale restoration
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:38.5816662Z     ok 4 - restores a shared field revision as new history while retaining later values and refusing incompatible or stale restoration
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:38.5817315Z       ---
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:38.5817554Z       duration_ms: 1309.774837
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:38.5817817Z       type: 'test'
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:38.5818024Z       ...
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:40.4141150Z     # Subtest: repairs only reviewed dangling dependencies while preserving live links and refusing a stale repair
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:40.4143008Z     ok 5 - repairs only reviewed dangling dependencies while preserving live links and refusing a stale repair
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:40.4143957Z       ---
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:40.4144466Z       duration_ms: 1833.3786
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:40.4144907Z       type: 'test'
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:40.4145247Z       ...
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:40.4956746Z     1..5
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:40.4959674Z ok 2 - PEG-064 retained graph recovery
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:40.4960412Z   ---
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:40.4960963Z   duration_ms: 98499.50624
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:40.4961527Z   type: 'suite'
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:40.4962718Z   ...
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:40.5148793Z 1..2
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:40.5149627Z # tests 6
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:40.5150244Z # suites 2
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:40.5150603Z # pass 5
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:40.5150908Z # fail 0
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:40.5151205Z # cancelled 1
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:40.5151528Z # skipped 0
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:40.5151828Z # todo 0
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:40.5152167Z # duration_ms 495489.305353
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:40.5954829Z LANE work-graph-recovery duration_ms=496036
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:40.5958081Z Error: work-graph-recovery failed: 1
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:40.5959025Z     at ChildProcess.<anonymous> (file:///home/runner/work/run-pegboard/run-pegboard/scripts/verify-app.mjs:114:72)
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:40.5959662Z     at Object.onceWrapper (node:events:634:26)
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:40.5960028Z     at ChildProcess.emit (node:events:519:28)
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:40.5960500Z     at ChildProcess._handle.onexit (node:internal/child_process:293:12)
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:42.2615881Z SHARD custody-recovery duration_ms=515754
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:42.2619427Z file:///home/runner/work/run-pegboard/run-pegboard/scripts/verify-app.mjs:139
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:42.2620689Z   if (results.some(result => result.status === 'rejected')) throw Error(`Verification shard failed: ${shard.name}`);
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:42.2621402Z                                                                   ^
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:42.2621628Z 
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:42.2621831Z Error: Verification shard failed: custody-recovery
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:42.2623682Z     at runLanes (file:///home/runner/work/run-pegboard/run-pegboard/scripts/verify-app.mjs:139:67)
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:42.2624867Z     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:42.2625790Z     at async file:///home/runner/work/run-pegboard/run-pegboard/scripts/verify-app.mjs:153:20
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:42.2626177Z 
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:42.2626268Z Node.js v22.20.0
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:42.2857948Z  ELIFECYCLE  Command failed with exit code 1.
+shards (custody-recovery)	Run this shard	2026-11-06T19:37:42.3079493Z ##[error]Process completed with exit code 1.

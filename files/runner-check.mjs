@@ -18,7 +18,8 @@ try{
  await runLanes({name:'isolation-success',lanes:[{name:'one',commands:[check+' && touch sibling.txt']},{name:'two',commands:[check]}]});
  await assert.rejects(runLanes({name:'failure-propagation',lanes:[{name:'failed',commands:['exit 7']},{name:'survivor',commands:[`node -e 'setTimeout(()=>require("node:fs").writeFileSync(${JSON.stringify(join(fixture,'sibling-finished.txt'))},"finished"),150)'`]}]}),/Verification shard failed/);
  assert.equal(await readFile('sibling-finished.txt','utf8'),'finished');
+ await runLanes({name:'serial-resource-ownership',serial:true,lanes:[{name:'exclusive',commands:[`node -e 'setTimeout(()=>require("node:fs").writeFileSync(${JSON.stringify(join(fixture,'exclusive-finished.txt'))},"finished"),150)'`]},{name:'after-exclusive',commands:[`test -f ${JSON.stringify(join(fixture,'exclusive-finished.txt'))}`]}]});
  const after=(await readdir(tmpdir())).filter(x=>x.startsWith('pegboard-verify-'));
  assert.deepEqual(new Set(after),before);
- console.log('PASS: isolated inputs/dependencies/Git, private settings excluded, every sibling awaited after failure, nonzero propagation and scratch cleanup');
+ console.log('PASS: isolated inputs/dependencies/Git, private settings excluded, every sibling awaited after failure, nonzero propagation, exclusive serial resource ownership and scratch cleanup');
 }finally{process.chdir(original);await rm(fixture,{recursive:true,force:true});}

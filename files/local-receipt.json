@@ -42,5 +42,14 @@
       }
     }
   ],
-  "coreSamplePartition": "initial; final repartition proven by mapping and tested in CI"
+  "coreSamplePartition": "initial; final repartition proven by mapping and tested in CI",
+  "finalSourceTypecheckRelocation": "source-relocation-receipt.json",
+  "finalExclusiveDiagnostics": "diagnostics-receipt.json",
+  "serialFixture": "runner-check-final.log",
+  "completePlannedNodeLeaves": 147,
+  "completePlannedJourneySelectors": 35,
+  "finalProductFiles": [
+    "scripts/verify-app.mjs",
+    "sources.lock.json"
+  ]
 }

@@ -1,7 +1,7 @@
 {
   "repository": "just-every/run-pegboard",
   "branch": "cloud/sx-pegboard-ci-critical-path-1",
-  "head": "e2c3d762315888794377822119176ee31c412c4c",
+  "head": "f0386615142fdd50970be89ae671391def0a18fc",
   "mainAfterPush": "47f7e9b50fae330f8109d1e97e10a27783439820",
   "updatedMainIncluded": true,
   "push": "success",
@@ -12,11 +12,36 @@
   ],
   "workingTree": "clean",
   "pr": null,
-  "verifyRun": 42279915600,
-  "verifyUrl": "https://github.com/just-every/run-pegboard/actions/runs/42279915600",
+  "verifyRun": 42286041668,
+  "verifyUrl": "https://github.com/just-every/run-pegboard/actions/runs/42286041668",
   "identity": {
     "author": "Run Edit Run fleet <fleet@runeditrun.com>",
     "committer": "Run Edit Run fleet <fleet@runeditrun.com>",
     "trailers": []
-  }
+  },
+  "commits": [
+    "e2c3d762315888794377822119176ee31c412c4c",
+    "f0386615142fdd50970be89ae671391def0a18fc"
+  ],
+  "historyRewritten": false,
+  "terminal": "READY",
+  "verifyStatus": "completed",
+  "verifyConclusion": "success",
+  "allEightShardsSuccessful": true,
+  "fullPushProof": "success",
+  "aggregate": "success",
+  "longestShard": {
+    "name": "reporting-work",
+    "id": 128127106776,
+    "status": "completed",
+    "conclusion": "success",
+    "started": "2026-11-06T20:10:34Z",
+    "completed": "2026-11-06T20:21:02Z",
+    "seconds": 628.0,
+    "url": "https://github.com/just-every/run-pegboard/actions/runs/42286041668/job/128127106776"
+  },
+  "meanSeconds": 521.375,
+  "longestToMean": 1.204507312395109,
+  "githubCalls": 10,
+  "blockers": []
 }

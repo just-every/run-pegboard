@@ -1,16 +1,21 @@
 > [one] test -f input.txt && test ! -f .dev.vars && test -d node_modules && test -d .git && test ! -f sibling.txt && touch sibling.txt
 > [two] test -f input.txt && test ! -f .dev.vars && test -d node_modules && test -d .git && test ! -f sibling.txt
-LANE one duration_ms=5
-LANE two duration_ms=3
+LANE one duration_ms=6
+LANE two duration_ms=6
 SHARD isolation-success duration_ms=55
 > [failed] exit 7
-> [survivor] node -e 'setTimeout(()=>require("node:fs").writeFileSync("/tmp/pegboard-runner-fixture-cjMocJ/sibling-finished.txt","finished"),150)'
+> [survivor] node -e 'setTimeout(()=>require("node:fs").writeFileSync("/tmp/pegboard-runner-fixture-0CU0LH/sibling-finished.txt","finished"),150)'
 LANE failed duration_ms=4
-LANE survivor duration_ms=257
+LANE survivor duration_ms=205
 Error: failed failed: 7
-    at ChildProcess.<anonymous> (file:///workspace/run-pegboard/scripts/verify-app.mjs:114:72)
+    at ChildProcess.<anonymous> (file:///workspace/run-pegboard/scripts/verify-app.mjs:142:72)
     at Object.onceWrapper (node:events:631:26)
     at ChildProcess.emit (node:events:509:28)
     at ChildProcess._handle.onexit (node:internal/child_process:295:12)
-SHARD failure-propagation duration_ms=300
-PASS: isolated inputs/dependencies/Git, private settings excluded, every sibling awaited after failure, nonzero propagation and scratch cleanup
+SHARD failure-propagation duration_ms=254
+> [exclusive] node -e 'setTimeout(()=>require("node:fs").writeFileSync("/tmp/pegboard-runner-fixture-0CU0LH/exclusive-finished.txt","finished"),150)'
+LANE exclusive duration_ms=199
+> [after-exclusive] test -f "/tmp/pegboard-runner-fixture-0CU0LH/exclusive-finished.txt"
+LANE after-exclusive duration_ms=4
+SHARD serial-resource-ownership duration_ms=245
+PASS: isolated inputs/dependencies/Git, private settings excluded, every sibling awaited after failure, nonzero propagation, exclusive serial resource ownership and scratch cleanup

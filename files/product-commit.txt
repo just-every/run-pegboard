@@ -1,11 +1,11 @@
-commit e2c3d762315888794377822119176ee31c412c4c
+commit f0386615142fdd50970be89ae671391def0a18fc
 Author:     Run Edit Run fleet <fleet@runeditrun.com>
-AuthorDate: Fri Nov 6 19:28:21 2026 +0000
+AuthorDate: Fri Nov 6 20:10:15 2026 +0000
 Commit:     Run Edit Run fleet <fleet@runeditrun.com>
-CommitDate: Fri Nov 6 19:28:21 2026 +0000
+CommitDate: Fri Nov 6 20:10:15 2026 +0000
 
-    Balance Pegboard Verify across eight isolated shard jobs
+    Give diagnostics exclusive CPU and rebalance remaining CI work
 
- scripts/verify-app.mjs | 129 +++++++++++++++++++++++++++++++++++++++++++++++--
- sources.lock.json      |   2 +-
- 2 files changed, 127 insertions(+), 4 deletions(-)
+ scripts/verify-app.mjs | 47 +++++++++++++++++++++++++++++++++++++++++------
+ sources.lock.json      |  2 +-
+ 2 files changed, 42 insertions(+), 7 deletions(-)

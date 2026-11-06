@@ -2,3 +2,9 @@
 {"time": 1793991932.9435844, "args": ["run", "view", "42268005252", "--repo", "just-every/run-pegboard", "--json", "jobs"]}
 {"time": 1793991937.2321708, "args": ["run", "view", "42252802997", "--repo", "just-every/run-pegboard", "--json", "jobs"]}
 {"time": 1793993311.8847811, "args": ["api", "repos/just-every/run-pegboard/actions/runs?head_sha=e2c3d762315888794377822119176ee31c412c4c&per_page=100"]}
+{"time": 1793994091.9139967, "args": ["api", "repos/just-every/run-pegboard/actions/runs/42279915600", "--jq", "{status,conclusion,head_sha,html_url,run_attempt}"]}
+{"time": 1793994391.950426, "args": ["api", "repos/just-every/run-pegboard/actions/runs/42279915600/jobs?filter=latest&per_page=100"]}
+{"time": 1793994691.9933243, "args": ["run", "view", "42279915600", "--repo", "just-every/run-pegboard", "--job", "128105974387", "--log-failed"]}
+{"time": 1793995890.1041605, "args": ["api", "repos/just-every/run-pegboard/actions/runs?head_sha=f0386615142fdd50970be89ae671391def0a18fc&per_page=100"]}
+{"time": 1793996670.182202, "args": ["api", "repos/just-every/run-pegboard/actions/runs/42286041668", "--jq", "{status,conclusion,head_sha,html_url,run_attempt}"]}
+{"time": 1793996970.2636318, "args": ["api", "repos/just-every/run-pegboard/actions/runs/42286041668/jobs?filter=latest&per_page=100"]}

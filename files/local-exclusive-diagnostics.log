@@ -1,0 +1,141 @@
+> pnpm run verify:app
+
+> @just-every/pegboard@0.1.0 verify:app /workspace/run-pegboard
+> node scripts/verify-app.mjs
+
+> [provider-diagnostics] pnpm exec rer queue test:work-graph-custody-recovery -- sh -c "node --test --test-name-pattern='^(?:Data custody provider diagnostics)(?: |$)' --test-skip-pattern='^(?:Data custody intake erasure|Data custody PDF feedback)(?: |$)' tests/work-graph.test.mjs"
+test:work-graph-custody-recovery
+TAP version 13
+# PROBE PEG-065 exact expiry: schema-fake time-delivery door -> real persisted sending rows, exact expired IDs 3,5 and retained IDs 1,2,4,6,7,8,9,10,11,12
+# PROBE PEG-065 authority and holds: owner review, administrator and member refusal, active hold, stale and concurrent confirmation -> one receipt, unchanged held history and no provider calls
+# PROBE PEG-065 durable custody: expiry, later independent erasure, restart, replay and native archive with later journal -> no resurrection; ledger, approved original 18000 seconds and corrected total 17640 seconds, signed sheets and time history unchanged
+# Subtest: Data custody provider diagnostics
+    # Subtest: expires exact reviewed superseded diagnostics while preserving delivery witnesses, authority and native recovery
+    ok 1 - expires exact reviewed superseded diagnostics while preserving delivery witnesses, authority and native recovery
+      ---
+      duration_ms: 325934.524078
+      type: 'test'
+      ...
+    1..1
+ok 1 - Data custody provider diagnostics
+  ---
+  duration_ms: 325935.334738
+  type: 'suite'
+  ...
+1..1
+# tests 1
+# suites 1
+# pass 1
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 326677.285196
+LANE provider-diagnostics duration_ms=327332
+> [work-graph-services] pnpm exec rer queue test:work-graph-services -- sh -c "node --test --test-name-pattern='^(?:Goal visibility and accountability|Engineering handoff|Meeting review)(?: |$)' tests/work-graph.test.mjs"
+test:work-graph-services
+TAP version 13
+# Subtest: Goal visibility and accountability
+    # Subtest: tracks company, team and personal goals with weighted deduplicated execution, numeric freshness and attributed overrides
+    ok 1 - tracks company, team and personal goals with weighted deduplicated execution, numeric freshness and attributed overrides
+      ---
+      duration_ms: 2272.54799
+      type: 'test'
+      ...
+    # Subtest: lets a named company-goal owner check in and record observations, refuses agent, guest and analyst owners and never yields progress from an override over a flagged input
+    ok 2 - lets a named company-goal owner check in and record observations, refuses agent, guest and analyst owners and never yields progress from an override over a flagged input
+      ---
+      duration_ms: 1785.654364
+      type: 'test'
+      ...
+    # Subtest: reads company defaults and current team goals, restricts named audiences and gives team Admins and managers only their goal management authority
+    ok 3 - reads company defaults and current team goals, restricts named audiences and gives team Admins and managers only their goal management authority
+      ---
+      duration_ms: 1341.565536
+      type: 'test'
+      ...
+    # Subtest: reviews company goal ownership and editors, permits their observations and check-ins, and refuses invalid or stale authority
+    ok 4 - reviews company goal ownership and editors, permits their observations and check-ins, and refuses invalid or stale authority
+      ---
+      duration_ms: 1329.693786
+      type: 'test'
+      ...
+    # Subtest: previews personal goal notes and permitted titles before sharing, revokes ordinary manager access and fences check-ins without hidden source metadata
+    ok 5 - previews personal goal notes and permitted titles before sharing, revokes ordinary manager access and fences check-ins without hidden source metadata
+      ---
+      duration_ms: 1281.713608
+      type: 'test'
+      ...
+    # Subtest: authorizes a single-goal numeric integration without a session, fences its sponsor and revocation, and never grants a data read
+    ok 6 - authorizes a single-goal numeric integration without a session, fences its sponsor and revocation, and never grants a data read
+      ---
+      duration_ms: 3674.770252
+      type: 'test'
+      ...
+    # Subtest: reviews a documented numeric CSV atomically, reconciles keyed replays and changed rows, and preserves stale observation times
+    ok 7 - reviews a documented numeric CSV atomically, reconciles keyed replays and changed rows, and preserves stale observation times
+      ---
+      duration_ms: 728.049078
+      type: 'test'
+      ...
+    1..7
+ok 1 - Goal visibility and accountability
+  ---
+  duration_ms: 61745.10682
+  type: 'suite'
+  ...
+# Subtest: Engineering handoff
+    # Subtest: reconciles mapped issues at all three official boundaries without satisfying business acceptance
+    ok 1 - reconciles mapped issues at all three official boundaries without satisfying business acceptance
+      ---
+      duration_ms: 3573.967571
+      type: 'test'
+      ...
+    # Subtest: denies unapproved source capture, foreign writes, private context and stale reviewed returns
+    ok 2 - denies unapproved source capture, foreign writes, private context and stale reviewed returns
+      ---
+      duration_ms: 14145.817064
+      type: 'test'
+      ...
+    1..2
+ok 2 - Engineering handoff
+  ---
+  duration_ms: 63672.860893
+  type: 'suite'
+  ...
+# Subtest: Meeting review
+    # Subtest: imports authorized provider transcript exports and adopts each resolved cited action once
+    ok 1 - imports authorized provider transcript exports and adopts each resolved cited action once
+      ---
+      duration_ms: 2173.861443
+      type: 'test'
+      ...
+    # Subtest: reads all three official provider boundaries and clears revoked source context
+    ok 2 - reads all three official provider boundaries and clears revoked source context
+      ---
+      duration_ms: 847.507562
+      type: 'test'
+      ...
+    # Subtest: requires capture consent and source authority, fences changed exports and keeps context private after restart
+    ok 3 - requires capture consent and source authority, fences changed exports and keeps context private after restart
+      ---
+      duration_ms: 31221.428013
+      type: 'test'
+      ...
+    1..3
+ok 3 - Meeting review
+  ---
+  duration_ms: 82884.393606
+  type: 'suite'
+  ...
+1..3
+# tests 12
+# suites 3
+# pass 12
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 208906.46517
+LANE work-graph-services duration_ms=209286
+SHARD custody-recovery duration_ms=550719

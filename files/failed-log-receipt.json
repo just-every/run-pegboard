@@ -1,0 +1,7 @@
+{
+  "command": "gh run view 42279915600 --repo just-every/run-pegboard --job 128105974387 --log-failed",
+  "exit": 0,
+  "reads": 1,
+  "run": 42279915600,
+  "job": 128105974387
+}
