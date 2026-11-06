@@ -1,3 +1,5 @@
+import { listMessages, messageParticipants, readMessageDraft, reviewMessage, readMessage, messageInbox } from '../messages/messages'
+import { MessagesPage, MessageCompose, MessageThread } from './pages/project-messages'
 import { ApprovalFollowupSettings } from './pages/approval-followup'
 import { followupSettings, previewFollowupPolicy } from '../notices/approval-policy'
 import { approvalFollowupInbox, approvalFollowupLog } from '../notices/approval-followup'
@@ -207,6 +209,12 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
     }
     if(section==='intake'&&id&&!tail){const row=await internalForm(db,actor,id),receiptId=url.searchParams.get('receipt'),receipt=receiptId?await first<{id:string;deadline:number}>(db,'SELECT id,deadline FROM peg_intake_submissions WHERE id=? AND form_id=? AND source_actor=?',receiptId,id,actor.id):null;return intakeDocument('Request intake',h(IntakeScreen,{viewer,form:safeForm(row),receipt:receipt?{receipt:receipt.id,deadline:receipt.deadline,acknowledgment:'Request received'}:null}))}
     if(section==='projects'&&id&&tail==='intake'&&segments.length===4)return page('Request triage',h(IntakeQueue,{viewer,view:await triageQueue(db,actor,id)}))
+    if(section==='messages'&&id&&!tail)return page('Announcement',h(MessageThread,{viewer,view:await readMessage(db,actor,id),replyKey:crypto.randomUUID()}))
+    if(section==='message-drafts'&&id&&!tail){const draft=await readMessageDraft(db,actor,id),{project}=await openProject(db,actor,draft.project_id);return page('Announcement draft',h(MessageCompose,{viewer,projectId:project.id,projectName:project.name,draft,review:url.searchParams.has('review')?await reviewMessage(db,actor,id):null,correction:null,people:await messageParticipants(db,actor,project.id),work:(await board(db,actor,project.id)).columns.flatMap(c=>c.tasks.map(t=>({value:t.id,label:t.title})))}))}
+    if(section==='projects'&&id&&tail==='messages'&&segments.length<=4){
+      if(segments[3]==='new'){const {project}=await openProject(db,actor,id);return page('Compose announcement',h(MessageCompose,{viewer,projectId:id,projectName:project.name,draft:null,review:null,correction:url.searchParams.get('corrects')?await readMessage(db,actor,url.searchParams.get('corrects')!):null,people:await messageParticipants(db,actor,id),work:(await board(db,actor,id)).columns.flatMap(c=>c.tasks.map(t=>({value:t.id,label:t.title})))}))}
+      if(segments.length===3)return page('Project Messages',h(MessagesPage,{viewer,list:await listMessages(db,actor,id)}))
+    }
     if(section==='projects'&&id&&tail==='settings'&&segments[4]==='intake'&&segments.length===5){const {project}=await administer(db,actor,id),reviewId=url.searchParams.get('review');const review=reviewId?await reviewForm(db,actor,reviewId):null;if(review&&review.project.id!==id)throw new PegError(404,'not_found');return page('Intake settings',h(IntakeSettings,{viewer,project,list:await projectForms(db,actor,id),review,people:await peopleOptions(db,actor,workspace)}))}
     if(section==='settings'&&id==='reports'&&!tail)return page('Report settings',h(ReportsSettings,{viewer,projects:await listProjects(db,actor,workspace),list:await dashboards(db,actor,workspace)}))
     if(section==='reports'&&!id)return page('Reports',h(ReportsList,{viewer,list:await dashboards(db,actor,workspace)}))
@@ -384,7 +392,7 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
       const approvers = (await all<{ operator_id: string }>(db, "SELECT operator_id FROM peg_approvers WHERE object_type='team' AND object_id=?", id)).map(row => row.operator_id)
       return page(team.name, h(TeamPage, { viewer, people: await peopleOptions(db, actor, workspace), team: { id, name: team.name, description: team.description, privacy: team.privacy, defaultLevel: team.default_level, fallbackId: team.fallback_id, level: effective.level, capabilities: [...effective.capabilities], paths: effective.paths.map(path => ({ via: path.via, level: path.level })), members: await teamMembers(db, actor, id), approvers } }))
     }
-    if (section === 'inbox') return page('Inbox', h(InboxPage, { viewer, toDecide: await pendingFor(db, actor, { origin: env.AUTH_ORIGIN, from: env.MAIL_FROM, mail: operatorMail(env) }), mine: await myRequests(db, actor),followup:['owner','admin','manager','member'].includes(viewer.role)?await approvalFollowupInbox(db,actor,workspace):null,readiness:await readinessNotices(db,actor,workspace) }))
+    if (section === 'inbox') return page('Inbox', h(InboxPage, { viewer, messages:await messageInbox(db,actor), toDecide: await pendingFor(db, actor, { origin: env.AUTH_ORIGIN, from: env.MAIL_FROM, mail: operatorMail(env) }), mine: await myRequests(db, actor),followup:['owner','admin','manager','member'].includes(viewer.role)?await approvalFollowupInbox(db,actor,workspace):null,readiness:await readinessNotices(db,actor,workspace) }))
     if (section === 'access-requests' && id) {
       let preview
       try { preview = await previewRequest(db, actor, id) } catch (error) { if (error instanceof PegError && error.status === 404) return refuse(db, actor, viewer, id); throw error }

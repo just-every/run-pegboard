@@ -1,3 +1,4 @@
+import {messageRoutes} from './message-routes'
 import { intakeRoutes } from './intake-routes'
 import { reportingRoutes } from './reporting-routes'
 import {searchRoutes} from './search-routes'
@@ -88,6 +89,7 @@ noticeRoutes(pegboardApi)
 
 publicRoutes(pegboardApi)
 statusRoutes(pegboardApi)
+messageRoutes(pegboardApi)
 approvalRoutes(pegboardApi)
 ruleRoutes(pegboardApi)
 
