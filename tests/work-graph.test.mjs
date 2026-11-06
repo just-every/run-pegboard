@@ -1,3 +1,4 @@
+import {projectMessagesScenario,projectMessagesCustodyScenario} from './scenarios/project-messages.mjs'
 import { intakeReportingScenario } from './scenarios/intake-reporting.mjs'
 import {providerLogRetentionScenario} from './scenarios/provider-log-retention.mjs'
 import {pdfFeedbackScenario,pdfFeedbackCustodyScenario} from './scenarios/pdf-feedback.mjs'
@@ -2540,4 +2541,9 @@ describe('Native approval follow-up', {concurrency:false},()=>{
  after(()=>worker?.stop())
  it('routes finite internal follow-up through working hours, DND, queued delegation, restart and a real decision',async()=>approvalFollowupRoutingScenario(worker))
  it('cancels obsolete follow-up and refuses hidden, revoked, deactivated and muted recipients without reviving old episodes',async()=>approvalFollowupAuthorityScenario(worker))
+})
+
+describe('Project announcements',{concurrency:false},()=>{
+ it('publishes exact human-reviewed project messages and permission-scoped threaded Inbox deliveries',{timeout:180000},projectMessagesScenario)
+ it('preserves holds, exact erasure review and inactive archive journal custody',{timeout:360000},projectMessagesCustodyScenario)
 })
