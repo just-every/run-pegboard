@@ -1,3 +1,4 @@
+import {projectMessagesJourney} from './project-messages.mjs'
 import {providerLogRetentionJourney} from './provider-log-retention.mjs'
 import {pdfFeedbackJourney,retainedMemberReviewJourney} from './pdf-feedback.mjs'
 import { approvalFollowupJourney } from './approval-followup.mjs'
@@ -36,7 +37,7 @@ import { portfolioJourney } from './portfolios.mjs'
 import { timelineJourney } from './timeline.mjs'
 import {searchBulkJourney} from './search-bulk.mjs'
 
-const journeyNames = ["provider-log-retention", "retained-pdf-review", "pdf-feedback", "approval-followup", "intake-erasure", "intake", "rule-audit", "reporting", "work-views", "search-bulk", "access-privacy", "access-discovery", "analytics", "calendar-blocks", "capacity", "portfolio-capacity", "public-api", "approval-routing", "guests", "core", "recurrence", "approvals", "time-packets", "goals", "engineering", "meetings", "custody", "recovery", "departure", "canvas", "portfolio", "timeline", "register", "bundles"]
+const journeyNames = ["project-messages", "provider-log-retention", "retained-pdf-review", "pdf-feedback", "approval-followup", "intake-erasure", "intake", "rule-audit", "reporting", "work-views", "search-bulk", "access-privacy", "access-discovery", "analytics", "calendar-blocks", "capacity", "portfolio-capacity", "public-api", "approval-routing", "guests", "core", "recurrence", "approvals", "time-packets", "goals", "engineering", "meetings", "custody", "recovery", "departure", "canvas", "portfolio", "timeline", "register", "bundles"]
 const selected = new Set(process.env.PEGBOARD_JOURNEY === undefined ? journeyNames : process.env.PEGBOARD_JOURNEY.split(',').map(name => name.trim()))
 for (const name of selected) if (!journeyNames.includes(name)) throw new Error(`Unknown PEGBOARD_JOURNEY: ${name}`)
 
@@ -62,6 +63,7 @@ try {
     usedWorker = true
     return true
   }
+  if(await select('project-messages'))await projectMessagesJourney({w,browser})
   if(await select('provider-log-retention'))await providerLogRetentionJourney({w,browser,services})
   if(await select('retained-pdf-review'))await retainedMemberReviewJourney({w,browser})
   if(await select('pdf-feedback'))await pdfFeedbackJourney({w,browser})

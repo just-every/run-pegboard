@@ -118,7 +118,7 @@
       "browser": true,
       "hosted": false,
       "commands": [
-        "pnpm exec rer queue test:journeys-core-work -- sh -c \"PEGBOARD_JOURNEY=retained-pdf-review,pdf-feedback,core,recurrence,approvals,time-packets node tests/journeys/work-graph.journey.mjs\""
+        "pnpm exec rer queue test:journeys-core-work -- sh -c \"PEGBOARD_JOURNEY=project-messages,retained-pdf-review,pdf-feedback,core,recurrence,approvals,time-packets node tests/journeys/work-graph.journey.mjs\""
       ]
     },
     {
