@@ -1,0 +1,1 @@
+{"include":[{"name":"runtime-source","browser":true},{"name":"core-capacity","browser":true},{"name":"extensions-services","browser":true},{"name":"time-planning","browser":true},{"name":"custody-recovery","browser":false},{"name":"custody-access","browser":true},{"name":"reporting-work","browser":true},{"name":"planning-services","browser":false}]}

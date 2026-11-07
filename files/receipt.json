@@ -1,0 +1,123 @@
+{
+  "schema": 1,
+  "repository": "just-every/run-pegboard",
+  "branch": "cloud/sx-pegboard-ci-limit-2",
+  "head": "3be7283f0152224202de59c4b2e0852c732ac02f",
+  "base": "f0386615142fdd50970be89ae671391def0a18fc",
+  "product_push": "success",
+  "local_checks": "passed",
+  "status": "ready",
+  "clause_status_changes": [],
+  "before": {
+    "push_shards": 8,
+    "job_timeout_minutes": 12,
+    "clause_counts": {
+      "done": 22,
+      "partial": 20,
+      "missing": 50
+    }
+  },
+  "after": {
+    "push_shards": 8,
+    "job_timeout_minutes": 16,
+    "clause_counts": {
+      "done": 22,
+      "partial": 20,
+      "missing": 50
+    }
+  },
+  "tests_moved": 0,
+  "assertions_changed": 0,
+  "ci_run_id": 42317583910,
+  "ci_run_attempt": 1,
+  "ci_status": "completed",
+  "ci_conclusion": "success",
+  "ci_url": "https://github.com/just-every/run-pegboard/actions/runs/42317583910",
+  "ci_head_sha": "3be7283f0152224202de59c4b2e0852c732ac02f",
+  "jobs": [
+    {
+      "id": 128233917767,
+      "name": "plan",
+      "conclusion": "success",
+      "duration_seconds": 8
+    },
+    {
+      "id": 128233982587,
+      "name": "shards (custody-access)",
+      "conclusion": "success",
+      "duration_seconds": 449
+    },
+    {
+      "id": 128233982647,
+      "name": "shards (custody-recovery)",
+      "conclusion": "success",
+      "duration_seconds": 621
+    },
+    {
+      "id": 128233982654,
+      "name": "shards (time-planning)",
+      "conclusion": "success",
+      "duration_seconds": 425
+    },
+    {
+      "id": 128233982686,
+      "name": "shards (planning-services)",
+      "conclusion": "success",
+      "duration_seconds": 576
+    },
+    {
+      "id": 128233982689,
+      "name": "shards (core-capacity)",
+      "conclusion": "success",
+      "duration_seconds": 429
+    },
+    {
+      "id": 128233982709,
+      "name": "shards (extensions-services)",
+      "conclusion": "success",
+      "duration_seconds": 463
+    },
+    {
+      "id": 128233982719,
+      "name": "shards (reporting-work)",
+      "conclusion": "success",
+      "duration_seconds": 707
+    },
+    {
+      "id": 128233982720,
+      "name": "shards (runtime-source)",
+      "conclusion": "success",
+      "duration_seconds": 468
+    },
+    {
+      "id": 128233984637,
+      "name": "light",
+      "conclusion": "skipped",
+      "duration_seconds": 0
+    },
+    {
+      "id": 128238037462,
+      "name": "full-push-proof",
+      "conclusion": "success",
+      "duration_seconds": 4
+    },
+    {
+      "id": 128238039043,
+      "name": "nightly-proof",
+      "conclusion": "skipped",
+      "duration_seconds": 0
+    },
+    {
+      "id": 128238075084,
+      "name": "verify",
+      "conclusion": "success",
+      "duration_seconds": 3
+    }
+  ],
+  "github_calls": 5,
+  "product_checkout_clean": true,
+  "blockers": [],
+  "pr_url": null,
+  "reruns": 0,
+  "publication": "product branch pushed; exact-SHA Verify green; evidence publication separate"
+}

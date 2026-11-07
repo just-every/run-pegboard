@@ -1,0 +1,35 @@
+diff --git a/.github/workflows/verify.yml b/.github/workflows/verify.yml
+index 0c04c90..2066c6d 100644
+--- a/.github/workflows/verify.yml
++++ b/.github/workflows/verify.yml
+@@ -62,7 +62,7 @@ jobs:
+     needs: plan
+     if: ${{ needs.plan.outputs.has_shards == 'true' }}
+     runs-on: ubuntu-24.04
+-    timeout-minutes: ${{ inputs.timeout || 12 }}
++    timeout-minutes: ${{ inputs.timeout || 16 }}
+     strategy:
+       fail-fast: false
+       matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+@@ -144,7 +144,7 @@ jobs:
+     needs: plan
+     if: ${{ needs.plan.outputs.coverage == 'light' }}
+     runs-on: ubuntu-24.04
+-    timeout-minutes: 12
++    timeout-minutes: 16
+     env:
+       CI: 'true'
+       WRANGLER_SEND_METRICS: 'false'
+diff --git a/sources.lock.json b/sources.lock.json
+index 834501b..f4f7ec9 100644
+--- a/sources.lock.json
++++ b/sources.lock.json
+@@ -187,7 +187,7 @@
+       "executable": false
+     },
+     ".github/workflows/verify.yml": {
+-      "sha256": "09fe6d2a0b274d4925950ef0ddde9c8c7099e15edb5333a601ead2bbcec73a86",
++      "sha256": "f2bd9bd3f766b3ccc7942577f4bb51559d815d69c00dfcd9a8ccecf7c6dd2b84",
+       "executable": false
+     },
+     ".gitignore": {

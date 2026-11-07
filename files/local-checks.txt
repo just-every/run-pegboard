@@ -1,0 +1,8 @@
+PASS: workflow differs by exactly the two requested 12-to-16 job timeout changes.
+PASS: eight push shards, compositions and assertions unchanged.
+PASS: plan, summary and one-minute jobs unchanged.
+PASS: contract, acceptance and claims unchanged.
+PASS: workflow permission check.
+PASS: source lock regenerated and source check.
+PASS: git diff --check.
+No tests/verify-ci.test.mjs exists; initial attempted test command was inapplicable.
