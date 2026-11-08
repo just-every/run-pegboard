@@ -2,10 +2,12 @@ import type { Hono } from 'hono'
 import type { Bindings } from '../../auth.server'
 import { all } from '../db'
 import { door } from './door'
-import { createProof,proofView,addProofVersion,proofDecisionPreview,decideProof,submitOutput,outputView,searchTasks } from '../records/custody'
+import { createProof,proofView,addProofVersion,proofDecisionPreview,decideProof,submitOutput,outputView } from '../records/custody'
 import { openTask } from '../tasks/access'
+import { proofFile } from '../records/custody'
+import { feedbackView,createFeedback,updateFeedback } from '../proofs/feedback'
 export function recordRoutes(app:Hono<{Bindings:Bindings}>) {
-  app.get('/search',door(({db,actor,workspace,query})=>searchTasks(db,actor,workspace,Object.fromEntries(query))))
+
   app.post('/tasks/:id/proofs',door(({db,actor,params,input})=>createProof(db,actor,params.id,input)))
   app.get('/tasks/:id/proofs',door(async({db,actor,params})=>{
     const {task}=await openTask(db,actor,params.id),rows=await all<{id:string}>(db,'SELECT id FROM peg_proofs WHERE task_id=? ORDER BY id',task.id),proofs=[]
@@ -13,6 +15,13 @@ export function recordRoutes(app:Hono<{Bindings:Bindings}>) {
     return {proofs}
   }))
   app.get('/proofs/:id',door(({db,actor,params})=>proofView(db,actor,params.id)))
+  app.get('/proofs/:id/review',door(({db,actor,params,query})=>feedbackView(db,actor,params.id,query.get('version')??undefined,query.get('compare')??undefined)))
+  app.get('/proofs/:id/versions/:version/material',door(async({db,actor,params})=>{
+    const {file,version}=await proofFile(db,actor,params.id,params.version)
+    return new Response(file.bytes,{headers:{'content-type':file.contentType,'content-disposition':'attachment; filename="proof.pdf"','cache-control':'no-store','x-content-type-options':'nosniff','x-proof-digest':version.digest,'x-proof-version':version.id,'content-security-policy':"default-src 'none'; sandbox"}})
+  }))
+  app.post('/proofs/:id/feedback',door(({db,actor,params,input})=>createFeedback(db,actor,params.id,input)))
+  app.post('/proofs/:id/feedback/:feedback',door(({db,actor,params,input})=>updateFeedback(db,actor,params.id,params.feedback,input)))
   app.post('/proofs/:id/versions',door(({db,actor,params,input})=>addProofVersion(db,actor,params.id,input)))
   app.get('/proofs/:id/decision-preview',door(({db,actor,params})=>proofDecisionPreview(db,actor,params.id)))
   app.post('/proofs/:id/decisions',door(({db,actor,params,input})=>decideProof(db,actor,params.id,input)))

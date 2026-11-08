@@ -22,7 +22,36 @@ without challenge, cookie, token or secret values. Native account role/status
 changes move the same authority epoch as Pegboard’s account doors. Proof
 versions/decisions and signed agent-output submissions use this audit too.
 Authorized search/export is paginated by event ID with exact action, actor and
-subject filters.
+subject filters. Local rule events also support exact rule, run, activation and
+operation and triggering-event identity filters; the browser exposes each of these identity filters.
+
+Local rule creation, definition edits, activation and deactivation append explicit
+receipts in the same transaction as their configuration change. Matching triggers
+record queued runs, or an inactive blocked outcome. Processing appends applied,
+no-op or blocked receipts with the rule version, activation, run, triggering actor,
+activating administrator and any resulting operation identity. Missing dates and
+refused authority have explicit closed outcome codes. An HTTP success alone never
+stands in for a rule effect. Replay and restart append no second terminal success.
+Receipts contain no rule names, source values, action text or task bodies. Queue
+and terminal records retain the same triggering-event identity. Native restore
+appends a blocked outcome for queued local work fenced by the restore, preserving
+the original actor and activation without reviving execution authority.
+
+Template rules now append configuration, queue, no-op, applied and blocked
+receipts too. Each run records the exact pinned definition and activation, the
+triggering person and accountable activating administrator. A reviewed requeue
+records its new activation separately from its earlier refusal. Publishing a new
+template records the resulting invalidation without changing prior receipts.
+
+Bundle components use a stable digest of the bundle and component key as their
+opaque rule identity; each project adoption epoch has its own opaque activation
+identity. Publication, adoption, override, deactivation, queue, no-op, applied and
+blocked outcomes record exact versions, actors and resulting operation identities.
+Changing configuration or disabling a bundle records queued cancellation in the
+same transaction. Native restore fences queued bundle and template work with an
+attributed blocked receipt; repeating the restore creates no duplicate terminal
+outcome. These receipts contain no component keys or names, template definitions,
+source dates, action text or task bodies.
 
 Metadata accepts only a closed vocabulary of enums, numbers, booleans and opaque
 IDs. It does not copy request bodies, comments, file names or bodies, provider
@@ -46,8 +75,24 @@ a frozen cutoff.
 
 Current expiry covers work history, attachment/proof bytes and version/decision
 records, agent outputs/retrieval copies and expired local sessions/tokens.
-Provider delivery logs remain immutable and retained; their expiry door is
-unavailable and its class preview discloses that limitation. A proof expires as a coherent group after every version is
+Provider-log expiry covers only old sending diagnostics for ordinary time entries
+whose next outcome is an attributable acknowledgment matching the settled ledger.
+The review lists exact diagnostic, entry, timesheet and retained acknowledgment
+identities, the sending service, receiver account, opaque sender and recorded time,
+the frozen cutoff, retained reasons and consequences. The immutable receipt keeps
+each expired diagnostic linked to its retained acknowledgment with the same source
+identities; later independent erasure leaves those delivery witnesses intact.
+Current owner
+confirmation and an atomic revision check are required. Any active workspace hold
+pauses this cleanup. Corrections, unmatched attempts, terminal outcomes, unresolved
+reconciliation, sending or uncertain deliveries and the remaining provider-log
+catalogue stay retained. The delivery ledger, time entries, signed timesheets,
+time history and permanent audit are unchanged; expiry makes no provider calls.
+Ordinary history updates and deletions still refuse. A forward migration grants
+one-use exact-row permits only within the reviewed expiry transaction; permits
+never travel in archives. Expired diagnostics have native erasure tombstones,
+and an older archive supplied with the later journal cannot restore them.
+Retained delivery witnesses and immutable exact-scope receipts survive restore. A proof expires as a coherent group after every version is
 eligible and unheld. Otherwise the preview discloses retained dependencies.
 Trash/import-original and agent-prompt stores are not built; no cleanup of those
 stores is claimed. PEG-024/054/064 and PEG-062/074/075 inherit the retention classes
@@ -95,6 +140,59 @@ access activity stay retained, so the identity receipt is partial. Other scopes
 with retained historical activity or unconfirmed processor copies also get
 partial receipts. The last owner requires installation reset or replacement.
 
+### Native intake references in person review
+
+The same owner review enumerates submission source and triager references, plus
+form author, publisher and fixed-owner references. Each form and submission is
+identified by its exact opaque ID. The receipt separately counts each redacted
+reference, disabled publication, retained submission replay witness and retained
+form provenance. The immutable scope, revision and digest travel with the receipt;
+the permanent erasure audit names that receipt and digest. Refused or held scopes
+record no applied redactions. New submissions and triage invalidate old reviews.
+
+Source attribution becomes an erased marker and triager attribution is cleared.
+Form author attribution becomes an erased marker, the erased publisher is cleared
+and an erased fixed owner becomes unassigned. Every affected form is inactive,
+with its capability removed and version advanced. No replacement person is
+assigned. A newly saved valid draft and explicit publication review are required
+before reuse. Other people's attribution and surviving task ownership stay intact.
+
+Submission IDs, form and task links, request keys, irreversible fingerprints,
+versions, deadlines and triage timestamps remain as disclosed opaque replay
+witnesses. A replay returns the original receipt only under current authority;
+an erased task returns a refusal and creates no replacement. Person, project and
+linked-task holds participate in the same revision-bound transaction. Native
+archives preserve these redactions and receipts, restore forms inactive and refuse
+an older archive supplied with the later erasure journal. Product import and the
+remaining intake lifecycle are still unproved; no external deletion is inferred.
+
+### Reviewed human intake decisions
+
+Intake settings begin with decisions disabled. The current installation owner
+reviews the policy before native owners and administrators can explicitly accept
+or decline a text request and set priority. Each preview names its exact source,
+current task, actor, disposition and before and after priority. Commit rechecks
+current content and authority atomically. Triage remains separate from acceptance.
+No decision grants access, changes an assignment or date, schedules work, invokes
+a model or sends an external reply. Request instructions remain inert text.
+
+New submissions retain their exact mapped source text separately from editable
+tasks. Previously submitted work is labelled as a migration-time mapped snapshot;
+its unavailable original text is never invented. The decision history retains
+this distinction, the source and task identities, priority, actor and time. A
+decline retains that evidence and changes no task value. Replays never duplicate
+a decision or overwrite later human edits.
+
+Permanent audit contains opaque decision and task identities and the disposition,
+without request text. Owner-reviewed person erasure enumerates decision actor
+references and their linked task and project holds, replaces reviewed attribution
+with an erased marker and preserves historical outcomes. Task and project erasure
+explicitly include retained source text and decision rows. Opaque submission replay
+witnesses refuse recreation of erased work. Native archives preserve history,
+restore every decision as inactive provenance and disable the decision policy;
+old decision identities cannot authorize new changes. Existing retention, hold,
+erasure-journal and external-copy limits continue to apply.
+
 ## Archives and external limits
 
 Native `rer export` / `rer import` and `/api/portability` share one seed-owned Base
@@ -114,6 +212,37 @@ Downloaded files, outside messages and declared processor copies need those
 systems’ deletion process. No provider-confirmed deletion or recall is claimed
 without a real receipt. Whole-workspace erasure, complete identity cleanup,
 product intake/import replay, live R2 qualification and autonomous agent execution
-remain explicit acceptance gaps. PEG-057/059/065 stay partial while the adopted
-owner-only review, hold precedence, retained-history and processor defaults await
-CT disposition.
+remain explicit acceptance gaps. PEG-057, PEG-059 and PEG-065 stay partial for their technical gaps. The recorded
+CT rulings approve scoped redacted audit, owner-reviewed erasure, hold precedence
+and separately consented processor custody; retained identity stores and external
+limits remain disclosed.
+
+
+## Internal PDF feedback
+
+Internal members can review already retained PDF versions using their current
+file access. The viewer verifies the stored SHA-256 digest before rendering page
+pixels and an accessible text alternative. Embedded PDF actions are not executed.
+Comparison requires current access to both selected files. When the current
+version is hidden, the ordinary review entry opens the newest retained PDF the
+reader can access; it does not disclose the hidden replacement. A pin keeps its proof,
+version, attachment, digest, page, normalized coordinates and author identities;
+replacing the current version does not move a pin or an existing human decision.
+
+Adding feedback requires comment permission in the selected file’s project.
+Only its author, with that current permission, may edit its text or mark it open
+or resolved. Each revision retains attributable text and status history. Stale
+reviews and concurrent writes are fenced atomically. A repeated creation key
+returns its original pin only under current authority and with identical input.
+Feedback creates neither an approval nor file access. Guests and agents are
+outside this internal review door.
+
+Exact owner-reviewed proof erasure and coherent proof-group expiry include pins
+and their history before removing version records and retained bytes. Person
+erasure includes authored pins and all their revisions, without erasing the
+remaining proof. Related person, task, project, attachment and proof holds win;
+new feedback invalidates an earlier custody preview. Native archives preserve
+these records as history, validate their version relationships and restore no
+source grants or sessions. Later erasure journals prevent older archive content
+from returning. This is database custody of the existing attachment door;
+large-file, native-device, resumable-upload and R2 qualification remain unproved.

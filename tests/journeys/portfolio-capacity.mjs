@@ -114,7 +114,15 @@ export async function portfolioCapacityJourney({w,browser}) {
   const settings=page.getByRole('form',{name:'Commitment for Campaign design',exact:true})
   await settings.getByLabel('Required skills',{exact:true}).fill('design, illustration')
   await settings.getByLabel('Lock this commitment for capacity plans',{exact:true}).check()
-  await tabTo(settings.getByRole('button',{name:'Save commitment',exact:true}));await Promise.all([page.waitForResponse(r=>r.url().endsWith('/capacity-commitment')&&r.request().method()==='POST'),page.keyboard.press('Enter')])
+  await tabTo(settings.getByRole('button',{name:'Save commitment',exact:true}))
+  // The POST redirects to settings; inspect the page only after that document loads.
+  const [saved,returned]=await Promise.all([
+   page.waitForResponse(r=>r.url().endsWith('/capacity-commitment')&&r.request().method()==='POST'),
+   page.waitForNavigation({waitUntil:'domcontentloaded'}),
+   page.keyboard.press('Enter')
+  ])
+  assert.equal(saved.status(),303)
+  assert.equal(returned.status(),200)
   const stored=await ok(owner.get(path+period))
   assert.equal(stored.tasks.find(t=>t.id===tasks[0].id).skills,'design, illustration')
   assert.equal(stored.tasks.find(t=>t.id===tasks[0].id).locked,true)

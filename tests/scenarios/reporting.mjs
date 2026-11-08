@@ -160,3 +160,114 @@ export async function reportingReconciliationScenario(w) {
  await ok(guest.get(`${guestBase}/snapshots/${visibleAfter.id}?format=csv`),404)
  assert.deepEqual(failures,[],'source-event reconciliation and membership privacy')
 }
+
+/** Native business rows reconcile to real work, reviewed allocations and approved sheets, without widening read authority. */
+export async function reportingBusinessScenario(w) {
+ const owner=w.owner,projects=[]
+ for(const name of ['Business campaign','Business launch','Business delivery'])projects.push(await ok(owner.post('/api/v1/projects',{name})))
+ const person=(suffix,name,role)=>w.person(['synthetic-pegboard-'+suffix,'example.test'].join(String.fromCharCode(64)),name,role)
+ const mia=await person('report-worker','Reporting worker','member'),manager=await person('report-manager','Reporting manager','manager')
+ for(const p of projects)for(const [who,level] of [[mia,'editor'],[manager,'viewer']])await ok(owner.post('/api/v1/grants',{objectType:'project',objectId:p.id,granteeId:who.id,level}))
+ const week=[null,...Array.from({length:5},()=>({start:'09:00',end:'13:00'})),null]
+ for(const who of [owner,mia])await ok(who.post('/api/v1/workspaces/ws_main/capacity-profile',{zone:'America/New_York',week}))
+ await ok(owner.post('/api/v1/workspaces/ws_main/time-off',{start:'2026-03-10',end:'2026-03-10'}))
+ const a=await ok(owner.post('/api/v1/tasks',{projectId:projects[0].id,title:'Shared scheduled business work',ownerId:mia.id,estimateHours:10,startDate:'2026-03-06',dueDate:'2026-03-09'}))
+ await ok(owner.post(`/api/v1/tasks/${a.id}/projects`,{projectId:projects[1].id}))
+ const allocation={source:'board-centric',sourceMode:'sum',people:[{personId:mia.id,sourcePerson:'synthetic-pegboard-5901'},{personId:owner.id,sourcePerson:'synthetic-pegboard-5902'}]}
+ const preview=await ok(owner.post(`/api/v1/tasks/${a.id}/effort/preview`,allocation))
+ await ok(owner.post(`/api/v1/tasks/${a.id}/effort/apply`,{...allocation,token:preview.token}))
+ const c=await ok(owner.post('/api/v1/tasks',{projectId:projects[2].id,title:'Unscheduled business work',ownerId:mia.id,estimateHours:6}))
+ const requestInput={requestKey:'synthetic-pegboard-5903',title:'Native business request'}
+ const request=await ok(owner.post(`/api/v1/projects/${projects[2].id}/requests`,requestInput))
+ assert.equal((await ok(owner.post(`/api/v1/projects/${projects[2].id}/requests`,requestInput))).id,request.id)
+ const approved=await ok(owner.post('/api/v1/tasks',{projectId:projects[1].id,title:'Approved business review',ownerId:mia.id,kind:'approval'}))
+ await ok(owner.post(`/api/v1/tasks/${approved.id}/decision`,{action:'approve',revision:(await ok(owner.get(`/api/v1/tasks/${approved.id}/decision-preview`))).token,reason:'synthetic-pegboard-5904'}))
+ const pending=await ok(owner.post('/api/v1/tasks',{projectId:projects[0].id,title:'Pending business review',ownerId:mia.id,kind:'approval'}))
+ const file=await ok(owner.post(`/api/v1/tasks/${a.id}/attachments?projectId=${projects[0].id}&name=synthetic-pegboard-5905.txt`,'synthetic-pegboard-5905',{'content-type':'text/plain'}))
+ const proof=await ok(owner.post(`/api/v1/tasks/${a.id}/proofs`,{attachmentId:file.id}))
+ const sheet=await ok(mia.post('/api/v1/timesheets',{startDate:'2026-03-06',endDate:'2026-03-10'}))
+ const entry=await ok(mia.post(`/api/v1/timesheets/${sheet.id}/entries`,{taskId:a.id,projectId:projects[0].id,date:'2026-03-08',seconds:5400,key:'synthetic-pegboard-5906',notes:'Never export time notes'}))
+ await ok(mia.post(`/api/v1/timesheets/${sheet.id}/entries`,{taskId:c.id,projectId:projects[2].id,date:'2026-03-09',seconds:1800,key:'synthetic-pegboard-5907'}))
+ const approve=async s=>{
+  await ok(mia.post(`/api/v1/timesheets/${s.id}/decision`,{action:'submit',revision:(await ok(mia.get(`/api/v1/timesheets/${s.id}`))).token}))
+  await ok(owner.post(`/api/v1/timesheets/${s.id}/decision`,{action:'approve',revision:(await ok(owner.get(`/api/v1/timesheets/${s.id}`))).token}))
+ }
+ await approve(sheet)
+ const adjustment=await ok(mia.post('/api/v1/timesheets',{startDate:'2026-03-06',endDate:'2026-03-10'}))
+ await ok(mia.post(`/api/v1/time/${entry.id}/adjust`,{sheetId:adjustment.id,date:'2026-03-09',seconds:-900,key:'synthetic-pegboard-5908',reason:'Never export adjustment reason'}))
+ await approve(adjustment)
+ const draft=await ok(mia.post('/api/v1/timesheets',{startDate:'2026-03-06',endDate:'2026-03-10'}))
+ await ok(mia.post(`/api/v1/timesheets/${draft.id}/entries`,{taskId:a.id,projectId:projects[0].id,date:'2026-03-08',seconds:32400,key:'synthetic-pegboard-5909'}))
+ const outside=await ok(owner.post('/api/v1/projects',{name:'Private business records'}))
+ await ok(owner.post(`/api/v1/tasks/${a.id}/projects`,{projectId:outside.id}))
+ await ok(owner.post('/api/v1/grants',{objectType:'project',objectId:outside.id,granteeId:mia.id,level:'editor'}))
+ const secretFile=await ok(owner.post(`/api/v1/tasks/${a.id}/attachments?projectId=${outside.id}&name=synthetic-pegboard-5910.txt`,'Private proof content',{'content-type':'text/plain'}))
+ const secretProof=await ok(owner.post(`/api/v1/tasks/${a.id}/proofs`,{attachmentId:secretFile.id}))
+ const outsideSheet=await ok(mia.post('/api/v1/timesheets',{startDate:'2026-03-06',endDate:'2026-03-10'}))
+ await ok(mia.post(`/api/v1/timesheets/${outsideSheet.id}/entries`,{taskId:a.id,projectId:outside.id,date:'2026-03-08',seconds:14400,key:'synthetic-pegboard-5911'}));await approve(outsideSheet)
+ const at=instant('2026-03-08T06:30:00Z')
+ await w.sql(`UPDATE peg_rule_requests SET created_at=${at} WHERE task_id='${request.id}';UPDATE peg_approval_tasks SET created_at=${at} WHERE task_id IN ('${approved.id}','${pending.id}');UPDATE peg_proofs SET created_at=${at} WHERE id IN ('${proof.id}','${secretProof.id}');UPDATE peg_report_events SET at=${instant('2026-03-06T17:00:00Z')} WHERE task_id IN ('${a.id}','${c.id}','${request.id}','${approved.id}','${pending.id}')`)
+ const input={name:'Native business review',projects:projects.map(p=>p.id),start:'2026-03-06',end:'2026-03-10',timezone:'America/New_York',widgets:[
+  {kind:'horizontal-bar',measure:'approved-hours'},{kind:'vertical-column',measure:'committed-hours'},{kind:'line',measure:'requests'},
+  {kind:'donut',measure:'pending-approvals'},{kind:'single-number',measure:'unscheduled-hours'},{kind:'table',measure:'approved-approvals'},
+  {kind:'burn-up',measure:'count'},{kind:'burn-down',measure:'count'},
+  {kind:'single-number',measure:'available-hours'},{kind:'line',measure:'overload-hours'},
+ ]}
+ const dashboard=await ok(owner.post('/api/v1/reports',input)),base=`/api/v1/reports/${dashboard.id}`,report=await ok(owner.post(base+'/capture',{})),download=base+'/snapshots/'+report.id
+ const values=measure=>report.widgets.find(widget=>widget.measure===measure).values.map(v=>v.value)
+ assert.deepEqual(values('approved-hours'),[1.75,0,0],'only approved selected-project time, with signed adjustments, is counted once')
+ assert.deepEqual(values('committed-hours'),[20,0,0],'reviewed Sum allocations are participant hours, not a duplicated task estimate')
+ assert.deepEqual(values('requests'),[0,0,1,0,0],'replayed native intake is one request at its local creation day across DST')
+ assert.deepEqual(values('pending-approvals'),[2,0,0],'one task and one permitted proof review remain pending')
+ assert.deepEqual(values('unscheduled-hours'),[6],'undated effort is explicit and excluded from scheduled commitments')
+ assert.deepEqual(values('approved-approvals'),[1])
+ assert.deepEqual(values('available-hours'),[20],'distinct selected participants have 20 available hours after leave, without counting a shared task twice')
+ assert.deepEqual(values('overload-hours'),[2,0,0,2,0],'overload compares each selected person and day before summing, rather than hiding one person’s overload in spare capacity')
+ for(const measure of ['available-hours','overload-hours'])assert.ok(report.metrics.filter(r=>r.measure===measure).every(r=>r.taskIds.length&&r.taskIds.every(id=>report.sources.some(source=>source.id===id))))
+ assert.equal(report.metrics.filter(r=>r.measure==='committed-hours').reduce((n,r)=>n+r.value,0),20)
+ assert.deepEqual(report.metrics.filter(r=>r.measure==='committed-hours').map(r=>[r.day,r.value]),[['2026-03-06',10],['2026-03-09',10]])
+ assert.equal(report.sources.filter(s=>s.id===a.id).length,1)
+ for(const point of report.widgets.flatMap(w=>w.values))for(const id of point.metricIds??[])assert.ok(report.metrics.some(r=>r.measure+':'+r.id===id),'each plotted business value has a frozen source record')
+ const body=JSON.stringify(report)
+ for(const hidden of [outside.id,outsideSheet.id,secretProof.id,secretFile.id,'Never export time notes','Never export adjustment reason','Private proof content'])assert.ok(!body.includes(hidden),'unselected business data stays out of the snapshot')
+ const time=await ok(owner.post('/api/v1/reports',{...input,widgets:[{kind:'line',measure:'approved-hours'},{kind:'single-number',measure:'approved-hours'}]}))
+ const timeReport=await ok(owner.post(`/api/v1/reports/${time.id}/capture`,{}))
+ assert.deepEqual(timeReport.widgets[0].values.map(v=>v.value),[0,0,1.5,0.25,0])
+ assert.equal(timeReport.widgets[1].values[0].value,1.75)
+ const alternate=await ok(owner.post('/api/v1/reports',{...input,timezone:'America/Los_Angeles',widgets:[{kind:'line',measure:'requests'},{kind:'line',measure:'approved-hours'}]}))
+ const alternateReport=await ok(owner.post(`/api/v1/reports/${alternate.id}/capture`,{}))
+ assert.deepEqual(alternateReport.widgets[0].values.map(v=>v.value),[0,1,0,0,0],'an intake instant belongs to its selected timezone day across DST')
+ assert.deepEqual(alternateReport.widgets[1].values.map(v=>v.value),[0,0,1.5,0.25,0],'recorded work dates are not timezone-shifted')
+ const signed=await ok(owner.post('/api/v1/reports',{...input,name:'Approved correction day',projects:[projects[0].id],start:'2026-03-09',end:'2026-03-09',widgets:['horizontal-bar','vertical-column','line','donut','single-number','table'].map(kind=>({kind,measure:'approved-hours'}))}))
+ const signedReport=await ok(owner.post(`/api/v1/reports/${signed.id}/capture`,{}))
+ assert.equal(signedReport.widgets.find(w=>w.kind==='single-number').values[0].value,-0.25,'a selected correction day retains its negative approved duration')
+ const current=await ok(owner.get(`/api/v1/workspaces/ws_main/workload?from=2026-03-06&days=5`))
+ assert.equal(current.people.reduce((n,p)=>n+p.hours,0),20,'the selected report reconciles to the native workload plan')
+ await ok(owner.post('/api/v1/reports',{...input,widgets:[{kind:'line',measure:'unscheduled-hours'}]}),400)
+ const privateDemand=await ok(owner.post('/api/v1/tasks',{projectId:outside.id,title:'Never selected capacity demand',ownerId:mia.id,estimateHours:100,startDate:'2026-03-09',dueDate:'2026-03-09'}))
+ const isolated=await ok(owner.post(base+'/capture',{}))
+ assert.deepEqual(isolated.widgets,report.widgets,'private outside demand cannot alter any selected-project widget or count')
+ assert.ok(!JSON.stringify(isolated).includes(privateDemand.id))
+ const managerDashboard=await ok(manager.post('/api/v1/reports',input)),managerBase=`/api/v1/reports/${managerDashboard.id}`
+ const managerReport=await ok(manager.post(managerBase+'/capture',{}))
+ assert.equal(managerReport.widgets[0].values[0].value,1.75)
+ assert.ok(!JSON.stringify(managerReport).includes(outside.id))
+ await ok(owner.patch(`/api/v1/workspaces/ws_main/people/${manager.id}`,{role:'member'}))
+ for(const format of ['', '?format=csv','?format=xlsx','?format=pdf'])await ok(manager.get(`${managerBase}/snapshots/${managerReport.id}${format}`),410)
+ const limited=await ok(manager.post(managerBase+'/capture',{}))
+ assert.equal(limited.widgets[0].values[0].value,0,'task export authority does not imply another person’s timesheet authority')
+ assert.ok(!JSON.stringify(limited).includes(sheet.id)&&!JSON.stringify(limited).includes(adjustment.id))
+ const guest=await person('report-business-guest','Business guest','guest')
+ for(const p of projects)await ok(owner.post('/api/v1/grants',{objectType:'project',objectId:p.id,granteeId:guest.id,level:'viewer'}))
+ const guestDashboard=await ok(guest.post('/api/v1/reports',input))
+ await ok(guest.post(`/api/v1/reports/${guestDashboard.id}/capture`,{}),403)
+ const files={}
+ for(const format of ['csv','xlsx','pdf']){const response=await fetch(w.origin+download+'?format='+format,{headers:{cookie:owner.cookie}});assert.equal(response.status,200);files[format]=new Uint8Array(await response.arrayBuffer())}
+ await w.restart()
+ assert.deepEqual((await ok(owner.get(download))).metrics,report.metrics,'restart retains the same authorized business records')
+ await ok(owner.post(`/api/v1/tasks/${approved.id}/comments`,{body:'synthetic-pegboard-5912'}))
+ const changed=await ok(owner.post(base+'/capture',{}))
+ assert.equal(changed.widgets.find(w=>w.measure==='approved-approvals').values.length,0,'material changes remove the current approval without rewriting a saved snapshot')
+ assert.deepEqual((await ok(owner.get(download))).widgets,report.widgets)
+ return {projects,dashboard,report,download,files,input,a,c,approved,pending,proof,manager,guest,signed,signedReport}
+}

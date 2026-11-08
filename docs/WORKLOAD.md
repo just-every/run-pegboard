@@ -85,3 +85,5 @@ the affected undo snapshots, so they cannot restore an erased participant.
 Scoped-agent generation, ranking, schedule alternatives, routed approvals and
 autonomous execution remain unimplemented. No model, processor or spending
 consent is inferred from a human scenario.
+
+Human portfolio capacity application and undo storage is introduced by `migrations/core/0082_portfolio_capacity.sql`, after `0081_rule_audit_correlations.sql`. Existing installations retain every previously applied migration and apply the new migration in filename order. The runtime and portfolio tests apply the migration directory to a fresh store.

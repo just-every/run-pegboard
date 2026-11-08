@@ -1,7 +1,10 @@
 import { invalid } from '../db'
 export const widgetKinds = ['horizontal-bar', 'vertical-column', 'line', 'donut', 'single-number', 'table', 'burn-up', 'burn-down'] as const
-export const measures = ['count', 'effort', 'completed', 'overdue', 'throughput', 'cycle-hours', 'status-age-hours'] as const
+export const businessMeasures = ['approved-hours', 'committed-hours', 'unscheduled-hours', 'available-hours', 'overload-hours', 'requests', 'pending-approvals', 'approved-approvals'] as const
+export type BusinessMeasure = typeof businessMeasures[number]
+export const measures = ['count', 'effort', 'completed', 'overdue', 'throughput', 'cycle-hours', 'status-age-hours', ...businessMeasures] as const
 export type Measure = typeof measures[number]
+export const supportsMeasure=(kind:string,measure:string)=>(!['burn-up','burn-down'].includes(kind)||['count','effort'].includes(measure))&&!(kind==='line'&&measure==='unscheduled-hours')&&(!['available-hours','overload-hours'].includes(measure)||['line','table','single-number'].includes(kind))
 export interface Definition { projects: string[]; start: string; end: string; timezone: string; status: string; widgets: { kind: typeof widgetKinds[number]; measure: Measure }[] }
 export function definition(input: Record<string, any>): Definition {
  const projects = [...new Set<string>(Array.isArray(input.projects) ? input.projects.map(String) : String(input.projects ?? '').split(',').filter(Boolean))]
@@ -13,6 +16,8 @@ export function definition(input: Record<string, any>): Definition {
  const widgets = input.widgets ?? widgetKinds.map(kind=>({kind,measure:input['measure:'+kind]??input.measure??'count'}))
  if(!Array.isArray(widgets)||!widgets.length||widgets.length>16||widgets.some(w=>!widgetKinds.includes(w.kind)||!measures.includes(w.measure)))throw invalid('report_widgets')
  if(widgets.some(w=>['burn-up','burn-down'].includes(w.kind)&&!['count','effort'].includes(w.measure)))throw invalid('burn_measure_count_or_effort')
+ if(widgets.some(w=>w.kind==='line'&&w.measure==='unscheduled-hours'))throw invalid('unscheduled_work_has_no_daily_bucket')
+ if(widgets.some(w=>!supportsMeasure(w.kind,w.measure)))throw invalid('report_widget_measure')
  return {projects,start,end,timezone,status,widgets:widgets.map(w=>({kind:w.kind,measure:w.measure}))}
 }
 export function localDay(at:number, timezone:string) {

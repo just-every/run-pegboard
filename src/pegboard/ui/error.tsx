@@ -2,6 +2,8 @@ import { appDocument } from '../../ui/document.server'
 import { AppBar } from '../../ui/bar'
 
 const sayings: Record<string, string> = {
+  expiry_review_required:'The records, authority or holds changed. Review the exact expiry scope again before confirming.',
+  stale_data_preview:'The records, authority or holds changed. Review the exact data scope again before confirming.',
   capacity_review_changed:'The work, availability or access changed. Compare the current portfolio scenarios again before approving.',
   capacity_not_feasible:'This scenario is not verified feasible. Review the shortage or limited context before choosing another alternative.',
   capacity_undo_changed:'The assignment, allocation or access changed. Review undo again; later human edits are preserved.',

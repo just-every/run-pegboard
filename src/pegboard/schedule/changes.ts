@@ -5,6 +5,7 @@
 import { all, batch, bound, conflict, first, forbidden, invalid, newId, notFound, now } from '../db'
 import { auditStatement } from '../authorization/audit'
 import { taskAccess } from '../authorization/effective'
+import { openTask } from '../tasks/access'
 import { isAdministrator } from '../authorization/levels'
 import { guarded, revision } from '../decisions/revision'
 import { historyStatement } from '../tasks/history'
@@ -62,6 +63,15 @@ async function approvalPlan(db: D1Database, actor: Actor, set: SetRow) {
   if (await workspaceRole(db, actor.id, set.workspace_id) === 'agent') throw forbidden('human_approver')
   const plan = await planChange(db, actor, JSON.parse(set.moves) as Move[]).catch(error => { if (error?.status === 404) throw notFound(); throw error })
   return plan
+}
+/** A submitter may track their own request while they can still read its source tasks. */
+export async function submittedChange(db: D1Database, actor: Actor, id: string) {
+  const set = await load(db, id)
+  if (set.initiator_id !== actor.id) throw notFound()
+  const moves = moveInput(JSON.parse(set.moves))
+  for (const move of moves) await openTask(db, actor, move.taskId)
+  const plan = set.status === 'pending' ? await planChange(db, actor, moves) : null
+  return { id: set.id, status: set.status, shifts: plan?.shifts ?? [], stale: plan ? plan.stamp !== set.stamp : false }
 }
 export async function pendingChange(db: D1Database, actor: Actor, id: string) {
   const set = await load(db, id)

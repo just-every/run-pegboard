@@ -1,7 +1,24 @@
+import { decisionPolicy, previewDecision } from '../intake/decisions'
+import { ApprovalFollowupSettings } from './pages/approval-followup'
+import { followupSettings, previewFollowupPolicy } from '../notices/approval-policy'
+import { approvalFollowupInbox, approvalFollowupLog } from '../notices/approval-followup'
+import { approvalPreferences } from '../notices/preferences'
+import { IntakeScreen,IntakeSettings,IntakeQueue,IntakeDecision } from './pages/intake'
+import { internalForm,safeForm,projectForms,reviewForm,administer } from '../intake/forms'
+import { triageQueue } from '../intake/triage'
+import { intakeDocument } from '../api/intake-routes'
 import { portfolioCapacity,comparePortfolioCapacity,portfolioCapacityUndoPreview } from '../capacity/portfolio-plans'
 import { PortfolioCapacityPage,PortfolioCapacitySettingsPage } from './pages/portfolio-capacity'
 import { dashboards, ownDashboard, readSnapshot } from '../reporting/dashboard'
 import { ReportsSettings, ReportsList, ReportPage } from './pages/reports'
+import { workView } from '../views/service'
+import { listWorkViews } from '../views/store'
+import { WorkViewPage, WorkViewContent } from './work-views/page'
+import { ViewSettingsPage } from './work-views/settings'
+import {contentSearch} from '../search/content'
+import {savedSearches} from '../search/saved'
+import {SearchPage} from './pages/search'
+import {selectionPreview,selectionReceipt} from '../recovery/selection'
 import { ownKey, readReport } from '../analytics-export/reports'
 import { AnalystReportPage } from './pages/analyst-report'
 import { operatorMail } from '../../mail.server.mjs'
@@ -20,7 +37,10 @@ import { WorkloadPage } from './pages/workload'
 import { AccountAvailabilityPage,CapacitySettingsPage } from './pages/capacity-settings'
 import {ApprovalPage,RoutingPage} from './pages/approvals'
 import {routeFor,routeView,reviewLink,previewRoute} from '../approvals/routing'
-import {proofView} from '../records/custody'
+import {proofView,internalProof} from '../records/custody'
+import {feedbackView} from '../proofs/feedback'
+import {ProofReviewPage,ProofListPage} from './pages/proof-review'
+const pdfModule='/proof/pdf.mjs',pdfWorker='/proof/pdf.worker.mjs'
 import {pendingRuleSchedulePreview} from '../bundles/pending-schedule'
 import {availabilityView} from '../schedule/availability'
 import {AvailabilityPage} from './pages/availability'
@@ -30,7 +50,7 @@ import {Card,Shell} from './shell'
 import {CalendarPage} from './pages/calendar'
 import {schedulePreview} from './schedule-preview'
 import type {ScheduleEditorProps} from './schedule-editor'
-import {guestPreview} from '../guests/preview'
+import {guestPreview,guestShareReview,guestShareHistory} from '../guests/preview'
 import {taskParticipants} from '../tasks/participants'
 import {openTask} from '../tasks/access'
 import {definitions as ruleDateFields} from '../fields/definitions'
@@ -181,13 +201,34 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
   const editorFor=async(projectId:string,tasks:{value:string;label:string}[],here:string):Promise<ScheduleEditorProps>=>({here,projectId,tasks,people:await peopleOptions(db,actor,workspace),input:scheduleInput,preview:await schedulePreview(db,actor,scheduleInput)})
 
   try {
+    if(section==='settings'&&id==='approval-followup'&&!tail){
+      const input:Record<string,any>=Object.fromEntries(url.searchParams)
+      for(const key of ['projects','recipients','escalation','days'])input[key]=url.searchParams.getAll(key+'[]')
+      return page('Approval notice settings',h(ApprovalFollowupSettings,{viewer,preferences:await approvalPreferences(db,actor,workspace),settings:viewer.role==='owner'?await followupSettings(db,actor,workspace):null,preview:url.searchParams.has('preview')?await previewFollowupPolicy(db,actor,workspace,input):null,input,log:viewer.role==='owner'?await approvalFollowupLog(db,actor,workspace):[]}))
+    }
+    if(section==='intake'&&id&&tail==='decision'&&segments.length===4){const row=await first<{priority:string}>(db,'SELECT t.priority FROM peg_intake_submissions s JOIN peg_tasks t ON t.id=s.task_id WHERE s.id=?',id);return page('Review intake decision',h(IntakeDecision,{viewer,preview:await previewDecision(db,actor,id,{disposition:url.searchParams.get('disposition')??'accepted',priority:url.searchParams.get('priority')??row?.priority})}))}
+    if(section==='intake'&&id&&!tail){const row=await internalForm(db,actor,id),receiptId=url.searchParams.get('receipt'),receipt=receiptId?await first<{id:string;deadline:number}>(db,'SELECT id,deadline FROM peg_intake_submissions WHERE id=? AND form_id=? AND source_actor=?',receiptId,id,actor.id):null;return intakeDocument('Request intake',h(IntakeScreen,{viewer,form:safeForm(row),receipt:receipt?{receipt:receipt.id,deadline:receipt.deadline,acknowledgment:'Request received'}:null}))}
+    if(section==='projects'&&id&&tail==='intake'&&segments.length===4)return page('Request triage',h(IntakeQueue,{viewer,view:await triageQueue(db,actor,id)}))
+    if(section==='projects'&&id&&tail==='settings'&&segments[4]==='intake'&&segments.length===5){const {project}=await administer(db,actor,id),reviewId=url.searchParams.get('review');const review=reviewId?await reviewForm(db,actor,reviewId):null;if(review&&review.project.id!==id)throw new PegError(404,'not_found');return page('Intake settings',h(IntakeSettings,{viewer,project,policy:await decisionPolicy(db,actor,id),list:await projectForms(db,actor,id),review,people:await peopleOptions(db,actor,workspace)}))}
     if(section==='settings'&&id==='reports'&&!tail)return page('Report settings',h(ReportsSettings,{viewer,projects:await listProjects(db,actor,workspace),list:await dashboards(db,actor,workspace)}))
     if(section==='reports'&&!id)return page('Reports',h(ReportsList,{viewer,list:await dashboards(db,actor,workspace)}))
     if(section==='reports'&&id&&!tail){const {row}=await ownDashboard(db,actor,workspace,id);const snapshot=url.searchParams.get('snapshot');return page(row.name,h(ReportPage,{viewer,id,name:row.name,report:snapshot?await readSnapshot(db,actor,workspace,id,snapshot):null}))}
     if(section==='approvals'&&id)return page('Review approval',h(ApprovalPage,{viewer,view:await routeView(db,actor,id),people:await peopleOptions(db,actor,workspace)}))
     if(section==='proof-reviews'&&id)return page('Review approval',h(ApprovalPage,{viewer,view:await reviewLink(db,actor,id),linkId:id,people:[]}))
     if(section==='approval-routing'&&id){const input:Record<string,any>=Object.fromEntries(url.searchParams);for(const n of [1,2])input['people'+n]=url.searchParams.getAll('people'+n+'[]');const kind=input.kind??'task';const target=kind==='proof'?(await proofView(db,actor,id)).taskId:id;const access=(await openTask(db,actor,target)).access;if(!access.capabilities.has('manage_shares')||access.role==='guest'||access.role==='agent')throw new PegError(403,'forbidden');const existing=await routeFor(db,kind,id);if(existing&&!input.new&&!input.preview)return new Response(null,{status:303,headers:{location:'/app/approvals/'+existing.id}});return page('Approval routing',h(RoutingPage,{viewer,kind,id,people:await peopleOptions(db,actor,workspace),input,preview:input.preview?await previewRoute(db,actor,kind,id,input):null}))}
-    if(section==='proofs'&&id){const task=await viewTask(db,actor,id);if(!task.capabilities.includes('edit'))throw new PegError(403,'forbidden');const proofs=await all<{id:string}>(db,'SELECT id FROM peg_proofs WHERE task_id=?',id);return page('Proof reviews',h(Shell,{viewer,current:'/app/projects',title:'Proof reviews',children:h(Card,{title:'Reviewed versions',children:[h('form',{method:'post',action:'/api/v1/tasks/'+id+'/proofs',className:'stack'},h('input',{type:'hidden',name:'_next',value:'/app/proofs/'+id}),h('label',null,'File to review',h('select',{className:'select',name:'attachmentId','aria-label':'File to review'},task.attachments.map(a=>h('option',{value:a.id},a.name)))),h('button',{className:'button quiet'},'Create proof')), ...await Promise.all(proofs.map(async p=>{const v=await proofView(db,actor,p.id);return h('section',null,h('a',{href:'/app/approval-routing/'+p.id+'?kind=proof'},'Route proof for review'),h('form',{method:'post',action:'/api/v1/proofs/'+p.id+'/versions',className:'stack'},h('input',{type:'hidden',name:'_next',value:'/app/proofs/'+id}),h('input',{type:'hidden',name:'currentVersion',value:v.proof.current_version??''}),h('label',null,'Replacement file',h('select',{className:'select',name:'attachmentId','aria-label':'Replacement file'},task.attachments.map(a=>h('option',{value:a.id},a.name)))),h('button',{className:'button quiet'},'Add reviewed version')))}))]})}))}
+    if(section==='proof-viewer'&&id&&!tail){
+      const view=await feedbackView(db,actor,id,url.searchParams.get('version')??undefined,url.searchParams.get('compare')??undefined)
+      const response=await page('PDF proof review',h(ProofReviewPage,{viewer,view,pdfModule,pdfWorker})),headers=new Headers(response.headers)
+      headers.set('content-security-policy',headers.get('content-security-policy')+"; connect-src 'self'; worker-src 'self'")
+      return new Response((await response.text()).replace('</head>','<link rel="stylesheet" href="/look/proof-review.css"></head>'),{status:response.status,headers})
+    }
+    if(section==='proofs'&&id&&!tail){
+      const task=await viewTask(db,actor,id),role=await workspaceRole(db,actor.id,(await openTask(db,actor,task.id)).task.workspace_id)
+      if(!role||role==='guest'||role==='agent')throw new PegError(404,'not_found')
+      const rows=await all<{id:string}>(db,'SELECT id FROM peg_proofs WHERE task_id=?',task.id),proofs=[]
+      for(const row of rows){const proof=await internalProof(db,actor,row.id);if(proof.versions.length)proofs.push(proof)}
+      return page('Proof reviews',h(ProofListPage,{viewer,task,proofs,canEdit:task.capabilities.includes('edit')}))
+    }
     if(section==='settings'&&id==='analytics'&&tail&&segments.length===4) return page('Analyst report',h(AnalystReportPage,{viewer,keyId:tail,workspace,report:await readReport(db,await ownKey(db,actor,workspace,tail),url.searchParams.get('snapshot')??'')}))
     if(section==='settings'&&id==='analytics'&&!tail) {
       const response = await page('Analyst access', h(AnalyticsPage, { viewer, workspace, data: await analystSettings(db, actor, workspace) }))
@@ -195,7 +236,7 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
       headers.set('content-security-policy', headers.get('content-security-policy') + "; connect-src 'self'")
       return new Response((await response.text()).replace('</body>', '<script src="/look/analytics.js" defer></script></body>'), { status: response.status, headers })
     }
-    if(section==='settings'&&!id)return page('Work settings',h(Shell,{viewer,current:'/auth/settings/identity',title:'Work settings',children:h(Card,{title:'Scheduling and notices',children:h('p',null,h('a',{href:'/app/settings/reports'},'Report settings'), ' · ',h('a',{href:'/app/settings/availability'},'Working calendar'), ' · ',h('a',{href:'/app/settings/calendars'},'Calendar connections'), ' · ',h('a',{href:'/app/settings/readiness'},'Readiness notices'), ' · ',h('a',{href:'/app/settings/capacity'},'Capacity sources and tentative staffing'), ' · ',h('a',{href:'/app/account/availability'},'My availability'), ...(['owner','admin'].includes(viewer.role)?[' · ',h('a',{href:'/app/settings/analytics'},'Analyst access')]:[]))})}))
+    if(section==='settings'&&!id)return page('Work settings',h(Shell,{viewer,current:'/auth/settings/identity',title:'Work settings',children:h(Card,{title:'Scheduling and notices',children:h('p',null,h('a',{href:'/app/settings/reports'},'Report settings'), ' · ',h('a',{href:'/app/settings/availability'},'Working calendar'), ' · ',h('a',{href:'/app/settings/calendars'},'Calendar connections'), ' · ',h('a',{href:'/app/settings/readiness'},'Readiness notices'), ' · ',h('a',{href:'/app/settings/approval-followup'},'Approval notices'), ' · ',h('a',{href:'/app/settings/capacity'},'Capacity sources and tentative staffing'), ' · ',h('a',{href:'/app/account/availability'},'My availability'), ...(['owner','admin'].includes(viewer.role)?[' · ',h('a',{href:'/app/settings/analytics'},'Analyst access')]:[]))})}))
     if(section==='workload'&&!id){const input={...Object.fromEntries(url.searchParams),selected:url.searchParams.getAll('selected[]')},view=await workloadView(db,actor,workspace,input);return page('Workload',h(WorkloadPage,{viewer,view,scenario:url.searchParams.has('taskId')?await staffingScenario(db,actor,workspace,input):null,effort:url.searchParams.has('reviewEffort')?await effortPreview(db,actor,url.searchParams.get('effortTask')!,input):null,effortTask:url.searchParams.get('effortTask'),canConfigure:isAdministrator(await workspaceRole(db,actor.id,workspace))}))}
     if(section==='account'&&id==='availability')return page('My availability',h(AccountAvailabilityPage,{viewer,view:await accountAvailability(db,actor,workspace)}))
     if(section==='settings'&&id==='capacity')return page('Capacity settings',h(CapacitySettingsPage,{viewer,workspace,feeds:await feedSettings(db,actor,workspace),people:await capacityPeople(db,actor,workspace)}))
@@ -227,7 +268,8 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
       return page('Template rules',h(TemplateRulesPage,{viewer,view,templates:(await listTemplates(db,actor,view.project.workspace_id)).map(t=>({id:t.template.id,name:t.template.name,version:t.headVersion,roles:t.definition.roles})),people:await peopleOptions(db,actor,view.project.workspace_id),selectedTemplateId:url.searchParams.get('templateId')??undefined,preview:url.searchParams.get('review')?await previewTemplateRule(db,actor,url.searchParams.get('review')!,{...Object.fromEntries(url.searchParams),runIds:url.searchParams.getAll('runIds[]')}):null}))
     }
     if(section==='fields'&&id&&tail==='revisions')return page('Field revisions',h(FieldRevisionsPage,{viewer,view:await fieldRevisionView(db,actor,id),preview:url.searchParams.has('fromVersion')?await fieldRevisionPreview(db,actor,id,Object.fromEntries(url.searchParams)):null}))
-    if(section==='recovery'&&id==='bulk'&&!tail){const input=bulkInput({...Object.fromEntries(url.searchParams),taskIds:url.searchParams.getAll('taskIds[]')});return page('Bulk changes',h(BulkPage,{viewer,input,tasks:(await recoveryList(db,actor,workspace)).choices.filter(c=>c.value.startsWith('task.')).map(c=>({value:c.value.slice(5),label:c.label.slice(7)})),people:await peopleOptions(db,actor,workspace),listing:await listBulk(db,actor,workspace),preview:input.taskIds.length?await bulkPreview(db,actor,workspace,input):null,undo:url.searchParams.get('operationId')?await undoBulkPreview(db,actor,workspace,url.searchParams.get('operationId')!):null}))}
+    if(section==='search'&&!id)return page('Find work',h(SearchPage,{viewer,people:await peopleOptions(db,actor,workspace),data:await contentSearch(db,actor,workspace,Object.fromEntries(url.searchParams)),saved:await savedSearches(db,actor,workspace),projects:(await listProjects(db,actor,workspace)).map(p=>({value:p.id,label:p.name}))}))
+    if(section==='recovery'&&id==='bulk'&&!tail){const input=bulkInput({...Object.fromEntries(url.searchParams),taskIds:url.searchParams.getAll('taskIds[]')});return page('Bulk changes',h(BulkPage,{viewer,input,selection:url.searchParams.has('selection'),selectionPlan:url.searchParams.has('selection')&&input.taskIds.length?await selectionPreview(db,actor,workspace,{...input,reviewRows:url.searchParams.get('reviewRows')??undefined}):null,receipt:url.searchParams.has('receipt')?await selectionReceipt(db,actor,workspace,url.searchParams.get('receipt')!):null,tasks:(await recoveryList(db,actor,workspace)).choices.filter(c=>c.value.startsWith('task.')).map(c=>({value:c.value.slice(5),label:c.label.slice(7)})),people:await peopleOptions(db,actor,workspace),listing:await listBulk(db,actor,workspace),preview:!url.searchParams.has('selection')&&input.taskIds.length?await bulkPreview(db,actor,workspace,input):null,undo:url.searchParams.get('operationId')?await undoBulkPreview(db,actor,workspace,url.searchParams.get('operationId')!):null}))}
     if(section==='projects'&&id&&tail==='brief')return page('Project brief',h(BriefPage,{viewer,view:await briefView(db,actor,id,Object.fromEntries(url.searchParams))}))
     if(section==='recovery'&&!id)return page('Archive and trash',h(RecoveryPage,{viewer,listing:await recoveryList(db,actor,workspace),preview:url.searchParams.has('id')?await recoveryPreview(db,actor,workspace,Object.fromEntries(url.searchParams)):url.searchParams.get('target')?await recoveryPreview(db,actor,workspace,(()=>{const [type,id]=url.searchParams.get('target')!.split('.');return {type,id,action:type==='project'?'archive':'trash'}})()):null}))
     if(section==='workflow-bundles'&&!tail){return page('Workflow bundles',h(BundlesPage,{viewer,pendingSchedule:id&&url.searchParams.has('reviewJob')?await pendingRuleSchedulePreview(db,actor,id,url.searchParams.get('reviewJob')!):null,revisionPreview:id&&url.searchParams.has('fromVersion')?await bundleRevisionPreview(db,actor,id,Object.fromEntries(url.searchParams)):null,tags:(await tagCatalogue(db,actor,workspace)).filter(t=>!t.archived&&!t.owner_id).map(t=>({value:t.id,label:t.name})),bundles:id?[]:await listBundles(db,actor,workspace),view:id?await bundleView(db,actor,id):null,projects:(await listProjects(db,actor,workspace)).filter(p=>p.level==='admin').map(p=>({value:p.id,label:p.name})),fields:(await catalogue(db,actor,workspace)).map(f=>({value:f.id,label:f.label})),people:await peopleOptions(db,actor,workspace),preview:id&&url.searchParams.getAll('projectIds[]').length?await previewBundle(db,actor,id,{projectIds:url.searchParams.getAll('projectIds[]')}):null}))}
@@ -242,6 +284,19 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
       return page('Portfolio',h(PortfolioPage,{viewer,view,tab:['summary','timeline','workload','dashboard'].includes(tab)?tab:'summary',atInput,projectOptions:admin?(await listProjects(db,actor,workspace)).map(p=>({value:p.id,label:p.name})):[],people:admin?await peopleOptions(db,actor,workspace):[],drill:drillMetric?await portfolioDrill(db,actor,id,{metric:drillMetric,at}):null}))
     }
     if(section==='projects'&&id&&tail==='register'&&segments.length===4){const data=await board(db,actor,id);return page('Delivery register',h(RegisterPage,{viewer,view:await registerView(db,actor,id),people:await peopleOptions(db,actor,workspace),tasks:data.columns.flatMap(c=>c.tasks.map(t=>({value:t.id,label:t.title})))}))}
+    if(section==='projects'&&id&&(tail==='views'&&segments.length===4||tail==='settings'&&segments[4]==='views'&&segments.length===5)) {
+      const input=Object.fromEntries(url.searchParams)
+      if (input.previousView !== undefined && input.previousView !== (input.savedView??'')) {
+        delete input.mode; delete input.status; delete input.groupBy
+      }
+      if (input.status === 'saved') delete input.status
+      const options={viewId:input.savedView||undefined,mode:input.mode,status:input.status,groupBy:input.groupBy,from:input.from,days:input.days}
+      const data=await workView(db,actor,id,options)
+      const body=tail==='settings'?h(ViewSettingsPage,{viewer,presets:await listWorkViews(db,actor,id),data,selected:input.savedView}):request.headers.has('x-work-view-refresh')?h(WorkViewContent,{data}):h(WorkViewPage,{viewer,data,presets:data,input})
+      const response=await page('Work views',body),headers=new Headers(response.headers)
+      headers.set('content-security-policy',headers.get('content-security-policy')+"; connect-src 'self'")
+      return new Response((await response.text()).replace('</head>','<link rel="stylesheet" href="/look/work-views.css"></head>'),{status:response.status,headers})
+    }
     if(section==='projects'&&id&&tail==='calendar'&&segments.length===4){
       const view=await scheduleView(db,actor,id),here=`/app/projects/${id}/calendar`
       return page('Calendar',h(CalendarPage,{viewer,view,blocks:{here,connections:await calendarChoices(db,actor,workspace),tasks:view.tasks.filter(t=>t.inProject).map(t=>({id:t.id,title:t.title})),blocks:await projectBlocks(db,actor,id),preview:url.searchParams.get('calendarPreview')?await blockPreview(db,actor,url.searchParams.get('calendarPreview')!):null},editor:view.project.canEdit?await editorFor(id,view.tasks.filter(t=>t.inProject).map(t=>({value:t.id,label:t.title})),here):null}))
@@ -298,11 +353,14 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
       const grants = can('manage_shares') ? await grantsOn(db, actor, 'project', id) : null
       const guestPeople=[]
       for(const guestId of new Set((grants??[]).filter(g=>g.grantee_type==='person').map(g=>g.grantee_id)))if(await workspaceRole(db,guestId,(await openProject(db,actor,id)).project.workspace_id)==='guest'){const name=await displayNames(db,[guestId]);guestPeople.push({value:guestId,label:name.get(guestId)??'Guest'})}
+      const guestCandidates = can('manage_shares') ? (await all<{id:string;display_name:string}>(db,"SELECT o.id,o.display_name FROM oa_operators o JOIN peg_workspace_members m ON m.operator_id=o.id WHERE m.workspace_id=? AND m.role='guest' AND o.role='member' AND o.status='active' ORDER BY o.display_name", workspace)).map(p=>({value:p.id,label:p.display_name})) : []
+      const guestShares = can('manage_shares') && !['guest','agent'].includes(viewer.role) ? await guestShareHistory(db,actor,id) : null
+      const guestReview = guestShares && url.searchParams.get('guestReview') ? await guestShareReview(db,actor,id,url.searchParams.get('guestReview')!) : null
       const names = await displayNames(db, grants?.flatMap(grant => [grant.grantee_id, grant.created_by]) ?? [])
       const teams = await teamOptions(db, actor, workspace)
       const teamNames = new Map(teams.map(team => [team.value, team.label]))
       return page('Project settings', h(ProjectSettingsPage, {
-        viewer, id, data, guestPeople, guestPreview:can('manage_shares')&&url.searchParams.get('recipient')?await guestPreview(db,actor,id,url.searchParams.get('recipient')!):null, sourceProjects:(await listProjects(db,actor,workspace)).map(p=>({value:p.id,label:p.name})), library:can('manage_fields')?await catalogue(db,actor,workspace):[], fieldPreview:can('manage_fields')&&url.searchParams.get('fieldId')?await changePreview(db,actor,url.searchParams.get('fieldId')!,Object.fromEntries(url.searchParams)):null, people: await peopleOptions(db, actor, workspace), teams, proposal, sectionList: (await listSections(db, id)).map(section => ({ id: section.id, name: section.name, mapsTo: section.maps_to })),
+        viewer, id, data, guestPeople, guestCandidates, guestShares, guestReview, guestPreview:can('manage_shares')&&url.searchParams.get('recipient')?await guestPreview(db,actor,id,url.searchParams.get('recipient')!):null, sourceProjects:(await listProjects(db,actor,workspace)).map(p=>({value:p.id,label:p.name})), library:can('manage_fields')?await catalogue(db,actor,workspace):[], fieldPreview:can('manage_fields')&&url.searchParams.get('fieldId')?await changePreview(db,actor,url.searchParams.get('fieldId')!,Object.fromEntries(url.searchParams)):null, people: (await peopleOptions(db, actor, workspace)).filter(p=>!guestCandidates.some(g=>g.value===p.value)), teams, proposal, sectionList: (await listSections(db, id)).map(section => ({ id: section.id, name: section.name, mapsTo: section.maps_to })),
         preview: can('manage_shares') && Object.keys(proposal).length ? await previewShare(db, actor, id, proposal).catch(() => null) : null,
         grants: grants && grants.map(grant => ({ id: grant.id, grantee: grant.grantee_type === 'team' ? `Team ${teamNames.get(grant.grantee_id) ?? ''}` : names.get(grant.grantee_id) ?? 'Former member', level: grant.level, scope: grant.scope, source: grant.source, by: names.get(grant.created_by) ?? 'Former member' })),
       }))
@@ -328,7 +386,7 @@ export async function pegboardPage(request: Request, original: Bindings): Promis
       const approvers = (await all<{ operator_id: string }>(db, "SELECT operator_id FROM peg_approvers WHERE object_type='team' AND object_id=?", id)).map(row => row.operator_id)
       return page(team.name, h(TeamPage, { viewer, people: await peopleOptions(db, actor, workspace), team: { id, name: team.name, description: team.description, privacy: team.privacy, defaultLevel: team.default_level, fallbackId: team.fallback_id, level: effective.level, capabilities: [...effective.capabilities], paths: effective.paths.map(path => ({ via: path.via, level: path.level })), members: await teamMembers(db, actor, id), approvers } }))
     }
-    if (section === 'inbox') return page('Inbox', h(InboxPage, { viewer, toDecide: await pendingFor(db, actor, { origin: env.AUTH_ORIGIN, from: env.MAIL_FROM, mail: operatorMail(env) }), mine: await myRequests(db, actor),readiness:await readinessNotices(db,actor,workspace) }))
+    if (section === 'inbox') return page('Inbox', h(InboxPage, { viewer, toDecide: await pendingFor(db, actor, { origin: env.AUTH_ORIGIN, from: env.MAIL_FROM, mail: operatorMail(env) }), mine: await myRequests(db, actor),followup:['owner','admin','manager','member'].includes(viewer.role)?await approvalFollowupInbox(db,actor,workspace):null,readiness:await readinessNotices(db,actor,workspace) }))
     if (section === 'access-requests' && id) {
       let preview
       try { preview = await previewRequest(db, actor, id) } catch (error) { if (error instanceof PegError && error.status === 404) return refuse(db, actor, viewer, id); throw error }
