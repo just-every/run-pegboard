@@ -57,5 +57,11 @@ GAP PEG-078: The main contract's existing agent-generation, ranking, routed-appr
 
 Both the merge save and final FIX head were pushed only to `cloud/sx-pegboard-f48fix1`. Final push succeeded on attempt 1. No default branch push, force push, rebase of published history, PR, publication scan or DONE claim. Exact-SHA push Verify run: `42479653822`, https://github.com/just-every/run-pegboard/actions/runs/42479653822. Its final conclusion is in `ci-receipt.json`; no success is inferred from any other SHA. One watcher polls REST at least 300 seconds apart within the ten-call budget. Evidence publication is independent of product READY and does not claim acceptance or landing.
 
-Exact-SHA CI is still in progress at this evidence save. The CI receipt records the actual observations; a subsequent evidence save will record the final conclusion.
+Exact-SHA Verify **completed/success** on product head `2f1ceaf26575272f3bf1e9b817106481f527d6f6`, run `42479653822`. Four REST calls total, each run observation at least 300 seconds apart. No rerun or workflow dispatch was used. No blockers remain for this scoped candidate.
+
+Initial report-only evidence save succeeded at `refs/heads/evidence/sx-pegboard-f48fix1`, head `bdcfb54bd32d7d83d5ef9c42ecbd523c9d1ef1dd`. The actual initial transport receipt is in `evidence-save-receipt.json`. This final packet adds the completed exact-SHA CI result and is published as a subsequent ordinary evidence commit; the final terminal EVIDENCE line identifies that commit. The evidence helper preserves the product checkout/head/index. All 21 selected files are actual regular report, receipt, patch, log or screenshot files. No credential, environment dump, held-out gate material or symlink is selected.
+
+All local browser/server processes were closed by their own lifecycle. Failed initial scratch setup/test stores were removed after successful validation. The product clone is clean, its complete product history is pushed, and it is removed after final evidence publication as the repository rules require. The packet remains outside that clone under `$HOME/rer-consolidation/work/sx-pegboard-f48fix1/packet/`.
+
+Proposed lane return: sx-pegboard-f48fix1 fixes BLOCKING A's deadline-only retained-task refusal for PEG-078; no clause cell changes, no new test registration, one regression assertion; 4/4 touched tests, browser sanity and exact-SHA Verify 42479653822 passed. Product head 2f1ceaf26575272f3bf1e9b817106481f527d6f6; contract counts remain 22/20/50. Independent gate and landing remain fleet-owned.
 

@@ -44,8 +44,21 @@
         "id": 42479653822,
         "status": "in_progress"
       }
+    },
+    {
+      "at": 1794141256.705362,
+      "command": "gh api repos/just-every/run-pegboard/actions/runs/42479653822",
+      "exit": 0,
+      "response": {
+        "conclusion": "success",
+        "head_sha": "2f1ceaf26575272f3bf1e9b817106481f527d6f6",
+        "html_url": "https://github.com/just-every/run-pegboard/actions/runs/42479653822",
+        "id": 42479653822,
+        "status": "completed"
+      }
     }
   ],
-  "status": "watching",
-  "run_id": 42479653822
+  "status": "success",
+  "run_id": 42479653822,
+  "conclusion": "success"
 }

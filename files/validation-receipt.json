@@ -82,16 +82,21 @@
   },
   "publicationScan": "not run, as the FIX brief requires",
   "ci": {
-    "status": "in_progress",
+    "status": "completed",
+    "conclusion": "success",
     "runId": 42479653822,
     "head": "2f1ceaf26575272f3bf1e9b817106481f527d6f6",
     "url": "https://github.com/just-every/run-pegboard/actions/runs/42479653822",
-    "callsUsed": 3
+    "callsUsed": 4,
+    "lastObservedAt": 1794141256.705362
   },
   "evidence": {
-    "status": "prepared for report-only publication",
+    "status": "initial save published; final packet prepared with exact-SHA CI success",
     "ref": "refs/heads/evidence/sx-pegboard-f48fix1",
-    "filesSelected": 20
+    "filesSelected": 21,
+    "initialSaveHead": "bdcfb54bd32d7d83d5ef9c42ecbd523c9d1ef1dd",
+    "initialSaveStatus": "published",
+    "finalRef": "refs/heads/evidence/sx-pegboard-f48fix1"
   },
   "push": {
     "status": "pushed",
@@ -102,6 +107,27 @@
     "mergeSaveAttempts": 3,
     "historyRewritten": false,
     "identityAndTrailerCheck": "all five candidate commits including side parents, fleet identities, absent trailers",
-    "originBranchHead": "2f1ceaf26575272f3bf1e9b817106481f527d6f6"
-  }
+    "originBranchHead": "2f1ceaf26575272f3bf1e9b817106481f527d6f6",
+    "command": "git push --porcelain origin HEAD:refs/heads/cloud/sx-pegboard-f48fix1",
+    "guard": "python3 $HOME/rer-consolidation/.tools/cloud-push.py origin cloud/sx-pegboard-f48fix1",
+    "mergeSaveRecovery": {
+      "attempt1": {
+        "exit": 128,
+        "HTTP": "unknown (not supplied by Git)",
+        "diagnostic": "Invalid username or token. Password authentication is not supported for Git operations."
+      },
+      "attempt2": {
+        "exit": 128,
+        "HTTP": "unknown (not supplied by Git)",
+        "diagnostic": "Invalid username or token. Password authentication is not supported for Git operations."
+      },
+      "attempt3": {
+        "exit": 0,
+        "status": "new branch pushed"
+      },
+      "launcherBundleRefreshedBetweenAttempts": true
+    }
+  },
+  "blockers": [],
+  "productCustody": "READY: pushed named branch and completed/success exact-SHA Verify; no acceptance or landing claim"
 }
