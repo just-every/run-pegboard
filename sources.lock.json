@@ -3355,7 +3355,7 @@
       "executable": false
     },
     "src/pegboard/capacity/workload.ts": {
-      "sha256": "fcf79f899ed7e8063aa26341418cbd4ccb79eee27f5dce6e031a69c19e3df651",
+      "sha256": "0a9b7f4bd546f0e7f9af67b29e75a2115b78e92bc497bafaedb13e8372ccc846",
       "executable": false
     },
     "src/pegboard/connectors/calendars/edge.ts": {
@@ -4519,7 +4519,7 @@
       "executable": false
     },
     "tests/scenarios/portfolio-capacity.mjs": {
-      "sha256": "a12f7c689ffa014147e90a1873cf25968d5d1be78c3f524eace82741ea4f18c8",
+      "sha256": "1ddf67f75913a279bbea9150c8b1738e933de7c7cf0e8c8dd581d91390242b5d",
       "executable": false
     },
     "tests/scenarios/provider-log-retention.mjs": {

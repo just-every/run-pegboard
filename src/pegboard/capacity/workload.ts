@@ -30,7 +30,8 @@ export function spread(task:TaskRow,hours:number,calendar:WorkingCalendar,dates:
 function committedCapacity(task:TaskRow,calendar:WorkingCalendar,date:string) {
  const start=readStamp(task.start_date??task.due_date!,calendar.zone),end=readStamp(task.due_date??task.start_date!,calendar.zone),day=dayNumber(date)
  if(day<start.day||day>end.day)return 0
- const lo=day===start.day?(start.wallMs??0):0,hi=day===end.day?(end.wallMs??86400000):86400000
+ // A missing start leaves the deadline day open before due; a missing due leaves it open after start.
+ const lo=day===start.day&&task.start_date?(start.wallMs??0):0,hi=day===end.day&&task.due_date?(end.wallMs??86400000):86400000
  return availableIntervals(day,calendar).reduce((sum,[a,b])=>sum+Math.max(0,Math.min(b,hi)-Math.max(a,lo)),0)/3600000
 }
 export async function workloadView(db:D1Database,actor:Actor,workspace:string,input:Record<string,any>={},move?:{taskId:string;personId:string}) {

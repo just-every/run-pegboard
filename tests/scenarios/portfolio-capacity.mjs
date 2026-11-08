@@ -52,6 +52,18 @@ export function portfolioCapacityScenarios(){
      assert.equal(a.start,'2026-11-02');assert.equal(a.due,'2026-11-02')
     }
     assert.deepEqual(plan.locked.map(t=>[t.id,t.ownerId,t.start,t.due]),[[tasks[2].id,designer.id,'2026-11-03','2026-11-03']])
+    // A due timestamp alone is a deadline, not a zero-duration retained commitment.
+    const deadlineReviews=[]
+    for(const holder of [alternate,designer]){
+     const deadline=await ok(owner.post('/api/v1/tasks',{projectId:projects[2].id,title:'Deadline-only retained work',ownerId:holder.id,estimateHours:2,dueDate:'2026-11-03T15:00:00Z'}))
+     const reviewed=await compare(),approval=await reviewer.post(path+'/apply',{...input,choice:1,token:reviewed.token})
+     const actual=await task(tasks[1].id),workload=await view()
+     deadlineReviews.push({feasible:reviewed.alternatives.map(a=>a.feasible),shortage:reviewed.shortage,status:approval.status,ownerId:actual.owner.id,unavailable:workload.people.filter(p=>[designer.id,alternate.id].includes(p.id)).flatMap(p=>p.days.map(d=>d.unavailableHours))})
+     if(approval.status===200){const undo=await ok(reviewer.get(path+'/'+approval.body.id+'/undo-preview'));await ok(reviewer.post(path+'/'+approval.body.id+'/undo',{token:undo.token}))}
+     await ok(owner.patch('/api/v1/tasks/'+deadline.id,{status:'done'}))
+    }
+    assert.deepEqual(deadlineReviews,[alternate,designer].map(()=>({feasible:[true,true],shortage:false,status:200,ownerId:alternate.id,unavailable:[0,0,0,0]})),'ordinary timestamp deadlines on either affected person permit the reviewed reassignment')
+    plan=await compare()
     // A changed estimate invalidates even a restored value; no write occurs.
     await ok(owner.patch('/api/v1/tasks/'+tasks[0].id,{estimateHours:9}))
     await ok(reviewer.post(path+'/apply',{...input,choice:0,token:plan.token}),409)
