@@ -5,8 +5,11 @@ Base discovers portable tables from the live schema; it does not use a fixed pro
 allowlist. An archive manifest declares its exact included and excluded table names,
 row counts, schema, source identity, ordered part checksums and closing digest.
 
-Current migration inventory: 158 included unchanged, 21 included with
-inactive normalization, 62 excluded (241 total, including engine and
+Migrations include `0092_archive_calendar_provenance.sql` and
+`0093_personal_rule_archive.sql`, after main’s `0091_intake_source_evidence.sql`.
+
+Current migration inventory: 174 included unchanged, 29 included with
+inactive normalization, 66 excluded (269 total, including engine and
 runtime bookkeeping). Tables Base creates dynamically for transfer jobs, snapshots,
 staging and lease bookkeeping are always excluded by its reserved prefix.
 
@@ -99,6 +102,14 @@ remain unproved. No receiving duty is waived by an excluded runtime cache.
 | `peg_api_intents` | excluded | Source API keys, replay or delivery cursors and webhook send authority; permanent redacted audit remains included. |
 | `peg_api_keys` | excluded | Source API keys, replay or delivery cursors and webhook send authority; permanent redacted audit remains included. |
 | `peg_api_receipts` | excluded | Source API keys, replay or delivery cursors and webhook send authority; permanent redacted audit remains included. |
+| `peg_approval_followup_deliveries` | inactive | Retain historical rows; normalize `state`, `cause`, `next_at`. Fresh authority must be explicitly reviewed after restore. |
+| `peg_approval_followup_episodes` | inactive | Retain historical rows; normalize `state`, `cause`, `next_at`. Fresh authority must be explicitly reviewed after restore. |
+| `peg_approval_followup_events` | inactive | Retain historical rows; normalize `state`, `cause`, `next_at`. Fresh authority must be explicitly reviewed after restore. |
+| `peg_approval_followup_exclusions` | included | Retain every row and writable cell, including relationships and byte payloads. |
+| `peg_approval_followup_outcomes` | included | Retain every row and writable cell, including relationships and byte payloads. |
+| `peg_approval_followup_policies` | inactive | Retain historical rows; normalize `enabled`. Fresh authority must be explicitly reviewed after restore. |
+| `peg_approval_followup_preferences` | included | Retain every row and writable cell, including relationships and byte payloads. |
+| `peg_approval_followup_settings` | included | Retain every row and writable cell, including relationships and byte payloads. |
 | `peg_approval_links` | inactive | Retain product rows; normalize `revoked_at`. Terminal rule and bundle outcomes retain their historical result. |
 | `peg_approval_owners` | included | Retain every row and writable cell, including relationships and byte payloads. |
 | `peg_approval_reminders` | included | Retain every row and writable cell, including relationships and byte payloads. |
@@ -116,6 +127,7 @@ remain unproved. No receiving duty is waived by an excluded runtime cache.
 | `peg_brief_versions` | included | Retain every row and writable cell, including relationships and byte payloads. |
 | `peg_bulk_effects` | included | Retain every row and writable cell, including relationships and byte payloads. |
 | `peg_bulk_operations` | included | Retain every row and writable cell, including relationships and byte payloads. |
+| `peg_bulk_selection_receipts` | included | Retain every row and writable cell, including relationships and byte payloads. |
 | `peg_bulk_undos` | included | Retain every row and writable cell, including relationships and byte payloads. |
 | `peg_bundle_adoptions` | inactive | Retain product rows; normalize `enabled`. Terminal rule and bundle outcomes retain their historical result. |
 | `peg_bundle_history` | included | Retain every row and writable cell, including relationships and byte payloads. |
@@ -130,6 +142,8 @@ remain unproved. No receiving duty is waived by an excluded runtime cache.
 | `peg_calendar_previews` | excluded | Source installation review capability; never reusable after restore. |
 | `peg_canvas_guards` | excluded | Transaction guard or in-progress destructive scope; not completed product data. |
 | `peg_canvas_nodes` | included | Retain every row and writable cell, including relationships and byte payloads. |
+| `peg_capacity_applications` | included | Retain every row and writable cell, including relationships and byte payloads. |
+| `peg_capacity_commitments` | included | Retain every row and writable cell, including relationships and byte payloads. |
 | `peg_capacity_erased_sources` | included | Retain every row and writable cell, including relationships and byte payloads. |
 | `peg_capacity_feeds` | inactive | Retain product rows; normalize `active`, `fetched_at`. Terminal rule and bundle outcomes retain their historical result. |
 | `peg_capacity_profiles` | included | Retain every row and writable cell, including relationships and byte payloads. |
@@ -139,6 +153,7 @@ remain unproved. No receiving duty is waived by an excluded runtime cache.
 | `peg_conversion_repairs` | included | Retain every row and writable cell, including relationships and byte payloads. |
 | `peg_conversions` | included | Retain every row and writable cell, including relationships and byte payloads. |
 | `peg_data_erased_objects` | included | Retain every row and writable cell, including relationships and byte payloads. |
+| `peg_data_erasing_feedback` | excluded | Transient review, limit or execution guard; retained business records and custody receipts travel separately. |
 | `peg_data_erasing_proofs` | excluded | Transaction guard or in-progress destructive scope; not completed product data. |
 | `peg_data_erasing_tasks` | excluded | Transaction guard or in-progress destructive scope; not completed product data. |
 | `peg_data_guards` | excluded | Transaction guard or in-progress destructive scope; not completed product data. |
@@ -167,8 +182,18 @@ remain unproved. No receiving duty is waived by an excluded runtime cache.
 | `peg_goal_sources` | inactive | Retain product rows; normalize `token_hash`, `ended_at`, `ended_cause`. Terminal rule and bundle outcomes retain their historical result. |
 | `peg_goals` | included | Retain every row and writable cell, including relationships and byte payloads. |
 | `peg_grants` | inactive | Retain product rows; normalize `revoked_at`. Terminal rule and bundle outcomes retain their historical result. |
+| `peg_guest_share_decisions` | included | Retain every row and writable cell, including relationships and byte payloads. |
+| `peg_guest_share_reviews` | inactive | Retain reviewed history; cancel pending reviews and clear their review deadline. |
 | `peg_history` | included | Retain every row and writable cell, including relationships and byte payloads. |
 | `peg_inbox` | included | Retain every row and writable cell, including relationships and byte payloads. |
+| `peg_intake_decision_policies` | inactive | Retain historical rows; normalize `enabled`. Fresh authority must be explicitly reviewed after restore. |
+| `peg_intake_decisions` | inactive | Retain historical rows; normalize `custody_inactive`. Fresh authority must be explicitly reviewed after restore. |
+| `peg_intake_erasure_receipts` | included | Retain every row and writable cell, including relationships and byte payloads. |
+| `peg_intake_forms` | inactive | Retain historical rows; normalize `publisher_id`, `publisher_version`, `published_version`, `public_hash`, `revoked_at`. Fresh authority must be explicitly reviewed after restore. |
+| `peg_intake_guards` | excluded | Transient review, limit or execution guard; retained business records and custody receipts travel separately. |
+| `peg_intake_limits` | excluded | Transient review, limit or execution guard; retained business records and custody receipts travel separately. |
+| `peg_intake_sources` | included | Retain every row and writable cell, including relationships and byte payloads. |
+| `peg_intake_submissions` | included | Retain every row and writable cell, including relationships and byte payloads. |
 | `peg_local_rule_activations` | included | Retain every row and writable cell, including relationships and byte payloads. |
 | `peg_local_rule_runs` | inactive | Retain product rows; normalize `status`, `activation_id`, `outcome`. Terminal rule and bundle outcomes retain their historical result. |
 | `peg_local_rules` | inactive | Retain product rows; normalize `enabled`, `activation_id`, `activated_by`. Terminal rule and bundle outcomes retain their historical result. |
@@ -199,6 +224,8 @@ remain unproved. No receiving duty is waived by an excluded runtime cache.
 | `peg_project_request_intake` | excluded | Unconfirmed blind intake; the durable access request and decision remain included. |
 | `peg_projects` | included | Retain every row and writable cell, including relationships and byte payloads. |
 | `peg_proof_decisions` | included | Retain every row and writable cell, including relationships and byte payloads. |
+| `peg_proof_feedback` | included | Retain every row and writable cell, including relationships and byte payloads. |
+| `peg_proof_feedback_history` | included | Retain every row and writable cell, including relationships and byte payloads. |
 | `peg_proof_versions` | included | Retain every row and writable cell, including relationships and byte payloads. |
 | `peg_proofs` | included | Retain every row and writable cell, including relationships and byte payloads. |
 | `peg_readiness_deliveries` | included | Retain every row and writable cell, including relationships and byte payloads. |
@@ -225,6 +252,7 @@ remain unproved. No receiving duty is waived by an excluded runtime cache.
 | `peg_rule_requests` | included | Retain every row and writable cell, including relationships and byte payloads. |
 | `peg_rule_suggestions` | included | Retain every row and writable cell, including relationships and byte payloads. |
 | `peg_rule_work_effects` | included | Retain every row and writable cell, including relationships and byte payloads. |
+| `peg_saved_searches` | included | Retain every row and writable cell, including relationships and byte payloads. |
 | `peg_schedule_changes` | included | Retain every row and writable cell, including relationships and byte payloads. |
 | `peg_schedule_sets` | included | Retain every row and writable cell, including relationships and byte payloads. |
 | `peg_search_records` | included | Retain every row and writable cell, including relationships and byte payloads. |
@@ -267,6 +295,7 @@ remain unproved. No receiving duty is waived by an excluded runtime cache.
 | `peg_time_authority_guards` | included | Retain every row and writable cell, including relationships and byte payloads. |
 | `peg_time_deliveries` | included | Retain every row and writable cell, including relationships and byte payloads. |
 | `peg_time_delivery_history` | included | Retain every row and writable cell, including relationships and byte payloads. |
+| `peg_time_diagnostic_expiry` | excluded | Transient review, limit or execution guard; retained business records and custody receipts travel separately. |
 | `peg_time_entries` | included | Retain every row and writable cell, including relationships and byte payloads. |
 | `peg_time_history` | included | Retain every row and writable cell, including relationships and byte payloads. |
 | `peg_time_off` | included | Retain every row and writable cell, including relationships and byte payloads. |
@@ -274,6 +303,8 @@ remain unproved. No receiving duty is waived by an excluded runtime cache.
 | `peg_webhook_deliveries` | excluded | Source API keys, replay or delivery cursors and webhook send authority; permanent redacted audit remains included. |
 | `peg_webhooks` | excluded | Source API keys, replay or delivery cursors and webhook send authority; permanent redacted audit remains included. |
 | `peg_work_templates` | included | Retain every row and writable cell, including relationships and byte payloads. |
+| `peg_work_view_defaults` | included | Retain every row and writable cell, including relationships and byte payloads. |
+| `peg_work_views` | included | Retain every row and writable cell, including relationships and byte payloads. |
 | `peg_working_calendars` | included | Retain every row and writable cell, including relationships and byte payloads. |
 | `peg_workspace_members` | included | Retain every row and writable cell, including relationships and byte payloads. |
 | `peg_workspaces` | included | Retain every row and writable cell, including relationships and byte payloads. |

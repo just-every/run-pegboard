@@ -1,5 +1,5 @@
 import {webhookPreview,deliverWebhook,webhookHistory,revokeWebhook} from '../public-api/webhooks'
-import {guestPreview} from '../guests/preview'
+import {guestPreview,previewGuestShare,guestShareReview,decideGuestShare,guestShareHistory} from '../guests/preview'
 // /api/v1: grants, the access review, access requests and their one decision door, webhooks.
 import type { Hono } from 'hono'
 import type { Bindings } from '../../auth.server'
@@ -15,6 +15,11 @@ type App = Hono<{ Bindings: Bindings }>
 const array = (value: unknown) => Array.isArray(value) ? value : typeof value === 'string' && value ? value.split(',').map(part => part.trim()) : undefined
 
 export function accessRoutes(app: App) {
+  app.post('/projects/:id/guest-shares/preview',door(({db,actor,params,input})=>previewGuestShare(db,actor,params.id,input),{next:(result,{params})=>`/app/projects/${params.id}/settings?guestReview=${result.id}#guest-share-review`}))
+  app.get('/projects/:id/guest-shares',door(({db,actor,params})=>guestShareHistory(db,actor,params.id)))
+  app.get('/projects/:id/guest-shares/:review',door(({db,actor,params})=>guestShareReview(db,actor,params.id,params.review)))
+  app.post('/projects/:id/guest-shares/:review/decision',door(({db,actor,params,input})=>decideGuestShare(db,actor,params.id,params.review,input),{next:(_,{params})=>`/app/projects/${params.id}/settings#guest-share-history`}))
+
   app.get('/projects/:id/guest-preview',door(({actor,db,params,query})=>guestPreview(db,actor,params.id,query.get('recipient')??'')))
   app.post('/grants', door(({ actor, db, input }) => createGrant(db, actor, { objectType: input.objectType, objectId: input.objectId, granteeType: input.granteeType ?? 'person', granteeId: input.granteeId, level: input.level, scope: input.scope || undefined, scopes: array(input.scopes), expiresAt: input.expiresAt ? Number(input.expiresAt) : null }),
     { next: (_, { input }) => typeof input.objectType === 'string' ? `/app/${input.objectType}s/${input.objectId}` : '/app' }))

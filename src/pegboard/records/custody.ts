@@ -12,6 +12,30 @@ import { workspaceRole, type Actor } from '../workspace/people'
 
 interface Proof {id:string;task_id:string;current_version:string|null;created_by:string;created_at:number}
 interface Version {id:string;proof_id:string;attachment_id:string;version:number;digest:string;created_by:string;created_at:number}
+/** Internal review never derives file authority from a proof ID or from another version. */
+export async function internalProof(db:D1Database,actor:Actor,id:string) {
+  const proof=await first<Proof>(db,'SELECT * FROM peg_proofs WHERE id=?',id);if(!proof)throw notFound()
+  const opened=await openTask(db,actor,proof.task_id),role=await workspaceRole(db,actor.id,opened.task.workspace_id)
+  if(!role||role==='guest'||role==='agent'||await first(db,'SELECT 1 FROM peg_erased_people WHERE operator_id=?',actor.id))throw notFound()
+  const versions: Array<Version & {name:string;contentType:string;canComment:boolean}>=[]
+  for(const version of await all<Version>(db,'SELECT * FROM peg_proof_versions WHERE proof_id=? ORDER BY version',id)){
+    try{
+      const file=await readAttachment(db,actor,version.attachment_id)
+      const scope=await first<{project_id:string|null}>(db,'SELECT project_id FROM peg_attachments WHERE id=?',version.attachment_id)
+      const capabilities=scope?.project_id?opened.access.contexts.get(scope.project_id)?.capabilities:opened.access.capabilities
+      versions.push({...version,name:file.name,contentType:file.contentType,canComment:!!capabilities?.has('comment')})
+    }catch(error){if(!(error instanceof Error&&'status' in error&&error.status===404))throw error}
+  }
+  return {...opened,proof,versions}
+}
+export async function proofFile(db:D1Database,actor:Actor,id:string,versionId:string) {
+  const context=await internalProof(db,actor,id),version=context.versions.find(v=>v.id===versionId)
+  if(!version)throw notFound()
+  const file=await readAttachment(db,actor,version.attachment_id)
+  const hash=[...new Uint8Array(await crypto.subtle.digest('SHA-256',file.bytes))].map(n=>n.toString(16).padStart(2,'0')).join('')
+  if(hash!==version.digest)throw conflict('proof_bytes_changed')
+  return {...context,version,file}
+}
 const reopenWork=(db:D1Database,actor:Actor,task:string,cause:string)=>[reopenGuard(db,task,actor.id,cause),bound(db,"UPDATE peg_tasks SET status='todo',completed_at=NULL,updated_at=? WHERE id=? AND status='done' AND EXISTS(SELECT 1 FROM peg_approval_tasks WHERE task_id=?)",[now(),task,task])]
 const text=(v:unknown,max:number,code:string)=>{if(typeof v!=='string'||!v.trim()||v.length>max)throw invalid(code);return v.trim()}
 async function fileFor(db:D1Database,actor:Actor,task:string,attachment:unknown) {

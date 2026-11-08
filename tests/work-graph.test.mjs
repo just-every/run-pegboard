@@ -1,6 +1,15 @@
 import {registerArchiveCustodyTests} from './scenarios/archive-custody.mjs'
+import { intakeReportingScenario } from './scenarios/intake-reporting.mjs'
+import {providerLogRetentionScenario} from './scenarios/provider-log-retention.mjs'
+import {pdfFeedbackScenario,pdfFeedbackCustodyScenario} from './scenarios/pdf-feedback.mjs'
+import { intakeDecisionsScenario } from './scenarios/intake-decisions.mjs'
+import { approvalFollowupRoutingScenario, approvalFollowupAuthorityScenario } from './scenarios/approval-followup.mjs'
+import { intakeErasureScenario } from './scenarios/intake-erasure.mjs'
+import { intakeScenario } from './scenarios/intake.mjs'
+import { registerRuleAuditTests } from './scenarios/rule-audit.mjs'
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs'
-import { reportingScenario } from './scenarios/reporting.mjs'
+import { reportingScenario, reportingBusinessScenario } from './scenarios/reporting.mjs'
+import {searchBulkScenario} from './scenarios/search-bulk.mjs'
 import { analystDatasetScenario } from './scenarios/analytics.mjs'
 import { registerCalendarBlockTests } from './scenarios/calendar-blocks.mjs'
 import { startCalendarServices } from './support/calendar-services.mjs'
@@ -21,6 +30,7 @@ import { startEngineeringServices, vectorTodo, vectorDone } from './support/engi
 import { startTimeServices } from './support/time-services.mjs'
 import { restoreCanvasInstallation } from './support/canvas-restore.mjs'
 import {registerConversionTests} from './scenarios/conversions.mjs'
+import {registerWorkViewTests} from './scenarios/work-views.mjs'
 
 let w, owner, mia, gus, nina
 const ok = async (promise, status = 200) => { const r = await promise; assert.equal(r.status, status, JSON.stringify(r.body)); return r.body }
@@ -39,6 +49,88 @@ function csvRecords(text) {
   return rows.filter(row=>row.some(value=>value.length))
 }
 let campaign, launch, shared, mkt
+
+describe('Test worker lifecycle', {concurrency:false}, () => {
+ it('recovers from an occupied startup port with colored logs, leaves its listener alone and keeps the new origin through restart', {timeout:120000}, async () => {
+  let foreignRequests = 0, worker
+  const occupied = createMailServer((request, response) => {
+   foreignRequests++
+   response.writeHead(200, {'content-type':'application/json'})
+   response.end('{"ok":true}')
+  })
+  await new Promise(resolve => occupied.listen(0, '127.0.0.1', resolve))
+  const preferredPort = occupied.address().port
+  try {
+   worker = await startWorker({preferredPort,settings:{FORCE_COLOR:'1'}})
+   assert.ok(worker.output().includes('\u001b['), 'exercise terminal-formatted Vite output')
+   assert.ok(worker.output().includes(`Port ${preferredPort} is already in use`), 'exercise an actual failed Vite bind')
+   assert.notEqual(worker.origin, `http://127.0.0.1:${preferredPort}`)
+   assert.equal(foreignRequests, 0, 'never accept another listener as a ready Worker')
+   const origin = worker.origin, identity = await ok(worker.owner.get('/api/v1/me'))
+   assert.equal(identity.id, worker.owner.id)
+   await worker.restart()
+   assert.equal(worker.origin, origin)
+   assert.equal((await ok(worker.owner.get('/api/v1/me'))).id, identity.id)
+   assert.equal(occupied.listening, true, 'leave the competing listener running')
+  } finally {
+   await worker?.stop()
+   await new Promise(resolve => occupied.close(resolve))
+  }
+ })
+})
+
+describe('Retained PDF feedback',{concurrency:false},()=>{
+ let worker
+ before(async()=>{worker=await startWorker()},{timeout:120000})
+ after(()=>worker?.stop())
+ it('renders retained PDF contents, pins exact identities and refuses stale, hidden and unauthorized feedback',async()=>pdfFeedbackScenario(worker))
+})
+
+describe('Data custody provider diagnostics',{concurrency:false},()=>{
+ it('expires exact reviewed superseded diagnostics while preserving delivery witnesses, authority and native recovery',{timeout:360000},providerLogRetentionScenario)
+})
+
+describe('Data custody PDF feedback',{concurrency:false},()=>{
+ let worker
+ before(async()=>{worker=await startWorker()},{timeout:120000})
+ after(()=>worker?.stop())
+ it('reconciles native archive feedback, exact person erasure, holds and proof-group expiry',async()=>pdfFeedbackCustodyScenario(worker))
+})
+
+describe('Data custody intake erasure', {concurrency:false},()=>{
+ let worker
+ before(async()=>{worker=await startWorker()},{timeout:120000})
+ after(()=>worker?.stop())
+ it('reviews exact intake redactions, retains replay witnesses and fences holds, concurrent changes and native archive restoration',async()=>intakeErasureScenario(worker))
+})
+
+describe('Native intake decisions', {concurrency:false},()=>{
+ let worker
+ before(async()=>{worker=await startWorker()},{timeout:120000})
+ after(()=>worker?.stop())
+ it('records reviewed human priority and disposition once, refuses unsafe authority and preserves exact custody',async()=>intakeDecisionsScenario(worker))
+})
+
+describe('Native text intake', {concurrency:false},()=>{
+ let worker
+ before(async()=>{worker=await startWorker()},{timeout:120000})
+ after(()=>worker?.stop())
+ it('publishes branching intake, creates one attributable task after replay and restart, and refuses unsafe submissions',async()=>intakeScenario(worker))
+})
+
+describe('Work views through the native graph', {concurrency:false}, () => {
+ let worker
+ before(async () => { worker = await startWorker() }, {timeout:120000})
+ after(() => worker?.stop())
+ registerWorkViewTests({test:it,context:()=>({w:worker})})
+})
+
+describe('Search and reviewed bulk selection',{concurrency:false},()=>{
+ let worker
+ before(async()=>{worker=await startWorker()},{timeout:120000})
+ after(()=>worker?.stop())
+ it('finds authorized content, saves filters, reviews every mixed-permission row and preserves later work on undo',async()=>{await searchBulkScenario(worker)})
+})
 
 describe('Work conversions through reviewed public doors',{concurrency:false},()=>{
  let worker,root,peer,guest
@@ -1291,8 +1383,8 @@ describe('Data custody', {concurrency:false},()=>{
     assert.ok(updated.receipts.some(r=>r.id===done.id&&r.outcome==='partial'))
     await retention('provider_logs',1)
     const retainedLogs=await pass(chief.post('/api/v1/data/expiry-preview',{class:'provider_logs'}))
-    assert.equal(retainedLogs.supported,false);assert.match(retainedLogs.limits,/immutable and retained/);assert.deepEqual(retainedLogs.counts,{})
-    assert.equal((await chief.post('/api/v1/data/expire',{class:'provider_logs',cutoff:retainedLogs.cutoff,token:retainedLogs.token,confirm:true})).status,409)
+    assert.equal(retainedLogs.supported,true);assert.match(retainedLogs.limits,/Terminal history/);assert.deepEqual(retainedLogs.counts,{})
+    assert.deepEqual((await pass(chief.post('/api/v1/data/expire',{class:'provider_logs',cutoff:retainedLogs.cutoff,token:retainedLogs.token,confirm:true}))).counts,{})
   })
 
 
@@ -2394,16 +2486,24 @@ describe('Calendar work blocks through provider schema edges', {concurrency:fals
  registerCalendarBlockTests({test:it,context:()=>({w:worker,services})})
 })
 
+// One bounded rule-audit suite owns lifecycle and durable outcome journeys.
+describe('Local rule audit', {concurrency:false},()=>{
+ let worker
+ before(async()=>{worker=await startWorker()},{timeout:120000})
+ after(()=>worker?.stop())
+ registerRuleAuditTests({test:it,context:()=>worker})
+})
 
 describe('Native reporting',{concurrency:false},()=>{
  let worker
  before(async()=>{worker=await startWorker()},{timeout:120000})
  after(()=>worker?.stop())
  it('reconciles dashboard history, real downloads and revoked access across three projects',async()=>{
-  const {files,report}=await reportingScenario(worker)
+  for(const {files,report} of [await reportingScenario(worker),await reportingBusinessScenario(worker),await intakeReportingScenario(worker)]){
   const csv=new TextDecoder().decode(files.csv),records=csvRecords(csv),columns=records[0]
   const data=records.slice(1).map(values=>Object.fromEntries(columns.map((name,i)=>[name,values[i]])))
   assert.equal(data[0].snapshot,report.id)
+  assert.deepEqual(data.filter(row=>row.section==='metric').map(row=>[row.metric,row.task,row.project,row.value,row.day,row.status]),(report.metrics??[]).map(row=>[row.measure+':'+row.id,row.taskId,row.projectId??'',row.value===null?'':String(row.value),row.day??'',row.status]),'parsed exports retain every captured business record identity, task, origin, value, day and status')
   for(const [index,widget] of report.widgets.entries())assert.deepEqual(data.filter(r=>r.section==='value'&&r.widget===String(index)).map(r=>r.value),widget.values.map(v=>v.value===null?'':String(v.value)))
   const scratch=await mkdtemp(join(tmpdir(),'pegboard-report-readers-'))
   try {
@@ -2426,10 +2526,11 @@ with zipfile.ZipFile(sys.argv[1]) as z:
    assert.ok(lines.join(' ').includes(report.id))
    const pdfRecords=[]
    let lastKey
-   for(const line of lines){if(line.startsWith('section: '))pdfRecords.push({});if(!pdfRecords.length)continue;if(/^[A-Za-z]+:(?: |$)/.test(line)){const at=line.indexOf(':');lastKey=line.slice(0,at);pdfRecords.at(-1)[lastKey]=line.slice(at+1).replace(/^ /,'')}else if(lastKey)pdfRecords.at(-1)[lastKey]+=line}
+   for(const line of lines){if(line.startsWith('section: '))pdfRecords.push({});if(!pdfRecords.length)continue;if(line.startsWith('+')&&lastKey){pdfRecords.at(-1)[lastKey]+=line.slice(1);continue}if(/^[A-Za-z]+:(?: |$)/.test(line)){const at=line.indexOf(':');lastKey=line.slice(0,at);pdfRecords.at(-1)[lastKey]=line.slice(at+1).replace(/^ /,'')}else if(lastKey)pdfRecords.at(-1)[lastKey]+=line}
    assert.deepEqual(pdfRecords.map(row=>columns.map(name=>row[name]??'')),records.slice(1),'every parsed PDF record reconciles to the workbook and CSV')
    await parsed.destroy()
   } finally {await rm(scratch,{recursive:true,force:true})}
+  }
  },{timeout:180000})
 })
 
@@ -2444,4 +2545,12 @@ describe('Data custody archive round trip', {concurrency:false},()=>{
  },{timeout:120000})
  after(async()=>{await worker?.stop();await services?.stop();if(mail)await new Promise(resolve=>mail.close(resolve))})
  registerArchiveCustodyTests({test:it,context:()=>({w:worker,services,mailOrigin,mailCalls:()=>mailCalls})})
+})
+
+describe('Native approval follow-up', {concurrency:false},()=>{
+ let worker
+ before(async()=>{worker=await startWorker()},{timeout:120000})
+ after(()=>worker?.stop())
+ it('routes finite internal follow-up through working hours, DND, queued delegation, restart and a real decision',async()=>approvalFollowupRoutingScenario(worker))
+ it('cancels obsolete follow-up and refuses hidden, revoked, deactivated and muted recipients without reviving old episodes',async()=>approvalFollowupAuthorityScenario(worker))
 })

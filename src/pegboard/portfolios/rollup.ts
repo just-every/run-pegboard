@@ -23,6 +23,20 @@ const subtree = async (db: D1Database, root: PortfolioRow) => {
   while (queue.length) for (const child of await all<PortfolioRow>(db, 'SELECT * FROM peg_portfolios WHERE parent_id=? ORDER BY name', queue.shift()!.id)) { out.push(child); queue.push(child) }
   return out
 }
+/** Internal capacity scope: hidden projects contribute only a generic limited-context flag. */
+export async function portfolioCapacityScope(db:D1Database,actor:Actor,id:string) {
+ const {portfolio}=await openPortfolio(db,actor,id),tree=await subtree(db,portfolio)
+ const ids=new Set<string>()
+ for(const p of tree)for(const row of await all<{project_id:string}>(db,'SELECT project_id FROM peg_portfolio_projects WHERE portfolio_id=?',p.id))ids.add(row.project_id)
+ const projectIds:string[]=[],taskIds=new Set<string>();let complete=true
+ for(const projectId of ids){
+  const project=await loadProject(db,projectId)
+  if(!project||!(await projectEffective(db,actor,project)).capabilities.has('read')){complete=false;continue}
+  projectIds.push(projectId)
+  for(const task of await readableTasks(db,actor,projectId))taskIds.add(task.id)
+ }
+ return {workspace:portfolio.workspace_id,name:portfolio.name,projectIds,taskIds:[...taskIds],complete}
+}
 const latestStatus = async (db: D1Database, actor: Actor, type: string, id: string, at: number) => {
   const rows = await all<{ id: string; health: string; summary: string; author_id: string; published_at: number }>(db, 'SELECT id,health,summary,author_id,published_at FROM peg_status_updates WHERE subject_type=? AND subject_id=? AND published_at<=? ORDER BY published_at DESC', type, id, at)
   for (const row of rows) {

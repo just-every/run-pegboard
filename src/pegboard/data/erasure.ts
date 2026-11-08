@@ -1,3 +1,6 @@
+import { decisionErasureScope, decisionErasureStatements } from '../intake/decisions'
+import { formErasureScope, formErasureStatements } from '../intake/forms'
+import { submissionErasureScope, submissionErasureStatements } from '../intake/submissions'
 import {capacityErasureSources,capacityErasureStatements} from '../capacity/custody'
 import { processorFollowups,followupStatements } from './processors'
 import { createPortability } from '@runeditrun/rer/modules/portability'
@@ -62,11 +65,16 @@ export async function erasurePlan(db:D1Database,actor:Actor,workspace:string,typ
     if(await first(db,"SELECT 1 FROM peg_approval_routes WHERE created_by=? OR instr(stages,?)>0 UNION SELECT 1 FROM peg_approval_votes WHERE actor_id=?",id,id,id))blockers.push('review_approval_custody_before_erasure')
     if(await first(db,'SELECT 1 FROM peg_proofs WHERE created_by=? UNION SELECT 1 FROM peg_proof_versions WHERE created_by=?',id,id))blockers.push('review_proof_custody_before_erasure')
     if(await first(db,'SELECT 1 FROM peg_time_entries WHERE person_id=?',id))blockers.push('retained_time_records_require_separate_review')
+    await take('peg_work_views','owner_id=?',[id]);await take('peg_work_view_defaults','subject_id=? OR updated_by=?',[id,id]);
+    await take('peg_capacity_applications',"actor_id=? OR from_id=? OR to_id=? OR EXISTS(SELECT 1 FROM json_each(before_allocations) a WHERE json_extract(a.value,'$.person_id')=?) OR EXISTS(SELECT 1 FROM json_each(after_allocations) a WHERE json_extract(a.value,'$.person_id')=?)",[id,id,id,id,id])
     await take('peg_capacity_profiles','person_id=?',[id]);await take('peg_time_off','operator_id=?',[id]);await take('peg_availability_history','person_id=?',[id]);await take('peg_effort_allocations','person_id=?',[id]);await take('peg_resource_plans','person_id=?',[id]);
     await take('peg_workspace_members','operator_id=?',[id]);await take('peg_personal_layout','operator_id=?',[id]);await take('peg_personal_moves','operator_id=?',[id]);await take('peg_personal_rules','operator_id=?',[id]);await take('peg_personal_sections','operator_id=?',[id]);await take('peg_personal_settings','operator_id=?',[id])
     await take('peg_grants',"grantee_type='person' AND grantee_id=?",[id]);await take('peg_task_collaborators','operator_id=?',[id]);await take('peg_approvers','operator_id=?',[id]);await take('peg_inbox','operator_id=? OR request_id IN(SELECT id FROM peg_access_requests WHERE requester_id=?)',[id,id]);await take('peg_access_requests','requester_id=?',[id]);await take('peg_project_request_intake','requester_id=?',[id])
+    await take('peg_saved_searches','owner_id=?',[id]);await take('peg_bulk_selection_receipts','actor_id=?',[id])
     await take('peg_rule_suggestions','requested_by=?',[id])
     await take('peg_comments','author_id=?',[id]);await take('peg_attachments','created_by=?',[id])
+    await take('peg_proof_feedback_history','feedback_id IN(SELECT id FROM peg_proof_feedback WHERE author_id=?)',[id])
+    await take('peg_proof_feedback','author_id=?',[id])
     retained.local_auth_material=(await first<{n:number}>(db,'SELECT (SELECT COUNT(*) FROM oa_sessions WHERE operator_id=?)+(SELECT COUNT(*) FROM oa_tokens WHERE operator_id=?)+(SELECT COUNT(*) FROM oa_credentials WHERE operator_id=?)+(SELECT COUNT(*) FROM oa_external_identities WHERE operator_id=?) n',id,id,id,id))!.n
     retained.legacy_access_activity=(await first<{n:number}>(db,'SELECT COUNT(*) n FROM peg_audit WHERE actor_id=? OR subject_id=?',id,id))!.n
     // Identity values are replaced only after authority is explicitly deactivated. Permanent audit IDs remain opaque.
@@ -80,7 +88,7 @@ export async function erasurePlan(db:D1Database,actor:Actor,workspace:string,typ
   if(routes.length){const ids=routes.map(r=>r.id),scope=`route_id IN (${placeholders(ids)})`;await take('peg_approval_reminders',`link_id IN (SELECT id FROM peg_approval_links WHERE ${scope})`,ids);await take('peg_approval_links',scope,ids);await take('peg_approval_votes',scope,ids);await take('peg_approval_routes',`id IN (${placeholders(ids)})`,ids)}
   if(proofs.length){
     proofFiles=(await all<{attachment_id:string}>(db,`SELECT attachment_id FROM peg_proof_versions WHERE proof_id IN (${placeholders(proofs)})`,...proofs)).map(r=>r.attachment_id)
-    for(const table of ['peg_proof_decisions','peg_proof_versions'])await take(table,`proof_id IN (${placeholders(proofs)})`,proofs)
+    for(const table of ['peg_proof_feedback_history','peg_proof_feedback','peg_proof_decisions','peg_proof_versions'])await take(table,`proof_id IN (${placeholders(proofs)})`,proofs)
     await take('peg_proofs',`id IN (${placeholders(proofs)})`,proofs)
   }
   if(type==='person'){
@@ -113,8 +121,13 @@ export async function erasurePlan(db:D1Database,actor:Actor,workspace:string,typ
     await take('peg_recurring_grants',`grant_id IN(SELECT id FROM peg_grants WHERE (object_type='task' AND ${scoped('object_id')}) OR (object_type='project' AND ${projectScoped('object_id')}))`,[...tasks,...projects])
     for(const table of ['peg_grants','peg_approvers','peg_template_origins'])await take(table,`(object_type='task' AND ${scoped('object_id')}) OR (object_type='project' AND ${projectScoped('object_id')})`,[...tasks,...projects])
     await take('peg_task_projects',`${scoped('task_id')} OR ${projectScoped('project_id')}`,[...tasks,...projects])
+    await take('peg_intake_sources',`submission_id IN(SELECT id FROM peg_intake_submissions WHERE ${scoped('task_id')} OR form_id IN(SELECT id FROM peg_intake_forms WHERE ${projectScoped('project_id')}))`,[...tasks,...projects])
+    await take('peg_intake_decisions',`${scoped('task_id')} OR ${projectScoped('project_id')}`,[...tasks,...projects])
+    await take('peg_intake_decision_policies',projectScoped('project_id'),projects)
     await take('peg_tasks',scoped('id'),tasks)
     await take('peg_webhooks',projectScoped('project_id'),projects)
+    await take('peg_intake_submissions',`form_id IN(SELECT id FROM peg_intake_forms WHERE ${projectScoped('project_id')})`,projects)
+    await take('peg_intake_forms',projectScoped('project_id'),projects)
     await take('peg_project_fields',projectScoped('project_id'),projects)
     const fieldRevisions=await selectKeys(db,'peg_field_versions',`field_id IN(SELECT id FROM peg_field_definitions WHERE ${projectScoped('authority_project')})`,projects)
     await take('peg_field_definitions',projectScoped('authority_project'),projects)
@@ -123,7 +136,13 @@ export async function erasurePlan(db:D1Database,actor:Actor,workspace:string,typ
     await take('peg_projects',projectScoped('id'),projects)
   }
   if(proofFiles.length)await take('peg_attachments',`id IN (${placeholders(proofFiles)})`,proofFiles)
+  const decisionActors=type==='person'?await decisionErasureScope(db,id):[]
+  const intake=type==='person'?{...(decisionActors.length?{decisions:decisionActors}:{}),forms:await formErasureScope(db,id),submissions:await submissionErasureScope(db,id)}:null
   const affectedTasks=new Set(tasks)
+  const feedbackKeys=selections.find(s=>s.table==='peg_proof_feedback')?.keys.map(k=>k.id)??[]
+  const feedbackScope=await all<{task_id:string;proof_id:string;attachment_id:string;author_id:string}>(db,`SELECT p.task_id,f.proof_id,f.attachment_id,f.author_id FROM peg_proof_feedback f JOIN peg_proofs p ON p.id=f.proof_id WHERE f.id IN (${placeholders(feedbackKeys)})`,...feedbackKeys)
+  for(const pin of feedbackScope)affectedTasks.add(pin.task_id)
+  if(intake)for(const row of [...intake.submissions,...decisionActors])affectedTasks.add(row.taskId)
   if(proofs.length)for(const proof of await all<{task_id:string}>(db,`SELECT task_id FROM peg_proofs WHERE id IN (${placeholders(proofs)})`,...proofs))affectedTasks.add(proof.task_id)
   if(projects.length){const roots=(await all<{task_id:string}>(db,`SELECT task_id FROM peg_task_projects WHERE project_id IN (${placeholders(projects)})`,...projects)).map(t=>t.task_id);for(const t of await descendants(db,roots))affectedTasks.add(t.id)}
   if(type==='attachment'){
@@ -132,13 +151,16 @@ export async function erasurePlan(db:D1Database,actor:Actor,workspace:string,typ
   if(type==='person'){
     for(const t of await all<{task_id:string}>(db,'SELECT task_id FROM peg_comments WHERE author_id=? UNION SELECT task_id FROM peg_attachments WHERE created_by=? UNION SELECT task_id FROM peg_agent_outputs WHERE actor_id=?',id,id,id))affectedTasks.add(t.task_id)
   }
-  const affected=[...affectedTasks], relatedProjects=new Set(projects), relatedPeople=new Set<string>()
+  const affected=[...affectedTasks], relatedProjects=new Set([...projects,...(intake?.forms.map(f=>f.projectId)??[]),...(intake?.submissions.map(s=>s.projectId)??[]),...decisionActors.map(s=>s.projectId)]), relatedPeople=new Set<string>()
+  for(const pin of feedbackScope)relatedPeople.add(pin.author_id)
   for(const r of await all<{project_id:string}>(db,`SELECT project_id FROM peg_task_projects WHERE task_id IN (${placeholders(affected)})`,...affected))relatedProjects.add(r.project_id)
   for(const r of await all<{person:string}>(db,`SELECT owner_id person FROM peg_tasks WHERE id IN (${placeholders(affected)}) UNION SELECT creator_id person FROM peg_tasks WHERE id IN (${placeholders(affected)}) UNION SELECT author_id person FROM peg_comments WHERE task_id IN (${placeholders(affected)}) UNION SELECT created_by person FROM peg_attachments WHERE task_id IN (${placeholders(affected)})`,...affected,...affected,...affected,...affected))relatedPeople.add(r.person)
+  const erasedDecisions=selections.find(s=>s.table==='peg_intake_decisions')?.keys.map(k=>k.id)??[]
+  for(const r of await all<{actor_id:string}>(db,`SELECT actor_id FROM peg_intake_decisions WHERE id IN (${placeholders(erasedDecisions)})`,...erasedDecisions))relatedPeople.add(r.actor_id)
   // Person anonymization affects installation identity, so every workspace hold participates.
   const active=type==='person'?(await all<Awaited<ReturnType<typeof activeHolds>>[number]>(db,'SELECT * FROM peg_data_holds WHERE released_at IS NULL AND expires_at>?',now())):await activeHolds(db,workspace)
-  const affectedAttachments=selections.find(s=>s.table==='peg_attachments')?.keys.map(k=>k.id)??[]
-  const holds=active.filter(h=>h.target_type==='workspace'||h.target_type===type&&h.target_id===id||h.target_type==='task'&&affectedTasks.has(h.target_id)||h.target_type==='project'&&relatedProjects.has(h.target_id)||h.target_type==='person'&&relatedPeople.has(h.target_id)||h.target_type==='attachment'&&affectedAttachments.includes(h.target_id)||h.target_type==='proof'&&proofs.includes(h.target_id))
+  const affectedAttachments=[...(selections.find(s=>s.table==='peg_attachments')?.keys.map(k=>k.id)??[]),...feedbackScope.map(f=>f.attachment_id)]
+  const holds=active.filter(h=>h.target_type==='workspace'||h.target_type===type&&h.target_id===id||h.target_type==='task'&&affectedTasks.has(h.target_id)||h.target_type==='project'&&relatedProjects.has(h.target_id)||h.target_type==='person'&&relatedPeople.has(h.target_id)||h.target_type==='attachment'&&affectedAttachments.includes(h.target_id)||h.target_type==='proof'&&(proofs.includes(h.target_id)||feedbackScope.some(f=>f.proof_id===h.target_id)))
   if(holds.length)blockers.push('active_legal_hold')
   const remaining=affected.filter(task=>!tasks.includes(task))
   const reopenTasks=(await all<{id:string}>(db,`SELECT id FROM peg_tasks WHERE id IN (${placeholders(remaining)}) AND status='done' AND EXISTS(SELECT 1 FROM peg_approval_tasks WHERE task_id=peg_tasks.id)`,...remaining)).map(t=>t.id)
@@ -152,10 +174,21 @@ export async function erasurePlan(db:D1Database,actor:Actor,workspace:string,typ
     if(file)retained.attachment_activity=(await first<{n:number}>(db,"SELECT COUNT(*) n FROM peg_history WHERE task_id=? AND kind='attachment.added'",file.task_id))!.n
   }
   const counts=Object.fromEntries(selections.map(s=>[s.table,s.keys.length]))
+  if(intake){
+    if(decisionActors.length){counts.intake_decision_actors=decisionActors.length;retained.intake_decision_provenance=decisionActors.length}
+    counts.intake_submission_sources=intake.submissions.filter(s=>s.source).length
+    counts.intake_submission_triagers=intake.submissions.filter(s=>s.triager).length
+    counts.intake_form_authors=intake.forms.filter(f=>f.author).length
+    counts.intake_form_publishers=intake.forms.filter(f=>f.publisher).length
+    counts.intake_form_mapped_owners=intake.forms.filter(f=>f.mappedOwner).length
+    counts.intake_publications_disabled=intake.forms.length
+    retained.intake_replay_witnesses=intake.submissions.length
+    retained.intake_form_provenance=intake.forms.length
+  }
   const processorRequests=await processorFollowups(db,selections)
   const capacitySources=type==='person'?await capacityErasureSources(db,id):[]
   if(capacitySources.length)counts.capacity_source_mappings=capacitySources.length
-  const plan={type,id,name,capacitySources,tasks,projects,proofs,processorRequests,reopenTasks,selections,counts,blockers:[...new Set(blockers)],holds:holds.map(h=>({id:h.id,authority:h.authority,expiresAt:h.expires_at})),retained,externalLimits}
+  const plan={type,id,name,intake,capacitySources,tasks,projects,proofs,processorRequests,reopenTasks,selections,counts,blockers:[...new Set(blockers)],holds:holds.map(h=>({id:h.id,authority:h.authority,expiresAt:h.expires_at})),retained,externalLimits}
   return {...plan,revision,token:await digest([workspace,actor.id,revision,plan])}
 }
 export async function erase(db:D1Database,actor:Actor,workspace:string,input:Record<string,any>) {
@@ -171,6 +204,7 @@ export async function erase(db:D1Database,actor:Actor,workspace:string,input:Rec
     statements.push(...await service.invalidateTransfersStatements())
     for(const task of plan.reopenTasks)statements.push(reopenGuard(db,task,actor.id,'custody_erasure'),bound(db,"UPDATE peg_tasks SET status='todo',completed_at=NULL,updated_at=? WHERE id=?",[at,task]))
     for(const proof of plan.proofs)statements.push(bound(db,'INSERT INTO peg_data_erasing_proofs VALUES(?)',[proof]))
+    for(const selected of plan.selections.filter(s=>s.table==='peg_proof_feedback'))for(const key of selected.keys)statements.push(bound(db,'INSERT INTO peg_data_erasing_feedback VALUES(?)',[key.id]))
     for(const selected of plan.selections.filter(s=>s.table==='peg_agent_outputs'))for(const key of selected.keys){const row=await first<{actor_id:string;operation_key:string}>(db,'SELECT actor_id,operation_key FROM peg_agent_outputs WHERE id=?',key.id);if(row)statements.push(bound(db,"INSERT OR IGNORE INTO peg_data_erased_objects VALUES('agent_output_key',?,?)",[await digest([row.actor_id,row.operation_key]),at]))}
     for(const task of plan.tasks)statements.push(bound(db,'INSERT INTO peg_data_erasing_tasks VALUES(?)',[task]))
     for(const selection of plan.selections){
@@ -182,13 +216,17 @@ export async function erase(db:D1Database,actor:Actor,workspace:string,input:Rec
     for(const task of plan.tasks)statements.push(bound(db,"INSERT INTO peg_data_erased_objects VALUES('task',?,?)",[task,at]))
     for(const project of plan.projects)statements.push(bound(db,"INSERT INTO peg_data_erased_objects VALUES('project',?,?)",[project,at]))
     if(plan.type==='person'){
+      statements.push(...decisionErasureStatements(db,plan.id))
+      statements.push(...submissionErasureStatements(db,plan.id,plan.intake!.submissions),...formErasureStatements(db,plan.id,plan.intake!.forms,at))
       statements.push(...capacityErasureStatements(db,plan.id,plan.capacitySources))
       statements.push(bound(db,'INSERT OR IGNORE INTO peg_erased_people VALUES(?,?)',[plan.id,at]),bound(db,"UPDATE oa_operators SET email=?,display_name='Erased actor',version=version+1 WHERE id=? AND status<>'active' AND role<>'owner'",[`erased-${plan.id}@invalid.example`,plan.id]))
       // Tokens and sessions can no longer authenticate an inactive, version-fenced identity. Their expired bytes use transient cleanup.
     }
-    statements.push(bound(db,'DELETE FROM peg_data_erasing_tasks',[]),bound(db,'DELETE FROM peg_data_erasing_proofs',[]))
+    statements.push(bound(db,'DELETE FROM peg_data_erasing_tasks',[]),bound(db,'DELETE FROM peg_data_erasing_proofs',[]),bound(db,'DELETE FROM peg_data_erasing_feedback',[]))
   }
-  statements.push(bound(db,'INSERT INTO peg_data_receipts VALUES(?,?,?,?,?,?,?,?,?,?)',[id,workspace,actor.id,plan.type,plan.id,at,outcome,JSON.stringify(blocked?{}:plan.counts),JSON.stringify({counts:plan.retained,conflicts:plan.blockers,processorRequests:blocked?0:plan.processorRequests.length}),externalLimits]),permanentEvent(db,{workspace,actor:actor.id,action:'data.erasure',type:plan.type,id:plan.id,result:outcome==='complete'?'success':outcome}))
+  const scopeDigest=await digest([plan.revision,plan.intake])
+  if(plan.intake)statements.push(bound(db,'INSERT INTO peg_intake_erasure_receipts VALUES(?,?,?,?,?)',[id,plan.revision,scopeDigest,JSON.stringify(plan.intake),blocked?0:1]))
+  statements.push(bound(db,'INSERT INTO peg_data_receipts VALUES(?,?,?,?,?,?,?,?,?,?)',[id,workspace,actor.id,plan.type,plan.id,at,outcome,JSON.stringify(blocked?{}:plan.counts),JSON.stringify({counts:plan.retained,conflicts:plan.blockers,processorRequests:blocked?0:plan.processorRequests.length}),externalLimits]),permanentEvent(db,{workspace,actor:actor.id,action:'data.erasure',type:plan.type,id:plan.id,result:outcome==='complete'?'success':outcome,metadata:{id,scopeDigest,version:plan.revision}}))
   await commitData(db,statements)
-  return {id,outcome,counts:blocked?{}:plan.counts,retained:plan.retained,conflicts:plan.blockers,processorRequests:blocked?0:plan.processorRequests.length,externalLimits}
+  return {id,outcome,intake:plan.intake,revision:plan.revision,scopeDigest,counts:blocked?{}:plan.counts,retained:plan.retained,conflicts:plan.blockers,processorRequests:blocked?0:plan.processorRequests.length,externalLimits}
 }

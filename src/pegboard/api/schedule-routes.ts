@@ -1,7 +1,7 @@
 import type { Hono } from 'hono'
 import type { Bindings } from '../../auth.server'
 import { door } from './door'
-import { applyChange, approveChange, pendingChange, pendingSets, rejectChange, undoChange } from '../schedule/changes'
+import { applyChange, approveChange, submittedChange, pendingChange, pendingSets, rejectChange, undoChange } from '../schedule/changes'
 import { moveInput, planChange } from '../schedule/plan'
 import { createBaseline, scheduleView } from '../schedule/timeline'
 
@@ -14,6 +14,7 @@ export function scheduleRoutes(app: Hono<{ Bindings: Bindings }>) {
   app.post('/schedule/preview', door(async ({ db, actor, input }) => planChange(db, actor, moveInput(movesOf(input))).then(({ all, ...plan }) => plan)))
   app.post('/schedule/apply', door(({ db, actor, input }) => applyChange(db, actor, { moves: movesOf(input), revision: input.revision, approverId: input.approverId || undefined }), { next: back }))
   app.get('/schedule/pending', door(({ db, actor, workspace }) => pendingSets(db, actor, workspace).then(pending => ({ pending }))))
+  app.get('/schedule/sets/:id/status', door(({ db, actor, params }) => submittedChange(db, actor, params.id)))
   app.get('/schedule/sets/:id', door(({ db, actor, params }) => pendingChange(db, actor, params.id)))
   app.post('/schedule/sets/:id/approve', door(({ db, actor, params, input }) => approveChange(db, actor, params.id, { revision: input.revision }), { next: back }))
   app.post('/schedule/sets/:id/reject', door(({ db, actor, params }) => rejectChange(db, actor, params.id), { next: back }))

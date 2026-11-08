@@ -48,3 +48,5 @@ export async function dispatchReadiness(db: D1Database, actor: Actor, workspace:
     ])
   }
 }
+
+export { dispatchApprovalFollowups, processApprovalFollowups, scheduleApprovalFollowups } from './approval-followup'

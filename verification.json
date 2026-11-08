@@ -5,17 +5,9 @@
       "browser": false,
       "hosted": false,
       "commands": [
+        "pnpm run test:graph:schedule",
         "pnpm run check --profile first-party",
-        "node scripts/contract-docs.mjs check PEG-018 PEG-027 PEG-015 PEG-036 PEG-012 PEG-016 PEG-044 PEG-025 PEG-127 PEG-058"
-      ]
-    },
-    {
-      "name": "typecheck",
-      "browser": false,
-      "hosted": false,
-      "commands": [
-        "pnpm run build",
-        "pnpm run typecheck"
+        "node scripts/contract-docs.mjs check PEG-128 PEG-011 PEG-059 PEG-057 PEG-007 PEG-078 PEG-003 PEG-018 PEG-031 PEG-027 PEG-015 PEG-036 PEG-012 PEG-016 PEG-044 PEG-025 PEG-127 PEG-037 PEG-066 PEG-058"
       ]
     },
     {
@@ -24,23 +16,53 @@
       "hosted": true,
       "commands": [
         "pnpm run build",
-        "pnpm run test:runtime"
+        "pnpm run test:runtime",
+        "pnpm run test:graph:capacity",
+        "pnpm run build",
+        "pnpm run typecheck",
+        "pnpm run test:templates",
+        "pnpm run test:conversions"
       ]
     },
     {
-      "name": "work-graph",
+      "name": "work-graph-core",
       "browser": false,
       "hosted": false,
       "commands": [
-        "pnpm run test:graph:work-graph"
+        "pnpm exec rer queue test:work-graph-core -- sh -c \"node --test --test-skip-pattern='^(?:Local rule audit|Data custody|PEG-064 retained graph recovery|Native reporting|Goal visibility and accountability|Engineering handoff|Meeting review|Analyst exports|Project planning canvas|Work planning time, recurrence and decisions|Approval routing custody|Calendar work blocks through provider schema edges|Native approval follow-up|Direct project duplication through reviewed public doors|Public API and MCP|Work conversions through reviewed public doors)(?: |$)' tests/work-graph.test.mjs\""
       ]
     },
     {
-      "name": "work-graph-custody",
+      "name": "work-graph-extensions",
       "browser": false,
       "hosted": false,
       "commands": [
-        "pnpm run test:graph:custody"
+        "pnpm exec rer queue test:work-graph-extensions -- sh -c \"node --test --test-name-pattern='^(?:Direct project duplication through reviewed public doors|Public API and MCP|Work conversions through reviewed public doors)(?: |$)' tests/work-graph.test.mjs\"",
+        "pnpm exec rer queue test:pdf-feedback -- sh -c \"node --test --test-name-pattern='^Data custody PDF feedback(?: |$)' tests/work-graph.test.mjs\""
+      ]
+    },
+    {
+      "name": "work-graph-time",
+      "browser": false,
+      "hosted": false,
+      "commands": [
+        "pnpm exec rer queue test:work-graph-time -- sh -c \"node --test --test-name-pattern='^(?:Work planning time, recurrence and decisions|Approval routing custody|Calendar work blocks through provider schema edges|Native approval follow-up)(?: |$)' tests/work-graph.test.mjs\""
+      ]
+    },
+    {
+      "name": "work-graph-custody-recovery",
+      "browser": false,
+      "hosted": false,
+      "commands": [
+        "pnpm exec rer queue test:work-graph-custody-recovery -- sh -c \"node --test --test-name-pattern='^(?:Data custody|PEG-064 retained graph recovery)(?: |$)' --test-skip-pattern='^(?:Data custody intake erasure|Data custody PDF feedback)(?: |$)' tests/work-graph.test.mjs\""
+      ]
+    },
+    {
+      "name": "work-graph-custody-erasure",
+      "browser": false,
+      "hosted": false,
+      "commands": [
+        "pnpm exec rer queue test:work-graph-custody-erasure -- sh -c \"node --test --test-name-pattern='^(?:Data custody intake erasure|Local rule audit attributes background)(?: |$)' tests/work-graph.test.mjs\""
       ]
     },
     {
@@ -48,7 +70,15 @@
       "browser": false,
       "hosted": false,
       "commands": [
-        "pnpm run test:graph:services"
+        "pnpm exec rer queue test:work-graph-services -- sh -c \"node --test --test-name-pattern='^(?:Goal visibility and accountability|Engineering handoff|Meeting review)(?: |$)' tests/work-graph.test.mjs\""
+      ]
+    },
+    {
+      "name": "work-graph-reporting",
+      "browser": false,
+      "hosted": false,
+      "commands": [
+        "pnpm exec rer queue test:work-graph-reporting -- sh -c \"node --test --test-name-pattern='^(?:Native reporting|Analyst exports|Project planning canvas)(?: |$)' tests/work-graph.test.mjs\""
       ]
     },
     {
@@ -64,23 +94,31 @@
       "browser": false,
       "hosted": false,
       "commands": [
-        "pnpm run test:graph:portfolios"
+        "pnpm run test:graph:portfolios:core"
       ]
     },
     {
-      "name": "schedule",
+      "name": "workflow-rules",
       "browser": false,
       "hosted": false,
       "commands": [
-        "pnpm run test:graph:schedule"
+        "pnpm run test:graph:workflow-rules"
       ]
     },
     {
-      "name": "journeys-core",
+      "name": "journeys-core-access",
       "browser": true,
       "hosted": false,
       "commands": [
-        "pnpm run test:journeys:core"
+        "pnpm exec rer queue test:journeys-core-access -- sh -c \"PEGBOARD_JOURNEY=intake-decisions,approval-followup,intake,access-privacy,access-discovery,public-api,approval-routing,guests node tests/journeys/work-graph.journey.mjs\""
+      ]
+    },
+    {
+      "name": "journeys-core-work",
+      "browser": true,
+      "hosted": false,
+      "commands": [
+        "pnpm exec rer queue test:journeys-core-work -- sh -c \"PEGBOARD_JOURNEY=retained-pdf-review,pdf-feedback,core,recurrence,approvals,time-packets node tests/journeys/work-graph.journey.mjs\""
       ]
     },
     {
@@ -88,31 +126,31 @@
       "browser": true,
       "hosted": false,
       "commands": [
-        "pnpm run test:journeys:services"
+        "pnpm exec rer queue test:journeys-services -- sh -c \"PEGBOARD_JOURNEY=intake-erasure,rule-audit,reporting,calendar-blocks,recovery node tests/journeys/work-graph.journey.mjs\""
       ]
     },
     {
-      "name": "journeys-planning",
+      "name": "journeys-services-work",
       "browser": true,
       "hosted": false,
       "commands": [
-        "pnpm run test:journeys:planning"
+        "pnpm exec rer queue test:journeys-services-work -- sh -c \"PEGBOARD_JOURNEY=search-bulk,analytics,engineering,meetings,custody,provider-log-retention,departure node tests/journeys/work-graph.journey.mjs\""
       ]
     },
     {
-      "name": "templates",
+      "name": "journeys-planning-capacity",
       "browser": true,
       "hosted": false,
       "commands": [
-        "pnpm run test:templates"
+        "pnpm exec rer queue test:journeys-planning-capacity -- sh -c \"PEGBOARD_JOURNEY=portfolio-capacity,capacity,canvas,work-views node tests/journeys/work-graph.journey.mjs\""
       ]
     },
     {
-      "name": "conversions",
+      "name": "journeys-planning-work",
       "browser": true,
       "hosted": false,
       "commands": [
-        "pnpm run test:conversions"
+        "pnpm exec rer queue test:journeys-planning-work -- sh -c \"PEGBOARD_JOURNEY=portfolio,timeline,register,bundles,goals node tests/journeys/work-graph.journey.mjs\""
       ]
     }
   ],

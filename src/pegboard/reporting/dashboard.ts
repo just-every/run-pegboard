@@ -6,12 +6,13 @@ import { openTask } from '../tasks/access'
 import { openProject } from '../workspace/projects'
 import { workspaceSettings, type Actor } from '../workspace/people'
 import { definition, localDay, midnight, nextDay, type Definition, type Measure } from './definition'
+import { captureMetrics, isBusinessMeasure, metricWidget, recheckMetrics, type MetricRow } from './metrics'
 
 interface Dashboard { id:string; workspace_id:string; owner_id:string; name:string; definition:string; created_at:number }
 export interface Event { seq:number; task_id:string; at:number; kind:string; status:string; effort:number; due:string|null; due_known:number; projects:string[] }
 export interface Source { id:string; title:string; due:string|null; events:Event[] }
-export interface Value { label:string; value:number|null; sourceIds:string[]; eventIds:number[]; scope?:number|null }
-export interface Report { id:string; dashboardId:string; name:string; capturedAt:number; definition:Definition; sources:Source[]; widgets:{kind:string;measure:Measure;group:string;values:Value[]}[]; window:{startAt:number;endAt:number}; unknown:string[] }
+export interface Value { label:string; value:number|null; sourceIds:string[]; eventIds:number[]; metricIds?:string[]; scope?:number|null }
+export interface Report { id:string; dashboardId:string; name:string; capturedAt:number; definition:Definition; sources:Source[]; metrics?:MetricRow[]; widgets:{kind:string;measure:Measure;group:string;basis?:string;values:Value[]}[]; window:{startAt:number;endAt:number}; unknown:string[] }
 async function scope(db:D1Database,actor:Actor,workspace:string,def:Definition) {
  const settings=await workspaceSettings(db,workspace)
  for(const id of def.projects){const p=await openProject(db,actor,id);if(p.project.workspace_id!==workspace)throw forbidden();if(!p.effective.capabilities.has('export')||rank(p.effective.level)<rank(settings.exportMinLevel))throw forbidden('export')}
@@ -37,10 +38,11 @@ const amount=(e:Event,measure:Measure)=>measure==='effort'?e.effort:1
 function value(label:string,records:{source:Source;event:Event;value:number;refs?:number[];unknown?:boolean}[],unknown=false):Value {
  return {label,value:unknown||records.some(r=>r.unknown)?null:records.reduce((n,r)=>n+r.value,0),sourceIds:records.map(r=>r.source.id),eventIds:[...new Set(records.flatMap(r=>r.refs??[r.event.seq]))]}
 }
-export function calculate(sources:Source[],def:Definition,at:number) {
+export function calculate(sources:Source[],def:Definition,at:number,metrics:MetricRow[]=[]) {
  const startAt=midnight(def.start,def.timezone),endAt=midnight(nextDay(def.end),def.timezone)
  const lastAt=Math.min(endAt-1,at), unknown=sources.filter(s=>s.events[0]?.kind==='baseline'&&s.events[0].at>startAt).map(s=>s.id)
  const widgets=def.widgets.map(widget=>{
+  if(isBusinessMeasure(widget.measure))return metricWidget(widget.kind,widget.measure,metrics,sources,def,at)
   const trend=['line','burn-up','burn-down'].includes(widget.kind), daily:Value[]=[]
   const records=(cutoff:number,before:number)=>sources.flatMap(source=>{
    if(widget.measure==='throughput'){
@@ -106,7 +108,8 @@ export async function captureReport(db:D1Database,actor:Actor,workspace:string,i
   }
   sources.push({id:taskId,title:opened.task.title,due:opened.task.due_date,events:visible})
  }
- const capturedAt=now(),snapshot=newId('report'),report:Report={id:snapshot,dashboardId:id,name:row.name,capturedAt,definition:def,sources,...calculate(sources,def,capturedAt)}
+ const metrics=def.widgets.some(w=>isBusinessMeasure(w.measure))?await captureMetrics(db,actor,workspace,def,sources):[]
+ const capturedAt=now(),snapshot=newId('report'),report:Report={id:snapshot,dashboardId:id,name:row.name,capturedAt,definition:def,sources,metrics,...calculate(sources,def,capturedAt,metrics)}
  await guard(db,actor,rev,[bound(db,'DELETE FROM peg_report_snapshots WHERE captured_at<?',[capturedAt-86400000]),bound(db,'INSERT INTO peg_report_snapshots VALUES(?,?,?,?,?,?)',[snapshot,id,actor.id,capturedAt,rev,JSON.stringify(report)])],authority)
  return report
 }
@@ -116,6 +119,7 @@ export async function readSnapshot(db:D1Database,actor:Actor,workspace:string,da
  if(!row||row.captured_at+86400000<=now())throw new PegError(410,'report_unavailable_refresh_required')
  const report=JSON.parse(row.body) as Report
  for(const source of report.sources){const opened=await openTask(db,actor,source.id).catch(()=>null);if(!opened?.access.capabilities.has('export'))throw new PegError(410,'report_scope_changed_refresh_required')}
+ await recheckMetrics(db,actor,workspace,report.definition,report.metrics??[])
  // Expiring grants must still be live at the final read barrier.
  if(authority.until!==null&&authority.until<=now())throw conflict('report_authority_changed')
  await guard(db,actor,rev,[],authority)

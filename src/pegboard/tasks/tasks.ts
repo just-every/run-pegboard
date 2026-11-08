@@ -34,7 +34,7 @@ async function sectionFor(db: D1Database, projectId: string, sectionId?: string 
 }
 const nextPosition = async (db: D1Database, projectId: string, sectionId: string | null) => (await first<{ n: number }>(db, 'SELECT COALESCE(MAX(position),0)+1 n FROM peg_task_projects WHERE project_id=? AND COALESCE(section_id,\'\')=COALESCE(?,\'\')', projectId, sectionId))!.n
 
-export async function prepareTask(db: D1Database, actor: Actor, input: TaskInput, options:{queueRules?:boolean}={}) {
+export async function prepareTask(db: D1Database, actor: Actor, input: TaskInput, options:{queueRules?:boolean;sourceActorId?:'public_intake'}={}) {
   const kind = input.kind ?? (input.parentId ? 'subtask' : 'task')
   if (!kinds.includes(kind)) throw invalid('kind')
   let projectId = input.projectId ?? null, workspaceId = input.workspaceId ?? 'ws_main', parent: TaskRow | null = null
@@ -46,6 +46,7 @@ export async function prepareTask(db: D1Database, actor: Actor, input: TaskInput
     if (opened.access.personal && projectId) throw conflict('personal_task')
     if (!opened.access.personal && !projectId) throw forbidden('edit')
   }
+  const creator = options.sourceActorId ?? actor.id
   const id = newId('tsk'), at = now(), statements: D1PreparedStatement[] = []
   let status = input.status ?? 'todo'
   if (!statuses.includes(status) || !priorities.includes(input.priority ?? 'normal')) throw invalid('status')
@@ -61,7 +62,7 @@ export async function prepareTask(db: D1Database, actor: Actor, input: TaskInput
     if (section?.maps_to && !input.status && !parent) status = section.maps_to
     const ref = await issueRef(db, project, id)
     // A subtask hangs wherever its parent does; only a root task is placed in a section of its own.
-    if (!parent) statements.push(bound(db, 'INSERT INTO peg_task_projects(task_id,project_id,section_id,position,added_by,added_at) VALUES (?,?,?,?,?,?)', [id, projectId, section?.id ?? null, await nextPosition(db, projectId, section?.id ?? null), actor.id, at]))
+    if (!parent) statements.push(bound(db, 'INSERT INTO peg_task_projects(task_id,project_id,section_id,position,added_by,added_at) VALUES (?,?,?,?,?,?)', [id, projectId, section?.id ?? null, await nextPosition(db, projectId, section?.id ?? null), creator, at]))
     if (ref) statements.push(...ref.statements)
   } else {
     const role = await workspaceRole(db, actor.id, workspaceId)
@@ -73,8 +74,8 @@ export async function prepareTask(db: D1Database, actor: Actor, input: TaskInput
     statements.push(bound(db,'INSERT INTO peg_approval_tasks VALUES(?,?,?)',[id,actor.id,at]))
   }
   statements.unshift(bound(db, `INSERT INTO peg_tasks(id,workspace_id,title,description,kind,parent_id,status,priority,start_date,due_date,owner_id,creator_id,estimate_hours,internal_only,internal_notes,created_at,updated_at,completed_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-    [id, workspaceId, title(input.title), (input.description ?? '').slice(0, 20000), kind === 'approval' ? 'task' : kind, parent?.id ?? null, status, input.priority ?? 'normal', date(input.startDate, 'start_date'), date(input.dueDate, 'due_date'), owner, actor.id, hours(input.estimateHours), input.internalOnly ? 1 : 0, (input.internalNotes ?? '').slice(0, 20000), at, at, status === 'done' ? at : null]))
-  statements.push(historyStatement(db, id, null, actor.id, 'created', { kind, parentId: parent?.id ?? null }),...(options.queueRules===false?[]:[...await bundleQueueStatements(db,projectId,id),...await templateRuleQueueStatements(db,projectId,id)]))
+    [id, workspaceId, title(input.title), (input.description ?? '').slice(0, 20000), kind === 'approval' ? 'task' : kind, parent?.id ?? null, status, input.priority ?? 'normal', date(input.startDate, 'start_date'), date(input.dueDate, 'due_date'), owner, creator, hours(input.estimateHours), input.internalOnly ? 1 : 0, (input.internalNotes ?? '').slice(0, 20000), at, at, status === 'done' ? at : null]))
+  statements.push(historyStatement(db, id, null, creator, 'created', { kind, parentId: parent?.id ?? null }),...(options.queueRules===false?[]:[...await bundleQueueStatements(db,projectId,id),...await templateRuleQueueStatements(db,projectId,id)]))
   return { id, statements, projectId }
 }
 
@@ -185,8 +186,8 @@ export async function removeFromProject(db: D1Database, actor: Actor, idOrRef: s
 }
 
 /** Move within a project: the section decides the one shared status when it maps to one. */
-export async function setSection(db: D1Database, actor: Actor, idOrRef: string, projectId: string, sectionId: string) {
-  const localRevision=await revision(db)
+export async function setSection(db: D1Database, actor: Actor, idOrRef: string, projectId: string, sectionId: string, fence?: Awaited<ReturnType<typeof revision>>) {
+  const localRevision=fence??await revision(db)
   const { task, access } = await openTask(db, actor, idOrRef)
   const context = access.contexts.get(projectId)
   if (!context) throw notFound()
@@ -201,7 +202,7 @@ export async function setSection(db: D1Database, actor: Actor, idOrRef: string, 
   const previous=await first<{section_id:string|null}>(db,'SELECT section_id FROM peg_task_projects WHERE task_id=? AND project_id=?',task.id,projectId)
   const queued=[...(section!.maps_to&&section!.maps_to!==task.status?await localRuleQueue(db,task.id,'status',actor.id):[]),...(previous?.section_id!==section!.id?await localRuleQueue(db,task.id,'section',actor.id,projectId):[])]
   statements.push(...queued)
-  if(queued.length)await guarded(db,localRevision,statements);else await batch(db, statements)
+  if(fence||queued.length)await guarded(db,localRevision,statements);else await batch(db, statements)
   for(const id of access.contexts.keys())await processLocalRules(db,id)
 }
 
@@ -214,4 +215,21 @@ export async function changePrefix(db: D1Database, actor: Actor, projectId: stri
   const { prefix, statements } = await setPrefix(db, project, value)
   await batch(db, [...statements, auditStatement(db, { workspaceId: project.workspace_id, actorId: actor.id, action: 'project.prefix_changed', targetType: 'project', targetId: project.id, detail: { from: project.prefix, to: prefix } })])
   return prefix
+}
+
+/** Intake changes only reviewed priority; all other task and scheduling values survive. */
+export async function prepareIntakePriority(db:D1Database,actor:Actor,id:string,priority:string,at=now(),apply=false) {
+ const {task,access}=await openTask(db,actor,id)
+ require(access,'edit')
+ const homes=await all<{project_id:string}>(db,'SELECT project_id FROM peg_task_projects WHERE task_id=?',task.id)
+ if(!homes.length)throw conflict('intake_task_home_changed')
+ for(const home of homes)need((await openProject(db,actor,home.project_id)).effective,'edit')
+ if(!priorities.includes(priority))throw invalid('priority')
+ if(await first(db,'SELECT 1 FROM peg_approval_tasks WHERE task_id=?',task.id))throw conflict('intake_task_kind_changed')
+ const statements:D1PreparedStatement[]=[],next={...task}
+ if(apply&&task.priority!==priority){
+  next.priority=priority as TaskRow['priority'];next.updated_at=at
+  statements.push(bound(db,'UPDATE peg_tasks SET priority=?,updated_at=? WHERE id=?',[priority,at,id]),historyStatement(db,id,null,actor.id,'updated',{priority:{from:task.priority,to:priority}}))
+ }
+ return {task:next,statements}
 }

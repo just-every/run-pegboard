@@ -6,7 +6,7 @@ import { join } from 'node:path'
 import { startWorker } from './worker.mjs'
 
 /** The real native archive doors into an empty installation of this committed tree. */
-export async function restoreCanvasInstallation(owner, options={}) {
+export async function exportCanvasInstallation(owner, options={}) {
  const pass=async call=>{const r=await call;assert.ok(r.status>=200&&r.status<300,JSON.stringify(r.body));return r.body}
  let archive=options.archive
  if(!archive){
@@ -17,6 +17,12 @@ export async function restoreCanvasInstallation(owner, options={}) {
  }
  }
  assert.ok(archive,'native archive completes')
+ return archive
+}
+
+export async function restoreCanvasInstallation(owner,options={}) {
+ const {earlierArchive}=options
+ const archive=await exportCanvasInstallation(owner,options)
  const scratch=await mkdtemp(join(tmpdir(),'pegboard-canvas-restore-'));let worker
  try{
   execFileSync('git',['archive','--output',join(scratch,'product.tar'),'HEAD']);execFileSync('tar',['-xf',join(scratch,'product.tar'),'-C',scratch],{stdio:'pipe'})
@@ -52,6 +58,12 @@ export async function restoreCanvasInstallation(owner, options={}) {
     const manifest=JSON.parse((await readFile(join(inspection,'exports/interrupted.rer'),'utf8')).split('\n')[0])
     for(const table of ['oa_operators','peg_tasks','peg_attachments','peg_proofs'])assert.equal(manifest.tables.find(t=>t.name===table)?.count,0,table+' stays empty after an interrupted staged restore')
    }finally{await rm(inspection,{recursive:true,force:true})}
+  }
+  if(earlierArchive){
+   await writeFile(join(scratch,'exports/earlier.rer'),earlierArchive,{mode:0o600})
+   const refused=spawnSync(process.execPath,[join(process.cwd(),'node_modules/@runeditrun/rer/global/rer.mjs'),'import','--input','exports/earlier.rer','--journal','exports/canvas.rer','--yes'],{cwd:scratch,encoding:'utf8',env:{...process.env,CI:'1',WRANGLER_SEND_METRICS:'false'}})
+   assert.equal(refused.status,4,refused.stdout+refused.stderr)
+   assert.match(refused.stdout+refused.stderr,/erasure_epoch|erased_row/)
   }
   const result=cli('import','--input','exports/canvas.rer','--yes')
   assert.equal(result.status,0,result.stdout+result.stderr)

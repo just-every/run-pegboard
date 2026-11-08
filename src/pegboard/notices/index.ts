@@ -31,3 +31,4 @@ export async function readinessNotices(db: D1Database, actor: Actor, workspace: 
 }
 
 export { readinessPreferences, saveReadinessPreferences, muteReadinessTask } from './preferences'
+export { approvalFollowupInbox, approvalFollowupLog } from './approval-followup'
