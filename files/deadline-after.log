@@ -1,0 +1,122 @@
+[
+  {
+    "holder": "alternate",
+    "feasible": [
+      true,
+      true
+    ],
+    "shortage": false,
+    "reasons": [
+      [],
+      []
+    ],
+    "approvalStatus": 200,
+    "attributedApplications": 1,
+    "actualOwner": "alternate",
+    "deadline": {
+      "start": null,
+      "due": "2026-11-03T15:00:00Z",
+      "estimateHours": 2
+    },
+    "affected": [
+      {
+        "person": "alternate",
+        "days": [
+          {
+            "date": "2026-11-02",
+            "hours": 8,
+            "availableHours": 8,
+            "unavailableHours": 0,
+            "overloadHours": 0
+          },
+          {
+            "date": "2026-11-03",
+            "hours": 2,
+            "availableHours": 8,
+            "unavailableHours": 0,
+            "overloadHours": 0
+          }
+        ]
+      },
+      {
+        "person": "designer",
+        "days": [
+          {
+            "date": "2026-11-02",
+            "hours": 8,
+            "availableHours": 8,
+            "unavailableHours": 0,
+            "overloadHours": 0
+          },
+          {
+            "date": "2026-11-03",
+            "hours": 2,
+            "availableHours": 8,
+            "unavailableHours": 0,
+            "overloadHours": 0
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "holder": "designer",
+    "feasible": [
+      true,
+      true
+    ],
+    "shortage": false,
+    "reasons": [
+      [],
+      []
+    ],
+    "approvalStatus": 200,
+    "attributedApplications": 2,
+    "actualOwner": "alternate",
+    "deadline": {
+      "start": null,
+      "due": "2026-11-03T15:00:00Z",
+      "estimateHours": 2
+    },
+    "affected": [
+      {
+        "person": "alternate",
+        "days": [
+          {
+            "date": "2026-11-02",
+            "hours": 8,
+            "availableHours": 8,
+            "unavailableHours": 0,
+            "overloadHours": 0
+          },
+          {
+            "date": "2026-11-03",
+            "hours": 0,
+            "availableHours": 8,
+            "unavailableHours": 0,
+            "overloadHours": 0
+          }
+        ]
+      },
+      {
+        "person": "designer",
+        "days": [
+          {
+            "date": "2026-11-02",
+            "hours": 8,
+            "availableHours": 8,
+            "unavailableHours": 0,
+            "overloadHours": 0
+          },
+          {
+            "date": "2026-11-03",
+            "hours": 4,
+            "availableHours": 8,
+            "unavailableHours": 0,
+            "overloadHours": 0
+          }
+        ]
+      }
+    ]
+  }
+]

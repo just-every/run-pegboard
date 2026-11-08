@@ -1,0 +1,48 @@
+TAP version 13
+# Subtest: Human portfolio capacity
+    # Subtest: compares sourced alternatives across thirty projects and fences attributable application, replay and selective undo
+    ok 1 - compares sourced alternatives across thirty projects and fences attributable application, replay and selective undo
+      ---
+      duration_ms: 88166.849318
+      type: 'test'
+      ...
+    1..1
+ok 1 - Human portfolio capacity
+  ---
+  duration_ms: 88167.960393
+  type: 'suite'
+  ...
+# Subtest: Capacity across committed work
+    # Subtest: compares a staffing scenario across three projects, retains hidden hours without titles, and applies only an exact current human reassignment
+    ok 1 - compares a staffing scenario across three projects, retains hidden hours without titles, and applies only an exact current human reassignment
+      ---
+      duration_ms: 964.165381
+      type: 'test'
+      ...
+    # Subtest: uses self-declared full and partial days, unions approved source leave, hides reasons, and refuses unavailable authority or stale feeds
+    ok 2 - uses self-declared full and partial days, unions approved source leave, hides reasons, and refuses unavailable authority or stale feeds
+      ---
+      duration_ms: 6452.757763
+      type: 'test'
+      ...
+    # Subtest: reviews Split, Sum and per-assignee source effort without changing the task estimate or duplicating multi-homed work, and holds missing semantics for repair
+    ok 3 - reviews Split, Sum and per-assignee source effort without changing the task estimate or duplicating multi-homed work, and holds missing semantics for repair
+      ---
+      duration_ms: 1266.725244
+      type: 'test'
+      ...
+    1..3
+ok 2 - Capacity across committed work
+  ---
+  duration_ms: 45828.30661
+  type: 'suite'
+  ...
+1..2
+# tests 4
+# suites 2
+# pass 4
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 134075.343628

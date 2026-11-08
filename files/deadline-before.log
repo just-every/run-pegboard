@@ -1,0 +1,235 @@
+[
+  {
+    "holder": "alternate",
+    "feasible": [
+      false,
+      false
+    ],
+    "shortage": true,
+    "reasons": [
+      [
+        "Alternate is unavailable for the committed work."
+      ],
+      [
+        "Alternate is unavailable for the committed work."
+      ]
+    ],
+    "approvalStatus": 409,
+    "attributedApplications": 0,
+    "actualOwner": "designer",
+    "deadline": {
+      "start": null,
+      "due": "2026-11-03T15:00:00Z",
+      "estimateHours": 2
+    },
+    "affected": [
+      {
+        "person": "alternate",
+        "days": [
+          {
+            "date": "2026-11-02",
+            "hours": 0,
+            "availableHours": 8,
+            "unavailableHours": 0,
+            "overloadHours": 0
+          },
+          {
+            "date": "2026-11-03",
+            "hours": 2,
+            "availableHours": 8,
+            "unavailableHours": 2,
+            "overloadHours": 0
+          }
+        ]
+      },
+      {
+        "person": "designer",
+        "days": [
+          {
+            "date": "2026-11-02",
+            "hours": 16,
+            "availableHours": 8,
+            "unavailableHours": 0,
+            "overloadHours": 8
+          },
+          {
+            "date": "2026-11-03",
+            "hours": 2,
+            "availableHours": 8,
+            "unavailableHours": 0,
+            "overloadHours": 0
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "holder": "designer",
+    "feasible": [
+      false,
+      false
+    ],
+    "shortage": true,
+    "reasons": [
+      [
+        "An affected person is unavailable during a retained commitment."
+      ],
+      [
+        "An affected person is unavailable during a retained commitment."
+      ]
+    ],
+    "approvalStatus": 409,
+    "attributedApplications": 0,
+    "actualOwner": "designer",
+    "deadline": {
+      "start": null,
+      "due": "2026-11-03T15:00:00Z",
+      "estimateHours": 2
+    },
+    "affected": [
+      {
+        "person": "alternate",
+        "days": [
+          {
+            "date": "2026-11-02",
+            "hours": 0,
+            "availableHours": 8,
+            "unavailableHours": 0,
+            "overloadHours": 0
+          },
+          {
+            "date": "2026-11-03",
+            "hours": 0,
+            "availableHours": 8,
+            "unavailableHours": 0,
+            "overloadHours": 0
+          }
+        ]
+      },
+      {
+        "person": "designer",
+        "days": [
+          {
+            "date": "2026-11-02",
+            "hours": 16,
+            "availableHours": 8,
+            "unavailableHours": 0,
+            "overloadHours": 8
+          },
+          {
+            "date": "2026-11-03",
+            "hours": 4,
+            "availableHours": 8,
+            "unavailableHours": 2,
+            "overloadHours": 0
+          }
+        ]
+      }
+    ]
+  }
+]
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
++ actual - expected
+
+  [
+    {
++     actualOwner: 'designer',
++     approvalStatus: 409,
++     attributedApplications: 0,
+-     actualOwner: 'alternate',
+-     approvalStatus: 200,
+-     attributedApplications: 1,
+      feasible: [
++       false,
++       false
+-       true,
+-       true
+      ],
+      holder: 'alternate',
++     overloadHours: 8,
++     shortage: true,
++     unavailableHours: 2
+-     overloadHours: 0,
+-     shortage: false,
+-     unavailableHours: 0
+    },
+    {
++     actualOwner: 'designer',
++     approvalStatus: 409,
++     attributedApplications: 0,
+-     actualOwner: 'alternate',
+-     approvalStatus: 200,
+-     attributedApplications: 2,
+      feasible: [
++       false,
++       false
+-       true,
+-       true
+      ],
+      holder: 'designer',
++     overloadHours: 8,
++     shortage: true,
++     unavailableHours: 2
+-     overloadHours: 0,
+-     shortage: false,
+-     unavailableHours: 0
+    }
+  ]
+
+    at file:///home/agent/rer-consolidation/work/sx-pegboard-f48fix1/packet/deadline-probe.mjs:24:9
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: [
+    {
+      holder: 'alternate',
+      feasible: [ false, false ],
+      shortage: true,
+      approvalStatus: 409,
+      attributedApplications: 0,
+      actualOwner: 'designer',
+      unavailableHours: 2,
+      overloadHours: 8
+    },
+    {
+      holder: 'designer',
+      feasible: [ false, false ],
+      shortage: true,
+      approvalStatus: 409,
+      attributedApplications: 0,
+      actualOwner: 'designer',
+      unavailableHours: 2,
+      overloadHours: 8
+    }
+  ],
+  expected: [
+    {
+      holder: 'alternate',
+      feasible: [ true, true ],
+      shortage: false,
+      approvalStatus: 200,
+      attributedApplications: 1,
+      actualOwner: 'alternate',
+      unavailableHours: 0,
+      overloadHours: 0
+    },
+    {
+      holder: 'designer',
+      feasible: [ true, true ],
+      shortage: false,
+      approvalStatus: 200,
+      attributedApplications: 2,
+      actualOwner: 'alternate',
+      unavailableHours: 0,
+      overloadHours: 0
+    }
+  ],
+  operator: 'deepStrictEqual',
+  diff: 'simple'
+}
+
+Node.js v22.20.0

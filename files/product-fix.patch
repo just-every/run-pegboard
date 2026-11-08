@@ -1,0 +1,67 @@
+commit 2f1ceaf26575272f3bf1e9b817106481f527d6f6
+Author:     Run Edit Run fleet <fleet@runeditrun.com>
+AuthorDate: Sun Nov 8 12:15:15 2026 +0000
+Commit:     Run Edit Run fleet <fleet@runeditrun.com>
+CommitDate: Sun Nov 8 12:15:15 2026 +0000
+
+    Respect deadline-only work during reviewed portfolio reassignment
+
+diff --git a/sources.lock.json b/sources.lock.json
+index 0cf7ffe..3b0f743 100644
+--- a/sources.lock.json
++++ b/sources.lock.json
+@@ -3355,7 +3355,7 @@
+       "executable": false
+     },
+     "src/pegboard/capacity/workload.ts": {
+-      "sha256": "fcf79f899ed7e8063aa26341418cbd4ccb79eee27f5dce6e031a69c19e3df651",
++      "sha256": "0a9b7f4bd546f0e7f9af67b29e75a2115b78e92bc497bafaedb13e8372ccc846",
+       "executable": false
+     },
+     "src/pegboard/connectors/calendars/edge.ts": {
+@@ -4519,7 +4519,7 @@
+       "executable": false
+     },
+     "tests/scenarios/portfolio-capacity.mjs": {
+-      "sha256": "a12f7c689ffa014147e90a1873cf25968d5d1be78c3f524eace82741ea4f18c8",
++      "sha256": "1ddf67f75913a279bbea9150c8b1738e933de7c7cf0e8c8dd581d91390242b5d",
+       "executable": false
+     },
+     "tests/scenarios/provider-log-retention.mjs": {
+diff --git a/src/pegboard/capacity/workload.ts b/src/pegboard/capacity/workload.ts
+index a8ff965..e4c81b4 100644
+--- a/src/pegboard/capacity/workload.ts
++++ b/src/pegboard/capacity/workload.ts
+@@ -30,7 +30,8 @@ export function spread(task:TaskRow,hours:number,calendar:WorkingCalendar,dates:
+ function committedCapacity(task:TaskRow,calendar:WorkingCalendar,date:string) {
+  const start=readStamp(task.start_date??task.due_date!,calendar.zone),end=readStamp(task.due_date??task.start_date!,calendar.zone),day=dayNumber(date)
+  if(day<start.day||day>end.day)return 0
+- const lo=day===start.day?(start.wallMs??0):0,hi=day===end.day?(end.wallMs??86400000):86400000
++ // A missing start leaves the deadline day open before due; a missing due leaves it open after start.
++ const lo=day===start.day&&task.start_date?(start.wallMs??0):0,hi=day===end.day&&task.due_date?(end.wallMs??86400000):86400000
+  return availableIntervals(day,calendar).reduce((sum,[a,b])=>sum+Math.max(0,Math.min(b,hi)-Math.max(a,lo)),0)/3600000
+ }
+ export async function workloadView(db:D1Database,actor:Actor,workspace:string,input:Record<string,any>={},move?:{taskId:string;personId:string}) {
+diff --git a/tests/scenarios/portfolio-capacity.mjs b/tests/scenarios/portfolio-capacity.mjs
+index 42d515f..25ccb1e 100644
+--- a/tests/scenarios/portfolio-capacity.mjs
++++ b/tests/scenarios/portfolio-capacity.mjs
+@@ -52,6 +52,18 @@ export function portfolioCapacityScenarios(){
+      assert.equal(a.start,'2026-11-02');assert.equal(a.due,'2026-11-02')
+     }
+     assert.deepEqual(plan.locked.map(t=>[t.id,t.ownerId,t.start,t.due]),[[tasks[2].id,designer.id,'2026-11-03','2026-11-03']])
++    // A due timestamp alone is a deadline, not a zero-duration retained commitment.
++    const deadlineReviews=[]
++    for(const holder of [alternate,designer]){
++     const deadline=await ok(owner.post('/api/v1/tasks',{projectId:projects[2].id,title:'Deadline-only retained work',ownerId:holder.id,estimateHours:2,dueDate:'2026-11-03T15:00:00Z'}))
++     const reviewed=await compare(),approval=await reviewer.post(path+'/apply',{...input,choice:1,token:reviewed.token})
++     const actual=await task(tasks[1].id),workload=await view()
++     deadlineReviews.push({feasible:reviewed.alternatives.map(a=>a.feasible),shortage:reviewed.shortage,status:approval.status,ownerId:actual.owner.id,unavailable:workload.people.filter(p=>[designer.id,alternate.id].includes(p.id)).flatMap(p=>p.days.map(d=>d.unavailableHours))})
++     if(approval.status===200){const undo=await ok(reviewer.get(path+'/'+approval.body.id+'/undo-preview'));await ok(reviewer.post(path+'/'+approval.body.id+'/undo',{token:undo.token}))}
++     await ok(owner.patch('/api/v1/tasks/'+deadline.id,{status:'done'}))
++    }
++    assert.deepEqual(deadlineReviews,[alternate,designer].map(()=>({feasible:[true,true],shortage:false,status:200,ownerId:alternate.id,unavailable:[0,0,0,0]})),'ordinary timestamp deadlines on either affected person permit the reviewed reassignment')
++    plan=await compare()
+     // A changed estimate invalidates even a restored value; no write occurs.
+     await ok(owner.patch('/api/v1/tasks/'+tasks[0].id,{estimateHours:9}))
+     await ok(reviewer.post(path+'/apply',{...input,choice:0,token:plan.token}),409)

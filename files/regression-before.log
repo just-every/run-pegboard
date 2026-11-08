@@ -1,0 +1,138 @@
+TAP version 13
+# Subtest: Human portfolio capacity
+    # Subtest: compares sourced alternatives across thirty projects and fences attributable application, replay and selective undo
+    not ok 1 - compares sourced alternatives across thirty projects and fences attributable application, replay and selective undo
+      ---
+      duration_ms: 40846.529992
+      type: 'test'
+      location: '/workspace/run-pegboard/tests/scenarios/portfolio-capacity.mjs:35:3'
+      failureType: 'testCodeFailure'
+      error: |-
+        ordinary timestamp deadlines on either affected person permit the reviewed reassignment
+        + actual - expected
+        
+          [
+            {
+              feasible: [
+        +       false,
+        +       false
+        -       true,
+        -       true
+              ],
+        +     ownerId: 'a4be03e6-6636-46a1-8c8a-09bb59054dcc',
+        +     shortage: true,
+        +     status: 409,
+        -     ownerId: 'c79b6559-ff40-42d0-a2b3-c83109f30dab',
+        -     shortage: false,
+        -     status: 200,
+              unavailable: [
+                0,
+        +       2,
+                0,
+                0,
+        -       0
+              ]
+            },
+            {
+              feasible: [
+        +       false,
+        +       false
+        -       true,
+        -       true
+              ],
+        +     ownerId: 'a4be03e6-6636-46a1-8c8a-09bb59054dcc',
+        +     shortage: true,
+        +     status: 409,
+        -     ownerId: 'c79b6559-ff40-42d0-a2b3-c83109f30dab',
+        -     shortage: false,
+        -     status: 200,
+              unavailable: [
+                0,
+                0,
+                0,
+        +       2
+        -       0
+              ]
+            }
+          ]
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected:
+        0:
+          feasible:
+            0: true
+            1: true
+          shortage: false
+          status: 200
+          ownerId: 'c79b6559-ff40-42d0-a2b3-c83109f30dab'
+          unavailable:
+            0: 0
+            1: 0
+            2: 0
+            3: 0
+        1:
+          feasible:
+            0: true
+            1: true
+          shortage: false
+          status: 200
+          ownerId: 'c79b6559-ff40-42d0-a2b3-c83109f30dab'
+          unavailable:
+            0: 0
+            1: 0
+            2: 0
+            3: 0
+      actual:
+        0:
+          feasible:
+            0: false
+            1: false
+          shortage: true
+          status: 409
+          ownerId: 'a4be03e6-6636-46a1-8c8a-09bb59054dcc'
+          unavailable:
+            0: 0
+            1: 2
+            2: 0
+            3: 0
+        1:
+          feasible:
+            0: false
+            1: false
+          shortage: true
+          status: 409
+          ownerId: 'a4be03e6-6636-46a1-8c8a-09bb59054dcc'
+          unavailable:
+            0: 0
+            1: 0
+            2: 0
+            3: 2
+      operator: 'deepStrictEqual'
+      stack: |-
+        TestContext.<anonymous> (file:///workspace/run-pegboard/tests/scenarios/portfolio-capacity.mjs:65:12)
+        process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+        async Test.run (node:internal/test_runner/test:1054:7)
+        async Promise.all (index 0)
+        async Suite.run (node:internal/test_runner/test:1442:7)
+        async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+      ...
+    1..1
+not ok 1 - Human portfolio capacity
+  ---
+  duration_ms: 40848.074073
+  type: 'suite'
+  location: '/workspace/run-pegboard/tests/scenarios/portfolio-capacity.mjs:34:2'
+  failureType: 'subtestsFailed'
+  error: '1 subtest failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+1..1
+# tests 1
+# suites 1
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 40931.013063

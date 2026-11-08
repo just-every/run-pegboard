@@ -1,0 +1,275 @@
+{
+  "schema": 1,
+  "tag": "sx-pegboard-f48fix1",
+  "repository": "just-every/run-pegboard",
+  "trigger": {
+    "estimateHours": 2,
+    "due": "2026-11-03T15:00:00Z",
+    "start": null,
+    "workingHoursPerDay": 8,
+    "reviewFrom": "2026-11-02",
+    "reviewDays": 2
+  },
+  "results": {
+    "before": {
+      "head": "195d4fe9a6abcaf7d5c7f3ec5e4a49f11595072d",
+      "exit": 1,
+      "cases": [
+        {
+          "holder": "alternate",
+          "feasible": [
+            false,
+            false
+          ],
+          "shortage": true,
+          "reasons": [
+            [
+              "Alternate is unavailable for the committed work."
+            ],
+            [
+              "Alternate is unavailable for the committed work."
+            ]
+          ],
+          "approvalStatus": 409,
+          "attributedApplications": 0,
+          "actualOwner": "designer",
+          "deadline": {
+            "start": null,
+            "due": "2026-11-03T15:00:00Z",
+            "estimateHours": 2
+          },
+          "affected": [
+            {
+              "person": "alternate",
+              "days": [
+                {
+                  "date": "2026-11-02",
+                  "hours": 0,
+                  "availableHours": 8,
+                  "unavailableHours": 0,
+                  "overloadHours": 0
+                },
+                {
+                  "date": "2026-11-03",
+                  "hours": 2,
+                  "availableHours": 8,
+                  "unavailableHours": 2,
+                  "overloadHours": 0
+                }
+              ]
+            },
+            {
+              "person": "designer",
+              "days": [
+                {
+                  "date": "2026-11-02",
+                  "hours": 16,
+                  "availableHours": 8,
+                  "unavailableHours": 0,
+                  "overloadHours": 8
+                },
+                {
+                  "date": "2026-11-03",
+                  "hours": 2,
+                  "availableHours": 8,
+                  "unavailableHours": 0,
+                  "overloadHours": 0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "holder": "designer",
+          "feasible": [
+            false,
+            false
+          ],
+          "shortage": true,
+          "reasons": [
+            [
+              "An affected person is unavailable during a retained commitment."
+            ],
+            [
+              "An affected person is unavailable during a retained commitment."
+            ]
+          ],
+          "approvalStatus": 409,
+          "attributedApplications": 0,
+          "actualOwner": "designer",
+          "deadline": {
+            "start": null,
+            "due": "2026-11-03T15:00:00Z",
+            "estimateHours": 2
+          },
+          "affected": [
+            {
+              "person": "alternate",
+              "days": [
+                {
+                  "date": "2026-11-02",
+                  "hours": 0,
+                  "availableHours": 8,
+                  "unavailableHours": 0,
+                  "overloadHours": 0
+                },
+                {
+                  "date": "2026-11-03",
+                  "hours": 0,
+                  "availableHours": 8,
+                  "unavailableHours": 0,
+                  "overloadHours": 0
+                }
+              ]
+            },
+            {
+              "person": "designer",
+              "days": [
+                {
+                  "date": "2026-11-02",
+                  "hours": 16,
+                  "availableHours": 8,
+                  "unavailableHours": 0,
+                  "overloadHours": 8
+                },
+                {
+                  "date": "2026-11-03",
+                  "hours": 4,
+                  "availableHours": 8,
+                  "unavailableHours": 2,
+                  "overloadHours": 0
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "after": {
+      "head": "2f1ceaf26575272f3bf1e9b817106481f527d6f6",
+      "exit": 0,
+      "cases": [
+        {
+          "holder": "alternate",
+          "feasible": [
+            true,
+            true
+          ],
+          "shortage": false,
+          "reasons": [
+            [],
+            []
+          ],
+          "approvalStatus": 200,
+          "attributedApplications": 1,
+          "actualOwner": "alternate",
+          "deadline": {
+            "start": null,
+            "due": "2026-11-03T15:00:00Z",
+            "estimateHours": 2
+          },
+          "affected": [
+            {
+              "person": "alternate",
+              "days": [
+                {
+                  "date": "2026-11-02",
+                  "hours": 8,
+                  "availableHours": 8,
+                  "unavailableHours": 0,
+                  "overloadHours": 0
+                },
+                {
+                  "date": "2026-11-03",
+                  "hours": 2,
+                  "availableHours": 8,
+                  "unavailableHours": 0,
+                  "overloadHours": 0
+                }
+              ]
+            },
+            {
+              "person": "designer",
+              "days": [
+                {
+                  "date": "2026-11-02",
+                  "hours": 8,
+                  "availableHours": 8,
+                  "unavailableHours": 0,
+                  "overloadHours": 0
+                },
+                {
+                  "date": "2026-11-03",
+                  "hours": 2,
+                  "availableHours": 8,
+                  "unavailableHours": 0,
+                  "overloadHours": 0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "holder": "designer",
+          "feasible": [
+            true,
+            true
+          ],
+          "shortage": false,
+          "reasons": [
+            [],
+            []
+          ],
+          "approvalStatus": 200,
+          "attributedApplications": 2,
+          "actualOwner": "alternate",
+          "deadline": {
+            "start": null,
+            "due": "2026-11-03T15:00:00Z",
+            "estimateHours": 2
+          },
+          "affected": [
+            {
+              "person": "alternate",
+              "days": [
+                {
+                  "date": "2026-11-02",
+                  "hours": 8,
+                  "availableHours": 8,
+                  "unavailableHours": 0,
+                  "overloadHours": 0
+                },
+                {
+                  "date": "2026-11-03",
+                  "hours": 0,
+                  "availableHours": 8,
+                  "unavailableHours": 0,
+                  "overloadHours": 0
+                }
+              ]
+            },
+            {
+              "person": "designer",
+              "days": [
+                {
+                  "date": "2026-11-02",
+                  "hours": 8,
+                  "availableHours": 8,
+                  "unavailableHours": 0,
+                  "overloadHours": 0
+                },
+                {
+                  "date": "2026-11-03",
+                  "hours": 4,
+                  "availableHours": 8,
+                  "unavailableHours": 0,
+                  "overloadHours": 0
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

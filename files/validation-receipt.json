@@ -1,0 +1,107 @@
+{
+  "schema": 1,
+  "tag": "sx-pegboard-f48fix1",
+  "repository": "just-every/run-pegboard",
+  "branch": "cloud/sx-pegboard-f48fix1",
+  "head": "2f1ceaf26575272f3bf1e9b817106481f527d6f6",
+  "base": "3be7283f0152224202de59c4b2e0852c732ac02f",
+  "tests": {
+    "externalDeadlineBefore": {
+      "exit": 1,
+      "cases": 2
+    },
+    "existingRegressionBefore": {
+      "exit": 1,
+      "pass": 0,
+      "fail": 1
+    },
+    "externalDeadlineAfter": {
+      "exit": 0,
+      "cases": 2
+    },
+    "capacityTouched": {
+      "exit": 0,
+      "pass": 4,
+      "fail": 0,
+      "suites": 2
+    },
+    "build": {
+      "exit": 0
+    },
+    "typecheck": {
+      "exit": 0
+    },
+    "sourceLock": {
+      "exit": 0
+    },
+    "contractGenerator": {
+      "exit": 0
+    },
+    "browserJourney": {
+      "exit": 0,
+      "journey": "portfolio-capacity",
+      "assertionWidth": 1440,
+      "proofWidths": [
+        1440,
+        390
+      ],
+      "proofCases": [
+        "alternate deadline holder",
+        "designer retained deadline holder"
+      ],
+      "proofFiles": [
+        "screens/deadline-alternate-review-1440.png",
+        "screens/deadline-alternate-review-390.png",
+        "screens/deadline-designer-review-1440.png",
+        "screens/deadline-designer-review-390.png"
+      ],
+      "visualInspection": "All four screenshot files inspected"
+    }
+  },
+  "counts": {
+    "contractBefore": {
+      "done": 22,
+      "partial": 20,
+      "missing": 50
+    },
+    "contractAfter": {
+      "done": 22,
+      "partial": 20,
+      "missing": 50
+    },
+    "registeredTestsAdded": 0,
+    "regressionAssertionsAdded": 1,
+    "regressionAssertionsRemoved": 0
+  },
+  "clauses": {
+    "PEG-078": {
+      "before": "partial",
+      "after": "partial",
+      "statusGapEvidenceChanges": false
+    }
+  },
+  "publicationScan": "not run, as the FIX brief requires",
+  "ci": {
+    "status": "in_progress",
+    "runId": 42479653822,
+    "head": "2f1ceaf26575272f3bf1e9b817106481f527d6f6",
+    "url": "https://github.com/just-every/run-pegboard/actions/runs/42479653822",
+    "callsUsed": 3
+  },
+  "evidence": {
+    "status": "prepared for report-only publication",
+    "ref": "refs/heads/evidence/sx-pegboard-f48fix1",
+    "filesSelected": 20
+  },
+  "push": {
+    "status": "pushed",
+    "head": "2f1ceaf26575272f3bf1e9b817106481f527d6f6",
+    "branch": "cloud/sx-pegboard-f48fix1",
+    "finalAttempt": 1,
+    "mergeSaveHead": "195d4fe9a6abcaf7d5c7f3ec5e4a49f11595072d",
+    "mergeSaveAttempts": 3,
+    "historyRewritten": false,
+    "identityAndTrailerCheck": "all five candidate commits including side parents, fleet identities, absent trailers",
+    "originBranchHead": "2f1ceaf26575272f3bf1e9b817106481f527d6f6"
+  }
+}
