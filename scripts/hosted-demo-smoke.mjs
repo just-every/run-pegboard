@@ -47,12 +47,12 @@ try {
   const route = new URL(page.url()).pathname
   const body = await page.locator('body').innerText()
   assert.match(body, new RegExp(seed, 'i'))
-  const health = await page.evaluate(async () => (await fetch('/health')).status)
-  assert.equal(health, 200, 'The signed-in copy must be healthy')
   for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 900 })
     await page.screenshot({ path: `${output}/workspace-${width}.png` })
   }
+  const health = (await page.request.get(origin + '/health', { maxRedirects: 0 })).status()
+  assert.equal(health, 200, 'The signed-in copy must be healthy')
   await writeFile(`${output}/session.json`, JSON.stringify({ startedAt: ready.at, route, health, requests }, null, 2) + '\n')
   console.log(`Session started at ${ready.at}. Workspace ${route} and health HTTP ${health}.`)
 } catch (error) {
