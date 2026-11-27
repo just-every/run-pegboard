@@ -422,3 +422,10 @@ consumers before deleting its queues, then confirms their absence in Cloudflare.
 It waits up to a minute for a deleted queue to disappear from the account list.
 If the provider still lists it, the error names the queue and the call; keep the
 record and rerun the printed removal command after resolving the cause.
+
+## Deploy with outbound mail off
+
+Run `MAIL_PROVIDER=none rer deploy --dry-run` to validate a deployment without
+a sender address or mail API key. After deployment, run `rer signin` with the
+deployment's Cloudflare credentials to issue a one-time owner sign-in link.
+Email sign-in and outbound messages require a configured mail provider.

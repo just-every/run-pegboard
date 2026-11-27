@@ -1,6 +1,6 @@
 {
   "version": "0.1.0",
-  "publicReleaseNotes": "Prepare Pegboard for hosted installation with a deployment descriptor, provider configuration and retained source provenance. The release describes the current foundation and work graph; product targets remain identified in the contract.",
+  "publicReleaseNotes": "First release of Pegboard, with a hosted demo and setup for a Business with or without a mail provider.",
   "migrations": [
     {
       "id": "0001_owner.sql",
@@ -166,10 +166,53 @@
       "id": "0041_dependency_keys_sealed.sql",
       "buyerSteps": "Apply after the existing schema to retain encrypted dependency-key custody. Keep the generated installation key private and include it in recovery custody."
     },
+    "migrations/core/0042_planning_canvas.sql",
+    "migrations/core/0043_portfolios_dependencies.sql",
+    "migrations/core/0044_schedule_changes.sql",
+    "migrations/core/0045_delivery_register.sql",
+    "migrations/core/0046_workflow_bundles.sql",
+    "migrations/core/0047_member_departure.sql",
+    "migrations/core/0048_recovery.sql",
+    "migrations/core/0049_brief_revisions.sql",
+    "migrations/core/0050_bulk_recovery.sql",
+    "migrations/core/0051_rule_effect_recovery.sql",
+    "migrations/core/0052_attachment_recovery.sql",
+    "migrations/core/0053_rule_work_effects.sql",
+    "migrations/core/0054_field_revisions.sql",
+    "migrations/core/0055_templates.sql",
+    "migrations/core/0056_project_duplication.sql",
+    "migrations/core/0057_template_rules.sql",
+    "migrations/core/0058_conversions.sql",
+    "migrations/core/0059_guest_comment_visibility.sql",
+    "migrations/core/0059_local_rules.sql",
+    "migrations/core/0060_working_calendars.sql",
+    "migrations/core/0061_dependency_readiness.sql",
+    "migrations/core/0062_rule_schedule_scope.sql",
+    "migrations/core/0063_approval_routing.sql",
+    "migrations/core/0063_public_api.sql",
+    "migrations/core/0063_status_drafts.sql",
+    "migrations/core/0064_public_personal_revisions.sql",
+    "migrations/core/0064_status_discussion_notices.sql",
+    "migrations/core/0065_status_draft_rejections.sql",
+    "migrations/core/0066_status_rights_requests.sql",
+    "migrations/core/0067_capacity.sql",
+    "migrations/core/0068_calendar_blocks.sql",
+    "migrations/core/0069_analytics_reports.sql",
+    "migrations/core/0070_analytics_portfolio_revision.sql",
     {
       "id": "0071_blind_project_requests.sql",
       "buyerSteps": "Apply migrations/core/0071_blind_project_requests.sql after the existing migrations, including 0070_analytics_portfolio_revision.sql. Preserve all previously applied migration names and bytes. This adds durable blind project-request intake without replaying it from archives."
     },
+    "migrations/core/0072_portfolio_access_requests.sql",
+    "migrations/core/0073_native_reporting.sql",
+    "migrations/core/0074_reporting_deadlines.sql",
+    "migrations/core/0075_reporting_snapshot_privacy.sql",
+    "migrations/core/0076_work_views.sql",
+    "migrations/core/0077_intake.sql",
+    "migrations/core/0078_intake_custody.sql",
+    "migrations/core/0079_rule_restore_audit.sql",
+    "migrations/core/0080_wider_rule_audit.sql",
+    "migrations/core/0081_rule_audit_correlations.sql",
     {
       "id": "0082_portfolio_capacity.sql",
       "buyerSteps": "Apply migrations/core/0082_portfolio_capacity.sql after 0081_rule_audit_correlations.sql and all existing migrations. This adds human-reviewed portfolio capacity application and undo records. Preserve all previously applied migration names and bytes."
@@ -178,10 +221,17 @@
       "id": "0083_guest_share_reviews.sql",
       "buyerSteps": "Apply migrations/core/0083_guest_share_reviews.sql after 0082_portfolio_capacity.sql and all existing migrations. This adds exact initial guest-share reviews and retained decisions. Preserve all previously applied migration names and bytes."
     },
+    "migrations/core/0084_intake_person_erasure.sql",
+    "migrations/core/0085_approval_followup.sql",
+    "migrations/core/0086_approval_followup_cancellation.sql",
     {
       "id": "0087_search_and_bulk_selection.sql",
       "buyerSteps": "Apply migrations/core/0087_search_and_bulk_selection.sql after 0086_approval_followup_cancellation.sql and all existing migrations. Preserve previously applied migration names and bytes. This adds private saved search filters and reviewed bulk-selection receipts."
     },
+    "migrations/core/0088_pdf_feedback.sql",
+    "migrations/core/0089_provider_log_retention.sql",
+    "migrations/core/0090_intake_decisions.sql",
+    "migrations/core/0091_intake_source_evidence.sql",
     {
       "id": "0092_archive_calendar_provenance.sql",
       "buyerSteps": "Apply migrations/core/0092_archive_calendar_provenance.sql after 0091_intake_source_evidence.sql and all existing migrations. Preserve all previously applied migration names and bytes. Calendar connections and blocks retain inactive archive provenance without resuming provider operations."
@@ -192,7 +242,7 @@
     }
   ],
   "breaking": false,
-  "agentUpdateInstructions": "Install the locked dependencies, build Pegboard, and follow OPERATIONS.md for owner configuration and recovery. Preserve all applied migration names and bytes.",
+  "agentUpdateInstructions": "Install with the pinned toolchain and apply all declared migrations on a fresh database. Preserve existing resource identities and migration bytes. For deployments with MAIL_PROVIDER=none, use rer signin.",
   "contractChanges": {},
   "extensionPointChanges": [],
   "date": "2026-10-24"

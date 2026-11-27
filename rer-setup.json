@@ -106,10 +106,14 @@
         {
           "value": "cloudflare",
           "label": "Cloudflare Email Sending"
+        },
+        {
+          "value": "none",
+          "label": "Off (owner signs in with rer signin)"
         }
       ],
       "group": "mail",
-      "help": "Local development suppresses mail. For a hosted install choose RER managed mail or configure a verified Resend, SendGrid or Cloudflare sender."
+      "help": "Use a mail provider, or turn outbound mail off and sign in with rer signin."
     },
     {
       "name": "MAIL_FROM",
